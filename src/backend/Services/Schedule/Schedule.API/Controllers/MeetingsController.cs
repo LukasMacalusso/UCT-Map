@@ -1,3 +1,4 @@
+using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 using Schedule.Application.DTOs;
 using Schedule.Application.Handlers;
@@ -40,7 +41,13 @@ public class MeetingsController : ControllerBase
     public async Task<ActionResult<MeetingDto>> Create([FromBody] CreateMeetingRequest request, CancellationToken cancellationToken)
     {
         var result = await _handler.CreateAsync(request, cancellationToken);
-        if (result.IsError) return BadRequest(new { message = result.FirstError.Description });
+        if (result.IsError)
+        {
+            return result.FirstError.Type == ErrorType.Conflict
+                ? Conflict(new { message = result.FirstError.Description })
+                : BadRequest(new { message = result.FirstError.Description });
+        }
+
         return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
     }
 }
