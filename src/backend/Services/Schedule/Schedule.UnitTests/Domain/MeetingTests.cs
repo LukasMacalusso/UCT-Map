@@ -23,6 +23,25 @@ public class MeetingTests
         Assert.Equal(30, meeting.DurationMinutes);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-15)]
+    public void Constructor_WhenDurationIsNotPositive_ThrowsArgumentException(int durationMinutes)
+    {
+        var exception = Assert.Throws<ArgumentException>(() =>
+            new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, DateTime.Today, durationMinutes));
+
+        Assert.Equal("durationMinutes", exception.ParamName);
+    }
+
+    [Fact]
+    public void EndsAt_AddsDurationToStart()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, new DateTime(2026, 10, 12, 10, 0, 0), 45);
+
+        Assert.Equal(new DateTime(2026, 10, 12, 10, 45, 0), meeting.EndsAt);
+    }
+
     [Fact]
     public void Constructor_StartsInPendingStatus()
     {

@@ -13,6 +13,8 @@ public class Meeting
     public int DurationMinutes { get; private set; }
     public MeetingStatus Status { get; private set; }
 
+    public DateTime EndsAt => ScheduledAt.AddMinutes(DurationMinutes);
+
     public Meeting(
         Guid teacherRefId,
         Guid studentRefId,
@@ -20,6 +22,12 @@ public class Meeting
         DateTime scheduledAt,
         int durationMinutes)
     {
+        if (durationMinutes <= 0)
+        {
+            throw new ArgumentException(
+                "Duration must be greater than zero minutes", nameof(durationMinutes));
+        }
+
         this.Id = Guid.NewGuid();
         this.TeacherRefId = teacherRefId;
         this.StudentRefId = studentRefId;
