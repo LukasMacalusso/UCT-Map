@@ -14,7 +14,11 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ScheduleDbContext>();
-    await context.Database.MigrateAsync();
+
+    if (context.Database.IsRelational())
+    {
+        await context.Database.MigrateAsync();
+    }
 }
 
 if (app.Environment.IsDevelopment())
