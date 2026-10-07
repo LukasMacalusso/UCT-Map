@@ -67,9 +67,30 @@ public class MeetingsEndpointsTests(ScheduleApiFactory factory) : IClassFixture<
     }
 
     [Fact]
-    public async Task GetByTeacher_WithoutTeacherId_Returns400()
+    public async Task GetAll_WithoutTeacherId_ReturnsEveryMeeting()
     {
-        var response = await _client.GetAsync($"{Route}?{WeekRange}");
+        var first = await CreateAsync(Guid.NewGuid(), new DateTime(2026, 11, 2, 9, 0, 0));
+        var second = await CreateAsync(Guid.NewGuid(), new DateTime(2026, 11, 20, 9, 0, 0));
+
+        var meetings = await _client.GetFromJsonAsync<List<MeetingDto>>(Route);
+
+        Assert.NotNull(meetings);
+        Assert.Contains(meetings, m => m.Id == first.Id);
+        Assert.Contains(meetings, m => m.Id == second.Id);
+    }
+
+    [Fact]
+    public async Task Get_WithEmptyTeacherId_Returns400()
+    {
+        var response = await _client.GetAsync($"{Route}?teacherId={Guid.Empty}&{WeekRange}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetByTeacher_WithoutDateRange_Returns400()
+    {
+        var response = await _client.GetAsync($"{Route}?teacherId={Guid.NewGuid()}");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }

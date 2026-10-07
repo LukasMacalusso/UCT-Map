@@ -75,9 +75,22 @@ public class OfficeHoursEndpointsTests(ScheduleApiFactory factory) : IClassFixtu
     }
 
     [Fact]
-    public async Task GetByTeacher_WithoutTeacherId_Returns400()
+    public async Task GetAll_WithoutTeacherId_ReturnsBlocksFromEveryTeacher()
     {
-        var response = await _client.GetAsync(Route);
+        var first = await CreateAsync(Guid.NewGuid(), DayOfWeek.Monday);
+        var second = await CreateAsync(Guid.NewGuid(), DayOfWeek.Thursday);
+
+        var blocks = await _client.GetFromJsonAsync<List<OfficeHourDto>>(Route);
+
+        Assert.NotNull(blocks);
+        Assert.Contains(blocks, b => b.Id == first.Id);
+        Assert.Contains(blocks, b => b.Id == second.Id);
+    }
+
+    [Fact]
+    public async Task Get_WithEmptyTeacherId_Returns400()
+    {
+        var response = await _client.GetAsync($"{Route}?teacherId={Guid.Empty}");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }

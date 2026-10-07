@@ -21,10 +21,17 @@ public class MeetingsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<MeetingDto>>> GetByTeacher([FromQuery] Guid teacherId, [FromQuery] DateTime from, [FromQuery] DateTime to, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<MeetingDto>>> Get([FromQuery] Guid? teacherId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken)
     {
-        if (teacherId == Guid.Empty) return BadRequest(new { message = "The 'teacherId' query parameter is required." });
-        var result = await _handler.GetByTeacherAsync(teacherId, from, to, cancellationToken);
+        if (teacherId is null)
+        {
+            var all = await _handler.GetAllAsync(cancellationToken);
+            return Ok(all.Value);
+        }
+
+        if (teacherId == Guid.Empty) return BadRequest(new { message = "The 'teacherId' query parameter cannot be empty." });
+        if (from is null || to is null) return BadRequest(new { message = "The 'from' and 'to' query parameters are required when filtering by teacher." });
+        var result = await _handler.GetByTeacherAsync(teacherId.Value, from.Value, to.Value, cancellationToken);
         if (result.IsError) return BadRequest(new { message = result.FirstError.Description });
         return Ok(result.Value);
     }
