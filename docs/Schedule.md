@@ -145,20 +145,24 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 ### 2.3 Create Meeting
 - **Route**: `POST /api/schedule/meetings`
 - **Access**: Any authenticated user
-- **Description**: Schedules a meeting. It always starts in `Pending` status.
+- **Description**: Schedules a meeting. It always starts in `Pending` status. The meeting is rejected if, during its time range, the same teacher, the same student or the same room already has an active meeting. Cancelled meetings do not block a slot. A meeting may start exactly when another one ends. The check and the insert run in a single serializable transaction, so two simultaneous requests cannot book the same slot.
 
 **Request Payload (`application/json`)**
 ```json
 {
   "teacherRefId": "uuid",               // Required
   "studentRefId": "uuid",               // Required
-  "structureRefId": "uuid",             // Optional, room where the meeting takes place
+  "structureRefId": "uuid",             // Optional, room where the meeting takes place. If omitted, room availability is not checked
   "scheduledAt": "2026-10-12T15:30:00", // Required
-  "durationMinutes": 30                 // Required
+  "durationMinutes": 30                 // Required, must be greater than 0
 }
 ```
 
 **Success Response (201 Created)**: the created meeting (same object as in 2.1). The `Location` header points to 2.2.
+
+**Error Responses**
+- **`400 Bad Request`**: If `durationMinutes` is not greater than 0.
+- **`409 Conflict`**: If the teacher, the student or the room already has a meeting in that time range, or if another request booked the slot at the same moment. The `message` states which one is busy (e.g., `"The teacher already has a meeting at that time."`).
 
 ---
 
