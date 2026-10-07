@@ -88,6 +88,19 @@ public class OfficeHoursEndpointsTests(ScheduleApiFactory factory) : IClassFixtu
     }
 
     [Fact]
+    public async Task GetByTeacher_OrdersBlocksByWeekdayStartingOnMonday()
+    {
+        var teacherId = Guid.NewGuid();
+        await CreateAsync(teacherId, DayOfWeek.Sunday);
+        await CreateAsync(teacherId, DayOfWeek.Friday);
+        await CreateAsync(teacherId, DayOfWeek.Monday);
+
+        var blocks = await _client.GetFromJsonAsync<List<OfficeHourDto>>($"{Route}?teacherId={teacherId}");
+
+        Assert.Equal(["Monday", "Friday", "Sunday"], blocks!.Select(b => b.DayOfWeek));
+    }
+
+    [Fact]
     public async Task Get_WithEmptyTeacherId_Returns400()
     {
         var response = await _client.GetAsync($"{Route}?teacherId={Guid.Empty}");

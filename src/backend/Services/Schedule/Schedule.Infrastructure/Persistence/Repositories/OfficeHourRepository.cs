@@ -15,24 +15,30 @@ public class OfficeHourRepository(ScheduleDbContext dbContext) : IOfficeHourRepo
 
     public async Task<IReadOnlyList<OfficeHour>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await dbContext.OfficeHours
+        var officeHours = await dbContext.OfficeHours
             .AsNoTracking()
-            .OrderBy(o => o.TeacherRefId)
-            .ThenBy(o => o.DayOfWeek)
-            .ThenBy(o => o.StartTime)
             .ToListAsync(cancellationToken);
+
+        return officeHours
+            .OrderBy(o => o.TeacherRefId)
+            .ThenBy(o => WeekdayOrder(o.DayOfWeek))
+            .ThenBy(o => o.StartTime)
+            .ToList();
     }
 
     public async Task<IReadOnlyList<OfficeHour>> GetByTeacherAsync(
         Guid teacherRefId,
         CancellationToken cancellationToken = default)
     {
-        return await dbContext.OfficeHours
+        var officeHours = await dbContext.OfficeHours
             .AsNoTracking()
             .Where(o => o.TeacherRefId == teacherRefId)
-            .OrderBy(o => o.DayOfWeek)
-            .ThenBy(o => o.StartTime)
             .ToListAsync(cancellationToken);
+
+        return officeHours
+            .OrderBy(o => WeekdayOrder(o.DayOfWeek))
+            .ThenBy(o => o.StartTime)
+            .ToList();
     }
 
     public async Task AddAsync(OfficeHour officeHour, CancellationToken cancellationToken = default)
@@ -40,4 +46,8 @@ public class OfficeHourRepository(ScheduleDbContext dbContext) : IOfficeHourRepo
         await dbContext.OfficeHours.AddAsync(officeHour, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    // DayOfWeek is stored as text, so ordering in SQL would be alphabetical.
+    // Sorting in memory by weekday, Monday first.
+    private static int WeekdayOrder(DayOfWeek day) => ((int)day + 6) % 7;
 }
