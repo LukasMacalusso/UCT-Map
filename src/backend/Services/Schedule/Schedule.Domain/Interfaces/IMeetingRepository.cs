@@ -10,6 +10,8 @@ public interface IMeetingRepository
 {
     Task<Meeting?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Meeting>> GetAllAsync(CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Meeting>> GetByTeacherAsync(
         Guid teacherRefId,
         DateTime from,

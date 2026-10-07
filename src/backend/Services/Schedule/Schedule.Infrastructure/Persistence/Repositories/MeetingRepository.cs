@@ -13,6 +13,14 @@ public class MeetingRepository(ScheduleDbContext dbContext) : IMeetingRepository
             .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Meeting>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Meetings
+            .AsNoTracking()
+            .OrderBy(m => m.ScheduledAt)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Meeting>> GetByTeacherAsync(
         Guid teacherRefId,
         DateTime from,

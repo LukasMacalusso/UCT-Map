@@ -10,6 +10,8 @@ public interface IOfficeHourRepository
 {
     Task<OfficeHour?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<OfficeHour>> GetAllAsync(CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<OfficeHour>> GetByTeacherAsync(
         Guid teacherRefId,
         CancellationToken cancellationToken = default);

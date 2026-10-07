@@ -12,6 +12,17 @@ public class FakeOfficeHourRepository : IOfficeHourRepository
         return Task.FromResult(Items.FirstOrDefault(o => o.Id == id));
     }
 
+    public Task<IReadOnlyList<OfficeHour>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<OfficeHour> result = Items
+            .OrderBy(o => o.TeacherRefId)
+            .ThenBy(o => o.DayOfWeek)
+            .ThenBy(o => o.StartTime)
+            .ToList();
+
+        return Task.FromResult(result);
+    }
+
     public Task<IReadOnlyList<OfficeHour>> GetByTeacherAsync(
         Guid teacherRefId,
         CancellationToken cancellationToken = default)
