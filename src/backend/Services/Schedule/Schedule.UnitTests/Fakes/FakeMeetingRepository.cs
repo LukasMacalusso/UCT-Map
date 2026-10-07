@@ -1,4 +1,5 @@
 using Schedule.Domain.Entities;
+using Schedule.Domain.Enums;
 using Schedule.Domain.Interfaces;
 
 namespace Schedule.UnitTests.Fakes;
@@ -34,6 +35,25 @@ public class FakeMeetingRepository : IMeetingRepository
         CancellationToken cancellationToken = default)
     {
         return Task.FromResult(Filter(m => m.StudentRefId == studentRefId, from, to));
+    }
+
+    public Task<IReadOnlyList<Meeting>> GetActiveOverlappingAsync(
+        Guid teacherRefId,
+        Guid studentRefId,
+        Guid? structureRefId,
+        DateTime start,
+        DateTime end,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<Meeting> result = Items
+            .Where(m => m.Status != MeetingStatus.Cancelled)
+            .Where(m => m.TeacherRefId == teacherRefId
+                || m.StudentRefId == studentRefId
+                || (structureRefId != null && m.StructureRefId == structureRefId))
+            .Where(m => m.ScheduledAt < end && m.EndsAt > start)
+            .ToList();
+
+        return Task.FromResult(result);
     }
 
     public Task AddAsync(Meeting meeting, CancellationToken cancellationToken = default)

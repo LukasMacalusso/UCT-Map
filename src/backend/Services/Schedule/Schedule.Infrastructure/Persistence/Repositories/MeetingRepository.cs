@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Schedule.Domain.Entities;
+using Schedule.Domain.Enums;
 using Schedule.Domain.Interfaces;
 
 namespace Schedule.Infrastructure.Persistence.Repositories;
@@ -44,6 +45,24 @@ public class MeetingRepository(ScheduleDbContext dbContext) : IMeetingRepository
             .AsNoTracking()
             .Where(m => m.StudentRefId == studentRefId && m.ScheduledAt >= from && m.ScheduledAt < to)
             .OrderBy(m => m.ScheduledAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Meeting>> GetActiveOverlappingAsync(
+        Guid teacherRefId,
+        Guid studentRefId,
+        Guid? structureRefId,
+        DateTime start,
+        DateTime end,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Meetings
+            .AsNoTracking()
+            .Where(m => m.Status != MeetingStatus.Cancelled)
+            .Where(m => m.TeacherRefId == teacherRefId
+                || m.StudentRefId == studentRefId
+                || (structureRefId != null && m.StructureRefId == structureRefId))
+            .Where(m => m.ScheduledAt < end && m.ScheduledAt.AddMinutes(m.DurationMinutes) > start)
             .ToListAsync(cancellationToken);
     }
 
