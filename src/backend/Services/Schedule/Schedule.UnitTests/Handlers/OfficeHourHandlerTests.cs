@@ -39,6 +39,27 @@ public class OfficeHourHandlerTests
     }
 
     [Fact]
+    public async Task GetAllAsync_ReturnsBlocksFromEveryTeacher()
+    {
+        _repository.Items.Add(new OfficeHour(Guid.NewGuid(), null, DayOfWeek.Monday, new TimeOnly(9, 0), new TimeOnly(11, 0)));
+        _repository.Items.Add(new OfficeHour(Guid.NewGuid(), null, DayOfWeek.Friday, new TimeOnly(14, 0), new TimeOnly(15, 0)));
+
+        var result = await _handler.GetAllAsync(CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(2, result.Value.Count());
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WhenThereAreNoBlocks_ReturnsEmptyList()
+    {
+        var result = await _handler.GetAllAsync(CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Empty(result.Value);
+    }
+
+    [Fact]
     public async Task GetByTeacherAsync_ReturnsOnlyThatTeachersBlocks()
     {
         var teacherId = Guid.NewGuid();

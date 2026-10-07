@@ -41,6 +41,20 @@ public class MeetingHandlerTests
         Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
     }
 
+    [Fact]
+    public async Task GetAllAsync_ReturnsEveryMeetingOrderedByDate()
+    {
+        _repository.Items.Add(new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, From.AddDays(3), 30));
+        _repository.Items.Add(new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, From.AddDays(1), 30));
+
+        var result = await _handler.GetAllAsync(CancellationToken.None);
+
+        Assert.False(result.IsError);
+        var meetings = result.Value.ToList();
+        Assert.Equal(2, meetings.Count);
+        Assert.True(meetings[0].ScheduledAt < meetings[1].ScheduledAt);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
