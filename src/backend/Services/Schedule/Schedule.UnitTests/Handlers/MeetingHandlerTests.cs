@@ -11,12 +11,15 @@ public class MeetingHandlerTests
     private static readonly DateTime From = new(2026, 10, 12);
     private static readonly DateTime To = new(2026, 10, 19);
 
+    private static readonly DateTime TenAm = new(2026, 10, 12, 10, 0, 0);
+
     private readonly FakeMeetingRepository _repository = new();
+    private readonly FakeUnitOfWork _unitOfWork = new();
     private readonly MeetingHandler _handler;
 
     public MeetingHandlerTests()
     {
-        _handler = new MeetingHandler(_repository);
+        _handler = new MeetingHandler(_repository, _unitOfWork);
     }
 
     [Fact]
@@ -91,5 +94,95 @@ public class MeetingHandlerTests
         Assert.Single(_repository.Items);
         Assert.Equal("Pending", result.Value.Status);
         Assert.Equal(45, result.Value.DurationMinutes);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenDurationIsNotPositive_ReturnsValidationErrorAndDoesNotPersist()
+    {
+        var request = new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 0);
+
+        var result = await _handler.CreateAsync(request, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Validation, result.FirstError.Type);
+        Assert.Empty(_repository.Items);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenTeacherHasOverlappingMeeting_ReturnsConflict()
+    {
+        var teacherId = Guid.NewGuid();
+        _repository.Items.Add(new Meeting(teacherId, Guid.NewGuid(), null, TenAm, 30));
+
+        var result = await _handler.CreateAsync(
+            new CreateMeetingRequest(teacherId, Guid.NewGuid(), null, TenAm.AddMinutes(15), 30), CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Contains("teacher", result.FirstError.Description);
+        Assert.Single(_repository.Items);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenStudentHasOverlappingMeeting_ReturnsConflict()
+    {
+        var studentId = Guid.NewGuid();
+        _repository.Items.Add(new Meeting(Guid.NewGuid(), studentId, null, TenAm, 60));
+
+        var result = await _handler.CreateAsync(
+            new CreateMeetingRequest(Guid.NewGuid(), studentId, null, TenAm.AddMinutes(30), 30), CancellationToken.None);
+
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Contains("student", result.FirstError.Description);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenRoomIsBookedAtThatTime_ReturnsConflict()
+    {
+        var roomId = Guid.NewGuid();
+        _repository.Items.Add(new Meeting(Guid.NewGuid(), Guid.NewGuid(), roomId, TenAm, 30));
+
+        var result = await _handler.CreateAsync(
+            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), roomId, TenAm, 30), CancellationToken.None);
+
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Contains("room", result.FirstError.Description);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenMeetingStartsExactlyWhenAnotherEnds_IsAccepted()
+    {
+        var teacherId = Guid.NewGuid();
+        _repository.Items.Add(new Meeting(teacherId, Guid.NewGuid(), null, TenAm, 30));
+
+        var result = await _handler.CreateAsync(
+            new CreateMeetingRequest(teacherId, Guid.NewGuid(), null, TenAm.AddMinutes(30), 30), CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(2, _repository.Items.Count);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenOnlyTheTimeMatchesButNobodyIsShared_IsAccepted()
+    {
+        _repository.Items.Add(new Meeting(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TenAm, 30));
+
+        var result = await _handler.CreateAsync(
+            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30), CancellationToken.None);
+
+        Assert.False(result.IsError);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenAConcurrentRequestWinsTheSlot_ReturnsConflict()
+    {
+        _unitOfWork.SimulateConcurrencyConflict = true;
+
+        var result = await _handler.CreateAsync(
+            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30), CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Empty(_repository.Items);
     }
 }
