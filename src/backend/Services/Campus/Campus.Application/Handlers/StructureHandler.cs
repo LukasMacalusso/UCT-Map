@@ -25,11 +25,11 @@ public class StructureHandler
 
     public async Task<IEnumerable<StructureDto>> GetAllAsync(Guid? campusId, Guid? categoryId, CancellationToken cancellationToken)
     {
-        var structures = await _repository.GetAllAsync(s => 
-            (!campusId.HasValue || s.CampusId == campusId.Value) && 
-            (!categoryId.HasValue || s.CategoryId == categoryId.Value), 
+        var structures = await _repository.GetAllAsync(s =>
+            (!campusId.HasValue || s.CampusId == campusId.Value) &&
+            (!categoryId.HasValue || s.CategoryId == categoryId.Value),
         cancellationToken);
-        
+
         return structures.Select(s => new StructureDto(s.Id, s.CampusId, s.CategoryId, s.Name, s.Coordinates.Latitude, s.Coordinates.Longitude));
     }
 
@@ -44,16 +44,16 @@ public class StructureHandler
     {
         if (!await _campusRepository.ExistsAsync(c => c.Id == request.CampusId, cancellationToken))
             return (null, $"El campus con ID '{request.CampusId}' no existe.");
-            
+
         if (!await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId, cancellationToken))
             return (null, $"La categoría con ID '{request.CategoryId}' no existe.");
 
         var coordinates = new Coordinate(request.Latitude, request.Longitude);
         var structure = new Structure(request.Name, coordinates, request.CampusId, request.CategoryId);
-        
+
         await _repository.AddAsync(structure, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
-        
+
         return (new StructureDto(structure.Id, structure.CampusId, structure.CategoryId, structure.Name, structure.Coordinates.Latitude, structure.Coordinates.Longitude), null);
     }
 
@@ -64,13 +64,13 @@ public class StructureHandler
 
         if (!await _campusRepository.ExistsAsync(c => c.Id == request.CampusId, cancellationToken))
             return (false, $"El campus con ID '{request.CampusId}' no existe.");
-            
+
         if (!await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId, cancellationToken))
             return (false, $"La categoría con ID '{request.CategoryId}' no existe.");
 
         var coordinates = new Coordinate(request.Latitude, request.Longitude);
         structure.Update(request.Name, coordinates, request.CampusId, request.CategoryId);
-        
+
         _repository.Update(structure);
         await _repository.SaveChangesAsync(cancellationToken);
         return (true, null);

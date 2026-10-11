@@ -57,11 +57,11 @@ public class RoomController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateRoomDto request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is required." });
-        
+
         var result = await _handler.CreateAsync(request, cancellationToken);
         return result.Match(
             dto => CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto),
-            errors => 
+            errors =>
             {
                 var firstError = errors.First();
                 var statusCode = firstError.Type == ErrorType.NotFound ? StatusCodes.Status404NotFound : StatusCodes.Status400BadRequest;
@@ -78,7 +78,7 @@ public class RoomController : ControllerBase
         var result = await _handler.UpdateAsync(id, request, cancellationToken);
         return result.Match(
             success => (IActionResult)NoContent(),
-            errors => 
+            errors =>
             {
                 var firstError = errors.First();
                 var statusCode = firstError.Type == ErrorType.NotFound ? StatusCodes.Status404NotFound : StatusCodes.Status400BadRequest;

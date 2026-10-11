@@ -50,12 +50,12 @@ public class BuildingController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateBuildingDto request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is required." });
-        
+
         var result = await _handler.CreateAsync(request, cancellationToken);
-        
+
         return result.Match(
             dto => CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto),
-            errors => 
+            errors =>
             {
                 var firstError = errors.First();
                 var statusCode = firstError.Type == ErrorType.NotFound ? StatusCodes.Status404NotFound : StatusCodes.Status400BadRequest;
@@ -70,10 +70,10 @@ public class BuildingController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is required." });
 
         var result = await _handler.UpdateAsync(id, request, cancellationToken);
-        
+
         return result.Match(
             success => (IActionResult)NoContent(),
-            errors => 
+            errors =>
             {
                 var firstError = errors.First();
                 var statusCode = firstError.Type == ErrorType.NotFound ? StatusCodes.Status404NotFound : StatusCodes.Status400BadRequest;
@@ -86,7 +86,7 @@ public class BuildingController : ControllerBase
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var result = await _handler.DeleteAsync(id, cancellationToken);
-        
+
         return result.Match(
             success => (IActionResult)NoContent(),
             errors => Problem(statusCode: StatusCodes.Status404NotFound, title: errors.First().Description)

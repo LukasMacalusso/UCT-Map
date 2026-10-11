@@ -9,8 +9,8 @@ public class Building
     public Guid Id { get; private set; }
     public Guid CampusId { get; private set; }
     public string Name { get; private set; } = string.Empty;
-    public int FloorsCount { get; private set; } 
-    
+    public int FloorsCount { get; private set; }
+
     public Coordinate Coordinates { get; private set; } = null!;
 
     public Campus Campus { get; private set; } = null!;
@@ -22,7 +22,7 @@ public class Building
         this.Name = name;
         this.FloorsCount = floorsCount;
         this.Coordinates = coordinates;
-        
+
         this.Campus = campus;
         this.CampusId = campus.Id;
     }
