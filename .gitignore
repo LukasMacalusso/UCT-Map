@@ -69,6 +69,7 @@ docker-compose.override.yml
 node_modules/
 dist/
 build/
+coverage/
 
 # .NET build files
 bin/

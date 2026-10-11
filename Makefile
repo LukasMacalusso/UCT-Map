@@ -1,4 +1,4 @@
-.PHONY: up down build clean logs test
+.PHONY: up down build clean logs test validate-frontend
 
 # Starts the entire infrastructure and microservices in the background
 up:
@@ -25,3 +25,11 @@ clean:
 # Finds and runs tests across all individual solution files
 test:
 	find . -name "*.sln*" -exec dotnet test {} \;
+
+# Validates frontend tests, build and docker container
+validate-frontend:
+	@echo "Running frontend validation"
+	cd src/frontend && npm run validate
+	@echo "Building frontend Docker container"
+	docker compose build frontend
+	@echo "Frontend validation completed successfully."

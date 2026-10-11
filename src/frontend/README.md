@@ -185,3 +185,50 @@ El proceso del archivo `Dockerfile` del frontend se divide en dos fases:
    Utiliza una imagen base de Node.js como entorno de construcción. En esta etapa se instalan todas las dependencias y se ejecuta el compilador de Vite. El resultado es una carpeta que contiene únicamente los recursos estáticos optimizados.
 2. **Fase de Producción:**
    Inicia un entorno completamente nuevo basado en Nginx (`nginx:alpine`). Se copia el archivo de configuración `nginx.conf` y se trasladan **únicamente los archivos compilados** de la fase anterior. El entorno de Node.js y el código fuente original son descartados, evitando problmeas de seguridad.
+
+## CI Pipeline
+
+El frontend cuenta con un pipeline automatizado en ([`.github/workflows/frontend-ci.yml`](../../.github/workflows/frontend-ci.yml)).
+
+### Disparadores del Pipeline 
+El workflow se ejecuta automáticamente ante:
+* **Push** y **Pull Requests** hacia las ramas `main` y `taller-2`.
+* **Filtro de rutas** solo se dispara si existen modificaciones en `src/frontend/**` o en el propio archivo del workflow.
+
+### Fases del Pipeline
+
+| Paso | Propósito |
+|---|---|
+| **1. Setup Node.js** | Configura el entorno con Node.js 20.x y habilita caché de dependencias con `npm`. |
+| **2. Dependencias** | Instalación estricta y limpia de paquetes basada en `package-lock.json`. |
+| **3. Calidad de Código** | Ejecuta **ESLint** para auditar sintaxis, buenas prácticas de React y TypeScript. |
+| **4. Tests & Coverage** | Ejecuta la suite de pruebas unitarias con **Vitest** en un DOM simulado (`jsdom`) y genera el informe de cobertura en XML Cobertura. |
+| **5. Typecheck & Build** | Valida los tipos con el compilador de TypeScript (`tsc -b`) y empaqueta el frontend con Vite para verificar que la build de producción sea válida. |
+| **6. Resumen de Cobertura** | Lee el archivo `cobertura-coverage.xml` e inyecta la tabla resumen de cobertura con indicadores visuales en el Job Summary de GitHub. |
+
+### Comandos 
+
+Para ejecutar las verificaciones en el entorno de desarrollo local:
+
+```bash
+# Auditar calidad de código y buenas prácticas 
+npm run lint
+
+# Ejecutar la suite de pruebas unitarias
+npm test
+
+# Ejecutar pruebas y desplegar la tabla completa de cobertura en consola
+npm run coverage
+
+# Validar tests y compilación del frontend
+npm run validate
+
+# Desde la raíz del proyecto: validar tests, build y construcción de Docker
+make validate-frontend
+```
+
+### Arquitectura y Convención de Tests
+
+* **Ubicación (Co-location):** Los archivos de prueba tienen la extensión `.test.ts` o `.test.tsx` y se ubican en la misma carpeta del componente o hook correspondiente (ej. `Avatar.tsx` -> `Avatar.test.tsx`).
+* **Entorno:** Utiliza **Vitest** junto con **JSDOM** (`jsdom`) para emular el navegador y `@testing-library/react` para validar comportamiento y accesibilidad.
+* **Alcance:** Solo se testea código con lógica ejecutable (componentes, hooks, utilitarios, servicios). Las definiciones de tipos (`interfaces/`) no requieren archivos de test.
