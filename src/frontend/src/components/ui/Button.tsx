@@ -22,15 +22,15 @@ export const Button = ({
 }: ButtonProps) => {
 
   const sizeClasses: Record<ButtonSize, string> = {
-    sm: "px-4 py-1.5 text-sm",
-    md: "px-6 py-2.5",
-    lg: "px-10 py-3 text-[22px] tracking-wide"
+    sm: "px-3.5 py-1.5 text-xs font-semibold",
+    md: "px-5 py-2 text-sm font-semibold",
+    lg: "px-7 py-2.5 text-base font-semibold tracking-wide"
   };
 
   const widthClasses: Record<ButtonWidth, string> = {
-    sm: "w-32",
-    md: "w-48",
-    lg: "w-64"
+    sm: "w-28",
+    md: "w-44",
+    lg: "w-56"
   };
 
   const resolvedWidth = width ? widthClasses[width] : '';

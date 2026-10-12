@@ -1,20 +1,33 @@
 import { useState } from 'react';
 
+export type PhotoFrameSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+
+const sizeMap: Record<PhotoFrameSize, string> = {
+  sm: 'w-24 h-24',
+  md: 'w-36 h-36',
+  lg: 'w-48 h-48',
+  xl: 'w-60 h-60',
+  full: 'w-full h-full',
+};
+
 interface PhotoFrameProps {
   src?: string | null;
   alt?: string;
+  size?: PhotoFrameSize;
   className?: string;
 }
 
 export const PhotoFrame = ({
   src,
   alt = 'Foto',
-  className = 'w-48 h-48',
+  size,
+  className = '',
 }: PhotoFrameProps) => {
   const [hasError, setHasError] = useState(false);
+  const sizeClass = size ? sizeMap[size] : (className.includes('w-') || className.includes('h-') ? '' : 'w-48 h-48');
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl bg-page-gray-light flex items-center justify-center flex-shrink-0 ${className}`}>
+    <div className={`relative overflow-hidden rounded-2xl bg-page-gray-light flex items-center justify-center flex-shrink-0 ${sizeClass} ${className}`}>
       {src && !hasError ? (
         <img
           src={src}

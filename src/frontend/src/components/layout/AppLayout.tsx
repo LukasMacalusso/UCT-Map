@@ -126,7 +126,7 @@ export const AppLayout = () => {
           label="Objetos"
           isExpanded={isExpanded}
           expandedWidth="288px"
-          icon={<ContactsIcon className="w-8 h-8" />}
+          icon={<ObjectsIcon className="w-8 h-8" />}
         />
 
         <SectionButton
@@ -134,7 +134,7 @@ export const AppLayout = () => {
           label="Contactos"
           isExpanded={isExpanded}
           expandedWidth="288px"
-          icon={<ObjectsIcon className="w-8 h-8" />}
+          icon={<ContactsIcon className="w-8 h-8" />}
         />
 
         <RoleGuard allowedRoles={['ADMIN']}>
@@ -143,7 +143,7 @@ export const AppLayout = () => {
             label="Administración"
             isExpanded={isExpanded}
             expandedWidth="288px"
-            icon={<AdminIcon className="w-12 h-12" />}
+            icon={<AdminIcon className="w-8 h-8" />}
           />
         </RoleGuard>
 

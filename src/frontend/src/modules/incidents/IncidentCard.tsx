@@ -34,18 +34,18 @@ export const IncidentCard = ({
   className = ''
 }: IncidentCardProps) => {
   return (
-    <Panel color="white" outerClassName={`w-full ${compact ? 'max-w-full' : 'max-w-2xl'} ${className}`} innerClassName={`${compact ? 'p-4 gap-3' : 'p-6 gap-4'} flex flex-col`}>
+    <Panel color="white" outerClassName={`w-full ${compact ? 'max-w-full' : 'max-w-2xl'} ${className}`} innerClassName={`${compact ? 'p-3 gap-2.5' : 'p-5 gap-3.5'} flex flex-col`}>
       {/* Ubication and state */}
       <div className="flex justify-between items-center mb-1">
-        <IconText icon={<MapPinIcon className={compact ? 'w-5 h-5' : 'w-8 h-8'} />} text={location} className={compact ? '!text-lg' : '!text-[26px]'} />
-        <Tag label={status} color={statusColor as any} className={`${compact ? '!text-sm !px-3 !py-1' : '!text-lg !px-4 !py-1.5'} uppercase`} />
+        <IconText icon={<MapPinIcon className={compact ? 'w-4 h-4' : 'w-5 h-5'} />} text={location} className={compact ? '!text-xs font-medium' : '!text-sm font-medium'} />
+        <Tag label={status} color={statusColor as any} className={`${compact ? '!text-xs !px-2.5 !py-0.5' : '!text-xs !px-3 !py-1 font-semibold'} uppercase`} />
       </div>
 
       {/* Incident image */}
-      <PhotoFrame src={photoUrl} className={`w-full ${compact ? 'h-32 rounded-xl' : 'h-72 rounded-3xl'} object-cover mb-1`} />
+      <PhotoFrame src={photoUrl} className={`w-full ${compact ? 'h-28 rounded-xl' : 'h-52 rounded-2xl'} object-cover mb-1 shadow-sm`} />
 
       {/* Incident name */}
-      <h2 className={`${compact ? 'text-2xl' : 'text-[38px]'} font-medium text-gray-800 leading-tight`}>
+      <h2 className={`${compact ? 'text-lg' : 'text-xl'} font-bold text-gray-800 leading-tight`}>
         {title}
       </h2>
 
@@ -55,12 +55,13 @@ export const IncidentCard = ({
           title={`Reportado por ${reporterName}`}
           subtitle={reportTime}
           avatarSrc={reporterAvatar}
-          className={`!p-0 !bg-transparent origin-left scale-90`}
+          size="sm"
+          className="!p-0 !bg-transparent"
         />
       )}
 
       {/* Description */}
-      <p className={`${compact ? 'text-base' : 'text-[22px]'} text-gray-700 leading-relaxed mt-1 line-clamp-2`}>
+      <p className={`${compact ? 'text-xs' : 'text-sm'} text-gray-600 leading-relaxed mt-1 line-clamp-2`}>
         "{description}"
       </p>
     </Panel>
