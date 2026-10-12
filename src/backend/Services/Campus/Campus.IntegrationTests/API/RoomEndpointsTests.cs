@@ -52,6 +52,21 @@ public class RoomEndpointsTests : ApiTestBase
     }
 
     [DockerFact]
+    public async Task GetAll_ReturnsListOfRooms()
+    {
+        var (buildingId, categoryId) = await SetupDependenciesAsync();
+        var body = new CreateRoomDto(buildingId, categoryId, "Sala Para Listar", 1, "SPL-1");
+        await Http.PostAsync(Endpoint, JsonBody(body));
+
+        var response = await Http.GetAsync(Endpoint);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var list = await ReadJsonAsync<List<RoomDto>>(response);
+        Assert.NotNull(list);
+        Assert.NotEmpty(list);
+    }
+
+    [DockerFact]
     public async Task SearchAndGetByBuilding_ReturnsRooms()
     {
         var (buildingId, categoryId) = await SetupDependenciesAsync();
