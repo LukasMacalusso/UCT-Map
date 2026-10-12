@@ -64,7 +64,7 @@ export const LoginView = () => {
   };
 
   return (
-    <div className="w-full min-h-screen flex items-center font-sans relative overflow-hidden bg-page-dark">
+    <div className="w-full h-screen min-h-[500px] flex items-center justify-center lg:justify-start lg:pl-12 p-4 font-sans relative overflow-hidden bg-page-dark">
 
       {backgroundData.map((data, index) => {
         const isCurrent = index === currentIndex;
@@ -111,55 +111,55 @@ export const LoginView = () => {
         return (
           <div
             key={`${data.img}-info`}
-            className={`absolute top-12 right-12 flex items-center gap-4 z-20 transition-opacity duration-[1500ms] ease-in-out ${isCurrent ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            className={`absolute top-6 right-6 md:top-8 md:right-8 flex items-center gap-3 z-20 transition-opacity duration-[1500ms] ease-in-out ${isCurrent ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           >
             <div className="flex flex-col items-end text-right">
-              <span className="text-xl font-bold text-white tracking-wide drop-shadow-md">
+              <span className="text-base sm:text-lg font-bold text-white tracking-wide drop-shadow-md">
                 {data.campus}
               </span>
-              <span className="text-sm font-medium text-white/80 drop-shadow-md">
+              <span className="text-xs sm:text-sm font-medium text-white/80 drop-shadow-md">
                 {data.location}
               </span>
             </div>
-            <LocationIcon className="w-10 h-10 text-white" />
+            <LocationIcon className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
           </div>
         );
       })}
 
       {/* Left panel */}
-      <div className="w-full max-w-lg min-h-[calc(100vh-4rem)] my-8 ml-8 bg-gradient-to-b from-page-blue from-50% to-page-yellow to-50% p-1.5 rounded-[34px] shadow-2xl relative z-10 flex flex-col">
-        <div className="w-full flex-1 bg-white rounded-[28px] p-12 flex flex-col overflow-x-hidden">
+      <div className="w-full max-w-md lg:max-w-[460px] max-h-[94vh] my-auto bg-gradient-to-b from-page-blue from-50% to-page-yellow to-50% p-1 rounded-[30px] shadow-2xl relative z-10 flex flex-col">
+        <div className="w-full flex-1 bg-white rounded-[26px] p-6 sm:p-8 flex flex-col overflow-y-auto overflow-x-hidden">
           <div className="flex-grow flex flex-col justify-center">
 
-          {/* Header */}
-          <div className="flex items-center mb-10">
-            <img src={logoUrl} alt="UCT Logo" className="w-24 h-24 object-contain" />
-            <div className="ml-5 flex flex-col justify-center">
-              <span className="text-gray-800 font-black text-4xl leading-none tracking-wide block">UCT</span>
-              <span className="text-gray-800 font-black text-4xl leading-none tracking-wide block">MAP</span>
+            {/* Header */}
+            <div className="flex items-center mb-5 sm:mb-6 flex-shrink-0">
+              <img src={logoUrl} alt="UCT Logo" className="w-14 h-14 sm:w-16 sm:h-16 object-contain" />
+              <div className="ml-4 flex flex-col justify-center">
+                <span className="text-gray-800 font-black text-2xl sm:text-3xl leading-none tracking-wide block">UCT</span>
+                <span className="text-gray-800 font-black text-2xl sm:text-3xl leading-none tracking-wide block">MAP</span>
+              </div>
+            </div>
+
+            {/* Dynamic Form Area with Animations */}
+            <div className="grid overflow-visible w-full">
+              {/* Login View */}
+              <div
+                className={`col-start-1 row-start-1 w-full transition-all duration-500 ease-in-out ${isRegistering ? '-translate-x-8 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
+              >
+                <LoginForm onSwitchToRegister={() => setIsRegistering(true)} />
+              </div>
+
+              {/* Register View */}
+              <div
+                className={`col-start-1 row-start-1 w-full transition-all duration-500 ease-in-out ${isRegistering ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0 pointer-events-none'}`}
+              >
+                <RegisterForm onSwitchToLogin={() => setIsRegistering(false)} />
+              </div>
             </div>
           </div>
 
-          {/* Dynamic Form Area with Animations */}
-          <div className="grid overflow-visible w-full">
-            {/* Login View */}
-            <div
-              className={`col-start-1 row-start-1 w-full transition-all duration-500 ease-in-out ${isRegistering ? '-translate-x-8 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
-            >
-              <LoginForm onSwitchToRegister={() => setIsRegistering(true)} />
-            </div>
-
-            {/* Register View */}
-            <div
-              className={`col-start-1 row-start-1 w-full transition-all duration-500 ease-in-out ${isRegistering ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0 pointer-events-none'}`}
-            >
-              <RegisterForm onSwitchToLogin={() => setIsRegistering(false)} />
-            </div>
-          </div>
-          </div>
-
-          <div className="mt-auto pt-6">
-            <div className="flex items-center mb-6">
+          <div className="mt-3 pt-3 flex-shrink-0">
+            <div className="flex items-center mb-3">
               <div className="flex-grow border-t border-gray-200"></div>
               <span className="px-3 text-xs text-gray-400 font-medium">O bien</span>
               <div className="flex-grow border-t border-gray-200"></div>
@@ -169,8 +169,8 @@ export const LoginView = () => {
               type="button"
               variant="outline"
               color="gray"
-              size="lg"
-              className="w-full"
+              size="md"
+              className="w-full font-semibold"
               onClick={handleGuest}
             >
               Continuar como invitado
@@ -181,39 +181,39 @@ export const LoginView = () => {
       </div>
 
       {/* Dev Tool Panel */}
-      <div className="absolute bottom-6 right-6 bg-white p-4 rounded-2xl shadow-xl border border-gray-200 flex flex-col items-center gap-4 w-56 z-20">
+      <div className="hidden md:flex absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm p-3 rounded-2xl shadow-xl border border-gray-200 flex-col items-center gap-2.5 w-48 z-20">
         <div className="flex flex-col items-center gap-0">
-          <h2 className="text-lg font-bold text-gray-800">Dev Tool</h2>
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Dev Tool</h2>
         </div>
 
-        <div className="flex flex-col w-full gap-2">
-          <Button onClick={handleGuest} color="gray" size="sm" className="!w-full !px-2">
+        <div className="flex flex-col w-full gap-1.5">
+          <Button onClick={handleGuest} color="gray" size="sm" className="!w-full !px-2 !py-1 !text-xs">
             Invitado
           </Button>
 
           <div className="w-full h-px bg-gray-100 my-0.5"></div>
 
-          <Button onClick={() => handleLogin('MEMBER')} color="blue" size="sm" className="!w-full !px-2">
+          <Button onClick={() => handleLogin('MEMBER')} color="blue" size="sm" className="!w-full !px-2 !py-1 !text-xs">
             Estudiante
           </Button>
 
-          <Button onClick={() => handleLogin('TEACHER')} color="dark" size="sm" className="!w-full !px-2">
+          <Button onClick={() => handleLogin('TEACHER')} color="dark" size="sm" className="!w-full !px-2 !py-1 !text-xs">
             Profesor
           </Button>
 
-          <Button onClick={() => handleLogin('OFFICIAL')} color="green" size="sm" className="!w-full !px-2">
+          <Button onClick={() => handleLogin('OFFICIAL')} color="green" size="sm" className="!w-full !px-2 !py-1 !text-xs">
             Funcionario
           </Button>
 
-          <Button onClick={() => handleLogin('INCIDENTS_OFFICER')} color="blue" size="sm" className="!w-full !px-2">
+          <Button onClick={() => handleLogin('INCIDENTS_OFFICER')} color="blue" size="sm" className="!w-full !px-2 !py-1 !text-xs">
             Enc. Incidentes
           </Button>
 
-          <Button onClick={() => handleLogin('OBJECTS_OFFICER')} color="blue" size="sm" className="!w-full !px-2">
+          <Button onClick={() => handleLogin('OBJECTS_OFFICER')} color="blue" size="sm" className="!w-full !px-2 !py-1 !text-xs">
             Enc. Objetos
           </Button>
 
-          <Button onClick={() => handleLogin('ADMIN')} color="purple" size="sm" className="!w-full !px-2">
+          <Button onClick={() => handleLogin('ADMIN')} color="purple" size="sm" className="!w-full !px-2 !py-1 !text-xs">
             Admin
           </Button>
         </div>

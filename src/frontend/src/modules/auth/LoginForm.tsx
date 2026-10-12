@@ -48,12 +48,12 @@ export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
 
   return (
     <>
-      <div className="flex flex-col gap-2 mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Iniciar Sesión</h1>
-        <p className="text-gray-500 font-medium">Ingresa tus credenciales institucionales.</p>
+      <div className="flex flex-col gap-1 mb-4">
+        <h1 className="text-2xl font-black text-gray-800 tracking-tight">Iniciar Sesión</h1>
+        <p className="text-gray-500 text-xs sm:text-sm font-medium">Ingresa tus credenciales institucionales.</p>
       </div>
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-5">
+      <form onSubmit={onSubmit} className="flex flex-col gap-3.5">
         <Input
           label="Email"
           labelColor="text-gray-700"
@@ -71,22 +71,22 @@ export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
         />
 
         {error && (
-          <div className="text-red-600 text-sm font-medium bg-red-50 p-2.5 rounded-lg border border-red-200">
+          <div className="text-red-600 text-xs font-medium bg-red-50 p-2 rounded-lg border border-red-200">
             {error.message}
           </div>
         )}
 
-        <Button type="submit" variant="solid" color="blue" size="lg" className="w-full mt-1" disabled={isLoading}>
+        <Button type="submit" variant="solid" color="blue" size="md" className="w-full mt-1 font-bold tracking-wide" disabled={isLoading}>
           {isLoading ? 'Cargando...' : 'Iniciar Sesión'}
         </Button>
       </form>
 
-      <div className="mt-5 text-center text-xl font-bold text-gray-600">
+      <div className="mt-4 text-center text-xs sm:text-sm font-semibold text-gray-600">
         ¿No tienes cuenta?{' '}
         <button
           type="button"
           onClick={onSwitchToRegister}
-          className="text-blue-600 hover:underline"
+          className="text-blue-600 hover:underline font-bold ml-1"
         >
           Regístrate
         </button>
