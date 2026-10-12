@@ -16,6 +16,7 @@ import AdminIcon from '../../assets/svg/icons/icon_admin.svg?react';
 import UserIcon from '../../assets/svg/icons/icon_user.svg?react';
 import { RoleGuard } from '../../router/RoleGuard';
 import { GlobalModals } from './GlobalModals';
+import { useUiState } from '../../states/uiState';
 
 export const AppLayout = () => {
   const { isExpanded, setIsExpanded } = useNavStore();
@@ -149,10 +150,13 @@ export const AppLayout = () => {
         {/* User Info Container or Login Button */}
         <div className="mt-auto">
           {user ? (
-            <div
-              className={`flex items-center rounded-2xl relative transition-all duration-300 ease-in-out flex-shrink-0 z-50 overflow-hidden ${
+            <button
+              type="button"
+              onClick={() => useUiState.getState().openPanel('userProfile')}
+              className={`flex items-center rounded-2xl relative transition-all duration-300 ease-in-out flex-shrink-0 z-50 overflow-hidden text-left cursor-pointer hover:brightness-95 active:scale-[0.98] ${
                 isExpanded ? 'bg-white shadow-md h-24 w-[288px] p-2 pr-4' : 'bg-transparent h-14 w-14 p-0'
               }`}
+              title="Información de cuenta"
             >
               {/* Avatar*/}
               <div className={`flex-shrink-0 flex items-center justify-center z-10 transition-all duration-300 ease-in-out ${isExpanded ? 'w-20 h-20' : 'w-14 h-14'}`}>
@@ -176,7 +180,7 @@ export const AppLayout = () => {
                   className="mt-1 w-max scale-90 origin-left"
                 />
               </div>
-            </div>
+            </button>
           ) : (
             <SectionButton
               to="/login"

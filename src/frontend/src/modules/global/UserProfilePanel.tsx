@@ -4,6 +4,9 @@ import { Avatar } from '../../components/media/Avatar';
 import { IconText } from '../../components/ui/IconText';
 import { CloseButton } from '../../components/ui/ExitButton';
 import { Button } from '../../components/ui/Button';
+import { Tag } from '../../components/ui/Tag';
+import type { Role } from '../../constants/role';
+import type { PageColor } from '../../constants/colors';
 import MailIcon from '../../assets/svg/icons/icon_mail.svg?react';
 import StudyIcon from '../../assets/svg/icons/icon_study.svg?react';
 import CalendarIcon from '../../assets/svg/icons/icon_calendar.svg?react';
@@ -17,11 +20,26 @@ export interface UserProfilePanelProps {
   career: string;
   email: string;
   photoUrl?: string;
+  role?: Role;
   objectReports?: any[];
   incidentReports?: any[];
   onClose?: () => void;
   onLogout?: () => void;
 }
+
+const getRoleConfig = (role?: Role): { label: string; color: PageColor } => {
+  if (!role) return { label: 'ESTUDIANTE', color: 'blue' };
+
+  switch (role) {
+    case 'ADMIN': return { label: 'ADMINISTRADOR', color: 'purple' };
+    case 'INCIDENTS_OFFICER': return { label: 'ENC. INCIDENTES', color: 'blue' };
+    case 'OBJECTS_OFFICER': return { label: 'ENC. OBJETOS', color: 'blue' };
+    case 'TEACHER': return { label: 'PROFESOR', color: 'dark' };
+    case 'OFFICIAL': return { label: 'FUNCIONARIO', color: 'green' };
+    case 'MEMBER': return { label: 'ESTUDIANTE', color: 'blue' };
+    default: return { label: 'USUARIO', color: 'gray' };
+  }
+};
 
 export const UserProfilePanel = ({
   name,
@@ -29,6 +47,7 @@ export const UserProfilePanel = ({
   career,
   email,
   photoUrl,
+  role,
   objectReports = [],
   incidentReports = [],
   onClose,
@@ -36,6 +55,8 @@ export const UserProfilePanel = ({
 }: UserProfilePanelProps) => {
   const [activeTab, setActiveTab] = useState<'objects' | 'incidents'>('objects');
   const [prevTab, setPrevTab] = useState<'objects' | 'incidents'>('objects');
+
+  const roleConfig = getRoleConfig(role);
 
   const handleTabChange = (tab: 'objects' | 'incidents') => {
     if (tab !== activeTab) {
@@ -57,9 +78,15 @@ export const UserProfilePanel = ({
         <div className="flex flex-col items-center w-full lg:w-1/3 flex-shrink-0 lg:pt-4 overflow-y-auto pb-4">
           <h3 className="text-2xl font-black text-gray-700 uppercase tracking-widest mb-6 w-full text-center">Información de Cuenta</h3>
           
-          <Avatar src={photoUrl} className="w-64 h-64 mb-8 shadow-xl" />
+          <Avatar src={photoUrl} className="w-64 h-64 mb-6 shadow-xl" />
           
-          <h2 className="text-3xl font-black text-gray-800 uppercase text-center leading-tight mb-8">{name}</h2>
+          <h2 className="text-3xl font-black text-gray-800 uppercase text-center leading-tight mb-3">{name}</h2>
+          
+          <Tag
+            label={roleConfig.label}
+            color={roleConfig.color}
+            className="mb-6 !text-base !px-4 !py-1 shadow-sm"
+          />
           
           <div className="flex flex-col gap-5 w-full px-4 mb-10">
             <IconText icon={<CalendarIcon className="w-[1.2em] h-[1.2em]" />} text={`Ingreso: ${admissionYear}`} className="!text-xl font-medium" />
