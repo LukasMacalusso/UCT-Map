@@ -42,9 +42,9 @@ public class BuildingHandler
     public async Task<ErrorOr<BuildingDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var building = await _repository.GetByIdAsync(id, cancellationToken);
-        if (building == null) 
+        if (building == null)
             return Error.NotFound("Building.NotFound", $"Building with ID '{id}' was not found.");
-            
+
         return new BuildingDto(building.Id, building.CampusId, building.Name, building.FloorsCount, building.Coordinates.Latitude, building.Coordinates.Longitude);
     }
 
@@ -55,17 +55,17 @@ public class BuildingHandler
 
         var coordinates = new Coordinate(request.Latitude, request.Longitude);
         var building = new Building(request.Name, request.FloorsCount, coordinates, request.CampusId);
-        
+
         await _repository.AddAsync(building, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
-        
+
         return new BuildingDto(building.Id, building.CampusId, building.Name, building.FloorsCount, building.Coordinates.Latitude, building.Coordinates.Longitude);
     }
 
     public async Task<ErrorOr<Success>> UpdateAsync(Guid id, UpdateBuildingDto request, CancellationToken cancellationToken)
     {
         var building = await _repository.GetByIdAsync(id, cancellationToken);
-        if (building == null) 
+        if (building == null)
             return Error.NotFound("Building.NotFound", $"Building with ID '{id}' was not found.");
 
         if (!await _campusRepository.ExistsAsync(c => c.Id == request.CampusId, cancellationToken))
@@ -73,7 +73,7 @@ public class BuildingHandler
 
         var coordinates = new Coordinate(request.Latitude, request.Longitude);
         building.Update(request.Name, request.FloorsCount, coordinates, request.CampusId);
-        
+
         _repository.Update(building);
         await _repository.SaveChangesAsync(cancellationToken);
         return Result.Success;
@@ -82,7 +82,7 @@ public class BuildingHandler
     public async Task<ErrorOr<Success>> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var building = await _repository.GetByIdAsync(id, cancellationToken);
-        if (building == null) 
+        if (building == null)
             return Error.NotFound("Building.NotFound", $"Building with ID '{id}' was not found.");
 
         _repository.Delete(building);

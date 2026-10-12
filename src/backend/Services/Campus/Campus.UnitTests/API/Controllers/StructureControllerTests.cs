@@ -1,0 +1,192 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
+using Campus.API.Controllers;
+using Campus.Application.DTOs;
+using Campus.Application.Handlers;
+using Campus.Domain.Entities;
+using Campus.Domain.Interfaces;
+using Campus.Domain.ValueObjects;
+using Microsoft.AspNetCore.Mvc;
+using NSubstitute;
+using Xunit;
+using CampusEntity = Campus.Domain.Entities.Campus;
+
+namespace Campus.UnitTests.API.Controllers;
+
+public class StructureControllerTests
+{
+    private readonly IGenericRepository<Structure> _repository;
+    private readonly IGenericRepository<CampusEntity> _campusRepository;
+    private readonly IGenericRepository<Category> _categoryRepository;
+    private readonly StructureHandler _handler;
+    private readonly StructureController _controller;
+
+    public StructureControllerTests()
+    {
+        _repository = Substitute.For<IGenericRepository<Structure>>();
+        _campusRepository = Substitute.For<IGenericRepository<CampusEntity>>();
+        _categoryRepository = Substitute.For<IGenericRepository<Category>>();
+        _handler = new StructureHandler(_repository, _campusRepository, _categoryRepository);
+        _controller = new StructureController(_handler);
+    }
+
+    [Fact]
+    public async Task GetAll_ShouldReturnOkWithStructures()
+    {
+        var structures = new List<Structure>
+        {
+            new("Pérgola", new Coordinate(0, 0), Guid.NewGuid(), Guid.NewGuid())
+        };
+        _repository.GetAllAsync(Arg.Any<Expression<Func<Structure, bool>>>(), Arg.Any<CancellationToken>()).Returns(structures);
+
+        var result = await _controller.GetAll(null, null, CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var dtos = Assert.IsAssignableFrom<IEnumerable<StructureDto>>(okResult.Value);
+        Assert.Single(dtos);
+    }
+
+    [Fact]
+    public async Task GetById_WhenFound_ShouldReturnOk()
+    {
+        var structure = new Structure("Cancha", new Coordinate(0, 0), Guid.NewGuid(), Guid.NewGuid());
+        _repository.GetByIdAsync(structure.Id, Arg.Any<CancellationToken>()).Returns(structure);
+
+        var result = await _controller.GetById(structure.Id, CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var dto = Assert.IsType<StructureDto>(okResult.Value);
+        Assert.Equal("Cancha", dto.Name);
+    }
+
+    [Fact]
+    public async Task GetById_WhenNotFound_ShouldReturnNotFound()
+    {
+        var id = Guid.NewGuid();
+        _repository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((Structure?)null);
+
+        var result = await _controller.GetById(id, CancellationToken.None);
+
+        Assert.IsType<NotFoundObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenNameIsEmpty_ShouldReturnBadRequest()
+    {
+        var request = new CreateStructureDto(Guid.NewGuid(), Guid.NewGuid(), "", 0, 0);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenCampusOrCategoryNotFound_ShouldReturnBadRequest()
+    {
+        var request = new CreateStructureDto(Guid.NewGuid(), Guid.NewGuid(), "Pérgola", 0, 0);
+        _campusRepository.ExistsAsync(Arg.Any<Expression<Func<CampusEntity, bool>>>(), Arg.Any<CancellationToken>()).Returns(false);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenValid_ShouldReturnCreatedAtAction()
+    {
+        var campusId = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+        var request = new CreateStructureDto(campusId, categoryId, "Pérgola", 0, 0);
+
+        _campusRepository.ExistsAsync(Arg.Any<Expression<Func<CampusEntity, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+        _categoryRepository.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        var created = Assert.IsType<CreatedAtActionResult>(result.Result);
+        var dto = Assert.IsType<StructureDto>(created.Value);
+        Assert.Equal("Pérgola", dto.Name);
+    }
+
+    [Fact]
+    public async Task Update_WhenNameIsEmpty_ShouldReturnBadRequest()
+    {
+        var request = new UpdateStructureDto(Guid.NewGuid(), Guid.NewGuid(), "", 0, 0);
+
+        var result = await _controller.Update(Guid.NewGuid(), request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Update_WhenCategoryNotFound_ShouldReturnBadRequest()
+    {
+        var structure = new Structure("Viejo", new Coordinate(0, 0), Guid.NewGuid(), Guid.NewGuid());
+        _repository.GetByIdAsync(structure.Id, Arg.Any<CancellationToken>()).Returns(structure);
+        _campusRepository.ExistsAsync(Arg.Any<Expression<Func<CampusEntity, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+        _categoryRepository.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(false);
+
+        var request = new UpdateStructureDto(Guid.NewGuid(), Guid.NewGuid(), "Nuevo", 0, 0);
+
+        var result = await _controller.Update(structure.Id, request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Update_WhenNotFound_ShouldReturnNotFound()
+    {
+        var id = Guid.NewGuid();
+        _repository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((Structure?)null);
+
+        var request = new UpdateStructureDto(Guid.NewGuid(), Guid.NewGuid(), "Nuevo", 0, 0);
+
+        var result = await _controller.Update(id, request, CancellationToken.None);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task Update_WhenValid_ShouldReturnNoContent()
+    {
+        var campusId = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+        var structure = new Structure("Viejo", new Coordinate(0, 0), campusId, categoryId);
+
+        _repository.GetByIdAsync(structure.Id, Arg.Any<CancellationToken>()).Returns(structure);
+        _campusRepository.ExistsAsync(Arg.Any<Expression<Func<CampusEntity, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+        _categoryRepository.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+
+        var request = new UpdateStructureDto(campusId, categoryId, "Nuevo", 0, 0);
+
+        var result = await _controller.Update(structure.Id, request, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+    }
+
+    [Fact]
+    public async Task Delete_WhenNotFound_ShouldReturnNotFound()
+    {
+        var id = Guid.NewGuid();
+        _repository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((Structure?)null);
+
+        var result = await _controller.Delete(id, CancellationToken.None);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Delete_WhenValid_ShouldReturnNoContent()
+    {
+        var structure = new Structure("Borrar", new Coordinate(0, 0), Guid.NewGuid(), Guid.NewGuid());
+        _repository.GetByIdAsync(structure.Id, Arg.Any<CancellationToken>()).Returns(structure);
+
+        var result = await _controller.Delete(structure.Id, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+    }
+}

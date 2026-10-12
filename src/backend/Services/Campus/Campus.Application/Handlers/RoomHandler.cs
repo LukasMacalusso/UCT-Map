@@ -52,15 +52,15 @@ public class RoomHandler
     {
         if (!await _buildingRepository.ExistsAsync(b => b.Id == request.BuildingId, cancellationToken))
             return Error.NotFound("Building.NotFound", $"Building with ID '{request.BuildingId}' does not exist.");
-            
+
         if (!await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId, cancellationToken))
             return Error.NotFound("Category.NotFound", $"Category with ID '{request.CategoryId}' does not exist.");
 
         var room = new Room(request.Name, request.Floor, request.Number, request.BuildingId, request.CategoryId);
-        
+
         await _repository.AddAsync(room, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
-        
+
         return new RoomDto(room.Id, room.BuildingId, room.CategoryId, room.Name, room.Floor, room.Number);
     }
 
@@ -71,12 +71,12 @@ public class RoomHandler
 
         if (!await _buildingRepository.ExistsAsync(b => b.Id == request.BuildingId, cancellationToken))
             return Error.NotFound("Building.NotFound", $"Building with ID '{request.BuildingId}' does not exist.");
-            
+
         if (!await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId, cancellationToken))
             return Error.NotFound("Category.NotFound", $"Category with ID '{request.CategoryId}' does not exist.");
 
         room.Update(request.Name, request.Floor, request.Number, request.BuildingId, request.CategoryId);
-        
+
         _repository.Update(room);
         await _repository.SaveChangesAsync(cancellationToken);
         return Result.Success;
