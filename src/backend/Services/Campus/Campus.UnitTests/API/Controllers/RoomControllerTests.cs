@@ -50,6 +50,24 @@ public class RoomControllerTests
     }
 
     [Fact]
+    public async Task GetAll_WithEmptyBuildingId_ShouldReturnBadRequest()
+    {
+        var result = await _controller.GetAll(Guid.Empty, null, CancellationToken.None);
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.NotNull(badRequestResult.Value);
+    }
+
+    [Fact]
+    public async Task GetAll_WithEmptyCategoryId_ShouldReturnBadRequest()
+    {
+        var result = await _controller.GetAll(null, Guid.Empty, CancellationToken.None);
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.NotNull(badRequestResult.Value);
+    }
+
+    [Fact]
     public async Task Search_ShouldReturnOkWithMatchingRooms()
     {
         var rooms = new List<Room>

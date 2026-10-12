@@ -51,6 +51,24 @@ public class StructureControllerTests
     }
 
     [Fact]
+    public async Task GetAll_WithEmptyCampusId_ShouldReturnBadRequest()
+    {
+        var result = await _controller.GetAll(Guid.Empty, null, CancellationToken.None);
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.NotNull(badRequestResult.Value);
+    }
+
+    [Fact]
+    public async Task GetAll_WithEmptyCategoryId_ShouldReturnBadRequest()
+    {
+        var result = await _controller.GetAll(null, Guid.Empty, CancellationToken.None);
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.NotNull(badRequestResult.Value);
+    }
+
+    [Fact]
     public async Task GetById_WhenFound_ShouldReturnOk()
     {
         var structure = new Structure("Cancha", new Coordinate(0, 0), Guid.NewGuid(), Guid.NewGuid());

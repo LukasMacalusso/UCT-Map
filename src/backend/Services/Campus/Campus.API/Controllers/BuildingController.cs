@@ -25,6 +25,8 @@ public class BuildingController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<BuildingDto>>> GetAll([FromQuery] Guid? campusId, CancellationToken cancellationToken)
     {
+        if (campusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' query parameter cannot be empty." });
+
         var buildings = await _handler.GetAllAsync(campusId, cancellationToken);
         return Ok(buildings);
     }
@@ -32,6 +34,8 @@ public class BuildingController : ControllerBase
     [HttpGet("locations")]
     public async Task<ActionResult<IEnumerable<BuildingLocationDto>>> GetLocations([FromQuery] Guid? campusId, CancellationToken cancellationToken)
     {
+        if (campusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' query parameter cannot be empty." });
+
         var buildings = await _handler.GetAllLocationsAsync(campusId, cancellationToken);
         return Ok(buildings);
     }

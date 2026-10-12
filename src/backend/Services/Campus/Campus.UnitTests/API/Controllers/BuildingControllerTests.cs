@@ -49,6 +49,15 @@ public class BuildingControllerTests
     }
 
     [Fact]
+    public async Task GetAll_WithEmptyCampusId_ShouldReturnBadRequest()
+    {
+        var result = await _controller.GetAll(Guid.Empty, CancellationToken.None);
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.NotNull(badRequestResult.Value);
+    }
+
+    [Fact]
     public async Task GetLocations_ShouldReturnOkWithLocations()
     {
         var buildings = new List<Building>
@@ -62,6 +71,15 @@ public class BuildingControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var dtos = Assert.IsAssignableFrom<IEnumerable<BuildingLocationDto>>(okResult.Value);
         Assert.Single(dtos);
+    }
+
+    [Fact]
+    public async Task GetLocations_WithEmptyCampusId_ShouldReturnBadRequest()
+    {
+        var result = await _controller.GetLocations(Guid.Empty, CancellationToken.None);
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.NotNull(badRequestResult.Value);
     }
 
     [Fact]
