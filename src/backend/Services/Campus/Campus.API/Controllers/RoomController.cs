@@ -25,6 +25,9 @@ public class RoomController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<RoomDto>>> GetAll([FromQuery] Guid? buildingId, [FromQuery] Guid? categoryId, CancellationToken cancellationToken)
     {
+        if (buildingId == Guid.Empty) return BadRequest(new { message = "The 'buildingId' query parameter cannot be empty." });
+        if (categoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' query parameter cannot be empty." });
+
         var rooms = await _handler.GetAllAsync(buildingId, categoryId, cancellationToken);
         return Ok(rooms);
     }

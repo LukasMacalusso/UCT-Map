@@ -22,6 +22,9 @@ public class StructureController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<StructureDto>>> GetAll([FromQuery] Guid? campusId, [FromQuery] Guid? categoryId, CancellationToken cancellationToken)
     {
+        if (campusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' query parameter cannot be empty." });
+        if (categoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' query parameter cannot be empty." });
+
         var structures = await _handler.GetAllAsync(campusId, categoryId, cancellationToken);
         return Ok(structures);
     }
