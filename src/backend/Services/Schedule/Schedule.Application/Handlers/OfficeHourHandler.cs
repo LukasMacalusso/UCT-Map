@@ -23,6 +23,12 @@ public class OfficeHourHandler
         return OfficeHourDto.FromEntity(officeHour);
     }
 
+    public async Task<ErrorOr<IEnumerable<OfficeHourDto>>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        var officeHours = await _repository.GetAllAsync(cancellationToken);
+        return ErrorOrFactory.From(officeHours.Select(OfficeHourDto.FromEntity));
+    }
+
     public async Task<ErrorOr<IEnumerable<OfficeHourDto>>> GetByTeacherAsync(Guid teacherRefId, CancellationToken cancellationToken)
     {
         var officeHours = await _repository.GetByTeacherAsync(teacherRefId, cancellationToken);

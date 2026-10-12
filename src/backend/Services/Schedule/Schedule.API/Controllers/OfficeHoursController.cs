@@ -21,10 +21,12 @@ public class OfficeHoursController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<OfficeHourDto>>> GetByTeacher([FromQuery] Guid teacherId, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<OfficeHourDto>>> Get([FromQuery] Guid? teacherId, CancellationToken cancellationToken)
     {
-        if (teacherId == Guid.Empty) return BadRequest(new { message = "The 'teacherId' query parameter is required." });
-        var result = await _handler.GetByTeacherAsync(teacherId, cancellationToken);
+        if (teacherId == Guid.Empty) return BadRequest(new { message = "The 'teacherId' query parameter cannot be empty." });
+        var result = teacherId is null
+            ? await _handler.GetAllAsync(cancellationToken)
+            : await _handler.GetByTeacherAsync(teacherId.Value, cancellationToken);
         if (result.IsError) return BadRequest(new { message = result.FirstError.Description });
         return Ok(result.Value);
     }

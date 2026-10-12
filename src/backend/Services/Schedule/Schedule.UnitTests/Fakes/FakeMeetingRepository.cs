@@ -12,6 +12,12 @@ public class FakeMeetingRepository : IMeetingRepository
         return Task.FromResult(Items.FirstOrDefault(m => m.Id == id));
     }
 
+    public Task<IReadOnlyList<Meeting>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<Meeting> result = Items.OrderBy(m => m.ScheduledAt).ToList();
+        return Task.FromResult(result);
+    }
+
     public Task<IReadOnlyList<Meeting>> GetByTeacherAsync(
         Guid teacherRefId,
         DateTime from,
