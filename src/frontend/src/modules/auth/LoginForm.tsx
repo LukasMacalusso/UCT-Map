@@ -5,6 +5,8 @@ import { useAuthState } from '../../states/authState';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useLogin } from '../../hooks/useLogin';
+import { decodeJwt } from '../../utils/JwtManagement';
+import type { Role } from '../../constants/role';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -24,12 +26,17 @@ export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
 
     try {
       const response = await login({ email, password });
-      
-      realLogin(response.token || '', {
-        id: response.userId,
-        email: response.email,
-        name: 'Usuario Estudiante',
-        role: 'MEMBER',
+      const token = response.token || '';
+      const decoded = decodeJwt(token);
+
+      const assignedRole = (decoded?.role as Role) || 'MEMBER';
+      const userName = email.split('@')[0];
+
+      realLogin(token, {
+        id: response.userId || decoded?.sub || 'user_id',
+        email: response.email || decoded?.email || email,
+        name: userName,
+        role: assignedRole,
         registeredAt: new Date().toISOString()
       });
       
