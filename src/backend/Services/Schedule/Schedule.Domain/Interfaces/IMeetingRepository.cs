@@ -24,5 +24,13 @@ public interface IMeetingRepository
         DateTime to,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Meeting>> GetActiveOverlappingAsync(
+        Guid teacherRefId,
+        Guid studentRefId,
+        Guid? structureRefId,
+        DateTime start,
+        DateTime end,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(Meeting meeting, CancellationToken cancellationToken = default);
 }

@@ -24,6 +24,7 @@ public static class DependencyInjection
 
         services.AddScoped<IOfficeHourRepository, OfficeHourRepository>();
         services.AddScoped<IMeetingRepository, MeetingRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddScoped<OfficeHourHandler>();
         services.AddScoped<MeetingHandler>();
