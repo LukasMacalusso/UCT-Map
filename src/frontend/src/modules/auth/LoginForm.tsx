@@ -41,8 +41,8 @@ export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
       });
       
       navigate('/map');
-    } catch (err) {
-      
+    } catch {
+      // Handled by hook error state
     }
   };
 
