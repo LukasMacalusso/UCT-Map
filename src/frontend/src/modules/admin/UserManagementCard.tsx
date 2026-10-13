@@ -47,7 +47,7 @@ export const UserManagementCard = ({
 
   return (
     <div className={`flex flex-col md:flex-row items-center gap-6 bg-white p-4 rounded-3xl shadow-sm transition-all ${isBanned ? 'opacity-75 grayscale-[50%]' : ''}`}>
-      
+
       {/* Avatar Custom Component */}
       <Avatar src={avatarSrc || null} alt={`Avatar de ${name}`} className="w-16 h-16" />
 
@@ -63,10 +63,10 @@ export const UserManagementCard = ({
 
       {/* Actions (Role Select & Ban Button) */}
       <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto mt-2 md:mt-0">
-        
+
         {/* Role Select Custom Component */}
         <div className={`w-full sm:w-64 ${isBanned ? 'pointer-events-none opacity-60' : ''}`}>
-          <Select 
+          <Select
             label="Rol del Sistema"
             labelColor="text-gray-400"
             options={roleOptions}
