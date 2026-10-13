@@ -1,16 +1,16 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY ["src/Services/Incident/Incident.API/Incident.API.csproj", "Incident.API/"]
-COPY ["src/Services/Incident/Incident.Application/Incident.Application.csproj", "Incident.Application/"]
-COPY ["src/Services/Incident/Incident.Domain/Incident.Domain.csproj", "Incident.Domain/"]
-COPY ["src/Services/Incident/Incident.Infrastructure/Incident.Infrastructure.csproj", "Incident.Infrastructure/"]
+COPY ["src/backend/Services/Incident/Incident.API/Incident.API.csproj", "Incident.API/"]
+COPY ["src/backend/Services/Incident/Incident.Application/Incident.Application.csproj", "Incident.Application/"]
+COPY ["src/backend/Services/Incident/Incident.Domain/Incident.Domain.csproj", "Incident.Domain/"]
+COPY ["src/backend/Services/Incident/Incident.Infrastructure/Incident.Infrastructure.csproj", "Incident.Infrastructure/"]
 RUN dotnet restore "Incident.API/Incident.API.csproj"
 
-COPY ["src/Services/Incident/Incident.API/", "Incident.API/"]
-COPY ["src/Services/Incident/Incident.Application/", "Incident.Application/"]
-COPY ["src/Services/Incident/Incident.Domain/", "Incident.Domain/"]
-COPY ["src/Services/Incident/Incident.Infrastructure/", "Incident.Infrastructure/"]
+COPY ["src/backend/Services/Incident/Incident.API/", "Incident.API/"]
+COPY ["src/backend/Services/Incident/Incident.Application/", "Incident.Application/"]
+COPY ["src/backend/Services/Incident/Incident.Domain/", "Incident.Domain/"]
+COPY ["src/backend/Services/Incident/Incident.Infrastructure/", "Incident.Infrastructure/"]
 
 RUN dotnet publish "Incident.API/Incident.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
