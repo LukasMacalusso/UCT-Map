@@ -26,7 +26,28 @@ so the endpoints documented below do not require an `Authorization` header.
 
 These endpoints manage user registration, authentication, and user lookup.
 
-### 📌 1.1 Login
+### 📌 1.1 Get All Users
+
+- **Route**: `GET /api/identity`
+- **Access**: Public
+- **Description**: Returns all registered users.
+
+**📤 Success Response (200 OK)**
+
+```json
+[
+  {
+    "userId": "string",
+    "name": "Ana Torres",
+    "email": "ana@uct.cl",
+    "role": "Student"
+  }
+]
+```
+
+---
+
+### 📌 1.2 Login
 
 - **Route**: `POST /api/identity/login`
 - **Access**: Public
@@ -58,7 +79,7 @@ These endpoints manage user registration, authentication, and user lookup.
 
 ---
 
-### 📌 1.2 Register User
+### 📌 1.3 Register User
 
 - **Route**: `POST /api/identity/register`
 - **Access**: Public
@@ -93,7 +114,7 @@ These endpoints manage user registration, authentication, and user lookup.
 
 ---
 
-### 📌 1.3 Get User by ID
+### 📌 1.4 Get User by ID
 
 - **Route**: `GET /api/identity/{userId}`
 - **Access**: Public

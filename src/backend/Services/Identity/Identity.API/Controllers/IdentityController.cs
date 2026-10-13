@@ -58,4 +58,12 @@ public class IdentityController(
             errors => Problem(statusCode: StatusCodes.Status404NotFound, title: errors.First().Description)
         );
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll(
+        CancellationToken cancellationToken)
+    {
+        var users = await getUserByIdUseCase.ExecuteAllAsync(cancellationToken);
+        return Ok(users);
+    }
 }
