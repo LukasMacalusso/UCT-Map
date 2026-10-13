@@ -1,0 +1,143 @@
+services:
+  # --- Databases ---
+  postgres:
+    image: postgres:15-alpine
+    container_name: uct_postgres_prod
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpassword
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - uct_network
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:6-jammy
+    container_name: uct_mongodb_prod
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+    volumes:
+      - mongodb_prod_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - uct_network
+    restart: unless-stopped
+
+  # ---- Microservices (No Host Ports Exposed, Environment: Production) ---- #
+  identity-api:
+    build:
+      context: .
+      dockerfile: src/backend/Services/Identity/Dockerfile
+    container_name: uct_identity_api_prod
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__IdentityDb: Host=postgres;Port=5432;Database=uct_identity_db;Username=root;Password=rootpassword
+      JwtConfig__Key: 7d82f3a9b4e1c60d5f27a8b9c0d1e2f3a4b5c6d7e8f90a1b2c3d4e5f6a7b8c9d
+      JwtConfig__Issuer: https://identity-api
+      JwtConfig__Audience: api-gateway
+      JwtConfig__TokenValidationMins: 30
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - uct_network
+    restart: unless-stopped
+
+  campus-api:
+    build:
+      context: .
+      dockerfile: src/backend/Services/Campus/Dockerfile
+    container_name: uct_campus_api_prod
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__CampusDb: Host=postgres;Port=5432;Database=uct_campus_db;Username=root;Password=rootpassword
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - uct_network
+    restart: unless-stopped
+
+  incident-api:
+    build:
+      context: .
+      dockerfile: src/backend/Services/Incident/Dockerfile
+    container_name: uct_incident_api_prod
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      MongoDB__ConnectionString: mongodb://root:rootpassword@mongodb:27017/
+      MongoDB__DatabaseName: uct_incident_db
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - uct_network
+    restart: unless-stopped
+
+  schedule-api:
+    build:
+      context: .
+      dockerfile: src/backend/Services/Schedule/Dockerfile
+    container_name: uct_schedule_api_prod
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__ScheduleDb: Host=postgres;Port=5432;Database=uct_schedule_db;Username=root;Password=rootpassword
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - uct_network
+    restart: unless-stopped
+
+  # ---- API Gateway (Exposed on Port 5000) ---- #
+  api-gateway:
+    build:
+      context: .
+      dockerfile: src/backend/ApiGateway/Dockerfile
+    container_name: uct_api_gateway_prod
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      - identity-api
+      - campus-api
+      - incident-api
+      - schedule-api
+    networks:
+      - uct_network
+    restart: unless-stopped
+
+  # ---- Frontend (Exposed on Port 3000) ---- #
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    container_name: uct_frontend_prod
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - uct_network
+    restart: unless-stopped
+
+networks:
+  uct_network:
+    driver: bridge
+
+volumes:
+  postgres_prod_data:
+  mongodb_prod_data:

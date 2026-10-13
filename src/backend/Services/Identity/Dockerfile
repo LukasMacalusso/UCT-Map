@@ -1,14 +1,18 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY src/Services/Identity/Identity.Domain/Identity.Domain.csproj src/Services/Identity/Domain/
-COPY src/Services/Identity/Identity.Application/Identity.Application.csproj src/Services/Identity/Application/
-COPY src/Services/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj src/Services/Identity/Infrastructure/
-COPY src/Services/Identity/Identity.API/Identity.API.csproj src/Services/Identity/Api/
-RUN dotnet restore src/Services/Identity/Identity.API/Identity.API.csproj
+COPY ["src/backend/Services/Identity/Identity.API/Identity.API.csproj", "Identity.API/"]
+COPY ["src/backend/Services/Identity/Identity.Application/Identity.Application.csproj", "Identity.Application/"]
+COPY ["src/backend/Services/Identity/Identity.Domain/Identity.Domain.csproj", "Identity.Domain/"]
+COPY ["src/backend/Services/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj", "Identity.Infrastructure/"]
+RUN dotnet restore "Identity.API/Identity.API.csproj"
 
-COPY src/Services/Identity/ src/Services/Identity/
-RUN dotnet publish src/Services/Identity/Identity.API/Identity.API.csproj -c Release -o /app/publish
+COPY ["src/backend/Services/Identity/Identity.API/", "Identity.API/"]
+COPY ["src/backend/Services/Identity/Identity.Application/", "Identity.Application/"]
+COPY ["src/backend/Services/Identity/Identity.Domain/", "Identity.Domain/"]
+COPY ["src/backend/Services/Identity/Identity.Infrastructure/", "Identity.Infrastructure/"]
+
+RUN dotnet publish "Identity.API/Identity.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
@@ -17,3 +21,4 @@ EXPOSE 8080
 COPY --from=build /app/publish .
 USER $APP_UID
 ENTRYPOINT ["dotnet", "Identity.API.dll"]
+

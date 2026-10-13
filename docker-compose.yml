@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # --- Databases ---
   postgres:
@@ -13,6 +11,11 @@ services:
       - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
     networks:
       - uct_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   mongodb:
     image: mongo:6-jammy
@@ -26,6 +29,11 @@ services:
       - mongodb_data:/data/db
     networks:
       - uct_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # ---- Microservices ---- #
   # -- Identity -- #
@@ -44,7 +52,8 @@ services:
       JwtConfig__Audience: api-gateway
       JwtConfig__TokenValidationMins: 30
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - uct_network
 
@@ -60,7 +69,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__CampusDb: Host=postgres;Port=5432;Database=uct_campus_db;Username=root;Password=rootpassword
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - uct_network
 
@@ -78,7 +88,8 @@ services:
         MongoDB__ConnectionString: mongodb://root:rootpassword@mongodb:27017/
         MongoDB__DatabaseName: uct_incident_db
       depends_on:
-        - mongodb
+        mongodb:
+          condition: service_healthy
       networks:
         - uct_network
 
@@ -94,7 +105,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__ScheduleDb: Host=postgres;Port=5432;Database=uct_schedule_db;Username=root;Password=rootpassword
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - uct_network
 

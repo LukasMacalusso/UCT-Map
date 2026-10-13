@@ -7,14 +7,14 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 
-COPY ["src/Services/Campus/Campus.API/Campus.API.csproj", "Campus.API/"]
-COPY ["src/Services/Campus/Campus.Application/Campus.Application.csproj", "Campus.Application/"]
-COPY ["src/Services/Campus/Campus.Domain/Campus.Domain.csproj", "Campus.Domain/"]
-COPY ["src/Services/Campus/Campus.Infrastructure/Campus.Infrastructure.csproj", "Campus.Infrastructure/"]
+COPY ["src/backend/Services/Campus/Campus.API/Campus.API.csproj", "Campus.API/"]
+COPY ["src/backend/Services/Campus/Campus.Application/Campus.Application.csproj", "Campus.Application/"]
+COPY ["src/backend/Services/Campus/Campus.Domain/Campus.Domain.csproj", "Campus.Domain/"]
+COPY ["src/backend/Services/Campus/Campus.Infrastructure/Campus.Infrastructure.csproj", "Campus.Infrastructure/"]
 
 RUN dotnet restore "Campus.API/Campus.API.csproj"
 
-COPY ["src/Services/Campus/", "./"]
+COPY ["src/backend/Services/Campus/", "./"]
 WORKDIR "/src/Campus.API"
 RUN dotnet build "Campus.API.csproj" -c Release -o /app/build
 
