@@ -12,6 +12,7 @@ namespace Identity.Infrastructure.Authentication;
 
 public sealed class JwtTokenGenerator(UserManager<User> userManager,IOptions<JwtSettings> options) : IJwtTokenGenerator
 {
+    private const string RoleClaimType = "role";
 
     public async Task<string> GenerateAsync(LoginResult user, CancellationToken cancellationToken = default)
     {
@@ -28,7 +29,11 @@ public sealed class JwtTokenGenerator(UserManager<User> userManager,IOptions<Jwt
             new(ClaimTypes.Email, user.Email)
         };
 
-        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+        claims.AddRange(roles.SelectMany(role => new[]
+        {
+            new Claim(RoleClaimType, role),
+            new Claim(ClaimTypes.Role, role)
+        }));
 
         var signingCredentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.Key)),
