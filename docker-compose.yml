@@ -11,6 +11,11 @@ services:
       - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
     networks:
       - uct_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   mongodb:
     image: mongo:6-jammy
@@ -22,6 +27,11 @@ services:
       - mongodb_data:/data/db
     networks:
       - uct_network
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # ---- Microservices ---- #
   # -- Identity -- #
@@ -30,8 +40,7 @@ services:
       context: .
       dockerfile: src/backend/Services/Identity/Dockerfile
     container_name: uct_identity_api
-    ports:
-      - "5001:8080"
+    exposse: ["8080"]
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__IdentityDb: Host=postgres;Port=5432;Database=uct_identity_db;Username=root;Password=rootpassword
@@ -40,7 +49,8 @@ services:
       JwtConfig__Audience: api-gateway
       JwtConfig__TokenValidationMins: 30
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - uct_network
 
@@ -50,13 +60,13 @@ services:
       context: .
       dockerfile: src/backend/Services/Campus/Dockerfile
     container_name: uct_campus_api
-    ports:
-      - "5002:8080"
+    exposse: ["8080"]
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__CampusDb: Host=postgres;Port=5432;Database=uct_campus_db;Username=root;Password=rootpassword
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - uct_network
 
@@ -66,15 +76,15 @@ services:
         context: .
         dockerfile: src/backend/Services/Incident/Dockerfile
       container_name: uct_incident_api
-      ports:
-        - "5003:8080"
+      expose: ["8080"]
 
       environment:
         ASPNETCORE_ENVIRONMENT: Development
         MongoDB__ConnectionString: mongodb://root:rootpassword@mongodb:27017/
         MongoDB__DatabaseName: uct_incident_db
       depends_on:
-        - mongodb
+        mongodb:
+          condition: service_healthy
       networks:
         - uct_network
 
@@ -84,13 +94,13 @@ services:
       context: .
       dockerfile: src/backend/Services/Schedule/Dockerfile
     container_name: uct_schedule_api
-    ports:
-      - "5004:8080"
+    expose: ["8080"]
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__ScheduleDb: Host=postgres;Port=5432;Database=uct_schedule_db;Username=root;Password=rootpassword
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - uct_network
 
