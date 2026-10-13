@@ -8,6 +8,10 @@ namespace Identity.Application.Handlers;
 
 public sealed class GetUserByIdHandler(IUserQuery userQuery)
 {
+    public Task<IReadOnlyList<RegisteredUserResponse>> ExecuteAllAsync(
+        CancellationToken cancellationToken = default) =>
+        userQuery.GetAllAsync(cancellationToken);
+
     public async Task<ErrorOr<RegisteredUserResponse>> ExecuteAsync(string userId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(userId)) return Error.Validation(code: "Identity.GetUser.InvalidRequest", description: "User id is required.");

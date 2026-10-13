@@ -60,6 +60,11 @@ public sealed class IdentityEndpointsIntegrationTests
         Assert.Equal(
             registeredUser.UserId,
             Assert.IsType<RegisteredUserResponse>(userResponse.Value).UserId);
+
+        var getAllResult = await controller.GetAll(CancellationToken.None);
+        var users = Assert.IsType<OkObjectResult>(getAllResult);
+        var allUsers = Assert.IsAssignableFrom<IReadOnlyList<RegisteredUserResponse>>(users.Value);
+        Assert.Contains(allUsers, user => user.UserId == registeredUser.UserId);
     }
 
     private static ServiceProvider CreateIdentityServices()

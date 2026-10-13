@@ -61,6 +61,23 @@ public sealed class IdentityEndpointsUnitTests
         Assert.Equal(StatusCodes.Status404NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task GetAll_ReturnsUsersFromQuery()
+    {
+        var users = new[]
+        {
+            new RegisteredUserResponse("1", "Ana Torres", "ana@uct.cl", "Student"),
+            new RegisteredUserResponse("2", "Luis Perez", "luis@uct.cl", "Teacher")
+        };
+        var controller = CreateController(
+            userQuery: new StubUserQuery(users: users));
+
+        var result = await controller.GetAll(CancellationToken.None);
+
+        var response = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(users, Assert.IsAssignableFrom<IReadOnlyList<RegisteredUserResponse>>(response.Value));
+    }
+
     private static IdentityController CreateController(
         IUserAuthenticator? authenticator = null,
         IUserQuery? userQuery = null)
@@ -101,8 +118,16 @@ public sealed class IdentityEndpointsUnitTests
             Task.FromResult(result);
     }
 
-    private sealed class StubUserQuery(RegisteredUserResponse? result) : IUserQuery
+    private sealed class StubUserQuery(
+        RegisteredUserResponse? result = null,
+        IReadOnlyList<RegisteredUserResponse>? users = null) : IUserQuery
     {
+        private readonly IReadOnlyList<RegisteredUserResponse> _users = users ?? [];
+
+        public Task<IReadOnlyList<RegisteredUserResponse>> GetAllAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_users);
+
         public Task<RegisteredUserResponse?> GetByIdAsync(
             string userId,
             CancellationToken cancellationToken = default) =>
