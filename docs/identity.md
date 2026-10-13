@@ -12,6 +12,13 @@ service health checks.
 The login endpoint returns a JWT for the authenticated user. The current API
 configuration does not register JWT authentication or authorization middleware,
 so the endpoints documented below do not require an `Authorization` header.
+The token includes the user's role in the explicit `role` claim. For example:
+
+```json
+{
+  "role": "Student"
+}
+```
 
 ---
 
@@ -71,6 +78,9 @@ These endpoints manage user registration, authentication, and user lookup.
   "token": "jwt"
 }
 ```
+
+The JWT returned in `token` includes the authenticated user's role in the
+`role` claim.
 
 **❌ Error Responses**
 
