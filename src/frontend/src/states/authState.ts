@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { Role } from "../constants/role";
 import type { UserIdentity } from "../interfaces/identities/UserIdentity";
+import { isTokenExpired } from "../utils/JwtManagement";
 
 interface AuthState {
   user: UserIdentity | null;
@@ -14,32 +15,65 @@ interface AuthState {
   mockLoginAs: (role: Role) => void;
 }
 
+const removeItems = () => {
+  localStorage.removeItem('jwt_token');
+  localStorage.removeItem('user_identity');
+};
+
+const addItems = (token: string, user: string) => {
+  localStorage.setItem('jwt_token', token);
+  localStorage.setItem('user_identity', user);
+};
+
+const getInitialAuth = () => {
+  const token = localStorage.getItem("jwt_token");
+  const userJson = localStorage.getItem("user_identity");
+
+  if (!token || isTokenExpired(token)) {
+    removeItems();
+    return { token: null, user: null, isAuthenticated: false };
+  }
+
+  try {
+    const user: UserIdentity | null = userJson ? JSON.parse(userJson) : null;
+    return {
+      token,
+      user,
+      isAuthenticated: !!user,
+    };
+  } catch {
+    return { token, user: null, isAuthenticated: false };
+  }
+};
+
+const initial = getInitialAuth();
+
 export const useAuthState = create<AuthState>((set) => ({
-  user: null,
-  token: localStorage.getItem('jwt_token'),
-  isAuthenticated: !!localStorage.getItem('jwt_token'),
+  user: initial.user,
+  token: initial.token,
+  isAuthenticated: initial.isAuthenticated,
 
   login: (token, user) => {
-    localStorage.setItem('jwt_token', token);
+    addItems(token, JSON.stringify(user));
     set({ user, token, isAuthenticated: true });
   },
 
   logout: () => {
-    localStorage.removeItem('jwt_token');
+    removeItems();
     set({ user: null, token: null, isAuthenticated: false });
   },
 
   // --- TEMPORAL MOCK TEST ---
   mockLoginAs: (role) => {
-    const mockUser = {
+    const mockUser: UserIdentity = {
       id: '123',
       role: role,
       name: `${role}`,
       email: `${role.toLowerCase()}@uct.cl`,
       registeredAt: new Date().toISOString()
-    } as UserIdentity;
+    };
     const mockToken = 'mock_jwt_token_for_testing';
-    localStorage.setItem('jwt_token', mockToken);
+    addItems(mockToken, JSON.stringify(mockUser));
     set({ user: mockUser, token: mockToken, isAuthenticated: true });
   }
 }));

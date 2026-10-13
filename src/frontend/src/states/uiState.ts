@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type Panel = 'none' | 'saveMapChanges' | 'discardMapChanges';
+type Panel = 'none' | 'saveMapChanges' | 'discardMapChanges' | 'userProfile';
 
 interface UiState {
   activePanel: Panel;

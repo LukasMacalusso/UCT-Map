@@ -14,6 +14,10 @@
 
 @import "tailwindcss";
 
+:root {
+  font-size: clamp(13px, 0.85vw + 3px, 15px);
+}
+
 @theme {
   --font-sans: 'Rubik', sans-serif;
   --font-heading: 'Rubik', sans-serif;

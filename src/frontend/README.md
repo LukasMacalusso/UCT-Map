@@ -211,20 +211,16 @@ El workflow se ejecuta automáticamente ante:
 Para ejecutar las verificaciones en el entorno de desarrollo local:
 
 ```bash
-# Auditar calidad de código y buenas prácticas 
-npm run lint
-
-# Ejecutar la suite de pruebas unitarias
-npm test
-
-# Ejecutar pruebas y desplegar la tabla completa de cobertura en consola
-npm run coverage
-
-# Validar tests y compilación del frontend
-npm run validate
-
 # Desde la raíz del proyecto: validar tests, build y construcción de Docker
 make validate-frontend
+# # Auditar calidad de código y buenas prácticas 
+npm run lint
+# Ejecutar la suite de pruebas unitarias
+npm test
+# Ejecutar pruebas y desplegar la tabla completa de cobertura en consola
+npm run coverage
+# Validar tests y compilación del frontend
+npm run validate
 ```
 
 ### Arquitectura y Convención de Tests

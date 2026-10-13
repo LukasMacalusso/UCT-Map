@@ -45,12 +45,12 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
 
   return (
     <>
-      <div className="flex flex-col gap-2 mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Crear Cuenta</h1>
-        <p className="text-gray-500 font-medium">Únete para comenzar.</p>
+      <div className="flex flex-col gap-1 mb-3">
+        <h1 className="text-2xl font-black text-gray-800 tracking-tight">Crear Cuenta</h1>
+        <p className="text-gray-500 text-xs sm:text-sm font-medium">Únete para comenzar.</p>
       </div>
 
-      <form onSubmit={onRegisterSubmit} className="flex flex-col gap-5">
+      <form onSubmit={onRegisterSubmit} className="flex flex-col gap-2.5">
         <Input
           label="Nombre Completo"
           labelColor="text-gray-700"
@@ -83,22 +83,22 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
         />
 
         {registerError && (
-          <div className="text-red-600 text-sm font-medium bg-red-50 p-2.5 rounded-lg border border-red-200">
+          <div className="text-red-600 text-xs font-medium bg-red-50 p-2 rounded-lg border border-red-200">
             {registerError.message}
           </div>
         )}
 
-        <Button type="submit" variant="solid" color="blue" size="lg" className="w-full mt-1" disabled={isRegisterLoading}>
+        <Button type="submit" variant="solid" color="blue" size="md" className="w-full mt-1 font-bold tracking-wide" disabled={isRegisterLoading}>
           {isRegisterLoading ? 'Creando cuenta...' : 'Registrarse'}
         </Button>
       </form>
 
-      <div className="mt-5 text-center text-xl font-bold text-gray-600">
+      <div className="mt-3.5 text-center text-xs sm:text-sm font-semibold text-gray-600">
         ¿Ya tienes cuenta?{' '}
         <button
           type="button"
           onClick={onSwitchToLogin}
-          className="text-blue-600 hover:underline"
+          className="text-blue-600 hover:underline font-bold ml-1"
         >
           Inicia sesión
         </button>

@@ -32,27 +32,28 @@ export const ObjectReportCard = ({
   className = ''
 }: ObjectReportCardProps) => {
   return (
-    <Panel color="white" outerClassName={`w-full ${compact ? 'max-w-full' : 'max-w-4xl'} ${className}`} innerClassName={`${compact ? 'p-5 gap-5' : 'p-8 gap-8'} flex flex-row`}>
+    <Panel color="white" outerClassName={`w-full ${compact ? 'max-w-full' : 'max-w-3xl'} ${className}`} innerClassName={`${compact ? 'p-4 gap-4' : 'p-6 gap-6'} flex flex-row items-start`}>
       {/* Object Image */}
-      <PhotoFrame src={photoUrl} className={`${compact ? 'w-32 h-32 rounded-xl' : 'w-64 h-64 rounded-2xl'} flex-shrink-0`} />
+      <PhotoFrame src={photoUrl} className={`${compact ? 'w-24 h-24 rounded-xl' : 'w-44 h-44 rounded-2xl'} flex-shrink-0 shadow-sm`} />
 
       {/* Right container */}
-      <div className="flex flex-col flex-1 gap-2">
+      <div className="flex flex-col flex-1 min-w-0 gap-2">
         {/* Title and state */}
-        <div className="flex justify-between items-center mb-2">
-          <h2 className={`${compact ? 'text-2xl' : 'text-[42px]'} font-medium text-gray-800 uppercase tracking-wide leading-none`}>{title}</h2>
-          <Tag label={status} color={statusColor as any} className={compact ? '!text-sm !px-3 !py-1' : '!text-[22px] !px-6 !py-2 !font-normal'} />
+        <div className="flex justify-between items-center mb-1">
+          <h2 className={`${compact ? 'text-lg' : 'text-2xl'} font-bold text-gray-800 uppercase tracking-wide leading-tight truncate mr-2`}>{title}</h2>
+          <Tag label={status} color={statusColor as any} className={compact ? '!text-xs !px-2.5 !py-0.5' : '!text-sm !px-3.5 !py-1 font-semibold flex-shrink-0'} />
         </div>
 
         {/* User actions */}
         {!compact && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5 my-1">
             {actions.map((action, idx) => (
               <UserActionInfo
                 key={idx}
                 title={action.title}
                 subtitle={action.subtitle}
                 avatarSrc={action.avatarSrc}
+                size="sm"
                 className="!p-0 !bg-transparent"
               />
             ))}
@@ -60,9 +61,9 @@ export const ObjectReportCard = ({
         )}
 
         {/* Code and ubication */}
-        <div className={`flex flex-col gap-3 ${compact ? 'mt-1' : 'mt-4'}`}>
-          <IconText icon={<MapPinIcon className={compact ? 'w-5 h-5' : 'w-8 h-8'} />} text={building} className={compact ? '!text-lg' : '!text-[26px]'} />
-          <IconText icon={<TicketIcon className={compact ? 'w-5 h-5' : 'w-8 h-8'} />} text={code} className={compact ? '!text-lg' : '!text-[26px]'} />
+        <div className={`flex flex-col gap-2 ${compact ? 'mt-1' : 'mt-2'}`}>
+          <IconText icon={<MapPinIcon className={compact ? 'w-4 h-4' : 'w-5 h-5'} />} text={building} className={compact ? '!text-xs' : '!text-sm'} />
+          <IconText icon={<TicketIcon className={compact ? 'w-4 h-4' : 'w-5 h-5'} />} text={code} className={compact ? '!text-xs' : '!text-sm'} />
         </div>
       </div>
     </Panel>
