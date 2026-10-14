@@ -1,0 +1,483 @@
+{
+  "info": {
+    "name": "UCT Map API Gateway E2E Suite",
+    "description": "Modular End-to-End integration test suite for UCT Map API Gateway and microservices.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const reqName = pm.info.requestName || '';",
+          "const isSecurityNegativeTest = reqName.includes('Without Token') || reqName.includes('Malformed Token');",
+          "if (!isSecurityNegativeTest && !pm.environment.get('jwt_token')) {",
+          "    pm.sendRequest({",
+          "        url: pm.environment.get('baseUrl') + '/api/identity/login',",
+          "        method: 'POST',",
+          "        header: { 'Content-Type': 'application/json' },",
+          "        body: {",
+          "            mode: 'raw',",
+          "            raw: JSON.stringify({",
+          "                email: pm.environment.get('test_email'),",
+          "                password: pm.environment.get('test_password')",
+          "            })",
+          "        }",
+          "    }, function (err, res) {",
+          "        if (!err && res.code === 200) {",
+          "            pm.environment.set('jwt_token', res.json().token);",
+          "        }",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00. Auth & Gateway Security",
+      "description": "Tests public routing, perimeter security, and token issuance.",
+      "item": [
+        {
+          "name": "01. Public Route - Check Identity Service (No Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/identity",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 for public route\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response is an array of users\", function () {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02. Protected Route - Campus Without Token (Expect 401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/campuses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "campuses"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Gateway rejects unauthenticated request with 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03. Protected Route - Campus With Malformed Token (Expect 401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer malformed_or_tampered_jwt_token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/campuses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "campuses"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Gateway rejects malformed JWT with 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04. Identity - Login and Extract JWT Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login returned 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response contains JWT token and saves to environment\", function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.token).to.be.a('string');",
+                  "    pm.environment.set(\"jwt_token\", data.token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01. Identity Service",
+      "description": "Endpoints corresponding to Identity and User Management.",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/identity",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Identity GetAll returned 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{register_name}}\",\n  \"email\": \"{{register_email}}\",\n  \"password\": \"{{register_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "register"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Register user returned 201 or 400\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02. Campus Service",
+      "description": "Endpoints corresponding to Campus, Buildings, and Rooms.",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{jwt_token}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Get Campuses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/campuses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "campuses"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Campus list returned 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Campus",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{campus_name}}\",\n  \"address\": \"{{campus_address}}\",\n  \"latitude\": {{campus_lat}},\n  \"longitude\": {{campus_lng}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/campuses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "campuses"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Create campus returned 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03. Incident Service",
+      "description": "Endpoints corresponding to Incident Reports and Lost Objects.",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{jwt_token}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Create Lost Object Report (Validation)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{lost_object_title}}\",\n  \"description\": \"{{lost_object_desc}}\",\n  \"location\": \"{{lost_object_location}}\",\n  \"date\": \"{{lost_object_date}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/lost-objects",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "lost-objects"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Incident gateway responds with valid code\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04. Schedule Service",
+      "description": "Endpoints corresponding to Teacher workload and Student meetings.",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{jwt_token}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Get Student Meetings (Validation Check)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/students/{{schedule_student_id}}/meetings?from={{schedule_from}}&to={{schedule_to}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "students", "{{schedule_student_id}}", "meetings"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{schedule_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{schedule_to}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Schedule responds via Gateway with 200 or 400 validation\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Meetings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/meetings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "meetings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Schedule GetAll meetings returned 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
