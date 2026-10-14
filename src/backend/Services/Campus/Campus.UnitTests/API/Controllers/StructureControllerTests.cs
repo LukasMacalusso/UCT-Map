@@ -187,6 +187,67 @@ public class StructureControllerTests
     }
 
     [Fact]
+    public async Task GetLocations_ShouldReturnOkWithStructureLocations()
+    {
+        var categoryId = Guid.NewGuid();
+        var structures = new List<Structure>
+        {
+            new("Pérgola", new Coordinate(-38.73, -72.60), Guid.NewGuid(), categoryId)
+        };
+        var categories = new List<Category>
+        {
+            new("Recreación", "icon", "desc")
+        };
+        // Reflection or setter trick for Category Id if protected, or category mock
+        typeof(Category).GetProperty("Id")?.SetValue(categories[0], categoryId);
+
+        _repository.GetAllAsync(Arg.Any<Expression<Func<Structure, bool>>>(), Arg.Any<CancellationToken>()).Returns(structures);
+        _categoryRepository.GetAllAsync(null, Arg.Any<CancellationToken>()).Returns(categories);
+
+        var result = await _controller.GetLocations(null, CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var dtos = Assert.IsAssignableFrom<IEnumerable<StructureLocationDto>>(okResult.Value);
+        Assert.Single(dtos);
+        Assert.Equal("Recreación", dtos.First().Metadata.CategoryName);
+    }
+
+    [Fact]
+    public async Task GetLocations_WithEmptyCampusId_ShouldReturnBadRequest()
+    {
+        var result = await _controller.GetLocations(Guid.Empty, CancellationToken.None);
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.NotNull(badRequestResult.Value);
+    }
+
+    [Fact]
+    public async Task UpdateLocation_WhenNotFound_ShouldReturnNotFound()
+    {
+        var id = Guid.NewGuid();
+        _repository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((Structure?)null);
+
+        var request = new UpdateLocationDto(10.5, 20.5);
+        var result = await _controller.UpdateLocation(id, request, CancellationToken.None);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateLocation_WhenValid_ShouldReturnNoContent()
+    {
+        var structure = new Structure("Structure", new Coordinate(0, 0), Guid.NewGuid(), Guid.NewGuid());
+        _repository.GetByIdAsync(structure.Id, Arg.Any<CancellationToken>()).Returns(structure);
+
+        var request = new UpdateLocationDto(-38.73, -72.60);
+        var result = await _controller.UpdateLocation(structure.Id, request, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Equal(-38.73, structure.Coordinates.Latitude);
+        Assert.Equal(-72.60, structure.Coordinates.Longitude);
+    }
+
+    [Fact]
     public async Task Delete_WhenNotFound_ShouldReturnNotFound()
     {
         var id = Guid.NewGuid();

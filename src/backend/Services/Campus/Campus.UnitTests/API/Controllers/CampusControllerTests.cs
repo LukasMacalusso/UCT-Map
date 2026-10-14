@@ -133,6 +133,33 @@ public class CampusControllerTests
     }
 
     [Fact]
+    public async Task UpdateLocation_WhenNotFound_ShouldReturnNotFound()
+    {
+        var id = Guid.NewGuid();
+        _repository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((CampusEntity?)null);
+
+        var request = new UpdateLocationDto(10.5, 20.5);
+        var result = await _controller.UpdateLocation(id, request, CancellationToken.None);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateLocation_WhenValid_ShouldReturnNoContent()
+    {
+        var id = Guid.NewGuid();
+        var entity = new CampusEntity("Campus", "Dir", new Coordinate(0, 0));
+        _repository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(entity);
+
+        var request = new UpdateLocationDto(-38.73, -72.60);
+        var result = await _controller.UpdateLocation(id, request, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Equal(-38.73, entity.Coordinates.Latitude);
+        Assert.Equal(-72.60, entity.Coordinates.Longitude);
+    }
+
+    [Fact]
     public async Task Delete_WhenNotFound_ShouldReturnNotFound()
     {
         var id = Guid.NewGuid();
