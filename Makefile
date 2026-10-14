@@ -1,4 +1,4 @@
-.PHONY: up down build clean logs test validate-frontend
+.PHONY: up down build clean logs test validate-frontend test-e2e
 
 # Starts the entire infrastructure and microservices in the background
 up:
@@ -33,3 +33,9 @@ validate-frontend:
 	@echo "Building frontend Docker container"
 	docker compose build frontend
 	@echo "Frontend validation completed successfully."
+
+# Runs End-to-End API Gateway integration tests using Newman
+test-e2e:
+	@echo "Running End-to-End API Gateway integration tests..."
+	npx --yes newman run tests/postman/uct-map.collection.json -e tests/postman/local.environment.json --reporters cli
+
