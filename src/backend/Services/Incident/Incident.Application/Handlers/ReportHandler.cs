@@ -3,6 +3,7 @@ using Incident.Application.DTOs;
 using Incident.Domain.Entities;
 using Incident.Domain.Interfaces;
 using Incident.Application.Handlers;
+using Incident.Application.Common;
 using System.Threading.Tasks;
 using System;
 
@@ -40,6 +41,7 @@ public class ReportHandler : IReportHandler
                     description: $"LostObject with ID '{request.LostObjectId}' not found."
                 );
         }
+
         var ticket = new Ticket
         {
             UserRefId = request.UserRefId,
