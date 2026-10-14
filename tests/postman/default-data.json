@@ -1,0 +1,12 @@
+[
+  {
+    "campus_name": "Campus San Francisco E2E",
+    "campus_address": "Manuel Montt 056, Temuco",
+    "campus_lat": 50,
+    "campus_lng": 50,
+    "lost_object_title": "Mochila Negra E2E",
+    "lost_object_desc": "Olvidada en biblioteca central",
+    "lost_object_location": "Biblioteca",
+    "lost_object_date": "2026-10-14T20:00:00Z"
+  }
+]

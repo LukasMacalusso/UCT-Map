@@ -277,7 +277,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Campus Modular Test\",\n  \"address\": \"Manuel Montt 056, Temuco\",\n  \"latitude\": 50,\n  \"longitude\": 50\n}"
+              "raw": "{\n  \"name\": \"{{campus_name}}\",\n  \"address\": \"{{campus_address}}\",\n  \"latitude\": {{campus_lat}},\n  \"longitude\": {{campus_lng}}\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/campus/campuses",
@@ -331,7 +331,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Mochila Negra E2E\",\n  \"description\": \"Olvidada en biblioteca\",\n  \"location\": \"Biblioteca\",\n  \"date\": \"2026-10-14T20:00:00Z\"\n}"
+              "raw": "{\n  \"title\": \"{{lost_object_title}}\",\n  \"description\": \"{{lost_object_desc}}\",\n  \"location\": \"{{lost_object_location}}\",\n  \"date\": \"{{lost_object_date}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/incident/lost-objects",

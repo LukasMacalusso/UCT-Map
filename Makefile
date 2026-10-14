@@ -37,5 +37,6 @@ validate-frontend:
 # Runs End-to-End API Gateway integration tests using Newman
 test-e2e:
 	@echo "Running End-to-End API Gateway integration tests..."
-	npx --yes newman run tests/postman/uct-map.collection.json -e tests/postman/local.environment.json --reporters cli
+	npx --yes newman run tests/postman/uct-map.collection.json -e tests/postman/local.environment.json -d tests/postman/default-data.json --reporters cli
+
 
