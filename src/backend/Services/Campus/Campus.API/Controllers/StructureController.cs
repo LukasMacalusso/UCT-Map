@@ -29,6 +29,15 @@ public class StructureController : ControllerBase
         return Ok(structures);
     }
 
+    [HttpGet("locations")]
+    public async Task<ActionResult<IEnumerable<StructureLocationDto>>> GetLocations([FromQuery] Guid? campusId, CancellationToken cancellationToken)
+    {
+        if (campusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' query parameter cannot be empty." });
+
+        var structures = await _handler.GetAllLocationsAsync(campusId, cancellationToken);
+        return Ok(structures);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<StructureDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
@@ -45,7 +54,7 @@ public class StructureController : ControllerBase
         var (dto, error) = await _handler.CreateAsync(request, cancellationToken);
         if (error != null) return BadRequest(new { message = error });
 
-        return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
+        return CreatedAtAction(nameof(GetById), new { id = dto!.Id }, dto);
     }
 
     [HttpPut("{id:guid}")]
@@ -56,6 +65,15 @@ public class StructureController : ControllerBase
         var (success, error) = await _handler.UpdateAsync(id, request, cancellationToken);
         if (error != null) return BadRequest(new { message = error });
         if (!success) return NotFound();
+
+        return NoContent();
+    }
+
+    [HttpPatch("{id:guid}/location")]
+    public async Task<IActionResult> UpdateLocation(Guid id, [FromBody] UpdateLocationDto request, CancellationToken cancellationToken)
+    {
+        var success = await _handler.UpdateLocationAsync(id, request, cancellationToken);
+        if (!success) return NotFound(new { message = $"Structure with ID '{id}' was not found." });
 
         return NoContent();
     }
