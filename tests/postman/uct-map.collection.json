@@ -214,6 +214,44 @@
               }
             }
           ]
+        },
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{register_name}}\",\n  \"email\": \"{{register_email}}\",\n  \"password\": \"{{register_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "register"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Register user returned 201 or 400\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -380,17 +418,17 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/schedule/students/00000000-0000-0000-0000-000000000000/meetings?from=2026-10-01T00:00:00Z&to=2026-10-31T23:59:59Z",
+              "raw": "{{baseUrl}}/api/schedule/students/{{schedule_student_id}}/meetings?from={{schedule_from}}&to={{schedule_to}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "schedule", "students", "00000000-0000-0000-0000-000000000000", "meetings"],
+              "path": ["api", "schedule", "students", "{{schedule_student_id}}", "meetings"],
               "query": [
                 {
                   "key": "from",
-                  "value": "2026-10-01T00:00:00Z"
+                  "value": "{{schedule_from}}"
                 },
                 {
                   "key": "to",
-                  "value": "2026-10-31T23:59:59Z"
+                  "value": "{{schedule_to}}"
                 }
               ]
             }
@@ -403,6 +441,36 @@
                 "exec": [
                   "pm.test(\"Schedule responds via Gateway with 200 or 400 validation\", function () {",
                   "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Meetings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/meetings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "meetings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Schedule GetAll meetings returned 200\", function () {",
+                  "    pm.response.to.have.status(200);",
                   "});"
                 ]
               }
