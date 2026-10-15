@@ -86,6 +86,17 @@ public class BuildingController : ControllerBase
         );
     }
 
+    [HttpPatch("{id:guid}/location")]
+    public async Task<IActionResult> UpdateLocation(Guid id, [FromBody] UpdateLocationDto request, CancellationToken cancellationToken)
+    {
+        var result = await _handler.UpdateLocationAsync(id, request, cancellationToken);
+
+        return result.Match(
+            success => (IActionResult)NoContent(),
+            errors => Problem(statusCode: StatusCodes.Status404NotFound, title: errors.First().Description)
+        );
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {

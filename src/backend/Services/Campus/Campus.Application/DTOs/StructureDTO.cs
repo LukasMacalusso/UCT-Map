@@ -26,3 +26,16 @@ public record UpdateStructureDto(
     double Latitude,
     double Longitude
 );
+
+public record StructureMetadataDto(
+    Guid CampusId,
+    Guid CategoryId,
+    string CategoryName
+);
+
+public record StructureLocationDto(
+    Guid Id,
+    string Name,
+    LocationDto Location,
+    StructureMetadataDto Metadata
+);

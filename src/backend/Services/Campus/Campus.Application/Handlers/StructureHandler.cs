@@ -76,6 +76,32 @@ public class StructureHandler
         return (true, null);
     }
 
+    public async Task<IEnumerable<StructureLocationDto>> GetAllLocationsAsync(Guid? campusId, CancellationToken cancellationToken)
+    {
+        var structures = await _repository.GetAllAsync(campusId.HasValue ? s => s.CampusId == campusId.Value : null, cancellationToken);
+        var categories = (await _categoryRepository.GetAllAsync(null, cancellationToken)).ToDictionary(c => c.Id, c => c.Name);
+
+        return structures.Select(s => new StructureLocationDto(
+            s.Id,
+            s.Name,
+            new LocationDto(s.Coordinates.Latitude, s.Coordinates.Longitude),
+            new StructureMetadataDto(s.CampusId, s.CategoryId, categories.TryGetValue(s.CategoryId, out var name) ? name : string.Empty)
+        ));
+    }
+
+    public async Task<bool> UpdateLocationAsync(Guid id, UpdateLocationDto request, CancellationToken cancellationToken)
+    {
+        var structure = await _repository.GetByIdAsync(id, cancellationToken);
+        if (structure == null) return false;
+
+        var coordinates = new Coordinate(request.Latitude, request.Longitude);
+        structure.UpdateLocation(coordinates);
+
+        _repository.Update(structure);
+        await _repository.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var structure = await _repository.GetByIdAsync(id, cancellationToken);

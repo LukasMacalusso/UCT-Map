@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Campus.Application.DTOs;
 
@@ -8,7 +9,9 @@ public record BuildingDto(
     string Name,
     int FloorsCount,
     double Latitude,
-    double Longitude
+    double Longitude,
+    string Schedule = "",
+    List<string>? Services = null
 );
 
 public record CreateBuildingDto(
@@ -16,7 +19,9 @@ public record CreateBuildingDto(
     string Name,
     int FloorsCount,
     double Latitude,
-    double Longitude
+    double Longitude,
+    string Schedule = "",
+    List<string>? Services = null
 );
 
 public record UpdateBuildingDto(
@@ -24,7 +29,9 @@ public record UpdateBuildingDto(
     string Name,
     int FloorsCount,
     double Latitude,
-    double Longitude
+    double Longitude,
+    string Schedule = "",
+    List<string>? Services = null
 );
 
 public record LocationDto(
@@ -32,9 +39,16 @@ public record LocationDto(
     double Longitude
 );
 
+public record UpdateLocationDto(
+    double Latitude,
+    double Longitude
+);
+
 public record BuildingMetadataDto(
     Guid CampusId,
-    int FloorsCount
+    int FloorsCount,
+    string Schedule = "",
+    List<string>? Services = null
 );
 
 public record BuildingLocationDto(

@@ -77,6 +77,37 @@ public class StructureEndpointsTests : ApiTestBase
     }
 
     [DockerFact]
+    public async Task GetLocations_ReturnsLocationsOfStructures()
+    {
+        var (campusId, categoryId) = await SetupDependenciesAsync();
+        await Http.PostAsync(Endpoint, JsonBody(new CreateStructureDto(campusId, categoryId, "Estructura Mapa", -38.7, -72.5)));
+
+        var response = await Http.GetAsync($"{Endpoint}/locations");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var list = await ReadJsonAsync<List<StructureLocationDto>>(response);
+        Assert.NotNull(list);
+        Assert.NotEmpty(list);
+    }
+
+    [DockerFact]
+    public async Task PatchLocation_WhenValid_UpdatesCoordinatesAndReturnsNoContent()
+    {
+        var (campusId, categoryId) = await SetupDependenciesAsync();
+        var createRes = await Http.PostAsync(Endpoint, JsonBody(new CreateStructureDto(campusId, categoryId, "Estructura Patch", 0, 0)));
+        var created = await ReadJsonAsync<StructureDto>(createRes);
+
+        var patchBody = new UpdateLocationDto(-38.75, -72.62);
+        var patchRes = await Http.PatchAsync($"{Endpoint}/{created!.Id}/location", JsonBody(patchBody));
+        Assert.Equal(HttpStatusCode.NoContent, patchRes.StatusCode);
+
+        var getRes = await Http.GetAsync($"{Endpoint}/{created.Id}");
+        var fetched = await ReadJsonAsync<StructureDto>(getRes);
+        Assert.Equal(-38.75, fetched!.Latitude);
+        Assert.Equal(-72.62, fetched.Longitude);
+    }
+
+    [DockerFact]
     public async Task Delete_WhenValid_DeletesStructureAndReturnsNoContent()
     {
         var (campusId, categoryId) = await SetupDependenciesAsync();

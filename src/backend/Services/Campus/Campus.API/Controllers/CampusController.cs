@@ -54,6 +54,15 @@ public class CampusController : ControllerBase
         return NoContent();
     }
 
+    [HttpPatch("{id:guid}/location")]
+    public async Task<IActionResult> UpdateLocation(Guid id, [FromBody] UpdateLocationDto request, CancellationToken cancellationToken)
+    {
+        var success = await _handler.UpdateLocationAsync(id, request, cancellationToken);
+        if (!success) return NotFound(new { message = $"Campus with ID '{id}' was not found." });
+
+        return NoContent();
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {

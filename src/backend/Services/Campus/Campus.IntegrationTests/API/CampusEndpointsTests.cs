@@ -66,6 +66,23 @@ public class CampusEndpointsTests : ApiTestBase
     }
 
     [DockerFact]
+    public async Task PatchLocation_WhenValid_UpdatesCoordinatesAndReturnsNoContent()
+    {
+        var createBody = new CreateCampusDto("Campus Para Patch", "Dir Patch", -38.77, -72.63);
+        var createRes = await Http.PostAsync(Endpoint, JsonBody(createBody));
+        var created = await ReadJsonAsync<CampusDto>(createRes);
+
+        var patchBody = new UpdateLocationDto(-38.80, -72.70);
+        var patchRes = await Http.PatchAsync($"{Endpoint}/{created!.Id}/location", JsonBody(patchBody));
+        Assert.Equal(HttpStatusCode.NoContent, patchRes.StatusCode);
+
+        var getRes = await Http.GetAsync($"{Endpoint}/{created.Id}");
+        var fetched = await ReadJsonAsync<CampusDto>(getRes);
+        Assert.Equal(-38.80, fetched!.Latitude);
+        Assert.Equal(-72.70, fetched.Longitude);
+    }
+
+    [DockerFact]
     public async Task Delete_WhenValid_DeletesCampusAndReturnsNoContent()
     {
         var createBody = new CreateCampusDto("Campus Para Borrar", "Dir Borrar", -38.77, -72.63);
