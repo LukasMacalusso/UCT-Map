@@ -16,7 +16,7 @@ public sealed class IdentityUserAuthenticator(UserManager<User> userManager) : I
 
         var user = await userManager.FindByEmailAsync(email);
 
-        if (user is null || !await userManager.CheckPasswordAsync(user, password)) return null;
+        if (user is null || user.IsSuspended || !await userManager.CheckPasswordAsync(user, password)) return null;
 
         return new LoginResult(user.Id, user.Email ?? email);
     }
