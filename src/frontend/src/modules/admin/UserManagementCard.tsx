@@ -15,6 +15,7 @@ export interface UserManagementCardProps {
   avatarSrc?: string;
   role: Role;
   isSuspended?: boolean;
+  canToggleSuspension?: boolean;
   onRoleChange?: (userId: string, newRole: Role) => void;
   onToggleSuspension?: (userId: string, isSuspended: boolean) => void;
 }
@@ -30,14 +31,11 @@ export const UserManagementCard = ({
   avatarSrc,
   role,
   isSuspended = false,
+  canToggleSuspension = true,
   onRoleChange,
   onToggleSuspension,
 }: UserManagementCardProps) => {
-  // La tarjeta es controlada: el rol/estado reales viven en el padre. Acá solo
-  // manejamos la confirmación (TimedActionCard) antes de notificar el cambio.
   const [pending, setPending] = useState<PendingAction | null>(null);
-  // El <Select> cachea su valor; al cancelar forzamos su re-montaje para que
-  // vuelva a mostrar el rol confirmado (el del padre).
   const [selectNonce, setSelectNonce] = useState(0);
 
   const roleOptions = [
@@ -55,6 +53,7 @@ export const UserManagementCard = ({
   };
 
   const requestToggleSuspension = () => {
+    if (!canToggleSuspension) return;
     setPending({ kind: 'suspension', suspend: !isSuspended });
   };
 
@@ -76,7 +75,7 @@ export const UserManagementCard = ({
       ? {
           title: 'Cambiar rol',
           description: `Vas a cambiar el rol de ${name} de ${ROLE_STYLES[role].label} a ${ROLE_STYLES[pending.newRole].label}. Esta acción se aplicará de inmediato.`,
-          confirmLabel: 'Cambiar rol',
+          confirmLabel: 'Sí, cambiar rol',
           confirmColor: 'blue' as PageColor,
           duration: 2000,
         }
@@ -84,20 +83,18 @@ export const UserManagementCard = ({
         ? {
             title: 'Suspender cuenta',
             description: `${name} no podrá iniciar sesión hasta que un administrador reactive la cuenta.`,
-            confirmLabel: 'Suspender',
+            confirmLabel: 'Sí, suspender',
             confirmColor: 'red' as PageColor,
             duration: 3000,
           }
         : {
             title: 'Reactivar cuenta',
             description: `${name} podrá volver a iniciar sesión en la plataforma.`,
-            confirmLabel: 'Reactivar',
+            confirmLabel: 'Sí, reactivar',
             confirmColor: 'green' as PageColor,
             duration: 2000,
           };
 
-  // El estilo "suspendido" (gris/opacidad) se aplica por sección y no al contenedor
-  // completo, para que el botón de Reactivar no se vea desaturado.
   const suspendedDim = isSuspended ? 'opacity-75 grayscale-[50%]' : '';
 
   return (
@@ -144,6 +141,8 @@ export const UserManagementCard = ({
               variant="outline"
               className="!w-auto whitespace-nowrap !px-4"
               onClick={requestToggleSuspension}
+              disabled={!canToggleSuspension}
+              title={canToggleSuspension ? undefined : 'No puedes suspender tu propia cuenta'}
             >
               {isSuspended ? 'Reactivar' : 'Suspender'}
             </Button>
@@ -153,7 +152,6 @@ export const UserManagementCard = ({
 
       </div>
 
-      {/* Confirmación de la acción (mismo patrón que el editor del MapView) */}
       <ModalOverlay isOpen={!!pending} onClose={handleCancel}>
         {pending && confirm && (
           <TimedActionCard

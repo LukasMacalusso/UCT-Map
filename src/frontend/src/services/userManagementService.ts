@@ -17,7 +17,6 @@ export const userManagementService = {
   },
 
   async updateUserRole(userId: string, role: Role): Promise<void> {
-    // Reemplaza el set completo de roles por uno solo (la UI maneja un rol por usuario).
     await httpClient.put(`/api/identity/${userId}/roles`, { roles: [role] });
   },
 

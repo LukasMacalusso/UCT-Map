@@ -4,8 +4,10 @@ import { SearchInput } from '../components/ui/SearchInput';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
+import { Pagination } from '../components/ui/Pagination';
 import { UserManagementCard } from '../modules/admin/UserManagementCard';
 import { userManagementService } from '../services/userManagementService';
+import { useAuthState } from '../states/authState';
 import { Role } from '../constants/role';
 import type { UserIdentity } from '../interfaces/identities/UserIdentity';
 
@@ -13,9 +15,13 @@ import SearchIcon from '../assets/svg/icons/icon_search.svg?react';
 import CategoryIcon from '../assets/svg/icons/icon_category_cube.svg?react';
 import RefreshIcon from '../assets/svg/icons/icon_repeat.svg?react';
 
+const PAGE_SIZE = 20;
+
 const labelOf = (user: UserIdentity) => `${user.name} (${user.email})`;
 
 export const AdministrationView = () => {
+  const currentUserId = useAuthState((state) => state.user?.id);
+
   const [users, setUsers] = useState<UserIdentity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -23,6 +29,7 @@ export const AdministrationView = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState('todos');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const roleOptions = [
     { value: 'todos', label: 'Todos los roles' },
@@ -54,7 +61,6 @@ export const AdministrationView = () => {
   };
 
   const handleToggleSuspension = async (userId: string, isSuspended: boolean) => {
-    // Actualización optimista; se revierte si el backend rechaza.
     setError(null);
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isSuspended } : u)));
     try {
@@ -70,7 +76,6 @@ export const AdministrationView = () => {
     const previousRole = users.find((u) => u.id === userId)?.role;
     if (!previousRole || previousRole === newRole) return;
 
-    // Actualización optimista; se revierte si el backend rechaza.
     setError(null);
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
     try {
@@ -88,6 +93,23 @@ export const AdministrationView = () => {
     return matchesRole && matchesSearch;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const activePage = Math.min(currentPage, totalPages);
+  const paginatedUsers = filteredUsers.slice(
+    (activePage - 1) * PAGE_SIZE,
+    activePage * PAGE_SIZE
+  );
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
+  const handleRoleFilterChange = (value: string) => {
+    setSelectedRole(value);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="p-6 min-h-screen bg-page-dark flex flex-col gap-6">
 
@@ -101,7 +123,7 @@ export const AdministrationView = () => {
               label="Buscar Usuario"
               placeholder="Buscar por nombre o correo..."
               value={searchQuery}
-              onChange={setSearchQuery}
+              onChange={handleSearchChange}
               icon={<SearchIcon className="w-5 h-5 text-gray-500" />}
               showSuggestions={false}
             />
@@ -113,12 +135,11 @@ export const AdministrationView = () => {
               label="Filtrar por Rol"
               options={roleOptions}
               value={selectedRole}
-              onChange={setSelectedRole}
+              onChange={handleRoleFilterChange}
               icon={<CategoryIcon className="w-5 h-5 text-gray-700" />}
             />
           </div>
 
-          {/* Refresh */}
           <Button
             variant="solid"
             color="blue"
@@ -148,19 +169,31 @@ export const AdministrationView = () => {
         ) : filteredUsers.length === 0 ? (
           <EmptyState message="No se encontraron usuarios" />
         ) : (
-          filteredUsers.map((user) => (
-            <UserManagementCard
-              key={user.id}
-              id={user.id}
-              name={user.name}
-              email={user.email}
-              avatarSrc={user.avatar}
-              role={user.role}
-              isSuspended={user.isSuspended}
-              onRoleChange={handleRoleChange}
-              onToggleSuspension={handleToggleSuspension}
+          <div className="flex items-start gap-6">
+            <div className="flex-1 flex flex-col gap-4 min-w-0">
+              {paginatedUsers.map((user) => (
+                <UserManagementCard
+                  key={user.id}
+                  id={user.id}
+                  name={user.name}
+                  email={user.email}
+                  avatarSrc={user.avatar}
+                  role={user.role}
+                  isSuspended={user.isSuspended}
+                  canToggleSuspension={user.id !== currentUserId}
+                  onRoleChange={handleRoleChange}
+                  onToggleSuspension={handleToggleSuspension}
+                />
+              ))}
+            </div>
+
+            <Pagination
+              currentPage={activePage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              className="sticky top-6"
             />
-          ))
+          </div>
         )}
 
       </div>
