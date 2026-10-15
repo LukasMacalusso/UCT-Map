@@ -8,6 +8,10 @@ public class User : IdentityUser
 
     public DateTime RegistrationDate { get; private set; } = DateTime.UtcNow;
 
+    public bool IsSuspended { get; private set; }
+
+    public void SetSuspended(bool isSuspended) => IsSuspended = isSuspended;
+
     public static User Create(string name, string email)
     {
         var normalizedName = name?.Trim() ?? string.Empty;

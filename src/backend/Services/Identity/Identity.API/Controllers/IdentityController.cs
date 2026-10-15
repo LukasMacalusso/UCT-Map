@@ -1,6 +1,9 @@
 using Identity.Application.Handlers;
 using Identity.Application.DTOs;
 using Identity.Application.Interfaces;
+using Identity.Domain.Entities;
+using ErrorOr;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Identity.API.Controllers;
@@ -65,5 +68,95 @@ public class IdentityController(
     {
         var users = await getUserByIdUseCase.ExecuteAllAsync(cancellationToken);
         return Ok(users);
+    }
+
+    [Authorize(Roles = Role.Admin)]
+    [HttpGet("{userId}/roles")]
+    public async Task<IActionResult> GetRoles(
+        string userId,
+        [FromServices] RoleManagementHandler roleManagementHandler,
+        CancellationToken cancellationToken)
+    {
+        var result = await roleManagementHandler.ExecuteGetAsync(userId, cancellationToken);
+        return ToActionResult(result, StatusCodes.Status200OK);
+    }
+
+    [Authorize(Roles = Role.Admin)]
+    [HttpPost("{userId}/roles")]
+    public async Task<IActionResult> AddRole(
+        string userId,
+        [FromBody] RoleAssignmentRequest request,
+        [FromServices] RoleManagementHandler roleManagementHandler,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Role)) return BadRequest("Role is required.");
+
+        var result = await roleManagementHandler.ExecuteAddAsync(userId, request.Role, cancellationToken);
+        return ToActionResult(result, StatusCodes.Status201Created);
+    }
+
+    [Authorize(Roles = Role.Admin)]
+    [HttpPut("{userId}/roles")]
+    public async Task<IActionResult> ReplaceRoles(
+        string userId,
+        [FromBody] RoleReplacementRequest request,
+        [FromServices] RoleManagementHandler roleManagementHandler,
+        CancellationToken cancellationToken)
+    {
+        var result = await roleManagementHandler.ExecuteReplaceAsync(userId, request.Roles, cancellationToken);
+        return ToActionResult(result, StatusCodes.Status200OK);
+    }
+
+    [Authorize(Roles = Role.Admin)]
+    [HttpDelete("{userId}/roles/{role}")]
+    public async Task<IActionResult> RemoveRole(
+        string userId,
+        string role,
+        [FromServices] RoleManagementHandler roleManagementHandler,
+        CancellationToken cancellationToken)
+    {
+        var result = await roleManagementHandler.ExecuteRemoveAsync(userId, role, cancellationToken);
+        return result.Match<IActionResult>(
+            _ => NoContent(),
+            errors => Problem(statusCode: errors.First().Type switch
+            {
+                ErrorType.NotFound => StatusCodes.Status404NotFound,
+                _ => StatusCodes.Status400BadRequest
+            }, title: errors.First().Description));
+    }
+
+    [Authorize(Roles = Role.Admin)]
+    [HttpPost("{userId}/suspension")]
+    public async Task<IActionResult> Suspend(
+        string userId,
+        [FromServices] RoleManagementHandler roleManagementHandler,
+        CancellationToken cancellationToken)
+    {
+        var result = await roleManagementHandler.ExecuteSetSuspendedAsync(userId, true, cancellationToken);
+        return ToActionResult(result, StatusCodes.Status200OK);
+    }
+
+    [Authorize(Roles = Role.Admin)]
+    [HttpDelete("{userId}/suspension")]
+    public async Task<IActionResult> Reactivate(
+        string userId,
+        [FromServices] RoleManagementHandler roleManagementHandler,
+        CancellationToken cancellationToken)
+    {
+        var result = await roleManagementHandler.ExecuteSetSuspendedAsync(userId, false, cancellationToken);
+        return ToActionResult(result, StatusCodes.Status200OK);
+    }
+
+    private IActionResult ToActionResult<T>(ErrorOr<T> result, int successStatusCode)
+    {
+        return result.Match<IActionResult>(
+            value => new ObjectResult(value) { StatusCode = successStatusCode },
+            errors => Problem(statusCode: errors.First().Type switch
+            {
+                ErrorType.NotFound => StatusCodes.Status404NotFound,
+                ErrorType.Conflict => StatusCodes.Status409Conflict,
+                ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+                _ => StatusCodes.Status400BadRequest
+            }, title: errors.First().Description));
     }
 }

@@ -33,6 +33,9 @@ The token includes the user's role in the explicit `role` claim. For example:
 
 These endpoints manage user registration, authentication, and user lookup.
 
+Role-management endpoints require the `Admin` role. A suspended user cannot
+authenticate until an administrator reactivates the account.
+
 ### 📌 1.1 Get All Users
 
 - **Route**: `GET /api/identity`
@@ -93,8 +96,8 @@ The JWT returned in `token` includes the authenticated user's role in the
 
 - **Route**: `POST /api/identity/register`
 - **Access**: Public
-- **Description**: Creates a new user. If no role is provided, the
-  implementation assigns the `Student` role.
+- **Description**: Creates a new user with the `Student` role. Privileged roles
+  must be assigned by an administrator through the protected role endpoints.
 
 **📥 Request Payload (`application/json`)**
 
@@ -151,6 +154,51 @@ The JWT returned in `token` includes the authenticated user's role in the
 
 - **`400 Bad Request`**: The user ID is missing.
 - **`404 Not Found`**: No user exists with the specified ID.
+
+---
+
+### 📌 1.5 Get User Roles
+
+- **Route**: `GET /api/identity/{userId}/roles`
+- **Access**: Admin
+- **Description**: Returns the roles and suspension state of a user.
+
+### 📌 1.6 Add User Role
+
+- **Route**: `POST /api/identity/{userId}/roles`
+- **Access**: Admin
+
+```json
+{
+  "role": "Teacher"
+}
+```
+
+### 📌 1.7 Replace User Roles
+
+- **Route**: `PUT /api/identity/{userId}/roles`
+- **Access**: Admin
+
+```json
+{
+  "roles": ["Teacher", "ObjectsOfficer"]
+}
+```
+
+### 📌 1.8 Remove User Role
+
+- **Route**: `DELETE /api/identity/{userId}/roles/{role}`
+- **Access**: Admin
+
+### 📌 1.9 Suspend User
+
+- **Route**: `POST /api/identity/{userId}/suspension`
+- **Access**: Admin
+
+### 📌 1.10 Reactivate User
+
+- **Route**: `DELETE /api/identity/{userId}/suspension`
+- **Access**: Admin
 
 ---
 

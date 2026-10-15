@@ -32,9 +32,11 @@ public static class DependencyInjection
         services.AddScoped<IUserRegistrationService, IdentityUserRegistrationService>();
         services.AddScoped<IUserQuery, IdentityUserQuery>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<IRoleManagementService, IdentityRoleManagementService>();
         services.AddScoped<LoginHandler>();
         services.AddScoped<RegisterUserHandler>();
         services.AddScoped<GetUserByIdHandler>();
+        services.AddScoped<RoleManagementHandler>();
 
         return services;
     }
