@@ -16,6 +16,7 @@ export interface UserManagementCardProps {
   role: Role;
   isSuspended?: boolean;
   canToggleSuspension?: boolean;
+  onViewProfile?: (userId: string) => void;
   onRoleChange?: (userId: string, newRole: Role) => void;
   onToggleSuspension?: (userId: string, isSuspended: boolean) => void;
 }
@@ -32,6 +33,7 @@ export const UserManagementCard = ({
   role,
   isSuspended = false,
   canToggleSuspension = true,
+  onViewProfile,
   onRoleChange,
   onToggleSuspension,
 }: UserManagementCardProps) => {
@@ -135,7 +137,15 @@ export const UserManagementCard = ({
           </div>
 
           {/* Suspend / Reactivate Custom Button */}
-          <div className="mt-2 sm:mt-5">
+          <div className="mt-2 sm:mt-5 flex items-center gap-3">
+            <Button
+              variant="outline"
+              color="blue"
+              className="!w-auto whitespace-nowrap !px-4"
+              onClick={() => onViewProfile?.(id)}
+            >
+              Ver perfil
+            </Button>
             <Button
               color={isSuspended ? 'green' : 'red'}
               variant="outline"

@@ -74,4 +74,50 @@ describe('AdministrationView', () => {
     const selfButton = screen.getByTitle('No puedes suspender tu propia cuenta');
     expect(selfButton).toBeDisabled();
   });
+
+  it('abre el perfil del usuario al hacer click en "Ver perfil"', async () => {
+    getAllUsersMock.mockResolvedValue(makeUsers(3));
+    render(<AdministrationView />);
+
+    await screen.findByText('Usuario 0');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Ver perfil' })[0]);
+
+    expect(await screen.findByText('Información de Cuenta')).toBeInTheDocument();
+  });
+
+  it('dice "Tus Contribuciones" al abrir tu propio perfil', async () => {
+    getAllUsersMock.mockResolvedValue(makeUsers(3));
+    render(<AdministrationView />);
+
+    await screen.findByText('Usuario 0');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Ver perfil' })[0]);
+
+    expect(await screen.findByText('Tus Contribuciones')).toBeInTheDocument();
+  });
+
+  it('dice "Contribuciones" (sin "Tus") al abrir el perfil de otro usuario', async () => {
+    getAllUsersMock.mockResolvedValue(makeUsers(3));
+    render(<AdministrationView />);
+
+    await screen.findByText('Usuario 0');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Ver perfil' })[1]);
+
+    expect(await screen.findByText('Contribuciones')).toBeInTheDocument();
+    expect(screen.queryByText('Tus Contribuciones')).not.toBeInTheDocument();
+  });
+
+  it('filtra para ver solo los suspendidos', async () => {
+    const users = makeUsers(3);
+    users[1] = { ...users[1], isSuspended: true };
+    getAllUsersMock.mockResolvedValue(users);
+    render(<AdministrationView />);
+
+    await screen.findByText('Usuario 0');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Todos los roles' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Suspendidos' }));
+
+    expect(screen.getByText('Usuario 1')).toBeInTheDocument();
+    expect(screen.queryByText('Usuario 0')).not.toBeInTheDocument();
+    expect(screen.queryByText('Usuario 2')).not.toBeInTheDocument();
+  });
 });

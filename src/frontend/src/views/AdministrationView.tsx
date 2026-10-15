@@ -5,6 +5,8 @@ import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Pagination } from '../components/ui/Pagination';
+import { ModalOverlay } from '../components/layout/ModalOverlay';
+import { UserProfilePanel } from '../modules/global/UserProfilePanel';
 import { UserManagementCard } from '../modules/admin/UserManagementCard';
 import { userManagementService } from '../services/userManagementService';
 import { useAuthState } from '../states/authState';
@@ -30,6 +32,7 @@ export const AdministrationView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState('todos');
   const [currentPage, setCurrentPage] = useState(1);
+  const [profileUser, setProfileUser] = useState<UserIdentity | null>(null);
 
   const roleOptions = [
     { value: 'todos', label: 'Todos los roles' },
@@ -38,6 +41,7 @@ export const AdministrationView = () => {
     { value: Role.Admin, label: 'Administrador' },
     { value: Role.ComplaintsOfficer, label: 'Encargado de Incidentes' },
     { value: Role.ObjectsOfficer, label: 'Encargado de Objetos' },
+    { value: 'suspendidos', label: 'Suspendidos' },
   ];
 
   const loadUsers = useCallback(async () => {
@@ -88,9 +92,11 @@ export const AdministrationView = () => {
 
   const query = searchQuery.trim().toLowerCase();
   const filteredUsers = users.filter((user) => {
-    const matchesRole = selectedRole === 'todos' || user.role === selectedRole;
+    const matchesFilter =
+      selectedRole === 'todos' ||
+      (selectedRole === 'suspendidos' ? !!user.isSuspended : user.role === selectedRole);
     const matchesSearch = !query || labelOf(user).toLowerCase().includes(query);
-    return matchesRole && matchesSearch;
+    return matchesFilter && matchesSearch;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
@@ -108,6 +114,10 @@ export const AdministrationView = () => {
   const handleRoleFilterChange = (value: string) => {
     setSelectedRole(value);
     setCurrentPage(1);
+  };
+
+  const handleViewProfile = (userId: string) => {
+    setProfileUser(users.find((u) => u.id === userId) ?? null);
   };
 
   return (
@@ -132,7 +142,7 @@ export const AdministrationView = () => {
           {/* Role Filter */}
           <div className="w-72">
             <Select
-              label="Filtrar por Rol"
+              label="Filtrar"
               options={roleOptions}
               value={selectedRole}
               onChange={handleRoleFilterChange}
@@ -181,6 +191,7 @@ export const AdministrationView = () => {
                   role={user.role}
                   isSuspended={user.isSuspended}
                   canToggleSuspension={user.id !== currentUserId}
+                  onViewProfile={handleViewProfile}
                   onRoleChange={handleRoleChange}
                   onToggleSuspension={handleToggleSuspension}
                 />
@@ -197,6 +208,19 @@ export const AdministrationView = () => {
         )}
 
       </div>
+
+      <ModalOverlay isOpen={!!profileUser} onClose={() => setProfileUser(null)}>
+        {profileUser && (
+          <UserProfilePanel
+            name={profileUser.name}
+            email={profileUser.email}
+            role={profileUser.role}
+            photoUrl={profileUser.avatar}
+            isOwnProfile={profileUser.id === currentUserId}
+            onClose={() => setProfileUser(null)}
+          />
+        )}
+      </ModalOverlay>
 
     </div>
   );

@@ -73,4 +73,13 @@ describe('UserManagementCard', () => {
     expect(onToggleSuspension).not.toHaveBeenCalled();
     expect(screen.queryByText('Suspender cuenta')).not.toBeInTheDocument();
   });
+
+  it('llama a onViewProfile con el id al hacer click en "Ver perfil"', () => {
+    const onViewProfile = vi.fn();
+    render(<UserManagementCard {...baseProps} onViewProfile={onViewProfile} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver perfil' }));
+
+    expect(onViewProfile).toHaveBeenCalledWith('u1');
+  });
 });
