@@ -4,6 +4,7 @@ import { useAuthState } from '../../states/authState';
 
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import EyeIcon from '../../assets/svg/icons/icon_eye.svg?react';
 import { useLogin } from '../../hooks/useLogin';
 import { decodeJwt } from '../../utils/JwtManagement';
 import { Role, isRole } from '../../constants/role';
@@ -17,6 +18,7 @@ export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
   const realLogin = useAuthState((state) => state.login);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const { mutateAsync: login, isPending: isLoading, error, reset: resetError } = useLogin();
 
@@ -64,10 +66,21 @@ export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
         <Input
           label="Contraseña"
           labelColor="text-gray-700"
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           placeholder="••••••••"
           value={password}
           onChange={(e: any) => setPassword(e.target.value)}
+          rightElement={
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              className={`transition-colors ${showPassword ? 'text-page-blue' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              <EyeIcon className="w-5 h-5" />
+            </button>
+          }
         />
 
         {error && (

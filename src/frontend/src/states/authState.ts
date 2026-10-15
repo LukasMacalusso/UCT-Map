@@ -25,6 +25,24 @@ const addItems = (token: string, user: string) => {
   localStorage.setItem('user_identity', user);
 };
 
+// Token falso con forma de JWT real + flag `isMock`, para que el httpClient
+// reconozca la sesión de desarrollo y no cierre sesión ante un 401.
+const buildMockToken = (role: Role): string => {
+  const encode = (obj: unknown) =>
+    btoa(JSON.stringify(obj)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+
+  const header = { alg: 'none', typ: 'JWT' };
+  const payload = {
+    sub: '123',
+    email: `${role.toLowerCase()}@uct.cl`,
+    role,
+    isMock: true,
+    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365,
+  };
+
+  return `${encode(header)}.${encode(payload)}.mock`;
+};
+
 const getInitialAuth = () => {
   const token = localStorage.getItem("jwt_token");
   const userJson = localStorage.getItem("user_identity");
@@ -72,7 +90,7 @@ export const useAuthState = create<AuthState>((set) => ({
       email: `${role.toLowerCase()}@uct.cl`,
       registeredAt: new Date().toISOString()
     };
-    const mockToken = 'mock_jwt_token_for_testing';
+    const mockToken = buildMockToken(role);
     addItems(mockToken, JSON.stringify(mockUser));
     set({ user: mockUser, token: mockToken, isAuthenticated: true });
   }

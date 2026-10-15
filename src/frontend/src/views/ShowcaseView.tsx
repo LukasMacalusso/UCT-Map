@@ -148,17 +148,15 @@ export const ShowcaseView = () => {
         <UserManagementCard
           id="showcase-1"
           name="Juan Pérez"
-          rut="11.111.111-1"
           email="juan.perez@uct.cl"
-          initialRole={Role.Student}
+          role={Role.Student}
         />
         <UserManagementCard
           id="showcase-2"
           name="Carlos Hacker"
-          rut="33.333.333-3"
           email="carlos.h@uct.cl"
-          initialRole={Role.Teacher}
-          isBanned={true}
+          role={Role.Teacher}
+          isSuspended={true}
         />
       </div>
 

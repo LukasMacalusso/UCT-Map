@@ -5,7 +5,7 @@ export interface UserIdentity {
   role: Role;
   name: string;
   email: string;
-  registeredAt: string;
+  registeredAt?: string;
   avatar?: string;
   isSuspended?: boolean;
 }

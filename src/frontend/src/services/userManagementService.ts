@@ -1,31 +1,24 @@
 import httpClient from '../api/httpClient';
 import type { IdentityUserDto } from '../dtos/identity/IdentityUserDto';
+import type { UserIdentity } from '../interfaces/identities/UserIdentity';
 import { Role, isRole } from '../constants/role';
 
-export interface UserManagementData {
-  id: string;
-  name: string;
-  email: string;
-  role: Role;
-  rut: string;
-  avatarSrc?: string;
-  isBanned: boolean;
-}
-
 export const userManagementService = {
-  async getAllUsers(): Promise<UserManagementData[]> {
+  async getAllUsers(): Promise<UserIdentity[]> {
     const response = await httpClient.get<IdentityUserDto[]>('/api/identity');
-    return response.data.map(user => ({
+
+    return response.data.map((user) => ({
       id: user.userId,
       name: user.name,
       email: user.email,
       role: isRole(user.role) ? user.role : Role.Student,
-      rut: user.userId.length >= 12
-        ? `${user.userId.slice(0, 2)}.${user.userId.slice(2, 5)}.${user.userId.slice(5, 8)}-${user.userId.slice(8, 9)}`
-        : `ID: ${user.userId.slice(0, 8)}`,
-      avatarSrc: undefined,
-      isBanned: false,
+      isSuspended: user.isSuspended,
     }));
+  },
+
+  async updateUserRole(userId: string, role: Role): Promise<void> {
+    // Reemplaza el set completo de roles por uno solo (la UI maneja un rol por usuario).
+    await httpClient.put(`/api/identity/${userId}/roles`, { roles: [role] });
   },
 
   async suspendUser(userId: string): Promise<void> {

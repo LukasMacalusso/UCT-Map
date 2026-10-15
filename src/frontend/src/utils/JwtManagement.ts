@@ -1,4 +1,14 @@
 import type { JwtPayloadDto } from "../dtos/identity/JwtPayloadDto";
+import { ROLES, type Role } from "../constants/role";
+
+// El backend emite el claim de rol como string (un solo rol) o como arreglo
+// (varios roles). Normalizamos al rol de mayor privilegio según el orden de ROLES.
+export function normalizeRole(value: unknown): Role | undefined {
+  const candidates = (Array.isArray(value) ? value : [value]).filter(
+    (item): item is string => typeof item === "string"
+  );
+  return ROLES.find((role) => candidates.includes(role));
+}
 
 export function decodeJwt(token: string): JwtPayloadDto | null {
   try {
@@ -16,7 +26,7 @@ export function decodeJwt(token: string): JwtPayloadDto | null {
 
     const payload: JwtPayloadDto = {
       ...parsed,
-      role: parsed.role || msRole,
+      role: normalizeRole(parsed.role) ?? normalizeRole(msRole),
       email: parsed.email || msEmail,
       sub: parsed.sub || msSub,
     };

@@ -1,5 +1,4 @@
 import type { RoleStyle } from '../interfaces/RoleStyle';
-import type { PageColor } from './colors';
 
 export const Role = {
   Admin: 'Admin',
