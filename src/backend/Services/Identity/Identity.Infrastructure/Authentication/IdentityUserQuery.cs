@@ -22,7 +22,8 @@ public sealed class IdentityUserQuery(UserManager<User> userManager) : IUserQuer
                 user.Id,
                 user.Name,
                 user.Email ?? string.Empty,
-                roles.FirstOrDefault()));
+                roles.FirstOrDefault(),
+                user.IsSuspended));
         }
 
         return responses;
@@ -43,6 +44,7 @@ public sealed class IdentityUserQuery(UserManager<User> userManager) : IUserQuer
             user.Id,
             user.Name,
             user.Email ?? string.Empty,
-            roles.FirstOrDefault());
+            roles.FirstOrDefault(),
+            user.IsSuspended);
     }
 }

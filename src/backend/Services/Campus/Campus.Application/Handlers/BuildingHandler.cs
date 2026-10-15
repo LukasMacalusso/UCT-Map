@@ -25,7 +25,7 @@ public class BuildingHandler
     public async Task<IEnumerable<BuildingDto>> GetAllAsync(Guid? campusId, CancellationToken cancellationToken)
     {
         var buildings = await _repository.GetAllAsync(campusId.HasValue ? b => b.CampusId == campusId.Value : null, cancellationToken);
-        return buildings.Select(b => new BuildingDto(b.Id, b.CampusId, b.Name, b.FloorsCount, b.Coordinates.Latitude, b.Coordinates.Longitude));
+        return buildings.Select(b => new BuildingDto(b.Id, b.CampusId, b.Name, b.FloorsCount, b.Coordinates.Latitude, b.Coordinates.Longitude, b.Schedule, b.Services));
     }
 
     public async Task<IEnumerable<BuildingLocationDto>> GetAllLocationsAsync(Guid? campusId, CancellationToken cancellationToken)
@@ -35,7 +35,7 @@ public class BuildingHandler
             b.Id,
             b.Name,
             new LocationDto(b.Coordinates.Latitude, b.Coordinates.Longitude),
-            new BuildingMetadataDto(b.CampusId, b.FloorsCount)
+            new BuildingMetadataDto(b.CampusId, b.FloorsCount, b.Schedule, b.Services)
         ));
     }
 
@@ -45,7 +45,7 @@ public class BuildingHandler
         if (building == null)
             return Error.NotFound("Building.NotFound", $"Building with ID '{id}' was not found.");
 
-        return new BuildingDto(building.Id, building.CampusId, building.Name, building.FloorsCount, building.Coordinates.Latitude, building.Coordinates.Longitude);
+        return new BuildingDto(building.Id, building.CampusId, building.Name, building.FloorsCount, building.Coordinates.Latitude, building.Coordinates.Longitude, building.Schedule, building.Services);
     }
 
     public async Task<ErrorOr<BuildingDto>> CreateAsync(CreateBuildingDto request, CancellationToken cancellationToken)
@@ -54,12 +54,12 @@ public class BuildingHandler
             return Error.NotFound("Campus.NotFound", $"Campus with ID '{request.CampusId}' does not exist.");
 
         var coordinates = new Coordinate(request.Latitude, request.Longitude);
-        var building = new Building(request.Name, request.FloorsCount, coordinates, request.CampusId);
+        var building = new Building(request.Name, request.FloorsCount, coordinates, request.CampusId, request.Schedule, request.Services);
 
         await _repository.AddAsync(building, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
 
-        return new BuildingDto(building.Id, building.CampusId, building.Name, building.FloorsCount, building.Coordinates.Latitude, building.Coordinates.Longitude);
+        return new BuildingDto(building.Id, building.CampusId, building.Name, building.FloorsCount, building.Coordinates.Latitude, building.Coordinates.Longitude, building.Schedule, building.Services);
     }
 
     public async Task<ErrorOr<Success>> UpdateAsync(Guid id, UpdateBuildingDto request, CancellationToken cancellationToken)
@@ -72,7 +72,21 @@ public class BuildingHandler
             return Error.NotFound("Campus.NotFound", $"Campus with ID '{request.CampusId}' does not exist.");
 
         var coordinates = new Coordinate(request.Latitude, request.Longitude);
-        building.Update(request.Name, request.FloorsCount, coordinates, request.CampusId);
+        building.Update(request.Name, request.FloorsCount, coordinates, request.CampusId, request.Schedule, request.Services);
+
+        _repository.Update(building);
+        await _repository.SaveChangesAsync(cancellationToken);
+        return Result.Success;
+    }
+
+    public async Task<ErrorOr<Success>> UpdateLocationAsync(Guid id, UpdateLocationDto request, CancellationToken cancellationToken)
+    {
+        var building = await _repository.GetByIdAsync(id, cancellationToken);
+        if (building == null)
+            return Error.NotFound("Building.NotFound", $"Building with ID '{id}' was not found.");
+
+        var coordinates = new Coordinate(request.Latitude, request.Longitude);
+        building.UpdateLocation(coordinates);
 
         _repository.Update(building);
         await _repository.SaveChangesAsync(cancellationToken);

@@ -77,6 +77,24 @@ public class BuildingEndpointsTests : ApiTestBase
     }
 
     [DockerFact]
+    public async Task PatchLocation_WhenValid_UpdatesCoordinatesAndReturnsNoContent()
+    {
+        var campusId = await CreateCampusHelperAsync("Campus Para Patch Location");
+        var createBody = new CreateBuildingDto(campusId, "Edificio Coordenadas", 2, -38.73, -72.59);
+        var createRes = await Http.PostAsync(Endpoint, JsonBody(createBody));
+        var created = await ReadJsonAsync<BuildingDto>(createRes);
+
+        var patchBody = new UpdateLocationDto(-38.745, -72.615);
+        var patchRes = await Http.PatchAsync($"{Endpoint}/{created!.Id}/location", JsonBody(patchBody));
+        Assert.Equal(HttpStatusCode.NoContent, patchRes.StatusCode);
+
+        var getRes = await Http.GetAsync($"{Endpoint}/{created.Id}");
+        var fetched = await ReadJsonAsync<BuildingDto>(getRes);
+        Assert.Equal(-38.745, fetched!.Latitude);
+        Assert.Equal(-72.615, fetched.Longitude);
+    }
+
+    [DockerFact]
     public async Task Delete_WhenValid_DeletesBuildingAndReturnsNoContent()
     {
         var campusId = await CreateCampusHelperAsync("Campus Para Delete");

@@ -46,5 +46,10 @@ public class Structure
         this.CategoryId = categoryId;
     }
 
+    public void UpdateLocation(Coordinate coordinates)
+    {
+        this.Coordinates = coordinates;
+    }
+
     protected Structure() { }
 }

@@ -1,6 +1,5 @@
 using Identity.Application.DTOs;
 using Identity.Application.Interfaces;
-using Identity.Application.DTOs;
 using Identity.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 
@@ -21,14 +20,18 @@ public sealed class IdentityUserRegistrationService(
         var existingUser = await userManager.FindByEmailAsync(request.Email);
         if (existingUser is not null) return null;
 
+        if (!string.IsNullOrWhiteSpace(request.Role)
+            && !string.Equals(request.Role, Role.Student, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
         var user = User.Create(request.Name, request.Email);
         var result = await userManager.CreateAsync(user, request.Password);
 
         if (!result.Succeeded) return null;
 
-        var roleName = string.IsNullOrWhiteSpace(request.Role)
-            ? Role.Student
-            : request.Role;
+        var roleName = Role.Student;
 
         if (!string.IsNullOrWhiteSpace(roleName) && await roleManager.RoleExistsAsync(roleName))
         {
@@ -42,4 +45,3 @@ public sealed class IdentityUserRegistrationService(
             roleName);
     }
 }
-
