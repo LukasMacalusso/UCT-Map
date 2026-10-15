@@ -5,7 +5,7 @@ import { IconText } from '../../components/ui/IconText';
 import { CloseButton } from '../../components/ui/ExitButton';
 import { Button } from '../../components/ui/Button';
 import { Tag } from '../../components/ui/Tag';
-import type { Role } from '../../constants/role';
+import { ROLE_STYLES, type Role } from '../../constants/role';
 import type { PageColor } from '../../constants/colors';
 import MailIcon from '../../assets/svg/icons/icon_mail.svg?react';
 import StudyIcon from '../../assets/svg/icons/icon_study.svg?react';
@@ -29,16 +29,7 @@ export interface UserProfilePanelProps {
 
 const getRoleConfig = (role?: Role): { label: string; color: PageColor } => {
   if (!role) return { label: 'ESTUDIANTE', color: 'blue' };
-
-  switch (role) {
-    case 'ADMIN': return { label: 'ADMINISTRADOR', color: 'purple' };
-    case 'INCIDENTS_OFFICER': return { label: 'ENC. INCIDENTES', color: 'blue' };
-    case 'OBJECTS_OFFICER': return { label: 'ENC. OBJETOS', color: 'blue' };
-    case 'TEACHER': return { label: 'PROFESOR', color: 'dark' };
-    case 'OFFICIAL': return { label: 'FUNCIONARIO', color: 'green' };
-    case 'MEMBER': return { label: 'ESTUDIANTE', color: 'blue' };
-    default: return { label: 'USUARIO', color: 'gray' };
-  }
+  return ROLE_STYLES[role];
 };
 
 export const UserProfilePanel = ({

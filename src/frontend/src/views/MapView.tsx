@@ -18,6 +18,7 @@ import { useBuildingLocations } from '../hooks/useCampus';
 import { MapMarker } from '../components/ui/MapMarker';
 import { ActiveBuildingCard } from '../modules/map/ActiveBuildingCard';
 import type { BuildingLocationDto } from '../dtos/campus/BuildingLocationDto';
+import { Role } from '../constants/role';
 
 export const MapView = () => {
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -86,7 +87,7 @@ export const MapView = () => {
             <div className="absolute bottom-6 right-6 z-20 flex items-end gap-6">
 
               {/* Animate container */}
-              <RoleGuard allowedRoles={['ADMIN']}>
+              <RoleGuard allowedRoles={[Role.Admin]}>
                 <div
                   className={`transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                     isEditorOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-10 opacity-0 pointer-events-none'
@@ -98,7 +99,7 @@ export const MapView = () => {
 
               {/* Map controls */}
               <div className="flex flex-col gap-2">
-                <RoleGuard allowedRoles={['ADMIN']}>
+                <RoleGuard allowedRoles={[Role.Admin]}>
                   <SquareButton
                     onClick={() => setIsEditorOpen(!isEditorOpen)}
                     title="Editar mapa"

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Select } from '../components/ui/Select';
 import { SearchInput } from '../components/ui/SearchInput';
+import { Role } from '../constants/role';
 
 import SearchIcon from '../assets/svg/icons/icon_search.svg?react';
 import CategoryIcon from '../assets/svg/icons/icon_category_cube.svg?react';
@@ -12,12 +13,11 @@ export const AdministrationView = () => {
   // Role filter options
   const roleOptions = [
     { value: 'todos', label: 'Todos los roles' },
-    { value: 'MEMBER', label: 'Miembro' },
-    { value: 'TEACHER', label: 'Profesor' },
-    { value: 'OFFICIAL', label: 'Funcionario' },
-    { value: 'ADMIN', label: 'Administrador' },
-    { value: 'INCIDENTS_OFFICER', label: 'Encargado de Incidentes' },
-    { value: 'OBJECTS_OFFICER', label: 'Encargado de Objetos' },
+    { value: Role.Student, label: 'Estudiante' },
+    { value: Role.Teacher, label: 'Profesor' },
+    { value: Role.Admin, label: 'Administrador' },
+    { value: Role.ComplaintsOfficer, label: 'Encargado de Incidentes' },
+    { value: Role.ObjectsOfficer, label: 'Encargado de Objetos' },
   ];
 
   // Search suggestions (mock)

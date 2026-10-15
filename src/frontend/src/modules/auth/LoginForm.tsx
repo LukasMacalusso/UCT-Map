@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useLogin } from '../../hooks/useLogin';
 import { decodeJwt } from '../../utils/JwtManagement';
-import type { Role } from '../../constants/role';
+import { Role, isRole } from '../../constants/role';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -29,7 +29,7 @@ export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
       const token = response.token || '';
       const decoded = decodeJwt(token);
 
-      const assignedRole = (decoded?.role as Role) || 'MEMBER';
+      const assignedRole = isRole(decoded?.role) ? decoded.role : Role.Student;
       const userName = email.split('@')[0];
 
       realLogin(token, {

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useAuthState } from './authState';
+import { Role } from '../constants/role';
 
 describe('useAuthState store', () => {
   beforeEach(() => {
@@ -19,7 +20,7 @@ describe('useAuthState store', () => {
       id: '1',
       name: 'Nacho',
       email: 'nacho@uct.cl',
-      role: 'ADMIN' as const,
+      role: Role.Admin,
       registeredAt: '2026-10-11',
     };
 
@@ -27,13 +28,13 @@ describe('useAuthState store', () => {
 
     const state = useAuthState.getState();
     expect(state.isAuthenticated).toBe(true);
-    expect(state.user?.role).toBe('ADMIN');
+    expect(state.user?.role).toBe(Role.Admin);
     expect(localStorage.getItem('jwt_token')).toBe('jwt_12345');
     expect(JSON.parse(localStorage.getItem('user_identity') || '{}').name).toBe('Nacho');
   });
 
   it('removes data from localStorage on logout', () => {
-    useAuthState.getState().mockLoginAs('TEACHER');
+    useAuthState.getState().mockLoginAs(Role.Teacher);
     expect(useAuthState.getState().isAuthenticated).toBe(true);
 
     useAuthState.getState().logout();

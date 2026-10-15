@@ -1,11 +1,12 @@
 import httpClient from '../api/httpClient';
 import type { IdentityUserDto } from '../dtos/identity/IdentityUserDto';
+import { Role, isRole } from '../constants/role';
 
 export interface UserManagementData {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: Role;
   rut: string;
   avatarSrc?: string;
   isBanned: boolean;
@@ -18,7 +19,7 @@ export const userManagementService = {
       id: user.userId,
       name: user.name,
       email: user.email,
-      role: user.role || 'MEMBER',
+      role: isRole(user.role) ? user.role : Role.Student,
       rut: user.userId.length >= 12
         ? `${user.userId.slice(0, 2)}.${user.userId.slice(2, 5)}.${user.userId.slice(5, 8)}-${user.userId.slice(8, 9)}`
         : `ID: ${user.userId.slice(0, 8)}`,

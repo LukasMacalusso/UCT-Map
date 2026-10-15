@@ -5,7 +5,7 @@ import { Tag } from '../ui/Tag';
 import { useNavStore } from '../../states/navState';
 import { useAuthState } from '../../states/authState';
 import type { PageColor } from '../../constants/colors';
-import type { Role } from '../../constants/role';
+import { Role, ROLE_STYLES } from '../../constants/role';
 
 import logoUrl from '../../assets/svg/logo.svg';
 import MapIcon from '../../assets/svg/icons/icon_section_map.svg?react';
@@ -25,16 +25,7 @@ export const AppLayout = () => {
 
   const getRoleConfig = (role?: Role): { label: string; color: PageColor } => {
     if (!role) return { label: 'INVITADO', color: 'gray' };
-
-    switch (role) {
-      case 'ADMIN': return { label: 'ADMINISTRADOR', color: 'purple' };
-      case 'INCIDENTS_OFFICER': return { label: 'ENC. INCIDENTES', color: 'blue' };
-      case 'OBJECTS_OFFICER': return { label: 'ENC. OBJETOS', color: 'blue' };
-      case 'TEACHER': return { label: 'PROFESOR', color: 'dark' };
-      case 'OFFICIAL': return { label: 'FUNCIONARIO', color: 'green' };
-      case 'MEMBER': return { label: 'ESTUDIANTE', color: 'blue' };
-      default: return { label: 'USUARIO', color: 'gray' };
-    }
+    return ROLE_STYLES[role];
   };
 
   const roleConfig = getRoleConfig(user?.role);
@@ -137,7 +128,7 @@ export const AppLayout = () => {
           icon={<ContactsIcon className="w-8 h-8" />}
         />
 
-        <RoleGuard allowedRoles={['ADMIN']}>
+        <RoleGuard allowedRoles={[Role.Admin]}>
           <SectionButton
             to="/administration"
             label="Administración"

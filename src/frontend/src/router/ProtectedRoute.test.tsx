@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 import { useAuthState } from '../states/authState';
+import { Role } from '../constants/role';
 
 describe('ProtectedRoute Guard', () => {
   beforeEach(() => {
@@ -26,7 +27,7 @@ describe('ProtectedRoute Guard', () => {
   });
 
   it('allows access when user is authenticated', () => {
-    useAuthState.getState().mockLoginAs('MEMBER');
+    useAuthState.getState().mockLoginAs(Role.Student);
 
     render(
       <MemoryRouter initialEntries={['/private']}>
@@ -42,13 +43,13 @@ describe('ProtectedRoute Guard', () => {
   });
 
   it('blocks access when user role is not in allowedRoles', () => {
-    useAuthState.getState().mockLoginAs('MEMBER');
+    useAuthState.getState().mockLoginAs(Role.Student);
 
     render(
       <MemoryRouter initialEntries={['/admin']}>
         <Routes>
           <Route path="/map" element={<div>Map View</div>} />
-          <Route element={<ProtectedRoute allowedRoles={['ADMIN']} unauthorizedTo="/map" />}>
+          <Route element={<ProtectedRoute allowedRoles={[Role.Admin]} unauthorizedTo="/map" />}>
             <Route path="/admin" element={<div>Admin Panel</div>} />
           </Route>
         </Routes>
@@ -60,12 +61,12 @@ describe('ProtectedRoute Guard', () => {
   });
 
   it('allows access when user role matches allowedRoles', () => {
-    useAuthState.getState().mockLoginAs('ADMIN');
+    useAuthState.getState().mockLoginAs(Role.Admin);
 
     render(
       <MemoryRouter initialEntries={['/admin']}>
         <Routes>
-          <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+          <Route element={<ProtectedRoute allowedRoles={[Role.Admin]} />}>
             <Route path="/admin" element={<div>Admin Panel</div>} />
           </Route>
         </Routes>

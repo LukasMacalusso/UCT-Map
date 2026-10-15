@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Role } from '../../constants/role';
+import { Role } from '../../constants/role';
 import { Avatar } from '../../components/media/Avatar';
 import { Tag } from '../../components/ui/Tag';
 import { Select } from '../../components/ui/Select';
@@ -37,12 +37,11 @@ export const UserManagementCard = ({
   };
 
   const roleOptions = [
-    { value: 'MEMBER', label: 'Miembro' },
-    { value: 'TEACHER', label: 'Profesor' },
-    { value: 'OFFICIAL', label: 'Funcionario' },
-    { value: 'INCIDENTS_OFFICER', label: 'Encargado de Incidentes' },
-    { value: 'OBJECTS_OFFICER', label: 'Encargado de Objetos' },
-    { value: 'ADMIN', label: 'Administrador' },
+    { value: Role.Student, label: 'Estudiante' },
+    { value: Role.Teacher, label: 'Profesor' },
+    { value: Role.ComplaintsOfficer, label: 'Encargado de Incidentes' },
+    { value: Role.ObjectsOfficer, label: 'Encargado de Objetos' },
+    { value: Role.Admin, label: 'Administrador' },
   ];
 
   return (
