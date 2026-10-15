@@ -7,4 +7,5 @@ export interface UserIdentity {
   email: string;
   registeredAt: string;
   avatar?: string;
+  isSuspended?: boolean;
 }

@@ -17,7 +17,7 @@ import { BuildingFormModal } from '../modules/admin/BuildingFormModal';
 import { useBuildingLocations } from '../hooks/useCampus';
 import { MapMarker } from '../components/ui/MapMarker';
 import { ActiveBuildingCard } from '../modules/map/ActiveBuildingCard';
-import type { BuildingLocationDto } from '../interfaces/campus/BuildingLocationDto';
+import type { BuildingLocationDto } from '../dtos/campus/BuildingLocationDto';
 
 export const MapView = () => {
   const [searchQuery, setSearchQuery] = React.useState('');

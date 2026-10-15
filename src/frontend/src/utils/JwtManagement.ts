@@ -1,6 +1,6 @@
-import type { JwtPayload } from "../interfaces/JwtPayload";
+import type { JwtPayloadDto } from "../dtos/identity/JwtPayloadDto";
 
-export function decodeJwt(token: string): JwtPayload | null {
+export function decodeJwt(token: string): JwtPayloadDto | null {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
@@ -14,7 +14,7 @@ export function decodeJwt(token: string): JwtPayload | null {
     const msEmail = parsed['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
     const msSub = parsed['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
 
-    const payload: JwtPayload = {
+    const payload: JwtPayloadDto = {
       ...parsed,
       role: parsed.role || msRole,
       email: parsed.email || msEmail,
