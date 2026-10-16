@@ -1,5 +1,4 @@
 using Incident.Domain.Entities;
-using MongoDB.Bson;
 using System;
 
 namespace Incident.Application.DTOs;
@@ -13,4 +12,13 @@ public record TicketResponse(
     DateTime ReportedAt,
     ComplaintDetails? ComplaintDetails = null,
     string? LostObjectId = null);
+
+public record TicketPageResponse(
+    IReadOnlyList<TicketResponse> Items,
+    long TotalCount,
+    int Page,
+    int PageSize)
+{
+    public int TotalPages => (int)Math.Ceiling(TotalCount / (double)PageSize);
+}
 

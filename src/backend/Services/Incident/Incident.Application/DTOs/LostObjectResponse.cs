@@ -6,13 +6,17 @@ namespace Incident.Application.DTOs;
 public record LostObjectResponse(
     string Title,
     string Description,
+    string Date,
     string Status,
     string PhotoUrl,
     Guid StructureId // -> FindName
 );
 
-public record LostObjectList(
-    List<LostObjectResponse> Items,
-    int TotalCount
-);
-
+public record LostObjectPageResponse(
+    IReadOnlyList<LostObjectResponse> Items,
+    long TotalCount,
+    int Page,
+    int PageSize)
+{
+    public int TotalPages => (int)Math.Ceiling(TotalCount / (double)PageSize);
+}
