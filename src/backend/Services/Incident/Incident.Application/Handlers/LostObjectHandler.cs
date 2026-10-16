@@ -2,6 +2,7 @@ using ErrorOr;
 using Incident.Application.DTOs;
 using Incident.Domain.Entities;
 using Incident.Domain.Interfaces;
+using Incident.Domain.Queries;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
@@ -32,6 +33,7 @@ public class LostObjectHandler : ILostObjectHandler
             Title = request.Title,
             Description = request.Description,
             Status = (Objectenum)request.Status,
+            ReportedAt = DateTime.Now,
             PhotoUrl = request.PhotoUrl,
             StructureRefId = request.StructureId
         };
@@ -67,39 +69,47 @@ public class LostObjectHandler : ILostObjectHandler
     public async Task<ErrorOr<LostObjectResponse>> GetByIdAsync(string id)
     {
         var lostObject = await _lostObjectRepository.GetByIdAsync(id);
+
         if (lostObject is null) return Error.NotFound(
                 code: "LostObject.NotFound",
                 description: "LostObject with ID '{id}' not found."
             );
 
         return new LostObjectResponse(
-            lostObject.Title,
-            lostObject.Description,
-            Enum.GetName(typeof(Objectenum), lostObject.Status)!,
-            lostObject.PhotoUrl!,
-            lostObject.StructureRefId
+            Title: lostObject.Title,
+            Description: lostObject.Description,
+            Date: lostObject.ReportedAt.ToString(),
+            Status: Enum.GetName(typeof(Objectenum), lostObject.Status)!,
+            PhotoUrl: lostObject.PhotoUrl!,
+            StructureId: lostObject.StructureRefId
         );
     }
 
-    public async Task<ErrorOr<LostObjectList>> FilterStatusAsync(int status)
+    public async Task<ErrorOr<LostObjectPageResponse>> SearchAsync(LostObjectSearchRequest request, CancellationToken ct)
     {
-        if (!Enum.IsDefined(typeof(Objectenum), status)) return Error.Validation(
-                code: "LostObject.Validation",
-                description: "Invalid status '{status}'"
-            );
+        if (request.Status is not null && !Enum.IsDefined(typeof(Objectenum), request.Status.Value))
+            return Error.Validation("LostObject.Status", $"Invalid status '{request.Status}'.");
 
-        Objectenum estadoEnum = (Objectenum)status;
-        string estadoString = estadoEnum.ToString();
-        var lostObjects = await _lostObjectRepository.FilterStatusAsync(estadoString);
+        var criteria = new LostObjectSearchCriteria(
+            Title: string.IsNullOrWhiteSpace(request.Title) ? null : request.Title.Trim(),
+            StructureId: request.StructureId,
+            Status: request.Status is { } s ? (Objectenum)s : null,
+            SortBy: request.SortBy,
+            Descending: request.Descending,
+            Page: Math.Max(request.Page, 1),
+            PageSize: Math.Clamp(request.PageSize, 1, 10));
 
-        var mappedList = lostObjects.Select(lo => new LostObjectResponse(
-            lo.Title,
-            lo.Description,
-            Enum.GetName(typeof(Objectenum), lo.Status)!,
-            lo.PhotoUrl!,
-            lo.StructureRefId
-        )).ToList();
+        var result = await _lostObjectRepository.SearchAsync(criteria, ct);
 
-        return new LostObjectList(mappedList, mappedList.Count);
+        var items = result.Items.Select(lo => new LostObjectResponse(
+                Title: lo.Title,
+                Description: lo.Description,
+                Date: lo.ReportedAt.ToString(),
+                Status: lo.Status.ToString(),
+                PhotoUrl: lo.PhotoUrl!,
+                StructureId: lo.StructureRefId))
+            .ToList();
+
+        return new LostObjectPageResponse(items, result.TotalCount, criteria.Page, criteria.PageSize);
     }
 }

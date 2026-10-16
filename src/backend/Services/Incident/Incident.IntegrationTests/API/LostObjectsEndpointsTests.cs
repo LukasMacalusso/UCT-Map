@@ -1,3 +1,4 @@
+using Incident.Application.DTOs;
 using Incident.Domain.Entities;
 using Incident.IntegrationTests.Fixtures;
 using Incident.Infrastructure.Persistence.Repositories;
@@ -99,36 +100,92 @@ public class LostObjectsEndpointsTests : ApiTestBase
         Assert.Empty(await response.Content.ReadAsStringAsync());
     }
 
+    // ---------- GET (search) ----------
+
+    private static LostObject NewLostObject(
+        string title = "Mochila negra",
+        int status = 0,
+        Guid? structureId = null) => new()
+        {
+            Title = title,
+            Description = "Dejada en la biblioteca",
+            Status = (Objectenum)status,
+            ReportedAt = DateTime.UtcNow,
+            PhotoUrl = "https://campus.uct.cl/mochila.png",
+            StructureRefId = structureId ?? Guid.NewGuid()
+        };
+
     [DockerFact]
-    public async Task GetStatus_CuandoHayObjetosConEseEstado_Retorna204()
+    public async Task Get_SinFiltros_Retorna200ConTodos()
     {
         var repository = CreateRepository();
-        await repository.CreateAsync(new LostObject
-        {
-            Title = "Casco",
-            Description = "Resuelto",
-            Status = Objectenum.Resolved,
-            StructureRefId = Guid.NewGuid()
-        });
-        await repository.CreateAsync(new LostObject
-        {
-            Title = "Paraguas",
-            Description = "Pendiente",
-            Status = Objectenum.Pending,
-            StructureRefId = Guid.NewGuid()
-        });
+        await repository.CreateAsync(NewLostObject("Mochila"));
+        await repository.CreateAsync(NewLostObject("Paraguas"));
 
-        var response = await Http.GetAsync($"{Endpoint}/status/{(int)Objectenum.Resolved}");
+        var response = await Http.GetAsync(Endpoint);
 
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var page = await ReadJsonAsync<LostObjectPageResponse>(response);
+        Assert.NotNull(page);
+        Assert.Equal(2, page!.TotalCount);
+        Assert.Equal(2, page.Items.Count);
     }
 
     [DockerFact]
-    public async Task GetStatus_CuandoElStatusEsInvalido_Retorna400()
+    public async Task Get_FiltrandoPorStatus_RetornaSoloLosCoincidentes()
     {
-        var response = await Http.GetAsync($"{Endpoint}/status/99");
+        var repository = CreateRepository();
+        await repository.CreateAsync(NewLostObject("Resuelto 1", (int)Objectenum.Resolved));
+        await repository.CreateAsync(NewLostObject("Resuelto 2", (int)Objectenum.Resolved));
+        await repository.CreateAsync(NewLostObject("Pendiente", (int)Objectenum.Pending));
+
+        var response = await Http.GetAsync($"{Endpoint}?status={(int)Objectenum.Resolved}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var page = await ReadJsonAsync<LostObjectPageResponse>(response);
+        Assert.Equal(2, page!.TotalCount);
+        Assert.All(page.Items, i => Assert.Equal(nameof(Objectenum.Resolved), i.Status));
+    }
+
+    [DockerFact]
+    public async Task Get_FiltrandoPorTitle_RetornaSoloLosCoincidentes()
+    {
+        var repository = CreateRepository();
+        await repository.CreateAsync(NewLostObject("Mochila Negra"));
+        await repository.CreateAsync(NewLostObject("Paraguas azul"));
+
+        var response = await Http.GetAsync($"{Endpoint}?title=mochila");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var page = await ReadJsonAsync<LostObjectPageResponse>(response);
+        var item = Assert.Single(page!.Items);
+        Assert.Equal("Mochila Negra", item.Title);
+    }
+
+    [DockerFact]
+    public async Task Get_CuandoElStatusEsInvalido_Retorna400()
+    {
+        var response = await Http.GetAsync($"{Endpoint}?status=99");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await ReadJsonAsync<ProblemDetails>(response);
+        Assert.Equal("Invalid status '99'.", problem!.Title);
+    }
+
+    [DockerFact]
+    public async Task Get_CuandoPageSizeSuperaElTope_LoLimitaA10()
+    {
+        var repository = CreateRepository();
+        for (var i = 0; i < 12; i++)
+            await repository.CreateAsync(NewLostObject($"Objeto {i:D2}"));
+
+        var response = await Http.GetAsync($"{Endpoint}?page=1&pageSize=50");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var page = await ReadJsonAsync<LostObjectPageResponse>(response);
+        Assert.Equal(12, page!.TotalCount);
+        Assert.Equal(10, page.Items.Count);
+        Assert.Equal(10, page.PageSize);
     }
 
     [DockerFact]

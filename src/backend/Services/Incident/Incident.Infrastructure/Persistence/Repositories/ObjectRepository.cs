@@ -1,7 +1,8 @@
-using System.Reflection.Metadata;
+
 using Incident.Domain.Entities;
+using Incident.Domain.Queries;
 using Incident.Domain.Interfaces;
-using Incident.Infrastructure.Persistence;
+using Incident.Infrastructure.Persistence.Search;
 using MongoDB.Driver;
 
 namespace Incident.Infrastructure.Persistence.Repositories;
@@ -17,10 +18,6 @@ public class ObjectRepository : MongoRepository<LostObject>, ILostObjectReposito
         await base.CreateAsync(entity);
     }
 
-    public async Task<List<LostObject>> FilterStatusAsync(string status)
-    {
-        return await _collection.Find(x => x.Status.ToString() == status).ToListAsync();
-    }
     public async Task<bool> UpdateStatusAsync(LostObject lostObject, int status)
     {
         lostObject.Status = (Objectenum)status;
@@ -30,5 +27,19 @@ public class ObjectRepository : MongoRepository<LostObject>, ILostObjectReposito
 
         return result.ModifiedCount > 0;
     }
-}
+    public async Task<PagedResult<LostObject>> SearchAsync(LostObjectSearchCriteria c, CancellationToken ct)
+    {
+        var filter = LostObjectFilters.Build(c);
+        var sort = LostObjectFilters.Sort(c.SortBy, c.Descending);
 
+        var total = await _collection.CountDocumentsAsync(filter, cancellationToken: ct);
+
+        var items = await _collection.Find(filter)
+            .Sort(sort)
+            .Skip((c.Page - 1) * c.PageSize)
+            .Limit(c.PageSize)
+            .ToListAsync(ct);
+
+        return new PagedResult<LostObject>(items, total, c.Page, c.PageSize);
+    }
+}

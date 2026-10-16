@@ -24,7 +24,10 @@ public class LostObject
     [BsonRepresentation(BsonType.String)]
     public required Objectenum Status { get; set; }
 
+    [BsonElement("date_lost_object")]
+    [BsonRepresentation(BsonType.DateTime)]
+    public required DateTime ReportedAt { get; init; }
+
     [BsonElement("photo_url")]
     public string? PhotoUrl { get; init; }
 }
-
