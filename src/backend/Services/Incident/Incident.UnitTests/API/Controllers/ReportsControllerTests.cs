@@ -5,7 +5,11 @@ using Incident.Application.Handlers;
 using Incident.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using NSubstitute;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace Incident.UnitTests.API.Controllers;
 
@@ -18,6 +22,23 @@ public class ReportsControllerTests
     {
         _handler = Substitute.For<IReportHandler>();
         _controller = new ReportsController(_handler);
+        SetAuthorization(CreateBearer(Guid.NewGuid()));
+    }
+
+    private void SetAuthorization(string headerValue)
+    {
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Headers.Authorization = headerValue;
+        _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+    }
+
+    private static string CreateBearer(Guid userId)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("test-signing-key-0123456789abcdef"));
+        var token = new JwtSecurityToken(
+            claims: new[] { new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()) },
+            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
+        return $"Bearer {new JwtSecurityTokenHandler().WriteToken(token)}";
     }
 
     private static CreateReportRequest ValidRequest() =>
@@ -56,6 +77,33 @@ public class ReportsControllerTests
         var problem = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
         Assert.Equal("User ID is required.", Assert.IsType<ProblemDetails>(problem.Value).Title);
+    }
+
+    [Fact]
+    public async Task Create_CuandoNoHayToken_Retorna401()
+    {
+        SetAuthorization(string.Empty);
+
+        var result = await _controller.Create(ValidRequest());
+
+        Assert.IsType<UnauthorizedResult>(result);
+        await _handler.DidNotReceiveWithAnyArgs().CreateReportAsync(default!);
+    }
+
+    [Fact]
+    public async Task Create_UsaElUserIdDelToken_IgnorandoElDelBody()
+    {
+        var tokenUserId = Guid.NewGuid();
+        SetAuthorization(CreateBearer(tokenUserId));
+
+        CreateReportRequest? captured = null;
+        _handler.CreateReportAsync(Arg.Do<CreateReportRequest>(r => captured = r))
+            .Returns(Task.FromResult<ErrorOr<string>>("64b00000000000000000000b"));
+
+        await _controller.Create(ValidRequest());
+
+        Assert.NotNull(captured);
+        Assert.Equal(tokenUserId, captured!.UserRefId);
     }
 
     // ---------- GET by id ----------
