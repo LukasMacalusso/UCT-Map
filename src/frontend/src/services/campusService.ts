@@ -1,6 +1,6 @@
 import httpClient from '../api/httpClient';
-import type { BuildingLocationDto } from '../interfaces/campus/BuildingLocationDto';
-import type { RoomDto } from '../interfaces/campus/RoomDto';
+import type { BuildingLocationDto } from '../dtos/campus/BuildingLocationDto';
+import type { RoomDto } from '../dtos/campus/RoomDto';
 
 export const campusService = {
   getBuildingLocations: async (campusId?: string): Promise<BuildingLocationDto[]> => {

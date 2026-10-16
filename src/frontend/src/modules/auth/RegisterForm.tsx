@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import EyeIcon from '../../assets/svg/icons/icon_eye.svg?react';
 import { useRegister } from '../../hooks/useRegister';
 
 interface RegisterFormProps {
@@ -12,6 +13,8 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { mutateAsync: register, isPending: isRegisterLoading, error: registerError, reset: resetRegisterError } = useRegister();
 
@@ -38,8 +41,8 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
       
       alert("¡Cuenta creada con éxito! Ahora inicia sesión.");
       onSwitchToLogin();
-    } catch (err) {
-      // El error se maneja automáticamente en la variable 'registerError'
+    } catch {
+      return;
     }
   };
 
@@ -68,18 +71,40 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
         <Input
           label="Contraseña"
           labelColor="text-gray-700"
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           placeholder="••••••••"
           value={registerPassword}
           onChange={(e: any) => setRegisterPassword(e.target.value)}
+          rightElement={
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              className={`transition-colors ${showPassword ? 'text-page-blue' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              <EyeIcon className="w-5 h-5" />
+            </button>
+          }
         />
         <Input
           label="Confirmar Contraseña"
           labelColor="text-gray-700"
-          type="password"
+          type={showConfirmPassword ? 'text' : 'password'}
           placeholder="••••••••"
           value={registerConfirmPassword}
           onChange={(e: any) => setRegisterConfirmPassword(e.target.value)}
+          rightElement={
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={() => setShowConfirmPassword((v) => !v)}
+              aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              className={`transition-colors ${showConfirmPassword ? 'text-page-blue' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              <EyeIcon className="w-5 h-5" />
+            </button>
+          }
         />
 
         {registerError && (

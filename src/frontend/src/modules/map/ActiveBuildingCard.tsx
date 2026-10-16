@@ -1,4 +1,4 @@
-import type { BuildingLocationDto } from '../../interfaces/campus/BuildingLocationDto';
+import type { BuildingLocationDto } from '../../dtos/campus/BuildingLocationDto';
 import { useBuildingRooms } from '../../hooks/useCampus';
 import { BuildingDetailCard } from './BuildingDetailCard';
 import type { RoomData } from '../../interfaces/RoomData';

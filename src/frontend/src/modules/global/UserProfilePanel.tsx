@@ -5,7 +5,7 @@ import { IconText } from '../../components/ui/IconText';
 import { CloseButton } from '../../components/ui/ExitButton';
 import { Button } from '../../components/ui/Button';
 import { Tag } from '../../components/ui/Tag';
-import type { Role } from '../../constants/role';
+import { ROLE_STYLES, type Role } from '../../constants/role';
 import type { PageColor } from '../../constants/colors';
 import MailIcon from '../../assets/svg/icons/icon_mail.svg?react';
 import StudyIcon from '../../assets/svg/icons/icon_study.svg?react';
@@ -13,32 +13,26 @@ import CalendarIcon from '../../assets/svg/icons/icon_calendar.svg?react';
 import { ObjectReportCard } from '../objects/ObjectReportCard';
 import { IncidentCard } from '../incidents/IncidentCard';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 export interface UserProfilePanelProps {
   name: string;
-  admissionYear: string;
-  career: string;
+  admissionYear?: string;
+  career?: string;
   email: string;
   photoUrl?: string;
   role?: Role;
   objectReports?: any[];
   incidentReports?: any[];
+  isLoading?: boolean;
+  isOwnProfile?: boolean;
   onClose?: () => void;
   onLogout?: () => void;
 }
 
 const getRoleConfig = (role?: Role): { label: string; color: PageColor } => {
   if (!role) return { label: 'ESTUDIANTE', color: 'blue' };
-
-  switch (role) {
-    case 'ADMIN': return { label: 'ADMINISTRADOR', color: 'purple' };
-    case 'INCIDENTS_OFFICER': return { label: 'ENC. INCIDENTES', color: 'blue' };
-    case 'OBJECTS_OFFICER': return { label: 'ENC. OBJETOS', color: 'blue' };
-    case 'TEACHER': return { label: 'PROFESOR', color: 'dark' };
-    case 'OFFICIAL': return { label: 'FUNCIONARIO', color: 'green' };
-    case 'MEMBER': return { label: 'ESTUDIANTE', color: 'blue' };
-    default: return { label: 'USUARIO', color: 'gray' };
-  }
+  return ROLE_STYLES[role];
 };
 
 export const UserProfilePanel = ({
@@ -50,11 +44,17 @@ export const UserProfilePanel = ({
   role,
   objectReports = [],
   incidentReports = [],
+  isLoading = false,
+  isOwnProfile = true,
   onClose,
   onLogout,
 }: UserProfilePanelProps) => {
   const [activeTab, setActiveTab] = useState<'objects' | 'incidents'>('objects');
   const [prevTab, setPrevTab] = useState<'objects' | 'incidents'>('objects');
+
+  if (isLoading) {
+    return <LoadingSpinner size="xl" text="Cargando perfil..." className="py-12" />;
+  }
 
   const roleConfig = getRoleConfig(role);
 
@@ -89,14 +89,20 @@ export const UserProfilePanel = ({
           />
           
           <div className="flex flex-col gap-3.5 w-full px-2 mb-6">
-            <IconText icon={<CalendarIcon className="w-5 h-5 flex-shrink-0" />} text={`Ingreso: ${admissionYear}`} className="text-sm font-medium" />
-            <IconText icon={<StudyIcon className="w-5 h-5 flex-shrink-0" />} text={career} className="text-sm font-medium leading-snug" />
+            {admissionYear && (
+              <IconText icon={<CalendarIcon className="w-5 h-5 flex-shrink-0" />} text={`Ingreso: ${admissionYear}`} className="text-sm font-medium" />
+            )}
+            {career && (
+              <IconText icon={<StudyIcon className="w-5 h-5 flex-shrink-0" />} text={career} className="text-sm font-medium leading-snug" />
+            )}
             <IconText icon={<MailIcon className="w-5 h-5 flex-shrink-0" />} text={email} className="text-sm font-medium break-all" />
           </div>
 
-          <Button variant="outline" color="red" size="md" className="w-max px-6 font-bold tracking-wide" onClick={onLogout}>
-            CERRAR SESIÓN
-          </Button>
+          {onLogout && (
+            <Button variant="outline" color="red" size="md" className="w-max px-6 font-bold tracking-wide" onClick={onLogout}>
+              CERRAR SESIÓN
+            </Button>
+          )}
         </div>
 
         {/* Vertical Divider */}
@@ -105,7 +111,7 @@ export const UserProfilePanel = ({
 
         {/* Right Section: Reports */}
         <div className="flex flex-col flex-1 w-full min-w-0 lg:pt-2 h-full">
-          <h3 className="text-xl font-black text-gray-700 uppercase tracking-wider mb-2 px-1">Tus Contribuciones</h3>
+          <h3 className="text-xl font-black text-gray-700 uppercase tracking-wider mb-2 px-1">{isOwnProfile ? 'Tus Contribuciones' : 'Contribuciones'}</h3>
           
           <div className="relative flex border-b-2 border-gray-200 mt-1 flex-shrink-0">
             <button 

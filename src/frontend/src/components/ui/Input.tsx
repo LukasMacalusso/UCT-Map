@@ -6,11 +6,13 @@ type InputProps = {
   error?: string;
   multiline?: boolean;
   icon?: React.ReactNode;
+  rightElement?: React.ReactNode;
 } & React.InputHTMLAttributes<HTMLInputElement> & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
 export const Input = React.forwardRef<any, InputProps>(
-  ({ label, labelColor = 'text-white', error, className = '', multiline, icon, placeholder, ...props }, ref) => {
+  ({ label, labelColor = 'text-white', error, className = '', multiline, icon, rightElement, placeholder, ...props }, ref) => {
     const inputPlaceholder = placeholder !== undefined ? placeholder : (props as any).placeholder;
+    const paddingClass = `${icon ? 'pl-12' : 'pl-4'} ${rightElement ? 'pr-12' : 'pr-4'}`;
 
     return (
       <div className="flex flex-col gap-1 w-full relative">
@@ -31,7 +33,7 @@ export const Input = React.forwardRef<any, InputProps>(
             <textarea
               ref={ref}
               placeholder={inputPlaceholder}
-              className={`peer w-full ${icon ? 'pl-12 pr-4' : 'px-4'} py-3 border-2 rounded-[18px] outline-none bg-white relative z-10 transition-colors
+              className={`peer w-full ${paddingClass} py-3 border-2 rounded-[18px] outline-none bg-white relative z-10 transition-colors
                 placeholder:text-gray-400 placeholder:opacity-100 text-gray-900 font-medium
                 ${error ? 'border-red-300' : 'border-gray-400'}
                 ${className}
@@ -42,7 +44,7 @@ export const Input = React.forwardRef<any, InputProps>(
             <input
               ref={ref}
               placeholder={inputPlaceholder}
-              className={`peer w-full ${icon ? 'pl-12 pr-4' : 'px-4'} py-3 border-2 rounded-[18px] outline-none bg-white relative z-10 transition-colors
+              className={`peer w-full ${paddingClass} py-3 border-2 rounded-[18px] outline-none bg-white relative z-10 transition-colors
                 placeholder:text-gray-400 placeholder:opacity-100 text-gray-900 font-medium
                 ${error ? 'border-red-300' : 'border-gray-400'}
                 ${className}
@@ -64,6 +66,12 @@ export const Input = React.forwardRef<any, InputProps>(
               maskComposite: 'exclude'
             }}
           />
+
+          {rightElement && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 z-30 flex items-center">
+              {rightElement}
+            </div>
+          )}
         </div>
 
         {error && <span className="text-xs text-red-500 pl-4">{error}</span>}
@@ -73,4 +81,3 @@ export const Input = React.forwardRef<any, InputProps>(
 );
 
 Input.displayName = 'Input';
-
