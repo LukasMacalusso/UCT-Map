@@ -1,8 +1,8 @@
 using Incident.Application.DTOs;
 using Incident.Domain.Entities;
 using Incident.IntegrationTests.Fixtures;
-using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 namespace Incident.IntegrationTests.API;
@@ -12,7 +12,16 @@ public class ReportsEndpointsTests : ApiTestBase
 {
     private const string Endpoint = "/api/incident/reports";
 
+    /// <summary>Usuario autenticado cuyos reportes se crean en estos tests.</summary>
+    private static readonly Guid TestUserId = Guid.NewGuid();
+
     public ReportsEndpointsTests(MongoFixture fixture) : base(fixture) { }
+
+    protected override void ConfigureHttp(HttpClient http)
+    {
+        http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", TestJwt.Create(TestUserId));
+    }
 
     private sealed record CreatedResponse(string Id);
 
@@ -38,12 +47,12 @@ public class ReportsEndpointsTests : ApiTestBase
     [DockerFact]
     public async Task Post_CuandoElRequestEsValido_Retorna201YElGetDevuelveElTicket()
     {
-        var userRefId = Guid.NewGuid();
+        var bodyUserRefId = Guid.NewGuid();
         var structureRefId = Guid.NewGuid();
 
         var response = await Http.PostAsync(Endpoint, JsonBody(new
         {
-            userRefId,
+            userRefId = bodyUserRefId,
             structureRefId,
             ticketType = (int)Tickets.In_Process,
             isActive = false,
@@ -60,7 +69,9 @@ public class ReportsEndpointsTests : ApiTestBase
         var ticket = await ReadJsonAsync<TicketResponse>(get);
         Assert.NotNull(ticket);
         Assert.Equal(created.Id, ticket.Id);
-        Assert.Equal(userRefId, ticket.UserRefId);
+        // El UserRefId proviene del token, no del body.
+        Assert.Equal(TestUserId, ticket.UserRefId);
+        Assert.NotEqual(bodyUserRefId, ticket.UserRefId);
         Assert.Equal(structureRefId, ticket.StructureRefId);
         Assert.Equal(Tickets.In_Process, ticket.TicketType);
         Assert.False(ticket.IsActive);
@@ -70,13 +81,13 @@ public class ReportsEndpointsTests : ApiTestBase
     }
 
     [DockerFact]
-    public async Task Post_CuandoElUserRefIdEsVacio_Retorna400()
+    public async Task Post_CuandoNoHayToken_Retorna401()
     {
-        var response = await Http.PostAsync(Endpoint, JsonBody(NewReportBody(userRefId: Guid.Empty)));
+        using var anonymous = Factory.CreateClient();
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var problem = await ReadJsonAsync<ProblemDetails>(response);
-        Assert.Equal("User ID is required.", problem!.Title);
+        var response = await anonymous.PostAsync(Endpoint, JsonBody(NewReportBody()));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [DockerFact]

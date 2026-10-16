@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from '../states/authState';
-import type { Role } from '../constants/role';
+import { Role } from '../constants/role';
 import { Button } from '../components/ui/Button';
 import { LoginForm } from '../modules/auth/LoginForm';
 import { RegisterForm } from '../modules/auth/RegisterForm';
@@ -193,27 +193,23 @@ export const LoginView = () => {
 
           <div className="w-full h-px bg-gray-100 my-0.5"></div>
 
-          <Button onClick={() => handleLogin('MEMBER')} color="blue" size="sm" className="!w-full !px-2 !py-1 !text-xs">
+          <Button onClick={() => handleLogin(Role.Student)} color="blue" size="sm" className="!w-full !px-2 !py-1 !text-xs">
             Estudiante
           </Button>
 
-          <Button onClick={() => handleLogin('TEACHER')} color="dark" size="sm" className="!w-full !px-2 !py-1 !text-xs">
+          <Button onClick={() => handleLogin(Role.Teacher)} color="dark" size="sm" className="!w-full !px-2 !py-1 !text-xs">
             Profesor
           </Button>
 
-          <Button onClick={() => handleLogin('OFFICIAL')} color="green" size="sm" className="!w-full !px-2 !py-1 !text-xs">
-            Funcionario
-          </Button>
-
-          <Button onClick={() => handleLogin('INCIDENTS_OFFICER')} color="blue" size="sm" className="!w-full !px-2 !py-1 !text-xs">
+          <Button onClick={() => handleLogin(Role.ComplaintsOfficer)} color="blue" size="sm" className="!w-full !px-2 !py-1 !text-xs">
             Enc. Incidentes
           </Button>
 
-          <Button onClick={() => handleLogin('OBJECTS_OFFICER')} color="blue" size="sm" className="!w-full !px-2 !py-1 !text-xs">
+          <Button onClick={() => handleLogin(Role.ObjectsOfficer)} color="blue" size="sm" className="!w-full !px-2 !py-1 !text-xs">
             Enc. Objetos
           </Button>
 
-          <Button onClick={() => handleLogin('ADMIN')} color="purple" size="sm" className="!w-full !px-2 !py-1 !text-xs">
+          <Button onClick={() => handleLogin(Role.Admin)} color="purple" size="sm" className="!w-full !px-2 !py-1 !text-xs">
             Admin
           </Button>
         </div>

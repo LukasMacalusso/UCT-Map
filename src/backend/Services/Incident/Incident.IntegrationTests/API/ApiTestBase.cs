@@ -23,8 +23,15 @@ public abstract class ApiTestBase : IAsyncLifetime
     {
         Factory = new IncidentApiFactory(_fixture);
         Http = Factory.CreateClient();
+        ConfigureHttp(Http);
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    /// Permite a las clases derivadas ajustar el <see cref="HttpClient"/> (por
+    /// ejemplo agregar el header Authorization) antes de correr los tests.
+    /// </summary>
+    protected virtual void ConfigureHttp(HttpClient http) { }
 
     public async Task DisposeAsync()
     {

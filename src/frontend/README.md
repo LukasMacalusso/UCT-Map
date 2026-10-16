@@ -36,7 +36,7 @@ Para mantener la arquitectura escalable, las piezas de interfaz más complejas (
 
 | Módulo | Componente | Descripción del componente | Parámetros |
 |---|---|---|---|
-| `admin` | `UserManagementCard` | Tarjeta para la gestión administrativa de usuarios, roles y baneos. | `user`, `roles`, `onRoleChange`, `onToggleBan` |
+| `admin` | `UserManagementCard` | Tarjeta para la gestión administrativa de usuarios, roles y suspensiones. | `role`, `isSuspended`, `onRoleChange`, `onToggleSuspension` |
 | `admin` | `MapEditorPanel` | Panel animado con herramientas para la edición interactiva del mapa. | N/A |
 | `global` | `UserProfilePanel` | Panel lateral con información del usuario logueado y reportes activos. | `name`, `admissionYear`, `career`, `email`, `photoUrl`, `objectReports`, `incidentReports`, `onClose` |
 | `map` | `BuildingDetailCard` | Tarjeta/Modal detallado de edificio con carrusel, horarios y salas. | `title`, `subtitle`, `images`, `schedule`, `floors`, `services`, `rooms`, `onClose`, `onNavigate`, `onView360`, `onReportProblem` |

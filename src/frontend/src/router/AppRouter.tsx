@@ -8,6 +8,7 @@ import { ShowcaseView } from '../views/ShowcaseView';
 import { LoginView } from '../views/LoginView';
 import { ProtectedRoute } from './ProtectedRoute';
 import { AdministrationView } from '../views/AdministrationView';
+import { Role } from '../constants/role';
 
 export const AppRouter = () => {
   return (
@@ -29,7 +30,7 @@ export const AppRouter = () => {
         </Route>
 
         {/* Role-Restricted Routes */}
-        <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+        <Route element={<ProtectedRoute allowedRoles={[Role.Admin]} />}>
           <Route path="/administration" element={<AdministrationView />} />
         </Route>
 

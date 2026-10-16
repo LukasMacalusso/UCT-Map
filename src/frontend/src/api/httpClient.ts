@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthState } from '../states/authState';
+import { decodeJwt } from '../utils/JwtManagement';
 
 const httpClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
@@ -7,7 +8,11 @@ const httpClient = axios.create({
 });
 
 const ERROR_HANDLERS: Record<number, () => void> = {
-  401: () => useAuthState.getState().logout(),
+  401: () => {
+    const { token } = useAuthState.getState();
+    if (token && decodeJwt(token)?.isMock === true) return;
+    useAuthState.getState().logout();
+  },
   403: () => console.warn('You do not have permission'),
   404: () => console.warn('Resource not found'),
 };

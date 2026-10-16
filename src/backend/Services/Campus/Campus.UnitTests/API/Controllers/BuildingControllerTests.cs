@@ -183,6 +183,33 @@ public class BuildingControllerTests
     }
 
     [Fact]
+    public async Task UpdateLocation_WhenNotFound_ShouldReturnProblem404()
+    {
+        var id = Guid.NewGuid();
+        _repository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((Building?)null);
+
+        var request = new UpdateLocationDto(10.5, 20.5);
+        var result = await _controller.UpdateLocation(id, request, CancellationToken.None);
+
+        var problem = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status404NotFound, problem.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateLocation_WhenValid_ShouldReturnNoContent()
+    {
+        var building = new Building("Edificio", 2, new Coordinate(0, 0), Guid.NewGuid());
+        _repository.GetByIdAsync(building.Id, Arg.Any<CancellationToken>()).Returns(building);
+
+        var request = new UpdateLocationDto(-38.73, -72.60);
+        var result = await _controller.UpdateLocation(building.Id, request, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Equal(-38.73, building.Coordinates.Latitude);
+        Assert.Equal(-72.60, building.Coordinates.Longitude);
+    }
+
+    [Fact]
     public async Task Delete_WhenNotFound_ShouldReturnProblem404()
     {
         var id = Guid.NewGuid();

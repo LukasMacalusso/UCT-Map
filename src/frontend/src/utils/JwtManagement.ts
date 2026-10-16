@@ -1,6 +1,14 @@
-import type { JwtPayload } from "../interfaces/JwtPayload";
+import type { JwtPayloadDto } from "../dtos/identity/JwtPayloadDto";
+import { ROLES, type Role } from "../constants/role";
 
-export function decodeJwt(token: string): JwtPayload | null {
+export function normalizeRole(value: unknown): Role | undefined {
+  const candidates = (Array.isArray(value) ? value : [value]).filter(
+    (item): item is string => typeof item === "string"
+  );
+  return ROLES.find((role) => candidates.includes(role));
+}
+
+export function decodeJwt(token: string): JwtPayloadDto | null {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
@@ -14,9 +22,9 @@ export function decodeJwt(token: string): JwtPayload | null {
     const msEmail = parsed['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
     const msSub = parsed['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
 
-    const payload: JwtPayload = {
+    const payload: JwtPayloadDto = {
       ...parsed,
-      role: parsed.role || msRole,
+      role: normalizeRole(parsed.role) ?? normalizeRole(msRole),
       email: parsed.email || msEmail,
       sub: parsed.sub || msSub,
     };

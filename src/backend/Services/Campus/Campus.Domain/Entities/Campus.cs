@@ -30,5 +30,10 @@ public class Campus
         this.Coordinates = coordinates;
     }
 
+    public void UpdateLocation(Coordinate coordinates)
+    {
+        this.Coordinates = coordinates;
+    }
+
     protected Campus() { }
 }

@@ -34,6 +34,7 @@ import { UserProfilePanel } from '../modules/global/UserProfilePanel';
 import { SearchInput } from '../components/ui/SearchInput';
 import { NumberSelect } from '../components/ui/NumberSelect';
 import type { FilterSection } from '../interfaces/FilterSection';
+import { Role } from '../constants/role';
 
 import BuildingIcon from '../assets/svg/icons/icon_building.svg?react';
 import MapPinIcon from '../assets/svg/icons/icon_map_pin.svg?react';
@@ -147,17 +148,15 @@ export const ShowcaseView = () => {
         <UserManagementCard
           id="showcase-1"
           name="Juan Pérez"
-          rut="11.111.111-1"
           email="juan.perez@uct.cl"
-          initialRole="MEMBER"
+          role={Role.Student}
         />
         <UserManagementCard
           id="showcase-2"
           name="Carlos Hacker"
-          rut="33.333.333-3"
           email="carlos.h@uct.cl"
-          initialRole="TEACHER"
-          isBanned={true}
+          role={Role.Teacher}
+          isSuspended={true}
         />
       </div>
 

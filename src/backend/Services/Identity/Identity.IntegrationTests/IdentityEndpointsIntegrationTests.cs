@@ -23,6 +23,7 @@ public sealed class IdentityEndpointsIntegrationTests
         var userManager = provider.GetRequiredService<UserManager<User>>();
         var roleManager = provider.GetRequiredService<RoleManager<Role>>();
         await roleManager.CreateAsync(new Role(Role.Student));
+        await roleManager.CreateAsync(new Role(Role.Teacher));
 
         var controller = new IdentityController(
             new LoginHandler(
@@ -65,6 +66,22 @@ public sealed class IdentityEndpointsIntegrationTests
         var users = Assert.IsType<OkObjectResult>(getAllResult);
         var allUsers = Assert.IsAssignableFrom<IReadOnlyList<RegisteredUserResponse>>(users.Value);
         Assert.Contains(allUsers, user => user.UserId == registeredUser.UserId);
+
+        var roleManagementService = new IdentityRoleManagementService(userManager, roleManager);
+        var roleResult = await roleManagementService.AddRoleAsync(
+            registeredUser.UserId,
+            Role.Teacher);
+        Assert.True(roleResult.IsError is false);
+        Assert.Contains(Role.Teacher, roleResult.Value.Roles);
+
+        var suspensionResult = await roleManagementService.SetSuspendedAsync(
+            registeredUser.UserId,
+            true);
+        Assert.True(suspensionResult.Value.IsSuspended);
+
+        var suspendedLoginResult = await new IdentityUserAuthenticator(userManager)
+            .AuthenticateAsync("ana@uct.cl", "Password123!");
+        Assert.Null(suspendedLoginResult);
     }
 
     private static ServiceProvider CreateIdentityServices()

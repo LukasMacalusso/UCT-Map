@@ -1,5 +1,5 @@
 import { type PageColor, bgPageColors } from '../../constants/colors';
-import { CloseButton } from '../ui/ExitButton'; // <-- Asegúrate de que la ruta coincida con tu archivo
+import { CloseButton } from '../ui/ExitButton';
 
 export type PanelSize = 'sm' | 'md' | 'lg' | 'xl' | 'auto';
 

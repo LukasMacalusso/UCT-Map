@@ -1,9 +1,9 @@
-import type { LoginVariables } from '../interfaces/LoginVariables';
+import type { LoginRequestDto } from '../dtos/identity/LoginRequestDto';
 import { useMutation } from '@tanstack/react-query';
 import { authService } from '../services/authService';
 
 export const useLogin = () => {
   return useMutation({
-    mutationFn: (data: LoginVariables) => authService.login(data.email, data.password),
+    mutationFn: (data: LoginRequestDto) => authService.login(data.email, data.password),
   });
 };

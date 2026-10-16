@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { campusService } from '../services/campusService';
-import type { BuildingLocationDto } from '../interfaces/campus/BuildingLocationDto';
-import type { RoomDto } from '../interfaces/campus/RoomDto';
+import type { BuildingLocationDto } from '../dtos/campus/BuildingLocationDto';
+import type { RoomDto } from '../dtos/campus/RoomDto';
 
 export const useBuildingLocations = (campusId?: string) => {
   return useQuery<BuildingLocationDto[], Error>({

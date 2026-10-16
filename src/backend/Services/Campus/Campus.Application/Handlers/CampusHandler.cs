@@ -53,6 +53,19 @@ public class CampusHandler
         return true;
     }
 
+    public async Task<bool> UpdateLocationAsync(Guid id, UpdateLocationDto request, CancellationToken cancellationToken)
+    {
+        var campus = await _repository.GetByIdAsync(id, cancellationToken);
+        if (campus == null) return false;
+
+        var coordinates = new Coordinate(request.Latitude, request.Longitude);
+        campus.UpdateLocation(coordinates);
+
+        _repository.Update(campus);
+        await _repository.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var campus = await _repository.GetByIdAsync(id, cancellationToken);
