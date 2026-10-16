@@ -74,4 +74,22 @@ public class ReportsController : ControllerBase
             }
         );
     }
+
+    [HttpGet]
+    public async Task<IActionResult> Search([FromQuery] TicketSearchRequest request, CancellationToken ct)
+    {
+        var result = await _reportHandler.SearchAsync(request, ct);
+        return result.Match(
+            page => Ok(page),
+            errors =>
+            {
+                var firstError = errors.First();
+                var statusCode = firstError.Type switch
+                {
+                    ErrorType.NotFound => StatusCodes.Status404NotFound,
+                    _ => StatusCodes.Status400BadRequest
+                };
+                return Problem(statusCode: statusCode, title: firstError.Description);
+            });
+    }
 }

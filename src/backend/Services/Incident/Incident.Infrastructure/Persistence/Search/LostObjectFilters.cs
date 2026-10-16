@@ -14,9 +14,9 @@ internal static class LostObjectFilters
     {
         var parts = new List<FilterDefinition<LostObject>>();
 
-        if (c.Title is not null)       parts.Add(ByTitle(c.Title));
-        if (c.StructureId is { } s)    parts.Add(ByStructure(s));
-        if (c.Status is { } st)        parts.Add(ByStatus(st));
+        if (c.Title is not null) parts.Add(ByTitle(c.Title));
+        if (c.StructureId is { } s) parts.Add(ByStructure(s));
+        if (c.Status is { } st) parts.Add(ByStatus(st));
 
         return parts.Count == 0 ? F.Empty : F.And(parts);
     }
@@ -35,9 +35,9 @@ internal static class LostObjectFilters
         var s = Builders<LostObject>.Sort;
         return field switch
         {
-            LostObjectSortField.Title  => desc ? s.Descending(x => x.Title)     : s.Ascending(x => x.Title),
-            LostObjectSortField.Status => desc ? s.Descending(x => x.Status)    : s.Ascending(x => x.Status),
-            _                          => desc ? s.Descending(x => x.ReportedAt) : s.Ascending(x => x.ReportedAt),
+            LostObjectSortField.Title => desc ? s.Descending(x => x.Title) : s.Ascending(x => x.Title),
+            LostObjectSortField.Status => desc ? s.Descending(x => x.Status) : s.Ascending(x => x.Status),
+            _ => desc ? s.Descending(x => x.ReportedAt) : s.Ascending(x => x.ReportedAt),
         };
     }
 }

@@ -6,6 +6,8 @@ using Incident.Application.Handlers;
 using Incident.Application.Common;
 using System.Threading.Tasks;
 using System;
+using System.Linq;
+using Incident.Domain.Queries;
 
 namespace Incident.Application.Handlers;
 
@@ -34,7 +36,6 @@ public class ReportHandler : IReportHandler
 
         if (request.LostObjectId is not null)
         {
-            Console.WriteLine(request.LostObjectId);
             var lostObject = await _lostobjectRepository.GetByIdAsync(request.LostObjectId);
             if (lostObject is null) return Error.NotFound(
                     code: "LostObject.NotFound",
@@ -121,5 +122,63 @@ public class ReportHandler : IReportHandler
                 description: $"Failed to update status for Ticket complain with ID '{ticket.Id}'."
             );
         return Result.Success;
+    }
+
+    public async Task<ErrorOr<TicketPageResponse>> SearchAsync(TicketSearchRequest request, CancellationToken ct)
+    {
+        if (request.Type is not null && !Enum.IsDefined(typeof(Tickets), request.Type.Value))
+            return Error.Validation(
+                code: "Ticket.Type",
+                description: $"Invalid type '{request.Type}'."
+            );
+
+        if (request.ComplaintDetails?.Status is { } complaintStatus &&
+            !Enum.IsDefined(typeof(Complainenum), complaintStatus))
+            return Error.Validation(
+                code: "Ticket.ComplaintStatus",
+                description: $"Invalid complaint status '{complaintStatus}'."
+            );
+
+        var criteria = new TicketSearchCriteria(
+            UserRefId: request.UserRefId,
+            StructureRefId: request.StructureRefId,
+            Type: request.Type is { } t ? (Tickets)t : null,
+            IsActive: request.IsActive,
+            SortBy: request.SortBy,
+            Location: request.Location,
+            LostObjectId: string.IsNullOrWhiteSpace(request.LostObjectId) ? null : request.LostObjectId.Trim(),
+            ComplaintDetails: ComplaintCriteria(request.ComplaintDetails),
+            Descending: request.Descending,
+            Page: Math.Max(request.Page, 1),
+            PageSize: Math.Clamp(request.PageSize, 1, 10));
+
+        var result = await _ticketRepository.SearchAsync(criteria, ct);
+
+        var items = result.Items.Select(ticket => new TicketResponse(
+                Id: ticket.Id!,
+                UserRefId: ticket.UserRefId,
+                StructureRefId: ticket.StructureRefId,
+                TicketType: ticket.TicketType,
+                IsActive: ticket.IsActive,
+                ReportedAt: ticket.ReportedAt,
+                ComplaintDetails: ticket.ComplaintDetails,
+                LostObjectId: ticket.LostObjectId))
+            .ToList();
+
+        return new TicketPageResponse(items, result.TotalCount, criteria.Page, criteria.PageSize);
+    }
+
+
+    private static ComplaintSearchCriteria? ComplaintCriteria(ComplaintSearchRequest? request)
+    {
+        if (request is null) return null;
+
+        var title = string.IsNullOrWhiteSpace(request.Title) ? null : request.Title.Trim();
+        var description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+        var status = request.Status is { } s ? (Complainenum?)s : null;
+
+        if (title is null && description is null && status is null) return null;
+
+        return new ComplaintSearchCriteria(title, description, status);
     }
 }

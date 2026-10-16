@@ -189,4 +189,42 @@ public class ReportsControllerTests
         var problem = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
     }
+
+    // ---------- GET (search) ----------
+
+    [Fact]
+    public async Task Search_CuandoElHandlerTieneExito_Retorna200ConLaPagina()
+    {
+        var page = new TicketPageResponse(
+            new List<TicketResponse>
+            {
+                new("64b00000000000000000000b", Guid.NewGuid(), Guid.NewGuid(),
+                    Tickets.Pending, true, DateTime.UtcNow)
+            },
+            TotalCount: 1,
+            Page: 1,
+            PageSize: 10);
+        _handler.SearchAsync(Arg.Any<TicketSearchRequest>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<ErrorOr<TicketPageResponse>>(page));
+
+        var result = await _controller.Search(new TicketSearchRequest(), CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(StatusCodes.Status200OK, ok.StatusCode);
+        Assert.Same(page, ok.Value);
+    }
+
+    [Fact]
+    public async Task Search_CuandoElHandlerValida_Retorna400ConProblemDetails()
+    {
+        _handler.SearchAsync(Arg.Any<TicketSearchRequest>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<ErrorOr<TicketPageResponse>>(
+                Error.Validation("Ticket.Type", "Invalid type '99'.")));
+
+        var result = await _controller.Search(new TicketSearchRequest(Type: 99), CancellationToken.None);
+
+        var problem = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
+        Assert.Equal("Invalid type '99'.", Assert.IsType<ProblemDetails>(problem.Value).Title);
+    }
 }

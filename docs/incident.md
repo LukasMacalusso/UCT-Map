@@ -54,6 +54,8 @@ Handles the reporting and tracking of campus incidents and complaints, together 
 ## 1. Reports
 *A report (or ticket) submitted by a user about a structure, optionally tied to a lost object or carrying complaint details.*
 
+> **Filtering/search** is served by the search endpoint: `GET /api/incident/reports?{filters}` (see [1.4](#14-search-reports)). There is no dedicated status-filter route.
+
 ### 1.1 Create Report
 - **Route**: `POST /api/incident/reports`
 - **Access**: Any authenticated user
@@ -138,10 +140,73 @@ The `Location` header points to 1.2.
 
 ---
 
+### 1.4 Search Reports
+- **Route**: `GET /api/incident/reports`
+- **Access**: Any authenticated user
+- **Description**: Advanced, paged search over tickets. **All query parameters are optional** and, when several are sent, they are combined with `AND`; omitted parameters are simply ignored. The user taken from the JWT is **not** applied automatically — send `userRefId` explicitly to scope the results to a given user. Results are sorted and paginated server side.
+
+**Query Parameters**
+
+| Name | Type | Default | Notes |
+| :--- | :--- | :--- | :--- |
+| `userRefId` | `uuid` | — | Exact match with the report author. |
+| `structureRefId` | `uuid` | — | Exact match with the structure. |
+| `type` | `int` | — | Ticket status: `0` Pending, `1` In_Process, `2` Resolved, `3` Dismissed. Out of range → `400`. |
+| `isActive` | `bool` | — | `true` / `false`. |
+| `lostObjectId` | `string` | — | Trimmed; blank values are ignored. |
+| `location.coordinates` | `double` (×2) | — | Exact match of the `[longitude, latitude]` pair (no geospatial/radius search). Send the array as two repetitions of the key: `location.coordinates=-71.23&location.coordinates=-33.04`. |
+| `complaintDetails.title` | `string` | — | Case-insensitive, partial (substring) match, regex characters are escaped. |
+| `complaintDetails.description` | `string` | — | Case-insensitive, partial (substring) match. |
+| `complaintDetails.status` | `int` | — | `0` Claim, `1` Found, `2` Match, `3` Pickup. Out of range → `400`. |
+| `sortBy` | `enum` | `ReportedAt` | `ReportedAt` or `Status`. |
+| `descending` | `bool` | `true` | Sort direction. |
+| `page` | `int` | `1` | Values `< 1` are clamped to `1`. |
+| `pageSize` | `int` | `10` | Clamped to the range `1..10`. |
+
+> `location` matches on exact `[longitude, latitude]` equality — there is no radius/geo query. Tickets created through `POST /reports` do not store a location, so this filter only hits tickets that already have one.
+
+**Example**
+```
+GET /api/incident/reports?userRefId=11111111-1111-1111-1111-111111111111&type=0&isActive=true&complaintDetails.title=fuga&sortBy=ReportedAt&descending=true&page=1&pageSize=5
+```
+
+**Success Response (200 OK)**
+```json
+{
+  "items": [
+    {
+      "id": "68f1c2...",
+      "userRefId": "11111111-1111-1111-1111-111111111111",
+      "structureRefId": "11111111-1111-1111-1111-111111111111",
+      "ticketType": 0,
+      "isActive": true,
+      "reportedAt": "2026-10-16T10:30:00Z",
+      "complaintDetails": {
+        "title": "Fuga de agua",
+        "description": "Baño del 2do piso",
+        "status": 0
+      },
+      "lostObjectId": "68f1c3..."
+    }
+  ],
+  "totalCount": 1,
+  "page": 1,
+  "pageSize": 5,
+  "totalPages": 1
+}
+```
+A query without matches returns `200 OK` with `"items": []` and `"totalCount": 0` (it is **not** a `404`). `totalPages` is computed as `ceil(totalCount / pageSize)`.
+
+**Error Responses**
+- **`401 Unauthorized`**: The `Authorization` header is missing or invalid (enforced by the API Gateway).
+- **`400 Bad Request`**: If `type` is not a defined ticket status (`Invalid type '99'.`), if `complaintDetails.status` is not a defined complaint status (`Invalid complaint status '99'.`), or if a parameter cannot be parsed (e.g. a non-numeric `page` or an unknown `sortBy` value).
+
+---
+
 ## 2. Lost Objects
 *Registry of items reported lost on campus, each associated with a structure.*
 
-> **Filtering by status** is served by the search endpoint: `GET /api/incident/lost-objects?status={0..3}` (see [4.9](#49-additional-queries)).
+> **Filtering by status** is served by the search endpoint: `GET /api/incident/lost-objects?status={0..3}` (see [4.10](#410-additional-queries)).
 
 ### 2.1 Create Lost Object
 - **Route**: `POST /api/incident/lost-objects`
@@ -219,7 +284,7 @@ The `Location` header points to 2.2.
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## 4. End-to-End Test Walkthrough
-*Full happy path to verify the Incident service: register a user, log in, create a lost object, create a report that references it, then read and update both. Every request goes through the API Gateway so the JWT is validated end to end.*
+*Full happy path to verify the Incident service: register a user, log in, create a lost object, create a report that references it, then read, update and search both. Every request goes through the API Gateway so the JWT is validated end to end.*
 
 ### 4.0 Prerequisites
 Start the whole stack from the repository root:
@@ -412,7 +477,55 @@ Sending the status the ticket already has returns `400 Bad Request`.
 
 ---
 
-### 4.9 Additional queries
+### 4.9 Search reports (advanced query)
+- **Route**: `GET http://localhost:5000/api/incident/reports`
+- **Access**: Any authenticated user
+
+**Headers**: `Authorization: Bearer <token>`
+
+Every parameter is optional and several filters can be combined (`AND`). Use the `USER_ID` captured in [4.1](#41-register-a-user) to scope the search to the user who registered the report.
+
+**Example Request**
+```
+GET http://localhost:5000/api/incident/reports?userRefId=USER_ID&type=0&isActive=true&complaintDetails.title=fuga&sortBy=ReportedAt&descending=true&page=1&pageSize=5
+```
+
+**Success Response (200 OK)**
+```json
+{
+  "items": [
+    {
+      "id": "REPORT_ID",
+      "userRefId": "USER_ID",
+      "structureRefId": "11111111-1111-1111-1111-111111111111",
+      "ticketType": 0,
+      "isActive": true,
+      "reportedAt": "2026-10-16T10:30:00Z",
+      "complaintDetails": { "title": "Fuga de agua", "description": "Baño del 2do piso", "status": 0 },
+      "lostObjectId": "LOST_ID"
+    }
+  ],
+  "totalCount": 1,
+  "page": 1,
+  "pageSize": 5,
+  "totalPages": 1
+}
+```
+
+Notes:
+- Supported filters: `userRefId`, `structureRefId`, `type`, `isActive`, `lostObjectId`, `location.coordinates`, `complaintDetails.title`, `complaintDetails.description`, `complaintDetails.status`. Full table in [1.4](#14-search-reports).
+- `complaintDetails.title` / `complaintDetails.description` match partially and case-insensitively (`fuga` matches `Fuga de agua`).
+- Sorting: `sortBy=ReportedAt` (default) or `sortBy=Status`; direction with `descending=true` (default) / `false`.
+- Paging: `page` starts at `1`, `pageSize` is clamped to `1..10`. No matches → `200 OK` with `"items": []` and `"totalCount": 0`.
+
+**Error Responses**
+- **`400 Bad Request`**: `type=99` → `Invalid type '99'.`; `complaintDetails.status=99` → `Invalid complaint status '99'.`; unparsable values (e.g. `page=abc`, `sortBy=Whatever`) are rejected by model binding.
+- **`401 Unauthorized`**: Missing/invalid `Authorization` header (enforced by the Gateway).
+
+---
+
+### 4.10 Additional queries
+- **Search reports**: `GET http://localhost:5000/api/incident/reports?type=0&page=1&pageSize=10` → `{ "items": [...], "totalCount": 1, "page": 1, "pageSize": 10, "totalPages": 1 }`.
 - **Search lost objects**: `GET http://localhost:5000/api/incident/lost-objects?title=Mochila&status=0&page=1&pageSize=10` → `{ "items": [...], "totalCount": 0, "page": 1, "pageSize": 10, "totalPages": 0 }`.
 - **Get lost object by id**: `GET http://localhost:5000/api/incident/lost-objects/{id}` → currently `204 No Content`.
 - **Health (direct to the service, not exposed by the Gateway)**:
@@ -421,7 +534,7 @@ Sending the status the ticket already has returns `400 Bad Request`.
 
 ---
 
-### 4.10 Copy-paste script (bash + curl + jq)
+### 4.11 Copy-paste script (bash + curl + jq)
 
 ```bash
 BASE=http://localhost:5000
@@ -456,16 +569,34 @@ curl -s -o /dev/null -w "report status -> %{http_code}\n" -X PATCH $BASE/api/inc
 # 7) Update lost object status
 curl -s -o /dev/null -w "lost object status -> %{http_code}\n" -X PATCH $BASE/api/incident/lost-objects/$LOST_ID/lost/status \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"status":1}'
+
+# 8) Search reports (advanced query) -> paged result
+curl -s -G $BASE/api/incident/reports \
+  -H "Authorization: Bearer $TOKEN" \
+  --data-urlencode "type=0" \
+  --data-urlencode "isActive=true" \
+  --data-urlencode "complaintDetails.title=fuga" \
+  --data-urlencode "sortBy=ReportedAt" \
+  --data-urlencode "descending=true" \
+  --data-urlencode "page=1" \
+  --data-urlencode "pageSize=10" | jq
+
+# 9) Search lost objects (same query style)
+curl -s -G $BASE/api/incident/lost-objects \
+  -H "Authorization: Bearer $TOKEN" \
+  --data-urlencode "title=Mochila" \
+  --data-urlencode "status=1" | jq
 ```
 
 ---
 
-### 4.11 Common errors
+### 4.12 Common errors
 
 | Status | Cause |
 | :--- | :--- |
 | `401 Unauthorized` | Missing/malformed `Authorization` header, or the JWT `sub` claim is not a valid user id. |
 | `400 Bad Request` | Empty `structureRefId`/`structureId`, `ticketType`/`status` out of range, `photoUrl` that is not an absolute `http(s)` URL, or a `lostObjectId` that does not exist. |
+| `400 Bad Request` (search) | `type` or `complaintDetails.status` outside its enum, or an unparsable search parameter (`page=abc`, unknown `sortBy`). |
 | `404 Not Found` | The report or lost object id does not exist. |
 
 > **Postman note**: the request `03. Incident Service > Create Lost Object Report (Validation)` in `tests/postman/uct-map.collection.json` sends `location`/`date`, which do not match the current DTO (`title`, `description`, `status`, `photoUrl`, `structureId`). Use the payload from [4.4](#44-create-a-lost-object) instead.

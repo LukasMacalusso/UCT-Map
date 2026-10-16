@@ -33,7 +33,7 @@ public class LostObjectHandler : ILostObjectHandler
             Title = request.Title,
             Description = request.Description,
             Status = (Objectenum)request.Status,
-            ReportedAt = DateTime.Now,
+            ReportedAt = DateTime.UtcNow,
             PhotoUrl = request.PhotoUrl,
             StructureRefId = request.StructureId
         };
@@ -47,20 +47,20 @@ public class LostObjectHandler : ILostObjectHandler
     {
         if (!Enum.IsDefined(typeof(Objectenum), status.Status)) return Error.Validation(
                 code: "LostObject.Validation",
-                description: "Invalid status '{status.Status}'"
+                description: $"Invalid status '{status.Status}'"
             );
 
         var lostObject = await _lostObjectRepository.GetByIdAsync(id);
         if (lostObject is null) return Error.NotFound(
                 code: "LostObject.NotFound",
-                description: "LostObject with ID '{id}' was not found."
+                description: $"LostObject with ID '{id}' was not found."
             );
 
         var response = await _lostObjectRepository.UpdateStatusAsync(lostObject, status.Status);
 
         if (!response) return Error.Failure(
                 code: "LostObject.UpdateFailed",
-                description: "Failed to update status for LostObject with ID '{id}'."
+                description: $"Failed to update status for LostObject with ID '{id}'."
             );
 
         return Result.Success;
