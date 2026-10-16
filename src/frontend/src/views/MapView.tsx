@@ -12,6 +12,8 @@ import PlusIcon from '../assets/svg/icons/icon_plus.svg?react';
 import MinusIcon from '../assets/svg/icons/icon_minus.svg?react';
 import TargetIcon from '../assets/svg/icons/icon_target.svg?react';
 import PencilIcon from '../assets/svg/icons/icon_pencil.svg?react';
+import SunIcon from '../assets/svg/icons/icon_sun.svg?react';
+import MoonIcon from '../assets/svg/icons/icon_moon.svg?react';
 import { RoleGuard } from '../router/RoleGuard';
 import { MapEditorPanel } from '../modules/admin/MapEditorPanel';
 import { BuildingFormModal } from '../modules/admin/BuildingFormModal';
@@ -19,6 +21,7 @@ import { useBuildingLocations } from '../hooks/useCampus';
 import { MapMarker } from '../components/ui/MapMarker';
 import { ActiveBuildingCard } from '../modules/map/ActiveBuildingCard';
 import type { BuildingLocationDto } from '../dtos/campus/BuildingLocationDto';
+import { textPageColors } from '../constants/colors';
 import { Role } from '../constants/role';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -34,6 +37,76 @@ const INITIAL_ZOOM = 15;
 const INITIAL_PITCH = 50;
 const INITIAL_BEARING = -20;
 
+interface CampusZone {
+  value: string;
+  label: string;
+  center: [number, number];
+  zoom: number;
+  pitch: number;
+  bearing: number;
+}
+
+const CAMPUS_ZONES: CampusZone[] = [
+  {
+    value: 'campus1',
+    label: 'Campus San Juan Pablo II',
+    center: [-72.6019, -38.7368],
+    zoom: 15.5,
+    pitch: 50,
+    bearing: -20,
+  },
+  {
+    value: 'campus2',
+    label: 'Campus Norte',
+    center: [-72.6205, -38.7245],
+    zoom: 16,
+    pitch: 45,
+    bearing: 25,
+  },
+];
+
+interface CameraOptions {
+  zoom?: number;
+  pitch?: number;
+  bearing?: number;
+  duration?: number;
+}
+
+const easeInOutCubic = (t: number): number =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+const flyToCoordinate = (
+  map: MapboxMap,
+  center: [number, number],
+  options: CameraOptions = {}
+) => {
+  map.flyTo({
+    center,
+    zoom: options.zoom ?? map.getZoom(),
+    pitch: options.pitch ?? map.getPitch(),
+    bearing: options.bearing ?? map.getBearing(),
+    duration: options.duration ?? 950,
+    curve: 1.42,
+    speed: 1.2,
+    essential: true,
+    easing: easeInOutCubic,
+  });
+};
+
+const setMapInteraction = (map: MapboxMap, enabled: boolean) => {
+  const handlers = [
+    map.dragPan,
+    map.scrollZoom,
+    map.boxZoom,
+    map.dragRotate,
+    map.keyboard,
+    map.doubleClickZoom,
+    map.touchZoomRotate,
+    map.touchPitch,
+  ];
+  handlers.forEach(handler => (enabled ? handler.enable() : handler.disable()));
+};
+
 interface MarkerEntry {
   marker: mapboxgl.Marker;
   root: Root;
@@ -46,6 +119,9 @@ export const MapView = () => {
   const [selectedBuilding, setSelectedBuilding] = React.useState<BuildingLocationDto | null>(null);
   const [isMapLoaded, setIsMapLoaded] = React.useState(false);
   const [mapError, setMapError] = React.useState<string | null>(null);
+  const [selectedCampus, setSelectedCampus] = React.useState(CAMPUS_ZONES[0].value);
+  const [is3D, setIs3D] = React.useState(true);
+  const [lightPreset, setLightPreset] = React.useState<'day' | 'night'>('day');
 
   const { data: buildings } = useBuildingLocations();
 
@@ -105,9 +181,13 @@ export const MapView = () => {
 
     map.on('style.load', () => {
       try {
-        map.setConfigProperty('basemap', 'show3dObjects', false);
+        map.setConfigProperty('basemap', 'show3dObjects', true);
+        map.setConfigProperty('basemap', 'show3dTrees', true);
+        map.setConfigProperty('basemap', 'show3dBuildings', false);
         map.setConfigProperty('basemap', 'show3dLandmarks', false);
+        map.setConfigProperty('basemap', 'show3dFacades', false);
         map.setConfigProperty('basemap', 'showPointOfInterestLabels', false);
+        map.setConfigProperty('basemap', 'lightPreset', 'day');
       } catch (error) {
         console.warn('Mapbox config error:', error);
       }
@@ -139,10 +219,8 @@ export const MapView = () => {
     setSelectedBuilding(building);
     const map = mapRef.current;
     if (!map) return;
-    map.flyTo({
-      center: [building.location.longitude, building.location.latitude],
+    flyToCoordinate(map, [building.location.longitude, building.location.latitude], {
       zoom: Math.max(map.getZoom(), 17),
-      duration: 900,
     });
   }, []);
 
@@ -190,14 +268,55 @@ export const MapView = () => {
 
   const handleZoomIn = () => mapRef.current?.zoomIn({ duration: 300 });
   const handleZoomOut = () => mapRef.current?.zoomOut({ duration: 300 });
-  const handleResetView = () =>
-    mapRef.current?.flyTo({
-      center: CAMPUS_CENTER,
+
+  const handleResetView = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    flyToCoordinate(map, CAMPUS_CENTER, {
       zoom: INITIAL_ZOOM,
-      pitch: INITIAL_PITCH,
-      bearing: INITIAL_BEARING,
-      duration: 900,
+      pitch: is3D ? INITIAL_PITCH : 0,
+      bearing: is3D ? INITIAL_BEARING : 0,
     });
+  };
+
+  const handleCampusChange = (value: string) => {
+    setSelectedCampus(value);
+    const map = mapRef.current;
+    const campus = CAMPUS_ZONES.find(zone => zone.value === value);
+    if (!map || !campus) return;
+    setMapInteraction(map, false);
+    map.once('moveend', () => setMapInteraction(map, true));
+    flyToCoordinate(map, campus.center, {
+      zoom: campus.zoom,
+      pitch: is3D ? campus.pitch : 0,
+      bearing: is3D ? campus.bearing : 0,
+    });
+  };
+
+  const handleToggleDimension = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const next = !is3D;
+    setIs3D(next);
+    const { lng, lat } = map.getCenter();
+    flyToCoordinate(map, [lng, lat], {
+      zoom: map.getZoom(),
+      pitch: next ? INITIAL_PITCH : 0,
+      bearing: next ? INITIAL_BEARING : 0,
+    });
+  };
+
+  const handleToggleLight = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const next = lightPreset === 'day' ? 'night' : 'day';
+    setLightPreset(next);
+    try {
+      map.setConfigProperty('basemap', 'lightPreset', next);
+    } catch (error) {
+      console.warn('Mapbox light error:', error);
+    }
+  };
 
   return (
     <div className="w-full h-full absolute inset-0 overflow-hidden">
@@ -216,10 +335,11 @@ export const MapView = () => {
         </div>
       )}
 
-      <div className="absolute top-6 right-6 z-10 flex flex-col gap-3 items-end">
+      <div className="absolute top-6 right-6 z-10 flex flex-row gap-3 items-end">
         <div className="w-80">
           <SearchInput
             label="Búsqueda"
+            labelColor={lightPreset === 'day' ? textPageColors.dark : textPageColors.white}
             placeholder="Buscar Edificio..."
             value={searchQuery}
             onChange={(val) => setSearchQuery(val)}
@@ -231,11 +351,10 @@ export const MapView = () => {
         <div className="w-80">
           <Select
             label="Campus"
-            options={[
-              { value: 'campus1', label: 'Campus San Juan Pablo II' },
-              { value: 'campus2', label: 'Campus Norte' }
-            ]}
-            value="campus1"
+            labelColor={lightPreset === 'day' ? textPageColors.dark : textPageColors.white}
+            options={CAMPUS_ZONES.map(zone => ({ value: zone.value, label: zone.label }))}
+            value={selectedCampus}
+            onChange={handleCampusChange}
             icon={<BuildingIcon className="w-6 h-6 text-gray-700" />}
           />
         </div>
@@ -265,6 +384,20 @@ export const MapView = () => {
               <PencilIcon className="w-7 h-7" />
             </SquareButton>
           </RoleGuard>
+          <SquareButton
+            onClick={handleToggleDimension}
+            title={is3D ? 'Cambiar a vista 2D' : 'Cambiar a vista 3D'}
+            className={is3D ? '!bg-page-blue !text-white' : ''}
+          >
+            <span className="text-base font-extrabold leading-none">{is3D ? '3D' : '2D'}</span>
+          </SquareButton>
+          <SquareButton
+            onClick={handleToggleLight}
+            title={lightPreset === 'day' ? 'Cambiar a modo noche' : 'Cambiar a modo día'}
+            className={lightPreset === 'night' ? '!bg-page-blue !text-white' : ''}
+          >
+            {lightPreset === 'night' ? <MoonIcon className="w-6 h-6" /> : <SunIcon className="w-6 h-6" />}
+          </SquareButton>
           <SquareButton onClick={handleZoomIn} title="Acercar mapa">
             <PlusIcon className="w-8 h-8" />
           </SquareButton>
