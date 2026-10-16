@@ -41,8 +41,8 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
       
       alert("¡Cuenta creada con éxito! Ahora inicia sesión.");
       onSwitchToLogin();
-    } catch (err) {
-      // El error se maneja automáticamente en la variable 'registerError'
+    } catch {
+      return;
     }
   };
 

@@ -25,8 +25,6 @@ const addItems = (token: string, user: string) => {
   localStorage.setItem('user_identity', user);
 };
 
-// Token falso con forma de JWT real + flag `isMock`, para que el httpClient
-// reconozca la sesión de desarrollo y no cierre sesión ante un 401.
 const buildMockToken = (role: Role): string => {
   const encode = (obj: unknown) =>
     btoa(JSON.stringify(obj)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');

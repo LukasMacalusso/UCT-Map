@@ -153,7 +153,7 @@ export const AdministrationView = () => {
           <Button
             variant="solid"
             color="blue"
-            size="md"
+            size="lg"
             className="!w-auto flex items-center gap-2"
             onClick={handleRefresh}
             disabled={isRefreshing || isLoading}

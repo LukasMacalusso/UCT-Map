@@ -13,9 +13,6 @@ export const authService = {
       } else if (status === 401) {
         throw new Error('Credenciales inválidas');
       } else if (status === 403) {
-        // TODO(backend): el login todavía no devuelve 403 para cuentas suspendidas.
-        // IdentityUserAuthenticator colapsa "suspendido" y "credenciales inválidas"
-        // en un 401. Cuando el backend los distinga (403), este mensaje se mostrará.
         throw new Error('Cuenta suspendida o sin permisos para acceder');
       } else if (status === 429) {
         throw new Error('Demasiados intentos fallidos. Intenta más tarde');

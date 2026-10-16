@@ -13,7 +13,6 @@ interface SearchInputProps {
   icon?: React.ReactNode;
   className?: string;
   error?: string;
-  /** Muestra el desplegable de sugerencias. Si es false, solo filtra. */
   showSuggestions?: boolean;
 }
 
