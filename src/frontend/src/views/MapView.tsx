@@ -5,6 +5,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Select } from '../components/ui/Select';
 import { SearchInput } from '../components/ui/SearchInput';
 import { SquareButton } from '../components/ui/SquareButton';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 import SearchIcon from '../assets/svg/icons/icon_search.svg?react';
 import BuildingIcon from '../assets/svg/icons/icon_building.svg?react';
@@ -37,6 +38,9 @@ const INITIAL_ZOOM = 15;
 const INITIAL_PITCH = 50;
 const INITIAL_BEARING = -20;
 
+const EXAMPLE_MODEL_COORDS: [number, number] = [-72.6019, -38.7368];
+const EXAMPLE_MODEL_URL = `${import.meta.env.BASE_URL}models/uct-building-example.glb`;
+
 interface CampusZone {
   value: string;
   label: string;
@@ -64,6 +68,35 @@ const CAMPUS_ZONES: CampusZone[] = [
     bearing: 25,
   },
 ];
+
+const MOCK_SPREAD = 0.006;
+
+const hashString = (value: string): number => {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return Math.abs(hash);
+};
+
+const isWithinCampus = ([lng, lat]: [number, number]) =>
+  lng >= CAMPUS_BOUNDS[0][0] &&
+  lng <= CAMPUS_BOUNDS[1][0] &&
+  lat >= CAMPUS_BOUNDS[0][1] &&
+  lat <= CAMPUS_BOUNDS[1][1];
+
+const resolveBuildingCoordinate = (building: BuildingLocationDto): [number, number] => {
+  const coordinate: [number, number] = [building.location.longitude, building.location.latitude];
+  if (isWithinCampus(coordinate)) return coordinate;
+  const seed = hashString(building.id);
+  const angle = ((seed % 360) * Math.PI) / 180;
+  const radius = MOCK_SPREAD * (0.45 + ((seed % 50) / 50) * 0.55);
+  return [
+    CAMPUS_CENTER[0] + Math.cos(angle) * radius,
+    CAMPUS_CENTER[1] + Math.sin(angle) * radius,
+  ];
+};
 
 interface CameraOptions {
   zoom?: number;
@@ -107,6 +140,34 @@ const setMapInteraction = (map: MapboxMap, enabled: boolean) => {
   handlers.forEach(handler => (enabled ? handler.enable() : handler.disable()));
 };
 
+const addExampleModel = (map: MapboxMap) => {
+  try {
+    map.addModel('uct-building-example', EXAMPLE_MODEL_URL);
+    map.addSource('uct-example-model', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'Point', coordinates: EXAMPLE_MODEL_COORDS },
+          },
+        ],
+      },
+    });
+    map.addLayer({
+      id: 'uct-example-model',
+      type: 'model',
+      source: 'uct-example-model',
+      layout: { 'model-id': 'uct-building-example' },
+      paint: { 'model-opacity': 1, 'model-scale': [3, 3, 3] },
+    });
+  } catch (error) {
+    console.warn('Mapbox model error:', error);
+  }
+};
+
 interface MarkerEntry {
   marker: mapboxgl.Marker;
   root: Root;
@@ -123,7 +184,7 @@ export const MapView = () => {
   const [is3D, setIs3D] = React.useState(true);
   const [lightPreset, setLightPreset] = React.useState<'day' | 'night'>('day');
 
-  const { data: buildings } = useBuildingLocations();
+  const { data: buildings, isLoading: areBuildingsLoading } = useBuildingLocations();
 
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const mapRef = React.useRef<MapboxMap | null>(null);
@@ -194,7 +255,10 @@ export const MapView = () => {
     });
 
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left');
-    map.on('load', () => setIsMapLoaded(true));
+    map.on('load', () => {
+      setIsMapLoaded(true);
+      addExampleModel(map);
+    });
     map.on('error', (event) => console.error('Mapbox error:', event.error));
     mapRef.current = map;
 
@@ -219,7 +283,7 @@ export const MapView = () => {
     setSelectedBuilding(building);
     const map = mapRef.current;
     if (!map) return;
-    flyToCoordinate(map, [building.location.longitude, building.location.latitude], {
+    flyToCoordinate(map, resolveBuildingCoordinate(building), {
       zoom: Math.max(map.getZoom(), 17),
     });
   }, []);
@@ -257,7 +321,7 @@ export const MapView = () => {
         const element = document.createElement('div');
         const root = createRoot(element);
         const marker = new mapboxgl.Marker({ element, anchor: 'bottom' })
-          .setLngLat([building.location.longitude, building.location.latitude])
+          .setLngLat(resolveBuildingCoordinate(building))
           .addTo(map);
         entry = { marker, root };
         markersRef.current.set(building.id, entry);
@@ -318,9 +382,17 @@ export const MapView = () => {
     }
   };
 
+  const isDataLoading = !isMapLoaded || areBuildingsLoading;
+
   return (
     <div className="w-full h-full absolute inset-0 overflow-hidden">
       <div ref={containerRef} className="h-full w-full" />
+
+      {MAPBOX_TOKEN && !mapError && isDataLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-page-white/70 backdrop-blur-sm">
+          <LoadingSpinner size="xl" text="Cargando mapa..." />
+        </div>
+      )}
 
       {(!MAPBOX_TOKEN || mapError) && (
         <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none p-4">
@@ -335,8 +407,8 @@ export const MapView = () => {
         </div>
       )}
 
-      <div className="absolute top-6 right-6 z-10 flex flex-row gap-3 items-end">
-        <div className="w-80">
+      <div className="absolute top-6 right-6 left-6 sm:left-auto z-10 flex flex-row gap-3 items-end">
+        <div className="w-full min-w-0 sm:w-72 lg:w-80">
           <SearchInput
             label="Búsqueda"
             labelColor={lightPreset === 'day' ? textPageColors.dark : textPageColors.white}
@@ -348,7 +420,7 @@ export const MapView = () => {
           />
         </div>
 
-        <div className="w-80">
+        <div className="w-full min-w-0 sm:w-72 lg:w-80">
           <Select
             label="Campus"
             labelColor={lightPreset === 'day' ? textPageColors.dark : textPageColors.white}
@@ -411,7 +483,7 @@ export const MapView = () => {
       </div>
 
       {/* Building Details Slide-in Panel */}
-      <div className={`absolute top-24 bottom-6 left-6 w-96 transition-transform duration-500 z-40 ${
+      <div className={`absolute top-8 left-6 sm:left-20 z-40 w-96 transition-transform duration-500 ${
         selectedBuilding ? 'translate-x-0' : '-translate-x-[150%]'
       }`}>
         <ActiveBuildingCard

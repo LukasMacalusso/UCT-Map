@@ -9,6 +9,7 @@ import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
 import WarningIcon from '../../assets/svg/icons/icon_warning.svg?react';
 import NavigationIcon from '../../assets/svg/icons/icon_navigation.svg?react';
 import Rotate360Icon from '../../assets/svg/icons/icon_repeat.svg?react';
+import InfoIcon from '../../assets/svg/icons/icon_info.svg?react';
 
 import type { RoomData } from '../../interfaces/RoomData';
 
@@ -20,9 +21,11 @@ export interface BuildingDetailCardProps {
   floors?: string;
   services?: string[];
   rooms?: RoomData[];
+  withUctBorder?: boolean;
   onClose?: () => void;
   onNavigate?: () => void;
   onView360?: () => void;
+  onInfo?: () => void;
   onReportProblem?: () => void;
 }
 
@@ -34,13 +37,20 @@ export const BuildingDetailCard = ({
   floors = "",
   services = [],
   rooms = [],
+  withUctBorder = true,
   onClose,
   onNavigate,
   onView360,
+  onInfo,
   onReportProblem,
 }: BuildingDetailCardProps) => {
   return (
-    <Panel withUctBorder color="white" outerClassName="rounded-3xl w-full h-full" innerClassName="p-5 flex flex-col gap-4 h-full">
+    <Panel
+      withUctBorder={withUctBorder}
+      color="white"
+      outerClassName="rounded-3xl w-full h-full"
+      innerClassName="p-5 flex flex-col gap-4 h-full"
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3">
           <BuildingIcon className="w-8 h-8 text-gray-800" />
@@ -111,15 +121,27 @@ export const BuildingDetailCard = ({
           <span>LLEGAR</span>
         </Button>
 
-        <Button
-          color="blue"
-          variant="solid"
-          onClick={onView360}
-          className="w-full font-black text-base flex items-center justify-center gap-2 py-3 tracking-wider uppercase rounded-xl"
-        >
-          <Rotate360Icon className="w-6 h-6 text-white" />
-          <span>360°</span>
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <Button
+            color="blue"
+            variant="solid"
+            onClick={onView360}
+            className="flex-1 font-black text-base flex items-center justify-center gap-2 py-3 tracking-wider uppercase rounded-xl"
+          >
+            <Rotate360Icon className="w-6 h-6 text-white" />
+            <span>360°</span>
+          </Button>
+
+          <Button
+            color="blue"
+            variant="solid"
+            onClick={onInfo}
+            className="flex-1 font-black text-base flex items-center justify-center gap-2 py-3 tracking-wider uppercase rounded-xl"
+          >
+            <InfoIcon className="w-6 h-6 text-white" />
+            <span>Info</span>
+          </Button>
+        </div>
       </div>
     </Panel>
   );

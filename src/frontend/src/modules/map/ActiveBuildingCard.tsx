@@ -21,10 +21,11 @@ export const ActiveBuildingCard = ({ building, onClose }: ActiveBuildingCardProp
   })) || [];
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full">
       <BuildingDetailCard
         title={building.name}
         subtitle="UCT Campus"
+        withUctBorder={false}
         schedule={isLoading ? "Cargando..." : isError ? "Error al cargar salas" : "08:00 - 22:00"}
         rooms={mappedRooms}
         onClose={onClose}

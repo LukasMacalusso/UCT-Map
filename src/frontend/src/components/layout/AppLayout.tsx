@@ -73,7 +73,7 @@ export const AppLayout = () => {
             <div
               className={`flex flex-col justify-center transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap ${
                 !isExpanded
-                  ? 'max-w-[250px] opacity-100 ml-3'
+                  ? 'max-w-[250px] opacity-100 ml-1'
                   : 'max-w-0 opacity-0 ml-0'
               }`}
             >
