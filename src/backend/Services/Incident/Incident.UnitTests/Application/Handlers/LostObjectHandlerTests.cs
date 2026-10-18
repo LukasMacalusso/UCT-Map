@@ -3,6 +3,7 @@ using Incident.Application.DTOs;
 using Incident.Application.Handlers;
 using Incident.Domain.Entities;
 using Incident.Domain.Interfaces;
+using Incident.Domain.Queries;
 using NSubstitute;
 
 namespace Incident.UnitTests.Application.Handlers;
@@ -127,12 +128,14 @@ public class LostObjectHandlerTests
     public async Task GetByIdAsync_CuandoExiste_MapeaTodosLosCampos()
     {
         var structureId = Guid.NewGuid();
+        var reportedAt = new DateTime(2026, 10, 14, 20, 0, 0, DateTimeKind.Utc);
         var entity = new LostObject
         {
             Id = "64b000000000000000000001",
             Title = "Audifonos",
             Description = "Audifonos inalambricos",
             Status = Objectenum.In_Process,
+            ReportedAt = reportedAt,
             PhotoUrl = "https://campus.uct.cl/audifonos.jpg",
             StructureRefId = structureId
         };
@@ -144,72 +147,10 @@ public class LostObjectHandlerTests
         Assert.Equal(new LostObjectResponse(
             "Audifonos",
             "Audifonos inalambricos",
+            reportedAt.ToString(),
             nameof(Objectenum.In_Process),
             "https://campus.uct.cl/audifonos.jpg",
             structureId), result.Value);
-    }
-
-    // ---------- FilterStatusAsync ----------
-
-    [Fact]
-    public async Task FilterStatusAsync_ConStatusFueraDelEnum_RetornaValidation()
-    {
-        var result = await _handler.FilterStatusAsync(99);
-
-        Assert.True(result.IsError);
-        Assert.Equal(ErrorType.Validation, result.Errors[0].Type);
-        Assert.Equal("LostObject.Validation", result.Errors[0].Code);
-        await _repository.DidNotReceiveWithAnyArgs().FilterStatusAsync(default!);
-    }
-
-    [Fact]
-    public async Task FilterStatusAsync_ConStatusValido_FiltraPorElNombreDelEnum()
-    {
-        _repository.FilterStatusAsync(nameof(Objectenum.Resolved))
-            .Returns(Task.FromResult(new List<LostObject>
-            {
-                new()
-                {
-                    Id = "64b000000000000000000002",
-                    Title = "Casco",
-                    Description = "Casco de bicicleta",
-                    Status = Objectenum.Resolved,
-                    PhotoUrl = "https://campus.uct.cl/casco.jpg",
-                    StructureRefId = Guid.NewGuid()
-                },
-                new()
-                {
-                    Id = "64b000000000000000000003",
-                    Title = "Llavero",
-                    Description = "Llavero con llaves",
-                    Status = Objectenum.Resolved,
-                    PhotoUrl = null,
-                    StructureRefId = Guid.NewGuid()
-                }
-            }));
-
-        var result = await _handler.FilterStatusAsync((int)Objectenum.Resolved);
-
-        Assert.False(result.IsError);
-        await _repository.Received(1).FilterStatusAsync(nameof(Objectenum.Resolved));
-        Assert.Equal(2, result.Value.TotalCount);
-        Assert.Equal(2, result.Value.Items.Count);
-        Assert.All(result.Value.Items, i => Assert.Equal(nameof(Objectenum.Resolved), i.Status));
-        Assert.Equal("Casco", result.Value.Items[0].Title);
-        Assert.Equal("Llavero", result.Value.Items[1].Title);
-    }
-
-    [Fact]
-    public async Task FilterStatusAsync_CuandoNoHayResultados_RetornaListaVacia()
-    {
-        _repository.FilterStatusAsync(nameof(Objectenum.Canceled))
-            .Returns(Task.FromResult(new List<LostObject>()));
-
-        var result = await _handler.FilterStatusAsync((int)Objectenum.Canceled);
-
-        Assert.False(result.IsError);
-        Assert.Equal(0, result.Value.TotalCount);
-        Assert.Empty(result.Value.Items);
     }
 
     // ---------- UpdateStatusAsync ----------
@@ -246,6 +187,7 @@ public class LostObjectHandlerTests
             Title = "Mochila",
             Description = "Mochila",
             Status = Objectenum.Pending,
+            ReportedAt = DateTime.UtcNow,
             StructureRefId = Guid.NewGuid()
         };
         _repository.GetByIdAsync(entity.Id).Returns(Task.FromResult<LostObject?>(entity));
@@ -267,6 +209,7 @@ public class LostObjectHandlerTests
             Title = "Mochila",
             Description = "Mochila",
             Status = Objectenum.Pending,
+            ReportedAt = DateTime.UtcNow,
             StructureRefId = Guid.NewGuid()
         };
         _repository.GetByIdAsync(entity.Id).Returns(Task.FromResult<LostObject?>(entity));
@@ -277,5 +220,124 @@ public class LostObjectHandlerTests
         Assert.False(result.IsError);
         Assert.Equal(Result.Success, result.Value);
         await _repository.Received(1).UpdateStatusAsync(entity, (int)Objectenum.Canceled);
+    }
+
+    // ---------- SearchAsync ----------
+
+    private static LostObjectSearchRequest SearchRequest(
+        string? title = null,
+        Guid? structureId = null,
+        int? status = null,
+        LostObjectSortField sortBy = LostObjectSortField.ReportedAt,
+        bool descending = true,
+        int page = 1,
+        int pageSize = 10) =>
+        new(title, structureId, status, sortBy, descending, page, pageSize);
+
+    private static PagedResult<LostObject> EmptyPage(
+        int page = 1, int pageSize = 10) =>
+        new(Array.Empty<LostObject>(), 0, page, pageSize);
+
+    [Fact]
+    public async Task SearchAsync_ConStatusFueraDelEnum_RetornaValidationYNoConsulta()
+    {
+        var result = await _handler.SearchAsync(SearchRequest(status: 99), CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Validation, result.Errors[0].Type);
+        Assert.Equal("LostObject.Status", result.Errors[0].Code);
+        await _repository.DidNotReceiveWithAnyArgs()
+            .SearchAsync(Arg.Any<LostObjectSearchCriteria>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SearchAsync_SinFiltros_RecortaTitleVacioYUsaValoresPorDefecto()
+    {
+        LostObjectSearchCriteria? captured = null;
+        _repository.SearchAsync(Arg.Any<LostObjectSearchCriteria>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                captured = call.Arg<LostObjectSearchCriteria>();
+                return Task.FromResult(EmptyPage());
+            });
+
+        await _handler.SearchAsync(SearchRequest(title: "   "), CancellationToken.None);
+
+        Assert.NotNull(captured);
+        Assert.Null(captured!.Title);
+        Assert.Null(captured.StructureId);
+        Assert.Null(captured.Status);
+    }
+
+    [Fact]
+    public async Task SearchAsync_ConstruyeElCriterio_RecortandoTitleYTopeandoPaginacion()
+    {
+        LostObjectSearchCriteria? captured = null;
+        _repository.SearchAsync(Arg.Any<LostObjectSearchCriteria>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                captured = call.Arg<LostObjectSearchCriteria>();
+                return Task.FromResult(EmptyPage());
+            });
+
+        var structureId = Guid.NewGuid();
+        await _handler.SearchAsync(
+            SearchRequest(title: "  Mochila  ", structureId: structureId, status: (int)Objectenum.Resolved,
+                page: 0, pageSize: 50),
+            CancellationToken.None);
+
+        Assert.NotNull(captured);
+        Assert.Equal("Mochila", captured!.Title);
+        Assert.Equal(structureId, captured.StructureId);
+        Assert.Equal(Objectenum.Resolved, captured.Status);
+        Assert.Equal(1, captured.Page);
+        Assert.Equal(10, captured.PageSize);
+    }
+
+    [Fact]
+    public async Task SearchAsync_MapeaLasEntidadesALaPaginaDeRespuesta()
+    {
+        var reportedAt = new DateTime(2026, 10, 14, 20, 0, 0, DateTimeKind.Utc);
+        var structureId = Guid.NewGuid();
+        var entity = new LostObject
+        {
+            Id = "64b00000000000000000000a",
+            Title = "Casco",
+            Description = "Casco de bicicleta",
+            Status = Objectenum.Resolved,
+            ReportedAt = reportedAt,
+            PhotoUrl = "https://campus.uct.cl/casco.jpg",
+            StructureRefId = structureId
+        };
+        _repository.SearchAsync(Arg.Any<LostObjectSearchCriteria>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new PagedResult<LostObject>(new[] { entity }, 1, 1, 10)));
+
+        var result = await _handler.SearchAsync(SearchRequest(), CancellationToken.None);
+
+        Assert.False(result.IsError);
+        var page = result.Value;
+        Assert.Equal(1, page.TotalCount);
+        Assert.Equal(1, page.Page);
+        Assert.Equal(10, page.PageSize);
+        Assert.Equal(1, page.TotalPages);
+        var item = Assert.Single(page.Items);
+        Assert.Equal("Casco", item.Title);
+        Assert.Equal(reportedAt.ToString(), item.Date);
+        Assert.Equal(nameof(Objectenum.Resolved), item.Status);
+        Assert.Equal("https://campus.uct.cl/casco.jpg", item.PhotoUrl);
+        Assert.Equal(structureId, item.StructureId);
+    }
+
+    [Fact]
+    public async Task SearchAsync_CalculaTotalPagesConElTotalYElPageSize()
+    {
+        _repository.SearchAsync(Arg.Any<LostObjectSearchCriteria>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new PagedResult<LostObject>(Array.Empty<LostObject>(), 25, 1, 10)));
+
+        var result = await _handler.SearchAsync(SearchRequest(pageSize: 10), CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(25, result.Value.TotalCount);
+        Assert.Equal(3, result.Value.TotalPages);
     }
 }

@@ -1,4 +1,5 @@
 using Incident.Domain.Entities;
+using Incident.Domain.Queries;
 using Incident.IntegrationTests.Fixtures;
 using Incident.Infrastructure.Persistence.Repositories;
 using MongoDB.Bson;
@@ -14,13 +15,16 @@ public class ObjectRepositoryTests : MongoTestBase
 
     private static LostObject NewLostObject(
         Objectenum status = Objectenum.Pending,
-        string title = "Mochila negra") => new()
+        string title = "Mochila negra",
+        DateTime? reportedAt = null,
+        Guid? structureId = null) => new()
         {
             Title = title,
             Description = "Dejada en la biblioteca",
             Status = status,
+            ReportedAt = reportedAt ?? DateTime.UtcNow,
             PhotoUrl = "https://campus.uct.cl/mochila.png",
-            StructureRefId = Guid.NewGuid()
+            StructureRefId = structureId ?? Guid.NewGuid()
         };
 
     [DockerFact]
@@ -50,32 +54,6 @@ public class ObjectRepositoryTests : MongoTestBase
         var result = await repository.GetByIdAsync("id-invalido");
 
         Assert.Null(result);
-    }
-
-    [DockerFact]
-    public async Task FilterStatusAsync_DevuelveSoloLosQueCoincidenConElEstado()
-    {
-        var repository = CreateRepository();
-        await repository.CreateAsync(NewLostObject(Objectenum.Pending));
-        await repository.CreateAsync(NewLostObject(Objectenum.Pending, "Paraguas"));
-        await repository.CreateAsync(NewLostObject(Objectenum.Resolved, "Casco"));
-
-        var resolved = await repository.FilterStatusAsync(nameof(Objectenum.Resolved));
-
-        Assert.Single(resolved);
-        Assert.Equal("Casco", resolved[0].Title);
-        Assert.Equal(Objectenum.Resolved, resolved[0].Status);
-    }
-
-    [DockerFact]
-    public async Task FilterStatusAsync_CuandoNingunoCoincide_RetornaListaVacia()
-    {
-        var repository = CreateRepository();
-        await repository.CreateAsync(NewLostObject(Objectenum.Pending));
-
-        var canceled = await repository.FilterStatusAsync(nameof(Objectenum.Canceled));
-
-        Assert.Empty(canceled);
     }
 
     [DockerFact]
@@ -114,5 +92,129 @@ public class ObjectRepositoryTests : MongoTestBase
         var deleted = await repository.DeleteAsync(ObjectId.GenerateNewId().ToString());
 
         Assert.False(deleted);
+    }
+
+    // ---------- SearchAsync ----------
+
+    private static LostObjectSearchCriteria Criteria(
+        string? title = null,
+        Guid? structureId = null,
+        Objectenum? status = null,
+        LostObjectSortField sortBy = LostObjectSortField.ReportedAt,
+        bool descending = true,
+        int page = 1,
+        int pageSize = 10) =>
+        new(title, structureId, status, sortBy, descending, page, pageSize);
+
+    [DockerFact]
+    public async Task SearchAsync_FiltraPorStatus()
+    {
+        var repository = CreateRepository();
+        await repository.CreateAsync(NewLostObject(Objectenum.Pending, "Pendiente"));
+        await repository.CreateAsync(NewLostObject(Objectenum.Resolved, "Resuelto"));
+        await repository.CreateAsync(NewLostObject(Objectenum.Resolved, "Resuelto 2"));
+
+        var result = await repository.SearchAsync(
+            Criteria(status: Objectenum.Resolved), CancellationToken.None);
+
+        Assert.Equal(2, result.TotalCount);
+        Assert.Equal(2, result.Items.Count);
+        Assert.All(result.Items, i => Assert.Equal(Objectenum.Resolved, i.Status));
+    }
+
+    [DockerFact]
+    public async Task SearchAsync_FiltraPorTitleCaseInsensitiveYParcial()
+    {
+        var repository = CreateRepository();
+        await repository.CreateAsync(NewLostObject(title: "Mochila Negra"));
+        await repository.CreateAsync(NewLostObject(title: "Paraguas azul"));
+
+        var result = await repository.SearchAsync(
+            Criteria(title: "mochila"), CancellationToken.None);
+
+        var item = Assert.Single(result.Items);
+        Assert.Equal("Mochila Negra", item.Title);
+    }
+
+    [DockerFact]
+    public async Task SearchAsync_EscapaLosCaracteresRegexDelTitle()
+    {
+        var repository = CreateRepository();
+        await repository.CreateAsync(NewLostObject(title: "Mochila (negra)"));
+        await repository.CreateAsync(NewLostObject(title: "Mochila negra"));
+
+        var result = await repository.SearchAsync(
+            Criteria(title: "(negra)"), CancellationToken.None);
+
+        var item = Assert.Single(result.Items);
+        Assert.Equal("Mochila (negra)", item.Title);
+    }
+
+    [DockerFact]
+    public async Task SearchAsync_FiltraPorStructureId()
+    {
+        var repository = CreateRepository();
+        var target = Guid.NewGuid();
+        await repository.CreateAsync(NewLostObject(title: "Objetivo", structureId: target));
+        await repository.CreateAsync(NewLostObject(title: "Otro", structureId: Guid.NewGuid()));
+
+        var result = await repository.SearchAsync(
+            Criteria(structureId: target), CancellationToken.None);
+
+        var item = Assert.Single(result.Items);
+        Assert.Equal(target, item.StructureRefId);
+    }
+
+    [DockerFact]
+    public async Task SearchAsync_PaginaYDevuelveElTotal()
+    {
+        var repository = CreateRepository();
+        var baseDate = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc);
+        await repository.CreateAsync(NewLostObject(title: "A", reportedAt: baseDate));
+        await repository.CreateAsync(NewLostObject(title: "B", reportedAt: baseDate.AddDays(1)));
+        await repository.CreateAsync(NewLostObject(title: "C", reportedAt: baseDate.AddDays(2)));
+
+        var firstPage = await repository.SearchAsync(
+            Criteria(sortBy: LostObjectSortField.ReportedAt, descending: false, page: 1, pageSize: 2),
+            CancellationToken.None);
+
+        Assert.Equal(3, firstPage.TotalCount);
+        Assert.Equal(2, firstPage.Items.Count);
+        Assert.Equal("A", firstPage.Items[0].Title);
+        Assert.Equal("B", firstPage.Items[1].Title);
+
+        var secondPage = await repository.SearchAsync(
+            Criteria(sortBy: LostObjectSortField.ReportedAt, descending: false, page: 2, pageSize: 2),
+            CancellationToken.None);
+
+        Assert.Single(secondPage.Items);
+        Assert.Equal("C", secondPage.Items[0].Title);
+    }
+
+    [DockerFact]
+    public async Task SearchAsync_OrdenaPorTituloDescendente()
+    {
+        var repository = CreateRepository();
+        await repository.CreateAsync(NewLostObject(title: "Alfa"));
+        await repository.CreateAsync(NewLostObject(title: "Zeta"));
+        await repository.CreateAsync(NewLostObject(title: "Mango"));
+
+        var result = await repository.SearchAsync(
+            Criteria(sortBy: LostObjectSortField.Title, descending: true), CancellationToken.None);
+
+        Assert.Equal(new[] { "Zeta", "Mango", "Alfa" }, result.Items.Select(i => i.Title));
+    }
+
+    [DockerFact]
+    public async Task SearchAsync_SinFiltros_DevuelveTodo()
+    {
+        var repository = CreateRepository();
+        await repository.CreateAsync(NewLostObject(title: "Uno"));
+        await repository.CreateAsync(NewLostObject(title: "Dos"));
+
+        var result = await repository.SearchAsync(Criteria(), CancellationToken.None);
+
+        Assert.Equal(2, result.TotalCount);
+        Assert.Equal(2, result.Items.Count);
     }
 }

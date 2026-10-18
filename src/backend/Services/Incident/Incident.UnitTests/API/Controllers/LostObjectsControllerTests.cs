@@ -72,7 +72,8 @@ public class LostObjectsControllerTests
         // Comportamiento actual: el handler devuelve los datos pero el controller descarta el body.
         _handler.GetByIdAsync("64b00000000000000000000a")
             .Returns(Task.FromResult<ErrorOr<LostObjectResponse>>(
-                new LostObjectResponse("Mochila", "Mochila", nameof(Objectenum.Pending), "", Guid.NewGuid())));
+                new LostObjectResponse("Mochila", "Mochila", "2026-10-14T20:00:00Z",
+                    nameof(Objectenum.Pending), "", Guid.NewGuid())));
 
         var result = await _controller.GetById("64b00000000000000000000a");
 
@@ -102,43 +103,6 @@ public class LostObjectsControllerTests
 
         var problem = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
-    }
-
-    // ---------- GET por status ----------
-
-    [Fact]
-    public async Task FilterStatus_CuandoHayResultados_Retorna204SinContenido()
-    {
-        // Comportamiento actual: la lista filtrada no se devuelve en el body de la respuesta.
-        _handler.FilterStatusAsync((int)Objectenum.Resolved)
-            .Returns(Task.FromResult<ErrorOr<LostObjectList>>(
-                new LostObjectList(new List<LostObjectResponse>(), 0)));
-
-        var result = await _controller.FilterStatus((int)Objectenum.Resolved);
-
-        Assert.IsType<NoContentResult>(result);
-    }
-
-    [Fact]
-    public async Task FilterStatus_CuandoElStatusEsInvalido_Retorna400()
-    {
-        _handler.FilterStatusAsync(99).Returns(ValidationError<LostObjectList>());
-
-        var result = await _controller.FilterStatus(99);
-
-        var problem = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
-    }
-
-    [Fact]
-    public async Task FilterStatus_CuandoNoEncuentra_Retorna404()
-    {
-        _handler.FilterStatusAsync((int)Objectenum.Canceled).Returns(NotFoundError<LostObjectList>());
-
-        var result = await _controller.FilterStatus((int)Objectenum.Canceled);
-
-        var problem = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status404NotFound, problem.StatusCode);
     }
 
     // ---------- PATCH status ----------
@@ -176,5 +140,44 @@ public class LostObjectsControllerTests
 
         var problem = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
+    }
+
+    // ---------- GET (search) ----------
+
+    [Fact]
+    public async Task Search_CuandoElHandlerTieneExito_Retorna200ConLaPagina()
+    {
+        var page = new LostObjectPageResponse(
+            new List<LostObjectResponse>
+            {
+                new("Mochila", "Mochila", "2026-10-14T20:00:00Z",
+                    nameof(Objectenum.Pending), "https://campus.uct.cl/mochila.png", Guid.NewGuid())
+            },
+            TotalCount: 1,
+            Page: 1,
+            PageSize: 10);
+        _handler.SearchAsync(Arg.Any<LostObjectSearchRequest>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<ErrorOr<LostObjectPageResponse>>(page));
+
+        var result = await _controller.Search(new LostObjectSearchRequest(), CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(200, ok.StatusCode);
+        Assert.Same(page, ok.Value);
+    }
+
+    [Fact]
+    public async Task Search_CuandoElHandlerValida_Retorna400ConProblemDetails()
+    {
+        _handler.SearchAsync(Arg.Any<LostObjectSearchRequest>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<ErrorOr<LostObjectPageResponse>>(
+                Error.Validation("LostObject.Status", "Invalid status '99'.")));
+
+        var result = await _controller.Search(
+            new LostObjectSearchRequest(Status: 99), CancellationToken.None);
+
+        var problem = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
+        Assert.Equal("Invalid status '99'.", Assert.IsType<ProblemDetails>(problem.Value).Title);
     }
 }

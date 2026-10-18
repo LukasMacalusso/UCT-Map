@@ -1,6 +1,8 @@
 using Incident.Domain.Entities;
 using Incident.Domain.Interfaces;
+using Incident.Domain.Queries;
 using Incident.Infrastructure.Persistence;
+using Incident.Infrastructure.Persistence.Search;
 using MongoDB.Driver;
 
 namespace Incident.Infrastructure.Persistence.Repositories;
@@ -33,5 +35,21 @@ public class TicketRepository : MongoRepository<Ticket>, ITicketRepository
         );
 
         return result.ModifiedCount > 0;
+    }
+
+    public async Task<PagedResult<Ticket>> SearchAsync(TicketSearchCriteria c, CancellationToken ct)
+    {
+        var filter = TicketFilters.Build(c);
+        var sort = TicketFilters.Sort(c.SortBy, c.Descending);
+
+        var total = await _collection.CountDocumentsAsync(filter, cancellationToken: ct);
+
+        var items = await _collection.Find(filter)
+            .Sort(sort)
+            .Skip((c.Page - 1) * c.PageSize)
+            .Limit(c.PageSize)
+            .ToListAsync(ct);
+
+        return new PagedResult<Ticket>(items, total, c.Page, c.PageSize);
     }
 }

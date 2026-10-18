@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.AspNetCore.Http;
+using Incident.Application.Common;
 using ErrorOr;
 namespace Incident.API.Controllers;
 
@@ -21,6 +22,12 @@ public class ReportsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(CreateReportRequest request)
     {
+        var userRefId = JwtUserIdReader.GetUserIdToken(Request.Headers.Authorization.ToString());
+        if (userRefId is null)
+            return Unauthorized();
+
+        request = request with { UserRefId = userRefId.Value };
+
         var result = await _reportHandler.CreateReportAsync(request);
 
         return result.Match(
@@ -66,5 +73,23 @@ public class ReportsController : ControllerBase
                 return Problem(statusCode: statusCode, title: firstError.Description);
             }
         );
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Search([FromQuery] TicketSearchRequest request, CancellationToken ct)
+    {
+        var result = await _reportHandler.SearchAsync(request, ct);
+        return result.Match(
+            page => Ok(page),
+            errors =>
+            {
+                var firstError = errors.First();
+                var statusCode = firstError.Type switch
+                {
+                    ErrorType.NotFound => StatusCodes.Status404NotFound,
+                    _ => StatusCodes.Status400BadRequest
+                };
+                return Problem(statusCode: statusCode, title: firstError.Description);
+            });
     }
 }
