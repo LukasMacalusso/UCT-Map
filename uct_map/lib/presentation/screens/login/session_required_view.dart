@@ -14,7 +14,7 @@ class SessionRequiredView extends StatelessWidget {
     final result = await Navigator.pushNamed(context, '/login');
     if (!context.mounted || result is! Map || result['ok'] != true) return;
     try {
-      await ApiClientProvider.currentSession!.signInReal(
+      await ApiClientProvider.session.signInReal(
         AuthLoginResult(
           userId: result['userId'] as String,
           email: result['email'] as String,
@@ -32,9 +32,8 @@ class SessionRequiredView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Inicializa la sesión compartida también al abrir una ruta directamente.
-    ApiClientProvider.defaultClient;
-    final session = ApiClientProvider.currentSession!;
+    // Sesión compartida: la misma que usa la navegación principal.
+    final session = ApiClientProvider.session;
     return ListenableBuilder(
       listenable: session,
       builder: (context, _) => session.isAuthenticated
