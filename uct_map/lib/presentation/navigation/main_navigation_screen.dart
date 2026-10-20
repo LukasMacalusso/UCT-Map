@@ -31,7 +31,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   bool _didReadInitialArgs = false;
   late final AuthenticatedClient _apiClient;
 
-  static const _protectedTabs = [2, 3, 4];
+  static const _protectedTabs = [0, 1, 2, 3, 4];
 
   final List<String> _titles = const [
     'Mapa del Campus',
@@ -128,8 +128,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final isSearchTab = _currentIndex == 1;
 
     final List<Widget> screens = [
-      MapScreen(key: ValueKey(_session.isAuthenticated)),
-      SearchScreen(onExploreMap: () => _onTabTapped(0)),
+      _protected(0, MapScreen(key: ValueKey(_session.isAuthenticated)), 'Mapa'),
+      _protected(
+        1,
+        SearchScreen(onExploreMap: () => _onTabTapped(0)),
+        'Búsqueda',
+      ),
       _protected(
         2,
         LostFoundScreen(

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+
 import '../../domain/entities/lost_item.dart';
 import '../../domain/entities/report.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../presentation/navigation/main_navigation_screen.dart';
 import '../../presentation/screens/home/home_screen.dart';
 import '../../presentation/screens/login/login_page.dart';
+import '../../presentation/screens/login/session_required_view.dart';
 import '../../presentation/screens/lost_found/lost_found_screen.dart';
 import '../../presentation/screens/lost_found/lost_item_detail_screen.dart';
 import '../../presentation/screens/professors/professors_screen.dart';
@@ -36,6 +38,32 @@ class AppRoutes {
 
   /// Generates routes dynamically based on name and parameters.
   static Route<dynamic> onGenerateRoute(
+    RouteSettings settings, {
+    AuthRepository? authRepository,
+  }) {
+    final route = _generateRoute(
+      settings,
+      authRepository: authRepository,
+    ) as MaterialPageRoute<dynamic>;
+    const protected = {
+      professors,
+      reports,
+      reportDetail,
+      lostFound,
+      lostItemDetail,
+      savedPlaces,
+      myReports,
+      myLostItems,
+      profileSettings,
+    };
+    if (!protected.contains(settings.name)) return route;
+    return MaterialPageRoute<dynamic>(
+      settings: settings,
+      builder: (_) => SessionRequiredView(builder: route.builder),
+    );
+  }
+
+  static Route<dynamic> _generateRoute(
     RouteSettings settings, {
     AuthRepository? authRepository,
   }) {
