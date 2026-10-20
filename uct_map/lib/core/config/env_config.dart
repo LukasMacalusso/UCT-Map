@@ -62,7 +62,10 @@ class EnvConfig {
   /// URL Base del API Gateway o backend principal.
   static String get apiBaseUrl =>
       _get('API_BASE_URL') ??
-      const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:5052');
+      const String.fromEnvironment(
+        'API_BASE_URL',
+        defaultValue: 'http://localhost:5000',
+      );
 
   /// Tiempo límite de peticiones HTTP en segundos.
   static int get apiTimeoutSeconds {

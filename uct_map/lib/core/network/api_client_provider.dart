@@ -42,7 +42,7 @@ class ApiClientProvider {
     return AuthenticatedClient(
       innerClient: innerClient,
       tokenProvider: () => session.token,
-      onUnauthorized: () => session.signOut(),
+      onUnauthorized: () => session.signOut().catchError((Object _) {}),
       defaultTimeout: config?.timeout,
     );
   }
@@ -63,12 +63,15 @@ class ApiClientProvider {
   }
 
   /// Retorna la sesión asociada actual.
-  @visibleForTesting
   static SessionController? get currentSession => _session;
 
   /// Restablece el cliente predeterminado (ideal para aislamiento en pruebas unitarias).
   @visibleForTesting
-  static void reset({http.Client? mockClient, SessionController? session, ApiConfig? config}) {
+  static void reset({
+    http.Client? mockClient,
+    SessionController? session,
+    ApiConfig? config,
+  }) {
     _session = session;
     if (config != null) _config = config;
     if (mockClient is AuthenticatedClient) {
@@ -77,12 +80,13 @@ class ApiClientProvider {
       _defaultClient = AuthenticatedClient(
         innerClient: mockClient,
         tokenProvider: () => _session?.token,
-        onUnauthorized: () => _session?.signOut(),
+        onUnauthorized: () => _session?.signOut().catchError((Object _) {}),
       );
     } else {
       _defaultClient = null;
     }
-    _apiClient = _defaultClient != null ? ApiClient(client: _defaultClient, config: _config) : null;
+    _apiClient = _defaultClient != null
+        ? ApiClient(client: _defaultClient, config: _config)
+        : null;
   }
 }
-

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../screens/map/map_screen.dart';
 import '../screens/search/search_screen.dart';
 import '../screens/lost_found/lost_found_screen.dart';
@@ -26,6 +27,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _currentIndex;
   final _session = SessionController();
   bool _didReadInitialArgs = false;
+  bool _restoring = true;
+  String? _restoreError;
   late final AuthenticatedClient _apiClient;
 
   static const _protectedTabs = [2, 3, 4];
@@ -44,9 +47,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _currentIndex = widget.initialIndex;
     ApiClientProvider.initialize(_session);
     _apiClient = ApiClientProvider.defaultClient;
-    _session.restore().then((_) {
-      if (mounted) setState(() {});
+    _session.addListener(_sessionChanged);
+    _restoreSession();
+  }
+
+  void _sessionChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _restoreSession() async {
+    setState(() {
+      _restoring = true;
+      _restoreError = null;
     });
+    try {
+      await _session.restore();
+    } catch (_) {
+      if (mounted) _restoreError = 'No se pudo leer la sesión guardada.';
+    } finally {
+      if (mounted) setState(() => _restoring = false);
+    }
   }
 
   @override
@@ -70,13 +90,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void dispose() {
     _apiClient.close();
+    _session.removeListener(_sessionChanged);
     _session.dispose();
     super.dispose();
   }
 
   Future<void> _openLogin(String section) async {
-    final result =
-        await Navigator.pushNamed(context, '/login', arguments: section);
+    final result = await Navigator.pushNamed(
+      context,
+      '/login',
+      arguments: section,
+    );
     if (result is Map && result['ok'] == true && mounted) {
       final userId = (result['userId'] ?? '').toString();
       final email = (result['email'] ?? '').toString();
@@ -92,14 +116,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         await _session.signInReal(
           AuthLoginResult(userId: userId, email: email, token: token),
         );
-      } on AuthFailure {
+      } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No se pudo iniciar sesión.')),
         );
         return;
       }
-      setState(() {});
+      if (mounted) setState(() {});
     }
   }
 
@@ -112,40 +136,60 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_restoring) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (_restoreError != null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_restoreError!),
+              TextButton(
+                onPressed: _restoreSession,
+                child: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     final theme = Theme.of(context);
     final isSearchTab = _currentIndex == 1;
 
     final List<Widget> screens = [
       MapScreen(key: ValueKey(_session.isAuthenticated)),
-      SearchScreen(
-        onExploreMap: () => _onTabTapped(0),
+      SearchScreen(onExploreMap: () => _onTabTapped(0)),
+      _protected(
+        2,
+        LostFoundScreen(
+          onNavigateToTab: _onTabTapped,
+          incidentRepository: IncidentRemoteDataSource(client: _apiClient),
+        ),
+        'Objetos perdidos',
       ),
       _protected(
-          2,
-          LostFoundScreen(
-            onNavigateToTab: _onTabTapped,
-            incidentRepository: IncidentRemoteDataSource(client: _apiClient),
-          ),
-          'Objetos perdidos'),
+        3,
+        ReportsScreen(
+          onNavigateToTab: _onTabTapped,
+          incidentRepository: IncidentRemoteDataSource(client: _apiClient),
+        ),
+        'Reportes de incidencias',
+      ),
       _protected(
-          3,
-          ReportsScreen(
-            onNavigateToTab: _onTabTapped,
-            incidentRepository: IncidentRemoteDataSource(client: _apiClient),
-          ),
-          'Reportes de incidencias'),
-      _protected(
-          4,
-          ProfileScreen(
-            session: _session,
-            onNavigateToTab: _onTabTapped,
-            onLogout: () {
-              _session.signOut().then((_) {
-                if (mounted) setState(() {});
-              });
-            },
-          ),
-          'Perfil del usuario'),
+        4,
+        ProfileScreen(
+          session: _session,
+          onNavigateToTab: _onTabTapped,
+          onLogout: () {
+            _session.signOut().then((_) {
+              if (mounted) setState(() {});
+            });
+          },
+        ),
+        'Perfil del usuario',
+      ),
     ];
 
     return Scaffold(
@@ -227,10 +271,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         currentIndex: _currentIndex,
         onSelectTab: _onTabTapped,
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: _onTabTapped,

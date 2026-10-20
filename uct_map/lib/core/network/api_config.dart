@@ -3,18 +3,15 @@ import 'api_endpoints.dart';
 
 // URL base del API Gateway y rutas del backend cargadas desde .env.
 class ApiConfig {
-  ApiConfig({
-    String? baseUrl,
-    Duration? timeout,
-    String? apiKey,
-  })  : baseUrl = baseUrl ?? EnvConfig.apiBaseUrl,
-        timeout = timeout ?? EnvConfig.apiTimeout,
-        apiKey = apiKey ?? EnvConfig.apiKey;
+  ApiConfig({String? baseUrl, Duration? timeout, String? apiKey})
+    : baseUrl = baseUrl ?? EnvConfig.apiBaseUrl,
+      timeout = timeout ?? EnvConfig.apiTimeout,
+      apiKey = apiKey ?? EnvConfig.apiKey;
 
   static String get defaultBaseUrl => EnvConfig.apiBaseUrl;
 
   /// Host del Gateway visto desde un emulador Android.
-  static const String androidEmulatorBaseUrl = 'http://10.0.2.2:5052';
+  static const String androidEmulatorBaseUrl = 'http://10.0.2.2:5000';
 
   static const String loginPath = ApiEndpoints.identityLogin;
 
