@@ -1,21 +1,20 @@
 import 'user_role.dart';
 
-// Espejo del User de Identity: Id + Email + Name + rol único +
-// RegistrationDate. Un rol por usuario; si el JWT trae varios se toma el
-// primero. Sin registro local (SSO): RegistrationDate cae a ahora si no
-// viene y Name llega solo si el backend lo envía.
+// Identidad local; los permisos conservan todos los roles del JWT.
 class User {
   final String id;
   final String email;
   final String? name;
-  final UserRole role;
+  final List<UserRole> roles;
+  UserRole get role => roles.isEmpty ? UserRole.desconocido : roles.first;
+  bool hasRole(UserRole role) => roles.contains(role);
   final DateTime registrationDate;
 
   const User({
     required this.id,
     required this.email,
     this.name,
-    required this.role,
+    required this.roles,
     required this.registrationDate,
   });
 
@@ -28,7 +27,7 @@ class User {
       id: _str(json['userId']),
       email: _str(json['email']),
       name: _nonEmpty(json['name']),
-      role: roles.isNotEmpty ? roles.first : UserRole.desconocido,
+      roles: List.unmodifiable(roles),
       registrationDate: _date(json['registrationDate']),
     );
   }
@@ -40,12 +39,13 @@ class User {
     required String email,
     String? name,
     UserRole role = UserRole.desconocido,
+    List<UserRole>? roles,
   }) {
     return User(
       id: userId,
       email: email,
       name: _nonEmpty(name),
-      role: role,
+      roles: List.unmodifiable(roles ?? [role]),
       registrationDate: DateTime.now(),
     );
   }
@@ -57,11 +57,13 @@ class User {
           id == other.id &&
           email == other.email &&
           name == other.name &&
-          role == other.role &&
+          roles.length == other.roles.length &&
+          roles.asMap().entries.every((e) => other.roles[e.key] == e.value) &&
           registrationDate == other.registrationDate;
 
   @override
-  int get hashCode => Object.hash(id, email, name, role, registrationDate);
+  int get hashCode =>
+      Object.hash(id, email, name, Object.hashAll(roles), registrationDate);
 }
 
 String _str(dynamic v) => v?.toString() ?? '';

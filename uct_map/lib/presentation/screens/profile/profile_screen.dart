@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../application/session/session_controller.dart';
 import '../../../domain/entities/user_role.dart';
@@ -82,8 +83,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: AppColors.uctBlue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.camera_alt_outlined,
-                        color: AppColors.uctBlue),
+                    child: const Icon(
+                      Icons.camera_alt_outlined,
+                      color: AppColors.uctBlue,
+                    ),
                   ),
                   title: const Text('Tomar Foto'),
                   subtitle: const Text('Abrir cámara del dispositivo'),
@@ -107,8 +110,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: AppColors.uctGold.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.photo_library_outlined,
-                        color: AppColors.uctBlue),
+                    child: const Icon(
+                      Icons.photo_library_outlined,
+                      color: AppColors.uctBlue,
+                    ),
                   ),
                   title: const Text('Elegir de la Galería'),
                   subtitle: const Text('Seleccionar una imagen de tu galería'),
@@ -162,7 +167,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Row(
             children: [
               Container(
@@ -171,10 +178,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: Colors.red.shade50,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.logout_rounded, color: Colors.red, size: 22),
+                child: const Icon(
+                  Icons.logout_rounded,
+                  color: Colors.red,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
-              const Text('Cerrar Sesión', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              const Text(
+                'Cerrar Sesión',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
             ],
           ),
           content: const Text(
@@ -184,7 +198,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar', style: TextStyle(color: AppColors.subtitle)),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(color: AppColors.subtitle),
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -218,7 +235,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               child: const Text('Cerrar Sesión'),
             ),
@@ -243,15 +262,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case UserRole.invitado:
         return 'Invitado';
       case UserRole.desconocido:
-        return 'Estudiante';
+        return 'Sin rol asignado';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final user = widget.session?.currentUser;
-    final userName = user?.name ?? user?.email ?? 'Patricio Benavides';
-    final userEmail = user?.email ?? 'patricio.benavides@uct.cl';
+    final userName = user?.name ?? user?.email ?? 'Sin sesión';
+    final userEmail = user?.email ?? '';
     final userRole = user?.role;
 
     return SingleChildScrollView(
@@ -271,10 +290,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   height: 104,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.uctGold,
-                      width: 3,
-                    ),
+                    border: Border.all(color: AppColors.uctGold, width: 3),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.uctBlue.withValues(alpha: 0.12),
@@ -340,10 +356,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 3),
           Text(
             userEmail,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.subtitle,
-            ),
+            style: const TextStyle(fontSize: 13, color: AppColors.subtitle),
           ),
 
           const SizedBox(height: 12),
@@ -370,7 +383,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    _getRoleLabel(userRole),
+                    user!.roles.map(_getRoleLabel).join(' · '),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -428,9 +441,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => MyReportsScreen(
-                    onNavigateToTab: widget.onNavigateToTab,
-                  ),
+                  builder: (_) =>
+                      MyReportsScreen(onNavigateToTab: widget.onNavigateToTab),
                 ),
               );
               if (result is int && widget.onNavigateToTab != null) {
@@ -528,10 +540,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: isDestructive ? Colors.red.shade50.withValues(alpha: 0.6) : Colors.white,
+            color: isDestructive
+                ? Colors.red.shade50.withValues(alpha: 0.6)
+                : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDestructive ? Colors.red.shade200 : AppColors.fieldBorder,
+              color: isDestructive
+                  ? Colors.red.shade200
+                  : AppColors.fieldBorder,
               width: 1,
             ),
             boxShadow: isDestructive
@@ -555,11 +571,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       : iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: 22,
-                ),
+                child: Icon(icon, color: iconColor, size: 22),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -571,7 +583,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: isDestructive ? Colors.red.shade800 : AppColors.ink,
+                        color: isDestructive
+                            ? Colors.red.shade800
+                            : AppColors.ink,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -579,15 +593,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       subtitle,
                       style: TextStyle(
                         fontSize: 12,
-                        color: isDestructive ? Colors.red.shade400 : AppColors.subtitle,
+                        color: isDestructive
+                            ? Colors.red.shade400
+                            : AppColors.subtitle,
                       ),
                     ),
                   ],
                 ),
               ),
-              if (badgeText != null && badgeColor != null && badgeTextColor != null) ...[
+              if (badgeText != null &&
+                  badgeColor != null &&
+                  badgeTextColor != null) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: badgeColor,
                     borderRadius: BorderRadius.circular(12),
