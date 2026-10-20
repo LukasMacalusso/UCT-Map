@@ -99,7 +99,7 @@ void main() {
       final client = AuthenticatedClient(
         innerClient: mockInner,
         tokenProvider: () => 'expired-token',
-        onUnauthorized: () {
+        onUnauthorized: (_) {
           unauthorizedCalled = true;
         },
         enableLogging: false,

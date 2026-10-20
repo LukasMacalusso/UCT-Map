@@ -54,7 +54,11 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
 
-    _loadCampuses();
+    // Los datos de Campus exigen token: se espera a que la sesión esté
+    // restaurada antes de consultar.
+    ApiClientProvider.session.ready.then((_) {
+      if (mounted) _loadCampuses();
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

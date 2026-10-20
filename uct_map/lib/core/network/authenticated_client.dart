@@ -6,6 +6,9 @@ import '../config/env_config.dart';
 typedef TokenProvider = String? Function();
 typedef ApiKeyProvider = String? Function();
 
+/// Recibe el token con el que se hizo la petición rechazada.
+typedef UnauthorizedHandler = void Function(String? token);
+
 /// Cliente HTTP configurado para la comunicación con el API Gateway y microservicios.
 ///
 /// Características:
@@ -28,7 +31,7 @@ class AuthenticatedClient extends http.BaseClient {
   final http.Client _inner;
   final TokenProvider? tokenProvider;
   final ApiKeyProvider? apiKeyProvider;
-  final void Function()? onUnauthorized;
+  final UnauthorizedHandler? onUnauthorized;
   final Duration? defaultTimeout;
   final bool enableLogging;
 
@@ -79,7 +82,7 @@ class AuthenticatedClient extends http.BaseClient {
 
       // Si el Gateway retorna 401 Unauthorized, notificar para revocar sesión
       if (response.statusCode == 401) {
-        onUnauthorized?.call();
+        onUnauthorized?.call(token);
       }
 
       return response;

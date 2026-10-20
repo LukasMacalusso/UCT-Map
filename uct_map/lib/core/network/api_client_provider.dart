@@ -20,16 +20,25 @@ class ApiClientProvider {
   static ApiClient? _apiClient;
   static ApiConfig _config = ApiConfig();
 
+  /// Sesión compartida: todas las pantallas usan la misma sesión y el mismo
+  /// token, de modo que un cierre o un 401 afecta a toda la aplicación.
+  static SessionController get session => _session ??= SessionController();
+
   /// Inicializa el proveedor con la sesión activa y configuración opcional.
+  /// Reutiliza el cliente ya creado si la sesión no cambió.
   static void initialize(
     SessionController session, {
     http.Client? innerClient,
     ApiConfig? config,
   }) {
-    _session = session;
     if (config != null) _config = config;
-    _defaultClient = create(session, innerClient: innerClient, config: _config);
-    _apiClient = ApiClient(client: _defaultClient, config: _config);
+    final rebuild =
+        _session != session || innerClient != null || _defaultClient == null;
+    _session = session;
+    if (rebuild) {
+      _defaultClient = create(session, innerClient: innerClient, config: _config);
+      _apiClient = ApiClient(client: _defaultClient, config: _config);
+    }
   }
 
   /// Crea un [AuthenticatedClient] configurado para inyectar automáticamente
@@ -42,20 +51,14 @@ class ApiClientProvider {
     return AuthenticatedClient(
       innerClient: innerClient,
       tokenProvider: () => session.token,
-      onUnauthorized: () => session.signOut().catchError((Object _) {}),
+      onUnauthorized: session.handleUnauthorized,
       defaultTimeout: config?.timeout,
     );
   }
 
   /// Cliente HTTP predeterminado con autenticación JWT, timeouts y headers configurados.
-  static AuthenticatedClient get defaultClient {
-    if (_defaultClient == null) {
-      final session = _session ?? SessionController();
-      _defaultClient = create(session, config: _config);
-      _session ??= session;
-    }
-    return _defaultClient!;
-  }
+  static AuthenticatedClient get defaultClient =>
+      _defaultClient ??= create(session, config: _config);
 
   /// Cliente HTTP de alto nivel con métodos REST tipados y validación de errores.
   static ApiClient get apiClient {
@@ -80,7 +83,7 @@ class ApiClientProvider {
       _defaultClient = AuthenticatedClient(
         innerClient: mockClient,
         tokenProvider: () => _session?.token,
-        onUnauthorized: () => _session?.signOut().catchError((Object _) {}),
+        onUnauthorized: (token) => _session?.handleUnauthorized(token),
       );
     } else {
       _defaultClient = null;

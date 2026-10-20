@@ -80,6 +80,22 @@ class EnvConfig {
   /// [Duration] correspondiente a [apiTimeoutSeconds].
   static Duration get apiTimeout => Duration(seconds: apiTimeoutSeconds);
 
+  /// Emisor esperado en los tokens (Identity).
+  static String get jwtIssuer =>
+      _get('JWT_ISSUER') ??
+      const String.fromEnvironment(
+        'JWT_ISSUER',
+        defaultValue: 'https://identity-api',
+      );
+
+  /// Audiencia esperada en los tokens (API Gateway).
+  static String get jwtAudience =>
+      _get('JWT_AUDIENCE') ??
+      const String.fromEnvironment(
+        'JWT_AUDIENCE',
+        defaultValue: 'api-gateway',
+      );
+
   /// Clave de API opcional para autenticación contra Gateway o servicios externos.
   static String get apiKey =>
       _get('API_KEY') ??

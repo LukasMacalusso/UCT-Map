@@ -25,10 +25,10 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _currentIndex;
-  final _session = SessionController();
+
+  /// Sesión compartida de la aplicación: la misma para todas las pantallas.
+  late SessionController _session;
   bool _didReadInitialArgs = false;
-  bool _restoring = true;
-  String? _restoreError;
   late final AuthenticatedClient _apiClient;
 
   static const _protectedTabs = [2, 3, 4];
@@ -45,28 +45,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _session = ApiClientProvider.session;
     ApiClientProvider.initialize(_session);
     _apiClient = ApiClientProvider.defaultClient;
     _session.addListener(_sessionChanged);
-    _restoreSession();
+    _session.ready.then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   void _sessionChanged() {
     if (mounted) setState(() {});
-  }
-
-  Future<void> _restoreSession() async {
-    setState(() {
-      _restoring = true;
-      _restoreError = null;
-    });
-    try {
-      await _session.restore();
-    } catch (_) {
-      if (mounted) _restoreError = 'No se pudo leer la sesión guardada.';
-    } finally {
-      if (mounted) setState(() => _restoring = false);
-    }
   }
 
   @override
@@ -89,9 +78,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   void dispose() {
-    _apiClient.close();
+    // El cliente y la sesión son compartidos: no se cierran aquí.
     _session.removeListener(_sessionChanged);
-    _session.dispose();
     super.dispose();
   }
 
@@ -136,25 +124,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_restoring) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    if (_restoreError != null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(_restoreError!),
-              TextButton(
-                onPressed: _restoreSession,
-                child: const Text('Reintentar'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
     final theme = Theme.of(context);
     final isSearchTab = _currentIndex == 1;
 
@@ -182,10 +151,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ProfileScreen(
           session: _session,
           onNavigateToTab: _onTabTapped,
-          onLogout: () {
-            _session.signOut().then((_) {
-              if (mounted) setState(() {});
-            });
+          onLogout: () async {
+            try {
+              await _session.signOut();
+            } catch (_) {
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Sesión cerrada, pero no se pudo borrar el token local.',
+                  ),
+                ),
+              );
+            }
+            if (mounted) setState(() {});
           },
         ),
         'Perfil del usuario',
