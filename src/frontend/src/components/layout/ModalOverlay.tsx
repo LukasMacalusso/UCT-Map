@@ -1,40 +1,124 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ModalOverlayProps {
   isOpen: boolean;
   onClose: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
+  className?: string;
 }
 
-export const ModalOverlay = ({ isOpen, onClose, children }: ModalOverlayProps) => {
-  const [shouldRender, setShouldRender] = useState(isOpen);
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ');
+
+let scrollLockCount = 0;
+let previousBodyOverflow = '';
+
+const lockBodyScroll = () => {
+  if (scrollLockCount === 0) {
+    previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+  scrollLockCount += 1;
+};
+
+const unlockBodyScroll = () => {
+  scrollLockCount = Math.max(0, scrollLockCount - 1);
+  if (scrollLockCount === 0) {
+    document.body.style.overflow = previousBodyOverflow;
+  }
+};
+
+export const ModalOverlay = ({ isOpen, onClose, children, className = '' }: ModalOverlayProps) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const onCloseRef = useRef(onClose);
 
   useEffect(() => {
-    if (isOpen) {
-      setShouldRender(true);
-    } else {
-      const timer = setTimeout(() => setShouldRender(false), 300);
-      return () => clearTimeout(timer);
-    }
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
+    const getFocusableElements = () =>
+      Array.from(
+        containerRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) ?? []
+      );
+
+    const focusFrame = requestAnimationFrame(() => {
+      const [firstFocusable] = getFocusableElements();
+      (firstFocusable ?? containerRef.current)?.focus();
+    });
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !containerRef.current) return;
+
+      const focusableElements = getFocusableElements();
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (!firstFocusable) {
+        event.preventDefault();
+        containerRef.current.focus();
+        return;
+      }
+
+      const focusIsInside = containerRef.current.contains(activeElement);
+
+      if (event.shiftKey && (!focusIsInside || activeElement === firstFocusable)) {
+        event.preventDefault();
+        lastFocusable.focus();
+      } else if (!event.shiftKey && (!focusIsInside || activeElement === lastFocusable)) {
+        event.preventDefault();
+        firstFocusable.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    lockBodyScroll();
+
+    return () => {
+      cancelAnimationFrame(focusFrame);
+      document.removeEventListener('keydown', handleKeyDown);
+      unlockBodyScroll();
+      previouslyFocused?.focus?.();
+    };
   }, [isOpen]);
 
-  if (!shouldRender) return null;
+  if (!isOpen) return null;
 
-  return (
-    <div 
-      className={`fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm transition-all duration-300 ${
-        isOpen ? 'opacity-100 pointer-events-auto bg-black/40' : 'opacity-0 pointer-events-none bg-transparent'
-      }`}
-      onClick={onClose}
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-black/40 opacity-100 transition-all duration-300 motion-reduce:transition-none starting:opacity-0 starting:bg-transparent"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onCloseRef.current();
+      }}
     >
-      <div 
-        className={`transition-all duration-300 transform ${
-          isOpen ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-4 opacity-0'
-        }`}
-        onClick={(e) => e.stopPropagation()}
+      <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
+        className={`max-h-full outline-none opacity-100 scale-100 translate-y-0 transition-all duration-300 motion-reduce:transition-none starting:opacity-0 starting:scale-95 starting:translate-y-4 ${className}`.trim()}
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -139,7 +139,7 @@ export const BuildingDetailCard = ({
             className="flex-1 font-black text-base flex items-center justify-center gap-2 py-3 tracking-wider uppercase rounded-xl"
           >
             <InfoIcon className="w-6 h-6 text-white" />
-            <span>Info</span>
+            <span>Más info</span>
           </Button>
         </div>
       </div>

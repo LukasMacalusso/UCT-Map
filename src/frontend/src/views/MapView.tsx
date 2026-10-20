@@ -15,9 +15,11 @@ import TargetIcon from '../assets/svg/icons/icon_target.svg?react';
 import PencilIcon from '../assets/svg/icons/icon_pencil.svg?react';
 import SunIcon from '../assets/svg/icons/icon_sun.svg?react';
 import MoonIcon from '../assets/svg/icons/icon_moon.svg?react';
+import MarkerRectIcon from '../assets/svg/icons/icon_marker_rect.svg?react';
 import { RoleGuard } from '../router/RoleGuard';
 import { MapEditorPanel } from '../modules/admin/MapEditorPanel';
 import { BuildingFormModal } from '../modules/admin/BuildingFormModal';
+import { MapSidePanel } from '../modules/map/MapSidePanel';
 import { useBuildingLocations } from '../hooks/useCampus';
 import { MapMarker } from '../components/ui/MapMarker';
 import { ActiveBuildingCard } from '../modules/map/ActiveBuildingCard';
@@ -176,6 +178,7 @@ interface MarkerEntry {
 export const MapView = () => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isEditorOpen, setIsEditorOpen] = React.useState(false);
+  const [isSidePanelOpen, setIsSidePanelOpen] = React.useState(false);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [selectedBuilding, setSelectedBuilding] = React.useState<BuildingLocationDto | null>(null);
   const [isMapLoaded, setIsMapLoaded] = React.useState(false);
@@ -430,6 +433,24 @@ export const MapView = () => {
             icon={<BuildingIcon className="w-6 h-6 text-gray-700" />}
           />
         </div>
+
+        <SquareButton
+          onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
+          title={isSidePanelOpen ? 'Cerrar panel' : 'Abrir panel'}
+          className={isSidePanelOpen ? '!bg-page-blue !text-white' : ''}
+        >
+          <MarkerRectIcon className="w-7 h-7" />
+        </SquareButton>
+
+        <RoleGuard allowedRoles={[Role.Admin]}>
+          <SquareButton
+            onClick={() => setIsEditorOpen(!isEditorOpen)}
+            title="Editar mapa"
+            className={isEditorOpen ? '!bg-page-blue !text-white' : ''}
+          >
+            <PencilIcon className="w-7 h-7" />
+          </SquareButton>
+        </RoleGuard>
       </div>
 
       <div className="absolute bottom-6 right-6 z-20 flex items-end gap-6">
@@ -447,15 +468,6 @@ export const MapView = () => {
 
         {/* Map controls */}
         <div className="flex flex-col gap-2">
-          <RoleGuard allowedRoles={[Role.Admin]}>
-            <SquareButton
-              onClick={() => setIsEditorOpen(!isEditorOpen)}
-              title="Editar mapa"
-              className={isEditorOpen ? '!bg-page-blue !text-white' : ''}
-            >
-              <PencilIcon className="w-7 h-7" />
-            </SquareButton>
-          </RoleGuard>
           <SquareButton
             onClick={handleToggleDimension}
             title={is3D ? 'Cambiar a vista 2D' : 'Cambiar a vista 3D'}
@@ -480,6 +492,13 @@ export const MapView = () => {
             <TargetIcon className="w-7 h-7" />
           </SquareButton>
         </div>
+      </div>
+
+      {/* Side Panel */}
+      <div className={`absolute top-28 bottom-6 right-[6.5rem] w-96 z-40 transition-transform duration-500 ${
+        isSidePanelOpen ? 'translate-x-0' : 'translate-x-[150%]'
+      }`}>
+        <MapSidePanel onClose={() => setIsSidePanelOpen(false)} />
       </div>
 
       {/* Building Details Slide-in Panel */}
