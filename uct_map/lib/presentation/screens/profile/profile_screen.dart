@@ -189,10 +189,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ElevatedButton(
               onPressed: () async {
                 Navigator.pop(ctx);
+                if (widget.onLogout != null) {
+                  await widget.onLogout!();
+                  return;
+                }
                 try {
-                  if (widget.onLogout != null) {
-                    await widget.onLogout!();
-                  } else if (widget.session != null) {
+                  if (widget.session != null) {
                     await widget.session!.signOut();
                   }
                 } catch (_) {

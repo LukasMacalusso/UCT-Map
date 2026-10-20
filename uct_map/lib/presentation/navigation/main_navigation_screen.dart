@@ -152,19 +152,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           session: _session,
           onNavigateToTab: _onTabTapped,
           onLogout: () async {
+            var message = 'Sesión cerrada correctamente';
             try {
               await _session.signOut();
             } catch (_) {
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Sesión cerrada, pero no se pudo borrar el token local.',
-                  ),
-                ),
-              );
+              message =
+                  'Sesión cerrada, pero no se pudo borrar el token local.';
             }
-            if (mounted) setState(() {});
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(message)));
           },
         ),
         'Perfil del usuario',
