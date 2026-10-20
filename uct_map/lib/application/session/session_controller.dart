@@ -23,6 +23,14 @@ class SessionController extends ChangeNotifier {
   int _generation = 0;
 
   Future<void>? _ready;
+  Future<void> _storageOperation = Future.value();
+
+  // El borrado de una sesión anterior no debe adelantarse al nuevo guardado.
+  Future<T> _withStorage<T>(Future<T> Function() operation) {
+    final result = _storageOperation.then((_) => operation());
+    _storageOperation = result.then<void>((_) {}, onError: (Object _) {});
+    return result;
+  }
 
   bool get isAuthenticated => _session != null && _session!.isValid;
   User? get currentUser => _session?.user;
@@ -41,23 +49,29 @@ class SessionController extends ChangeNotifier {
       expectedAudience: EnvConfig.jwtAudience,
     );
     if (!claims.expiresAt.isAfter(DateTime.now()) ||
-        claims.subject != result.userId || claims.email != result.email) {
+        claims.subject != result.userId ||
+        claims.email != result.email) {
       throw const AuthFailure('La sesión recibida no es válida.');
     }
-    await _storage.save(result.token);
-    _generation++;
-    _session = AuthSession(
-      user: User.fromLogin(
-        userId: result.userId,
-        email: result.email,
-        roles: claims.roles,
-      ),
-      loginAt: DateTime.now(),
-      token: result.token,
-      expiresAt: claims.expiresAt,
-    );
-    _scheduleExpiry(claims.expiresAt);
-    notifyListeners();
+    final generation = ++_generation;
+    return _withStorage(() async {
+      await _storage.save(result.token);
+      if (generation != _generation) {
+        throw const AuthFailure('El inicio de sesión fue cancelado.');
+      }
+      _session = AuthSession(
+        user: User.fromLogin(
+          userId: result.userId,
+          email: result.email,
+          roles: claims.roles,
+        ),
+        loginAt: DateTime.now(),
+        token: result.token,
+        expiresAt: claims.expiresAt,
+      );
+      _scheduleExpiry(claims.expiresAt);
+      notifyListeners();
+    });
   }
 
   /// Termina cuando la restauración inicial terminó. Las pantallas que piden
@@ -74,36 +88,39 @@ class SessionController extends ChangeNotifier {
 
   Future<bool> restore() async {
     final generation = _generation;
-    final token = await _storage.read();
-    if (token == null || token.isEmpty) return false;
-    try {
-      final claims = parseJwt(
-        token,
-        expectedIssuer: EnvConfig.jwtIssuer,
-        expectedAudience: EnvConfig.jwtAudience,
-      );
-      if (!claims.expiresAt.isAfter(DateTime.now())) {
+    return _withStorage(() async {
+      final token = await _storage.read();
+      if (generation != _generation || token == null || token.isEmpty) {
+        return false;
+      }
+      try {
+        final claims = parseJwt(
+          token,
+          expectedIssuer: EnvConfig.jwtIssuer,
+          expectedAudience: EnvConfig.jwtAudience,
+        );
+        if (!claims.expiresAt.isAfter(DateTime.now())) {
+          await _storage.clear();
+          return false;
+        }
+        _session = AuthSession(
+          user: User.fromLogin(
+            userId: claims.subject,
+            email: claims.email,
+            roles: claims.roles,
+          ),
+          loginAt: DateTime.now(),
+          token: token,
+          expiresAt: claims.expiresAt,
+        );
+        _scheduleExpiry(claims.expiresAt);
+        notifyListeners();
+        return true;
+      } on AuthFailure {
         await _storage.clear();
         return false;
       }
-      if (generation != _generation) return false;
-      _session = AuthSession(
-        user: User.fromLogin(
-          userId: claims.subject,
-          email: claims.email,
-          roles: claims.roles,
-        ),
-        loginAt: DateTime.now(),
-        token: token,
-        expiresAt: claims.expiresAt,
-      );
-      _scheduleExpiry(claims.expiresAt);
-      notifyListeners();
-      return true;
-    } on AuthFailure {
-      await _storage.clear();
-      return false;
-    }
+    });
   }
 
   Future<void> signOut() async {
@@ -111,7 +128,7 @@ class SessionController extends ChangeNotifier {
     _expiryTimer?.cancel();
     _session = null;
     notifyListeners();
-    await _storage.clear();
+    await _withStorage(_storage.clear);
   }
 
   /// Cierra la sesión solo si el rechazo corresponde al token vigente:

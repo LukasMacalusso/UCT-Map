@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/navigation/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/lost_item.dart';
+import '../login/session_required_view.dart';
 import '../lost_found/lost_item_detail_screen.dart';
 
 class MyLostItemsScreen extends StatefulWidget {
@@ -295,9 +296,11 @@ class _MyLostItemsScreenState extends State<MyLostItemsScreen>
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => LostItemDetailScreen(
-                            item: _myItems[0],
-                            onNavigateToTab: widget.onNavigateToTab,
+                          builder: (_) => SessionRequiredView(
+                            builder: (_) => LostItemDetailScreen(
+                              item: _myItems[0],
+                              onNavigateToTab: widget.onNavigateToTab,
+                            ),
                           ),
                         ),
                       );
@@ -401,9 +404,11 @@ class _MyLostItemsScreenState extends State<MyLostItemsScreen>
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => LostItemDetailScreen(
-                  item: item,
-                  onNavigateToTab: widget.onNavigateToTab,
+                builder: (_) => SessionRequiredView(
+                  builder: (_) => LostItemDetailScreen(
+                    item: item,
+                    onNavigateToTab: widget.onNavigateToTab,
+                  ),
                 ),
               ),
             );

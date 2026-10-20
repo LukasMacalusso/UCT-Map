@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../application/session/session_controller.dart';
 import '../../../domain/entities/user_role.dart';
+import '../login/session_required_view.dart';
 import 'saved_places_screen.dart';
 import 'my_reports_screen.dart';
 import 'my_lost_items_screen.dart';
@@ -206,10 +207,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ElevatedButton(
               onPressed: () async {
                 Navigator.pop(ctx);
+                if (widget.onLogout != null) {
+                  await widget.onLogout!();
+                  return;
+                }
                 try {
-                  if (widget.onLogout != null) {
-                    await widget.onLogout!();
-                  } else if (widget.session != null) {
+                  if (widget.session != null) {
                     await widget.session!.signOut();
                   }
                 } catch (_) {
@@ -413,8 +416,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => SavedPlacesScreen(
-                    onNavigateToTab: widget.onNavigateToTab,
+                  builder: (_) => SessionRequiredView(
+                    builder: (_) => SavedPlacesScreen(
+                      onNavigateToTab: widget.onNavigateToTab,
+                    ),
                   ),
                 ),
               );
@@ -441,8 +446,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      MyReportsScreen(onNavigateToTab: widget.onNavigateToTab),
+                  builder: (_) => SessionRequiredView(
+                    builder: (_) => MyReportsScreen(
+                      onNavigateToTab: widget.onNavigateToTab,
+                    ),
+                  ),
                 ),
               );
               if (result is int && widget.onNavigateToTab != null) {
@@ -468,8 +476,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => MyLostItemsScreen(
-                    onNavigateToTab: widget.onNavigateToTab,
+                  builder: (_) => SessionRequiredView(
+                    builder: (_) => MyLostItemsScreen(
+                      onNavigateToTab: widget.onNavigateToTab,
+                    ),
                   ),
                 ),
               );
@@ -494,7 +504,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const ProfileSettingsScreen(),
+                  builder: (_) => SessionRequiredView(
+                    builder: (_) => const ProfileSettingsScreen(),
+                  ),
                 ),
               );
             },

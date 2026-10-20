@@ -3,6 +3,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/datasources/incident_remote_ds.dart';
 import '../../../domain/entities/report.dart';
 import '../../../domain/repositories/incident_repository.dart';
+import '../login/session_required_view.dart';
 import 'report_detail_screen.dart';
 
 // Pantalla de Reportes de Incidencias con filtros, mapa de calor y tarjetas (ms.svg - Incident Service).
@@ -468,9 +469,11 @@ class _ReportCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ReportDetailScreen(
-                          report: report,
-                          onNavigateToTab: onNavigateToTab,
+                        builder: (_) => SessionRequiredView(
+                          builder: (_) => ReportDetailScreen(
+                            report: report,
+                            onNavigateToTab: onNavigateToTab,
+                          ),
                         ),
                       ),
                     );

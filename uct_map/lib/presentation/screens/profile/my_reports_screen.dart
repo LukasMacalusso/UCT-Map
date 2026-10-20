@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/navigation/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/report.dart';
+import '../login/session_required_view.dart';
 import '../reports/report_detail_screen.dart';
 
 class MyReportsScreen extends StatefulWidget {
@@ -355,9 +356,11 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ReportDetailScreen(
-              report: report,
-              onNavigateToTab: widget.onNavigateToTab,
+            builder: (_) => SessionRequiredView(
+              builder: (_) => ReportDetailScreen(
+                report: report,
+                onNavigateToTab: widget.onNavigateToTab,
+              ),
             ),
           ),
         );

@@ -55,13 +55,17 @@ JwtClaims parseJwt(
       _ => const <UserRole>[],
     };
     final issuer = payload['iss']?.toString() ?? '';
+    final rawAudience = payload['aud'];
     final audience = payload['aud'] is List
         ? (payload['aud'] as List).map((a) => a.toString()).join(' ')
         : payload['aud']?.toString() ?? '';
     if (expectedIssuer != null && issuer != expectedIssuer) {
       throw const FormatException('iss');
     }
-    if (expectedAudience != null && !audience.contains(expectedAudience)) {
+    if (expectedAudience != null &&
+        !(rawAudience is List
+            ? rawAudience.contains(expectedAudience)
+            : rawAudience == expectedAudience)) {
       throw const FormatException('aud');
     }
     return JwtClaims(
