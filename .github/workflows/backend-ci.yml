@@ -16,44 +16,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Setup .NET 10
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
 
-    - name: Verify Code Formatting
-      run: |
-        dotnet format src/backend/Services/Campus/Campus.slnx --verify-no-changes
-        dotnet format src/backend/Services/Identity/Identity.slnx --verify-no-changes
-        dotnet format src/backend/Services/Incident/Incident.slnx --verify-no-changes
-        dotnet format src/backend/Services/Schedule/Schedule.slnx --verify-no-changes
+      - name: Verify Code Formatting
+        run: |
+          dotnet format src/backend/Services/Campus/Campus.slnx --verify-no-changes
+          dotnet format src/backend/Services/Identity/Identity.slnx --verify-no-changes
+          dotnet format src/backend/Services/Incident/Incident.slnx --verify-no-changes
+          dotnet format src/backend/Services/Schedule/Schedule.slnx --verify-no-changes
 
-    - name: Build All Microservices
-      run: |
-        dotnet build src/backend/Services/Campus/Campus.slnx -c Release
-        dotnet build src/backend/Services/Identity/Identity.slnx -c Release
-        dotnet build src/backend/Services/Incident/Incident.slnx -c Release
-        dotnet build src/backend/Services/Schedule/Schedule.slnx -c Release
+      - name: Build All Microservices
+        run: |
+          dotnet build src/backend/Services/Campus/Campus.slnx -c Release
+          dotnet build src/backend/Services/Identity/Identity.slnx -c Release
+          dotnet build src/backend/Services/Incident/Incident.slnx -c Release
+          dotnet build src/backend/Services/Schedule/Schedule.slnx -c Release
 
-    - name: Run Unit and Integration Tests
-      run: |
-        dotnet test src/backend/Services/Campus/Campus.slnx -c Release --no-build --collect:"XPlat Code Coverage"
-        dotnet test src/backend/Services/Identity/Identity.slnx -c Release --no-build --collect:"XPlat Code Coverage"
-        dotnet test src/backend/Services/Incident/Incident.slnx -c Release --no-build --collect:"XPlat Code Coverage"
-        dotnet test src/backend/Services/Schedule/Schedule.slnx -c Release --no-build --collect:"XPlat Code Coverage"
+      - name: Run Unit and Integration Tests
+        run: |
+          dotnet test src/backend/Services/Campus/Campus.slnx -c Release --no-build --collect:"XPlat Code Coverage"
+          dotnet test src/backend/Services/Identity/Identity.slnx -c Release --no-build --collect:"XPlat Code Coverage"
+          dotnet test src/backend/Services/Incident/Incident.slnx -c Release --no-build --collect:"XPlat Code Coverage"
+          dotnet test src/backend/Services/Schedule/Schedule.slnx -c Release --no-build --collect:"XPlat Code Coverage"
 
-    - name: Code Coverage Summary Report
-      uses: irongut/CodeCoverageSummary@v1.3.0
-      with:
-        filename: '**/coverage.cobertura.xml'
-        badge: true
-        fail_below_min: true
-        format: markdown
-        hide_branch_rate: false
-        hide_complexity: true
-        indicators: true
-        output: both
-        thresholds: '75 90'
+      - name: Code Coverage Summary Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: '**/coverage.cobertura.xml'
+          badge: true
+          fail_below_min: true
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: true
+          indicators: true
+          output: both
+          thresholds: '75 90'
