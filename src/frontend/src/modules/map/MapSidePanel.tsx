@@ -8,7 +8,7 @@ export const MapSidePanel = ({ onClose }: MapSidePanelProps) => {
   return (
     <Panel
       withUctBorder={false}
-      size="sm"
+      size="lg"
       outerClassName="w-full min-h-full"
       innerClassName="p-5 h-full flex flex-col"
       onClose={onClose}

@@ -11,6 +11,8 @@ export const Role = {
 export type Role = (typeof Role)[keyof typeof Role];
 export const ROLES = Object.values(Role) as Role[];
 
+export const OFFICIAL_ROLES: Role[] = [Role.Admin, Role.ObjectsOfficer, Role.ComplaintsOfficer];
+
 export const isRole = (value: unknown): value is Role =>
   typeof value === 'string' && (ROLES as readonly string[]).includes(value);
 

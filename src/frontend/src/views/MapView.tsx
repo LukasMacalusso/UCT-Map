@@ -13,19 +13,18 @@ import PlusIcon from '../assets/svg/icons/icon_plus.svg?react';
 import MinusIcon from '../assets/svg/icons/icon_minus.svg?react';
 import TargetIcon from '../assets/svg/icons/icon_target.svg?react';
 import PencilIcon from '../assets/svg/icons/icon_pencil.svg?react';
-import SunIcon from '../assets/svg/icons/icon_sun.svg?react';
-import MoonIcon from '../assets/svg/icons/icon_moon.svg?react';
-import MarkerRectIcon from '../assets/svg/icons/icon_marker_rect.svg?react';
+import FilterIcon from '../assets/svg/icons/icon_filter.svg?react';
 import { RoleGuard } from '../router/RoleGuard';
 import { MapEditorPanel } from '../modules/admin/MapEditorPanel';
 import { BuildingFormModal } from '../modules/admin/BuildingFormModal';
 import { MapSidePanel } from '../modules/map/MapSidePanel';
+import { MapHeatmapPanel } from '../modules/map/MapHeatmapPanel';
 import { useBuildingLocations } from '../hooks/useCampus';
 import { MapMarker } from '../components/ui/MapMarker';
 import { ActiveBuildingCard } from '../modules/map/ActiveBuildingCard';
 import type { BuildingLocationDto } from '../dtos/campus/BuildingLocationDto';
 import { textPageColors } from '../constants/colors';
-import { Role } from '../constants/role';
+import { OFFICIAL_ROLES, Role } from '../constants/role';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const MAP_STYLE = 'mapbox://styles/mapbox/standard';
@@ -181,11 +180,11 @@ export const MapView = () => {
   const [isSidePanelOpen, setIsSidePanelOpen] = React.useState(false);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [selectedBuilding, setSelectedBuilding] = React.useState<BuildingLocationDto | null>(null);
+  const [isBuildingCardOpen, setIsBuildingCardOpen] = React.useState(false);
   const [isMapLoaded, setIsMapLoaded] = React.useState(false);
   const [mapError, setMapError] = React.useState<string | null>(null);
   const [selectedCampus, setSelectedCampus] = React.useState(CAMPUS_ZONES[0].value);
   const [is3D, setIs3D] = React.useState(true);
-  const [lightPreset, setLightPreset] = React.useState<'day' | 'night'>('day');
 
   const { data: buildings, isLoading: areBuildingsLoading } = useBuildingLocations();
 
@@ -193,6 +192,7 @@ export const MapView = () => {
   const mapRef = React.useRef<MapboxMap | null>(null);
   const markersRef = React.useRef<Map<string, MarkerEntry>>(new Map());
   const removalRef = React.useRef<number | null>(null);
+  const cardCloseTimeoutRef = React.useRef<number | null>(null);
 
   const mapSearchOptions = [
     { value: 'biblioteca', label: 'Biblioteca Central' },
@@ -257,12 +257,17 @@ export const MapView = () => {
       }
     });
 
-    map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left');
+    map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
     map.on('load', () => {
       setIsMapLoaded(true);
       addExampleModel(map);
     });
     map.on('error', (event) => console.error('Mapbox error:', event.error));
+
+    map.on('pitchend', () => {
+      const next = map.getPitch() > 1;
+      setIs3D((prev) => (prev === next ? prev : next));
+    });
     mapRef.current = map;
 
     const markers = markersRef.current;
@@ -283,12 +288,25 @@ export const MapView = () => {
   }, []);
 
   const handleBuildingClick = React.useCallback((building: BuildingLocationDto) => {
+    if (cardCloseTimeoutRef.current) {
+      window.clearTimeout(cardCloseTimeoutRef.current);
+      cardCloseTimeoutRef.current = null;
+    }
     setSelectedBuilding(building);
+    setIsBuildingCardOpen(true);
     const map = mapRef.current;
     if (!map) return;
     flyToCoordinate(map, resolveBuildingCoordinate(building), {
       zoom: Math.max(map.getZoom(), 17),
     });
+  }, []);
+
+  const handleCloseBuildingCard = React.useCallback(() => {
+    setIsBuildingCardOpen(false);
+    cardCloseTimeoutRef.current = window.setTimeout(() => {
+      setSelectedBuilding(null);
+      cardCloseTimeoutRef.current = null;
+    }, 500);
   }, []);
 
   React.useEffect(() => {
@@ -373,18 +391,6 @@ export const MapView = () => {
     });
   };
 
-  const handleToggleLight = () => {
-    const map = mapRef.current;
-    if (!map) return;
-    const next = lightPreset === 'day' ? 'night' : 'day';
-    setLightPreset(next);
-    try {
-      map.setConfigProperty('basemap', 'lightPreset', next);
-    } catch (error) {
-      console.warn('Mapbox light error:', error);
-    }
-  };
-
   const isDataLoading = !isMapLoaded || areBuildingsLoading;
 
   return (
@@ -414,7 +420,7 @@ export const MapView = () => {
         <div className="w-full min-w-0 sm:w-72 lg:w-80">
           <SearchInput
             label="Búsqueda"
-            labelColor={lightPreset === 'day' ? textPageColors.dark : textPageColors.white}
+            labelColor={textPageColors.dark}
             placeholder="Buscar Edificio..."
             value={searchQuery}
             onChange={(val) => setSearchQuery(val)}
@@ -426,7 +432,7 @@ export const MapView = () => {
         <div className="w-full min-w-0 sm:w-72 lg:w-80">
           <Select
             label="Campus"
-            labelColor={lightPreset === 'day' ? textPageColors.dark : textPageColors.white}
+            labelColor={textPageColors.dark}
             options={CAMPUS_ZONES.map(zone => ({ value: zone.value, label: zone.label }))}
             value={selectedCampus}
             onChange={handleCampusChange}
@@ -439,7 +445,7 @@ export const MapView = () => {
           title={isSidePanelOpen ? 'Cerrar panel' : 'Abrir panel'}
           className={isSidePanelOpen ? '!bg-page-blue !text-white' : ''}
         >
-          <MarkerRectIcon className="w-7 h-7" />
+          <FilterIcon className="w-7 h-7" />
         </SquareButton>
 
         <RoleGuard allowedRoles={[Role.Admin]}>
@@ -467,7 +473,7 @@ export const MapView = () => {
         </RoleGuard>
 
         {/* Map controls */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-row items-center gap-2">
           <SquareButton
             onClick={handleToggleDimension}
             title={is3D ? 'Cambiar a vista 2D' : 'Cambiar a vista 3D'}
@@ -475,39 +481,51 @@ export const MapView = () => {
           >
             <span className="text-base font-extrabold leading-none">{is3D ? '3D' : '2D'}</span>
           </SquareButton>
-          <SquareButton
-            onClick={handleToggleLight}
-            title={lightPreset === 'day' ? 'Cambiar a modo noche' : 'Cambiar a modo día'}
-            className={lightPreset === 'night' ? '!bg-page-blue !text-white' : ''}
-          >
-            {lightPreset === 'night' ? <MoonIcon className="w-6 h-6" /> : <SunIcon className="w-6 h-6" />}
-          </SquareButton>
-          <SquareButton onClick={handleZoomIn} title="Acercar mapa">
-            <PlusIcon className="w-8 h-8" />
-          </SquareButton>
-          <SquareButton onClick={handleZoomOut} title="Alejar mapa">
-            <MinusIcon className="w-8 h-8" />
-          </SquareButton>
+
           <SquareButton onClick={handleResetView} title="Centrar mapa">
             <TargetIcon className="w-7 h-7" />
           </SquareButton>
+
+          <div className="flex flex-row rounded-2xl bg-page-white shadow-sm">
+            <SquareButton
+              onClick={handleZoomIn}
+              title="Acercar mapa"
+              className="!rounded-r-none !shadow-none active:!scale-100"
+            >
+              <PlusIcon className="w-8 h-8" />
+            </SquareButton>
+            <SquareButton
+              onClick={handleZoomOut}
+              title="Alejar mapa"
+              className="!rounded-l-none !shadow-none active:!scale-100"
+            >
+              <MinusIcon className="w-8 h-8" />
+            </SquareButton>
+          </div>
         </div>
       </div>
 
       {/* Side Panel */}
-      <div className={`absolute top-28 bottom-6 right-[6.5rem] w-96 z-40 transition-transform duration-500 ${
+      <div className={`absolute top-28 bottom-24 right-6 z-40 w-[28.25rem] flex flex-col gap-3 transition-transform duration-500 ${
         isSidePanelOpen ? 'translate-x-0' : 'translate-x-[150%]'
       }`}>
-        <MapSidePanel onClose={() => setIsSidePanelOpen(false)} />
+        <div className="flex-1 min-h-0">
+          <MapSidePanel onClose={() => setIsSidePanelOpen(false)} />
+        </div>
+        <RoleGuard allowedRoles={OFFICIAL_ROLES}>
+          <div className="h-1/4 shrink-0">
+            <MapHeatmapPanel />
+          </div>
+        </RoleGuard>
       </div>
 
       {/* Building Details Slide-in Panel */}
-      <div className={`absolute top-8 left-6 sm:left-20 z-40 w-96 transition-transform duration-500 ${
-        selectedBuilding ? 'translate-x-0' : '-translate-x-[150%]'
+      <div className={`absolute top-28 bottom-6 left-6 z-40 w-[28.25rem] transition-transform duration-500 ${
+        isBuildingCardOpen ? 'translate-x-0' : '-translate-x-[150%]'
       }`}>
         <ActiveBuildingCard
           building={selectedBuilding}
-          onClose={() => setSelectedBuilding(null)}
+          onClose={handleCloseBuildingCard}
         />
       </div>
 

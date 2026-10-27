@@ -4,6 +4,7 @@ import { ImageGallery } from '../../components/media/ImageGallery';
 import { Tag } from '../../components/ui/Tag';
 import { RoomInfoCard } from './RoomInfoCard';
 import { ScheduleCard } from './ScheduleCard';
+import { BuildingStatCard } from './BuildingStatCard';
 import { Button } from '../../components/ui/Button';
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
 import WarningIcon from '../../assets/svg/icons/icon_warning.svg?react';
@@ -36,28 +37,6 @@ export interface BuildingMoreInfoCardProps {
   onView360?: () => void;
   onReportProblem?: () => void;
 }
-
-const StatCard = ({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) => (
-  <div className="bg-page-gray-light rounded-2xl px-4 py-3 flex items-center gap-3">
-    <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center flex-shrink-0">
-      {icon}
-    </div>
-    <div className="flex flex-col min-w-0">
-      <span className="text-[0.65rem] font-bold text-gray-500 uppercase tracking-wider">
-        {label}
-      </span>
-      <span className="text-sm font-bold text-gray-800 truncate">{value}</span>
-    </div>
-  </div>
-);
 
 export const BuildingMoreInfoCard = ({
   title = '',
@@ -105,20 +84,20 @@ export const BuildingMoreInfoCard = ({
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {floors && (
-          <StatCard
+          <BuildingStatCard
             icon={<FloorsIcon className="w-5 h-5 text-gray-700" />}
             label="Pisos"
             value={floors}
           />
         )}
         {campus && (
-          <StatCard
+          <BuildingStatCard
             icon={<BuildingIcon className="w-5 h-5 text-gray-700" />}
             label="Campus"
             value={campus}
           />
         )}
-        <StatCard
+        <BuildingStatCard
           icon={<DoorIcon className="w-5 h-5 text-gray-700" />}
           label="Salas registradas"
           value={String(rooms.length)}

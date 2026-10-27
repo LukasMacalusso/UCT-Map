@@ -33,7 +33,7 @@ export const ActiveBuildingCard = ({ building, onClose }: ActiveBuildingCardProp
     : '';
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full">
       <BuildingDetailCard
         title={building.name}
         subtitle="UCT Campus"

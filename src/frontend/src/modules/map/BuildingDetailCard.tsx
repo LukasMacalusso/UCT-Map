@@ -2,10 +2,12 @@ import { Panel } from '../../components/layout/Panel';
 import { CloseButton } from '../../components/ui/ExitButton';
 import { ImageGallery } from '../../components/media/ImageGallery';
 import { Tag } from '../../components/ui/Tag';
-import { RoomInfoCard } from './RoomInfoCard';
 import { ScheduleCard } from './ScheduleCard';
+import { BuildingStatCard } from './BuildingStatCard';
 import { Button } from '../../components/ui/Button';
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
+import FloorsIcon from '../../assets/svg/icons/icon_floors.svg?react';
+import DoorIcon from '../../assets/svg/icons/icon_door.svg?react';
 import WarningIcon from '../../assets/svg/icons/icon_warning.svg?react';
 import NavigationIcon from '../../assets/svg/icons/icon_navigation.svg?react';
 import Rotate360Icon from '../../assets/svg/icons/icon_repeat.svg?react';
@@ -48,8 +50,8 @@ export const BuildingDetailCard = ({
     <Panel
       withUctBorder={withUctBorder}
       color="white"
-      outerClassName="rounded-3xl w-full h-full"
-      innerClassName="p-5 flex flex-col gap-4 h-full"
+      outerClassName="rounded-3xl w-full min-h-full"
+      innerClassName="p-5 flex flex-col gap-4"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3">
@@ -84,21 +86,17 @@ export const BuildingDetailCard = ({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 flex-1 min-h-0">
-        <span className="text-xs font-bold text-gray-600 uppercase tracking-wider shrink-0">
-          SALAS
-        </span>
-        <div className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1">
-          {rooms.map((room, idx) => (
-            <RoomInfoCard
-              key={idx}
-              title={room.title}
-              type={room.type}
-              capacity={room.capacity}
-              className="max-w-none text-sm p-3"
-            />
-          ))}
-        </div>
+      <div className="grid grid-cols-2 gap-3">
+        <BuildingStatCard
+          icon={<FloorsIcon className="w-5 h-5 text-gray-700" />}
+          label="Pisos"
+          value={floors || '—'}
+        />
+        <BuildingStatCard
+          icon={<DoorIcon className="w-5 h-5 text-gray-700" />}
+          label="Salas registradas"
+          value={String(rooms.length)}
+        />
       </div>
 
       <button
@@ -110,7 +108,7 @@ export const BuildingDetailCard = ({
         <span className="underline group-hover:no-underline">Reportar un problema aquí</span>
       </button>
 
-      <div className="border-t border-gray-200 pt-3 flex flex-col gap-2.5">
+      <div className="border-t border-gray-200 pt-3 flex flex-col gap-2.5 mt-auto">
         <Button
           color="blue"
           variant="solid"
