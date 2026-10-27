@@ -513,7 +513,7 @@ export const MapView = () => {
           <MapSidePanel onClose={() => setIsSidePanelOpen(false)} />
         </div>
         <RoleGuard allowedRoles={OFFICIAL_ROLES}>
-          <div className="h-1/4 shrink-0">
+          <div className="shrink-0">
             <MapHeatmapPanel />
           </div>
         </RoleGuard>
