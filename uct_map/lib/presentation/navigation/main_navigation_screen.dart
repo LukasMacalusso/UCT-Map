@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../screens/map/map_screen.dart';
 import '../screens/search/search_screen.dart';
 import '../screens/lost_found/lost_found_screen.dart';
+import '../screens/lost_objects/lost_objects_screen.dart';
+import '../../data/datasources/lost_objects_remote_ds.dart';
+import '../../data/repositories/lost_objects_repository_impl.dart';
 import '../screens/reports/reports_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/login/auth_required_view.dart';
@@ -132,9 +135,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       SearchScreen(onExploreMap: () => _onTabTapped(0)),
       _protected(
         2,
-        LostFoundScreen(
-          onNavigateToTab: _onTabTapped,
-          incidentRepository: IncidentRemoteDataSource(client: _apiClient),
+        LostObjectsScreen(
+          repository: LostObjectsRepositoryImpl(),
+          showAppBar: false,
         ),
         'Objetos perdidos',
       ),
@@ -151,6 +154,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ProfileScreen(
           session: _session,
           onNavigateToTab: _onTabTapped,
+
           onLogout: () async {
             var message = 'Sesión cerrada correctamente';
             try {
