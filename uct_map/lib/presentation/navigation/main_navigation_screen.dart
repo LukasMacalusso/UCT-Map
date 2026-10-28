@@ -102,9 +102,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ),
       ),
       _protected(
-        ReportsScreen(
-          onNavigateToTab: _onTabTapped,
-          incidentRepository: IncidentRemoteDataSource(client: _apiClient),
+        TicketsScreen(
+          repository: ReportsRepositoryImpl(
+            remoteDataSource: ReportsRemoteDataSource(
+              client: _apiClient,
+              tokenProvider: () => _session.token,
+            ),
+          ),
+          showAppBar: false,
         ),
       ),
       _protected(
