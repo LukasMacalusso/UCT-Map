@@ -34,6 +34,10 @@ class ApiEndpoints {
   // -------------------------------------------------------------
   // Incident Service (Quejas, Objetos Perdidos) -> /api/incident
   // -------------------------------------------------------------
+  static const String incidentLostObjects = '/api/incident/lost-objects';
+  static String incidentLostObjectStatus(String id) =>
+      '/api/incident/lost-objects/$id/lost/status';
+
   static const String incidentLostItems = '/api/incident/lost-items';
   static String incidentLostItemDetail(String ticketId) =>
       '/api/incident/lost-items/$ticketId';
