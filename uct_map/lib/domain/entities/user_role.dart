@@ -13,15 +13,15 @@ enum UserRole {
     }
     final v = value.toString().trim().toLowerCase();
     final n = v.replaceAll(RegExp(r'[\s_\-]+'), '');
-    if (n.contains('estudiante') || n.contains('student')) return UserRole.estudiante;
-    if (n.contains('docente') || n.contains('profesor') || n.contains('teacher')) {
-      return UserRole.profesor;
-    }
-    if (n.contains('admin')) return UserRole.administrador;
-    if (n.contains('objeto') || n.contains('object')) return UserRole.funcionarioObjetos;
-    if (n.contains('queja') || n.contains('complaint')) return UserRole.funcionarioQuejas;
-    if (n.contains('invitado')) return UserRole.invitado;
-    return UserRole.desconocido;
+    return switch (n) {
+      'estudiante' || 'student' => UserRole.estudiante,
+      'docente' || 'profesor' || 'teacher' => UserRole.profesor,
+      'administrador' || 'admin' => UserRole.administrador,
+      'funcionarioobjetos' || 'objectsofficer' => UserRole.funcionarioObjetos,
+      'funcionarioquejas' || 'complaintsofficer' => UserRole.funcionarioQuejas,
+      'invitado' => UserRole.invitado,
+      _ => UserRole.desconocido,
+    };
   }
 
   String toShortString() {
