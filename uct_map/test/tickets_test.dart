@@ -11,6 +11,9 @@ import 'package:uct_map/data/models/report_dto.dart';
 import 'package:uct_map/data/repositories/reports_repository_impl.dart';
 import 'package:uct_map/domain/entities/ticket.dart';
 import 'package:uct_map/domain/repositories/reports_repository.dart';
+import 'package:uct_map/domain/entities/lost_object.dart';
+import 'package:uct_map/domain/repositories/lost_objects_repository.dart';
+import 'package:uct_map/data/models/lost_object_dto.dart';
 import 'package:uct_map/presentation/screens/tickets/create_ticket_screen.dart';
 import 'package:uct_map/presentation/screens/tickets/tickets_screen.dart';
 import 'package:uct_map/presentation/screens/tickets/widgets/ticket_status_badge.dart';
@@ -443,8 +446,8 @@ void main() {
 
       // Ingresar campos válidos
       await tester.enterText(find.byType(TextFormField).at(0), 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d');
-      await tester.enterText(find.byType(TextFormField).at(2), 'Reclamo de notebook');
-      await tester.enterText(find.byType(TextFormField).at(3), 'Olvidado en sala de computación');
+      await tester.enterText(find.byType(TextFormField).at(1), 'Reclamo de notebook');
+      await tester.enterText(find.byType(TextFormField).at(2), 'Olvidado en sala de computación');
       await tester.pumpAndSettle();
 
       // Enviar
@@ -454,6 +457,37 @@ void main() {
       expect(fakeRepo.createdDto, isNotNull);
       expect(fakeRepo.createdDto!.structureRefId, 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d');
       expect(fakeRepo.createdDto!.complaint?.title, 'Reclamo de notebook');
+    });
+
+    testWidgets('CreateTicketScreen abre modal selector de objetos perdidos y selecciona uno', (tester) async {
+      final fakeReportsRepo = _FakeReportsRepository();
+      final fakeLostRepo = _FakeLostObjectsRepoForPicker();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CreateTicketScreen(
+            repository: fakeReportsRepo,
+            lostObjectsRepository: fakeLostRepo,
+          ),
+        ),
+      );
+
+      // Tocar el botón selector de objetos perdidos
+      expect(find.text('Seleccionar objeto perdido...'), findsOneWidget);
+      await tester.tap(find.text('Seleccionar objeto perdido...'));
+      await tester.pumpAndSettle();
+
+      // Debe abrirse el modal inferior
+      expect(find.text('Seleccionar Objeto Perdido'), findsOneWidget);
+      expect(find.text('Mochila Puma'), findsOneWidget);
+
+      // Tocar el objeto en la lista
+      await tester.tap(find.text('Mochila Puma'));
+      await tester.pumpAndSettle();
+
+      // El modal debe haberse cerrado y ahora debe mostrar la tarjeta del objeto seleccionado
+      expect(find.text('ID: 671fb2c58971f49673981234'), findsOneWidget);
+      expect(find.text('Cambiar por otro objeto'), findsOneWidget);
     });
 
     testWidgets('TicketsScreen renderiza listado y filtros', (tester) async {
@@ -494,6 +528,36 @@ void main() {
       expect(find.text('Cambiar Estado'), findsOneWidget);
     });
   });
+}
+
+class _FakeLostObjectsRepoForPicker implements LostObjectsRepository {
+  @override
+  Future<CreateLostObjectResponse> createLostObject(CreateLostObjectDto dto) async {
+    return const CreateLostObjectResponse(id: 'fake');
+  }
+
+  @override
+  Future<PaginatedLostObjectsResponse> getLostObjects({LostObjectFilterParams? filter}) async {
+    return const PaginatedLostObjectsResponse(
+      items: [
+        LostObject(
+          id: '671fb2c58971f49673981234',
+          title: 'Mochila Puma',
+          description: 'Negra con franja roja',
+          status: LostObjectStatus.pending,
+          photoUrl: 'https://dominio.com/foto.jpg',
+          structureId: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
+        ),
+      ],
+      totalCount: 1,
+      page: 1,
+      pageSize: 10,
+      totalPages: 1,
+    );
+  }
+
+  @override
+  Future<void> updateStatus(String id, LostObjectStatus newStatus) async {}
 }
 
 class _FakeReportsRepository implements ReportsRepository {

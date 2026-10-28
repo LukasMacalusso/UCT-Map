@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_exception.dart';
@@ -5,18 +7,24 @@ import '../../../core/network/problem_details.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/lost_object_dto.dart';
 import '../../../data/models/report_dto.dart';
+import '../../../data/repositories/lost_objects_repository_impl.dart';
+import '../../../domain/entities/lost_object.dart';
 import '../../../domain/entities/ticket.dart';
+import '../../../domain/repositories/lost_objects_repository.dart';
 import '../../../domain/repositories/reports_repository.dart';
+import '../lost_objects/widgets/lost_object_status_badge.dart';
 
 /// Formulario para crear un nuevo Reporte / Ticket con soporte para Quejas/Reclamos
-/// y vinculación opcional con Objetos Perdidos.
+/// y vinculación interactiva con Objetos Perdidos (mediante selector con buscador o ID manual).
 class CreateTicketScreen extends StatefulWidget {
   final ReportsRepository repository;
+  final LostObjectsRepository? lostObjectsRepository;
   final String? initialLostObjectId;
 
   const CreateTicketScreen({
     super.key,
     required this.repository,
+    this.lostObjectsRepository,
     this.initialLostObjectId,
   });
 
@@ -31,6 +39,11 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   final _lostObjectIdController = TextEditingController();
   final _complaintTitleController = TextEditingController();
   final _complaintDescriptionController = TextEditingController();
+
+  late final LostObjectsRepository _lostObjectsRepository;
+
+  LostObject? _selectedLostObject;
+  bool _isManualIdInput = false;
 
   TicketStatus _selectedTicketType = TicketStatus.pending;
   ComplaintStatus _selectedComplaintStatus = ComplaintStatus.claim;
@@ -48,9 +61,30 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   @override
   void initState() {
     super.initState();
+    _lostObjectsRepository =
+        widget.lostObjectsRepository ?? LostObjectsRepositoryImpl();
+
     if (widget.initialLostObjectId != null) {
       _lostObjectIdController.text = widget.initialLostObjectId!;
+      _loadInitialObject(widget.initialLostObjectId!);
     }
+  }
+
+  Future<void> _loadInitialObject(String id) async {
+    try {
+      final res = await _lostObjectsRepository.getLostObjects();
+      for (final item in res.items) {
+        if (item.id == id && mounted) {
+          setState(() {
+            _selectedLostObject = item;
+            if (_structureRefIdController.text.isEmpty) {
+              _structureRefIdController.text = item.structureId;
+            }
+          });
+          break;
+        }
+      }
+    } catch (_) {}
   }
 
   @override
@@ -60,6 +94,33 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     _complaintTitleController.dispose();
     _complaintDescriptionController.dispose();
     super.dispose();
+  }
+
+  void _showLostObjectPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return _LostObjectPickerModal(
+          repository: _lostObjectsRepository,
+          selectedId: _lostObjectIdController.text.trim(),
+          onSelected: (object) {
+            setState(() {
+              _selectedLostObject = object;
+              _lostObjectIdController.text = object.id;
+              // Si la estructura no se ha seleccionado, autocompletar con la del objeto:
+              if (_structureRefIdController.text.trim().isEmpty) {
+                _structureRefIdController.text = object.structureId;
+              }
+            });
+          },
+        );
+      },
+    );
   }
 
   Future<void> _submit() async {
@@ -267,17 +328,9 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                 ),
                 const SizedBox(height: 18),
 
-                // ID de Objeto Perdido asociado (opcional)
-                _buildFieldLabel('ID de Objeto Perdido Asociado (Opcional)'),
-                TextFormField(
-                  controller: _lostObjectIdController,
-                  textInputAction: TextInputAction.next,
-                  decoration: _inputDecoration(
-                    hint: 'Ej. 671fb2c58971f49673981234 (MongoDB ObjectId)',
-                    prefixIcon: Icons.link_rounded,
-                    helperText: 'Vincular este reporte con un objeto previamente registrado.',
-                  ),
-                ),
+                // SECCIÓN: OBJETO PERDIDO ASOCIADO (SELECTOR INTERACTIVO)
+                _buildFieldLabel('Objeto Perdido Asociado (Opcional)'),
+                _buildLostObjectSelector(),
                 const SizedBox(height: 20),
 
                 // Sección de Queja / Reclamo
@@ -433,6 +486,206 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     );
   }
 
+  Widget _buildLostObjectSelector() {
+    if (_selectedLostObject != null) {
+      // Tarjeta interactiva del objeto seleccionado con foto y detalles
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF86EFAC), width: 1.2),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    width: 52,
+                    height: 52,
+                    child: Image.network(
+                      _selectedLostObject!.photoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.inventory_2_outlined,
+                            color: AppColors.subtitle),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _selectedLostObject!.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: AppColors.ink,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          LostObjectStatusBadge(
+                            status: _selectedLostObject!.status,
+                            isCompact: true,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _selectedLostObject!.description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12, color: AppColors.subtitle),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'ID: ${_selectedLostObject!.id}',
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontFamily: 'monospace',
+                          color: AppColors.hint,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                  tooltip: 'Desvincular objeto',
+                  onPressed: () {
+                    setState(() {
+                      _selectedLostObject = null;
+                      _lostObjectIdController.clear();
+                    });
+                  },
+                ),
+              ],
+            ),
+            const Divider(height: 16),
+            InkWell(
+              onTap: _showLostObjectPicker,
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.swap_horiz_rounded, size: 16, color: AppColors.uctBlue),
+                  SizedBox(width: 6),
+                  Text(
+                    'Cambiar por otro objeto',
+                    style: TextStyle(
+                      color: AppColors.uctBlue,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Botón estilo tarjeta para abrir el buscador visual
+        InkWell(
+          onTap: _showLostObjectPicker,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.fieldBorder),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.uctBlue.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.inventory_2_outlined,
+                    color: AppColors.uctBlue,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Seleccionar objeto perdido...',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Toca para explorar la lista con fotos y buscar por nombre',
+                        style: TextStyle(fontSize: 11.5, color: AppColors.subtitle),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios_rounded,
+                    size: 14, color: AppColors.hint),
+              ],
+            ),
+          ),
+        ),
+
+        // Alternar entrada manual de ID
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              onPressed: () =>
+                  setState(() => _isManualIdInput = !_isManualIdInput),
+              child: Text(
+                _isManualIdInput
+                    ? 'Ocultar entrada manual de ID'
+                    : '¿Prefieres ingresar el ID manual?',
+                style: const TextStyle(fontSize: 11.5, color: AppColors.subtitle),
+              ),
+            ),
+          ],
+        ),
+
+        // Campo de texto de respaldo
+        if (_isManualIdInput || _lostObjectIdController.text.isNotEmpty)
+          TextFormField(
+            controller: _lostObjectIdController,
+            textInputAction: TextInputAction.next,
+            decoration: _inputDecoration(
+              hint: 'Ej. 671fb2c58971f49673981234 (MongoDB ObjectId)',
+              prefixIcon: Icons.link_rounded,
+              helperText: 'Pega el ID del objeto si ya lo tienes a mano.',
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildFieldLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -501,6 +754,286 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
         borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: Colors.red.shade400),
       ),
+    );
+  }
+}
+
+/// Modal inferior interactivo con buscador en tiempo real para seleccionar un objeto perdido.
+class _LostObjectPickerModal extends StatefulWidget {
+  final LostObjectsRepository repository;
+  final String? selectedId;
+  final ValueChanged<LostObject> onSelected;
+
+  const _LostObjectPickerModal({
+    required this.repository,
+    this.selectedId,
+    required this.onSelected,
+  });
+
+  @override
+  State<_LostObjectPickerModal> createState() => _LostObjectPickerModalState();
+}
+
+class _LostObjectPickerModalState extends State<_LostObjectPickerModal> {
+  final _searchController = TextEditingController();
+  Timer? _debounce;
+  bool _isLoading = true;
+  String? _error;
+  List<LostObject> _items = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearch(String query) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) {
+        _fetch(query.trim());
+      }
+    });
+  }
+
+  Future<void> _fetch([String? query]) async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final res = await widget.repository.getLostObjects(
+        filter: LostObjectFilterParams(
+          title: query?.isNotEmpty == true ? query : null,
+          pageSize: 10,
+        ),
+      );
+      if (mounted) {
+        setState(() {
+          _items = res.items;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _error = 'No se pudieron cargar los objetos perdidos.';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.78,
+      padding: EdgeInsets.fromLTRB(16, 12, 16, bottomInset + 16),
+      child: Column(
+        children: [
+          // Drag handle
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.inventory_2_outlined, color: AppColors.uctBlue, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Seleccionar Objeto Perdido',
+                    style: TextStyle(
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ],
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Buscador en tiempo real
+          TextField(
+            controller: _searchController,
+            onChanged: _onSearch,
+            decoration: InputDecoration(
+              hintText: 'Buscar por título (ej. mochila, llaves)...',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        _searchController.clear();
+                        _fetch('');
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: const Color(0xFFF8FAFC),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.fieldBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.fieldBorder),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          Expanded(child: _buildList()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.uctBlue),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.cloud_off, size: 40, color: Colors.grey),
+            const SizedBox(height: 8),
+            Text(_error!, style: const TextStyle(color: AppColors.subtitle)),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () => _fetch(_searchController.text),
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_items.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade400),
+              const SizedBox(height: 12),
+              const Text(
+                'No se encontraron objetos',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'No hay coincidencias para tu búsqueda o aún no se han registrado objetos perdidos.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: AppColors.subtitle),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: _items.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final item = _items[index];
+        final isSelected = widget.selectedId == item.id;
+
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Image.network(
+                item.photoUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: Colors.grey.shade200,
+                  child: const Icon(
+                    Icons.image_not_supported_outlined,
+                    size: 20,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          title: Text(
+            item.title,
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.description,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, color: AppColors.subtitle),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'ID: ${item.id}',
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  fontFamily: 'monospace',
+                  color: AppColors.hint,
+                ),
+              ),
+            ],
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LostObjectStatusBadge(status: item.status, isCompact: true),
+              if (isSelected) ...[
+                const SizedBox(width: 8),
+                const Icon(Icons.check_circle_rounded, color: AppColors.uctBlue, size: 20),
+              ],
+            ],
+          ),
+          onTap: () {
+            widget.onSelected(item);
+            Navigator.pop(context);
+          },
+        );
+      },
     );
   }
 }
