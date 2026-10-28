@@ -9,6 +9,9 @@ import '../../presentation/screens/login/login_page.dart';
 import '../../presentation/screens/login/session_required_view.dart';
 import '../../presentation/screens/lost_found/lost_found_screen.dart';
 import '../../presentation/screens/lost_found/lost_item_detail_screen.dart';
+import '../../presentation/screens/lost_objects/create_lost_object_screen.dart';
+import '../../presentation/screens/lost_objects/lost_objects_screen.dart';
+import '../../data/repositories/lost_objects_repository_impl.dart';
 import '../../presentation/screens/professors/professors_screen.dart';
 import '../../presentation/screens/profile/my_lost_items_screen.dart';
 import '../../presentation/screens/profile/my_reports_screen.dart';
@@ -28,6 +31,8 @@ class AppRoutes {
   static const String reports = '/reports';
   static const String reportDetail = '/reports/detail';
   static const String lostFound = '/lost-found';
+  static const String lostObjects = '/lost-objects';
+  static const String createLostObject = '/lost-objects/create';
   static const String lostItemDetail = '/lost-found/detail';
   static const String login = '/login';
   static const String profile = '/profile';
@@ -206,6 +211,23 @@ class AppRoutes {
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => const LostFoundScreen(showAppBar: true),
+        );
+
+      case lostObjects:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => LostObjectsScreen(
+            repository: LostObjectsRepositoryImpl(),
+            showAppBar: true,
+          ),
+        );
+
+      case createLostObject:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => CreateLostObjectScreen(
+            repository: LostObjectsRepositoryImpl(),
+          ),
         );
 
       case profile:
