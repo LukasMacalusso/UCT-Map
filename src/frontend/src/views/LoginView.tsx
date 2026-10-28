@@ -127,8 +127,8 @@ export const LoginView = () => {
       })}
 
       {/* Left panel */}
-      <div className="w-full max-w-md lg:max-w-[460px] max-h-[94vh] my-auto bg-gradient-to-b from-page-blue from-50% to-page-yellow to-50% p-1 rounded-[30px] shadow-2xl relative z-10 flex flex-col">
-        <div className="w-full flex-1 bg-white rounded-[26px] p-6 sm:p-8 flex flex-col overflow-y-auto overflow-x-hidden">
+      <div className="w-full max-w-md lg:max-w-[30.75rem] max-h-[94vh] my-auto bg-gradient-to-b from-page-blue from-50% to-page-yellow to-50% p-1 rounded-[1.875rem] shadow-2xl relative z-10 flex flex-col">
+        <div className="w-full flex-1 bg-white rounded-[1.625rem] p-6 sm:p-8 flex flex-col overflow-y-auto overflow-x-hidden">
           <div className="flex-grow flex flex-col justify-center">
 
             {/* Header */}

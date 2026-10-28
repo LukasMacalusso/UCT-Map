@@ -25,6 +25,7 @@ import { ActiveBuildingCard } from '../modules/map/ActiveBuildingCard';
 import type { BuildingLocationDto } from '../dtos/campus/BuildingLocationDto';
 import { textPageColors } from '../constants/colors';
 import { OFFICIAL_ROLES, Role } from '../constants/role';
+import { UCT_LOADING_PHRASES } from '../constants/loadingPhrases';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const MAP_STYLE = 'mapbox://styles/mapbox/standard';
@@ -38,9 +39,6 @@ const MAX_ZOOM = 19;
 const INITIAL_ZOOM = 15;
 const INITIAL_PITCH = 50;
 const INITIAL_BEARING = -20;
-
-const EXAMPLE_MODEL_COORDS: [number, number] = [-72.6019, -38.7368];
-const EXAMPLE_MODEL_URL = `${import.meta.env.BASE_URL}models/uct-building-example.glb`;
 
 interface CampusZone {
   value: string;
@@ -141,34 +139,6 @@ const setMapInteraction = (map: MapboxMap, enabled: boolean) => {
   handlers.forEach(handler => (enabled ? handler.enable() : handler.disable()));
 };
 
-const addExampleModel = (map: MapboxMap) => {
-  try {
-    map.addModel('uct-building-example', EXAMPLE_MODEL_URL);
-    map.addSource('uct-example-model', {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            properties: {},
-            geometry: { type: 'Point', coordinates: EXAMPLE_MODEL_COORDS },
-          },
-        ],
-      },
-    });
-    map.addLayer({
-      id: 'uct-example-model',
-      type: 'model',
-      source: 'uct-example-model',
-      layout: { 'model-id': 'uct-building-example' },
-      paint: { 'model-opacity': 1, 'model-scale': [3, 3, 3] },
-    });
-  } catch (error) {
-    console.warn('Mapbox model error:', error);
-  }
-};
-
 interface MarkerEntry {
   marker: mapboxgl.Marker;
   root: Root;
@@ -260,7 +230,6 @@ export const MapView = () => {
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
     map.on('load', () => {
       setIsMapLoaded(true);
-      addExampleModel(map);
     });
     map.on('error', (event) => console.error('Mapbox error:', event.error));
 
@@ -399,7 +368,7 @@ export const MapView = () => {
 
       {MAPBOX_TOKEN && !mapError && isDataLoading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-page-white/70 backdrop-blur-sm">
-          <LoadingSpinner size="xl" text="Cargando mapa..." />
+          <LoadingSpinner size="xl" texts={UCT_LOADING_PHRASES} />
         </div>
       )}
 

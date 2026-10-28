@@ -200,7 +200,6 @@ export const ShowcaseView = () => {
         description="Estudiantes destruyeron un baño hace unos minutos en el edificio 8..."
       />
 
-      {/* Sección Showcase de Variantes del LoadingSpinner */}
       <Panel color="white" innerClassName="p-8 flex flex-col gap-6 items-center w-full max-w-4xl">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 items-center justify-items-center w-full">
           {/* Classic Variant */}
@@ -221,7 +220,6 @@ export const ShowcaseView = () => {
             <LoadingSpinner size="lg" texts={UCT_LOADING_PHRASES} variant="light" />
           </div>
 
-          {/* Sin Texto (hideText) */}
           <div className="flex flex-col items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100 w-full min-h-[220px] justify-center">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Sin Texto</span>
             <LoadingSpinner size="lg" variant="classic" hideText />
@@ -359,7 +357,11 @@ export const ShowcaseView = () => {
         schedule="08:00 - 22:00 hrs"
         floors="2 PISOS"
         services={["Punto de Reciclaje"]}
-        rooms={[{ title: "SALA 11-101", type: "Sala de clases", capacity: 60 }]}
+        rooms={[
+          { name: "SALA 11-101", floor: 1, code: "11-101", capacity: 60 },
+          { name: "SALA 11-102", floor: 1, code: "11-102", capacity: 45 },
+          { name: "LABORATORIO 21-201", floor: 2, code: "21-201", capacity: 30 }
+        ]}
       />
 
     </div>
