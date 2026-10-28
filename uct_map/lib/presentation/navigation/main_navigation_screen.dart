@@ -2,18 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../screens/map/map_screen.dart';
 import '../screens/search/search_screen.dart';
-import '../screens/lost_found/lost_found_screen.dart';
 import '../screens/lost_objects/lost_objects_screen.dart';
-import '../../data/datasources/lost_objects_remote_ds.dart';
 import '../../data/repositories/lost_objects_repository_impl.dart';
 import '../screens/reports/reports_screen.dart';
 import '../screens/profile/profile_screen.dart';
-import '../screens/login/auth_required_view.dart';
+import '../screens/login/session_required_view.dart';
 import '../../application/session/session_controller.dart';
 import '../../core/network/api_client_provider.dart';
 import '../../core/network/authenticated_client.dart';
 import '../../data/datasources/incident_remote_ds.dart';
-import '../../domain/repositories/auth_repository.dart';
 import '../widgets/uct_logo.dart';
 import '../widgets/custom_drawer.dart';
 
@@ -33,8 +30,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late SessionController _session;
   bool _didReadInitialArgs = false;
   late final AuthenticatedClient _apiClient;
-
-  static const _protectedTabs = [0, 1, 2, 3, 4];
 
   final List<String> _titles = const [
     'Mapa del Campus',
@@ -86,44 +81,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     super.dispose();
   }
 
-  Future<void> _openLogin(String section) async {
-    final result = await Navigator.pushNamed(
-      context,
-      '/login',
-      arguments: section,
-    );
-    if (result is Map && result['ok'] == true && mounted) {
-      final userId = (result['userId'] ?? '').toString();
-      final email = (result['email'] ?? '').toString();
-      final token = (result['token'] ?? '').toString();
-      if (userId.isEmpty || token.isEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo iniciar sesión.')),
-        );
-        return;
-      }
-      try {
-        await _session.signInReal(
-          AuthLoginResult(userId: userId, email: email, token: token),
-        );
-      } catch (_) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo iniciar sesión.')),
-        );
-        return;
-      }
-      if (mounted) setState(() {});
-    }
-  }
-
-  Widget _protected(int index, Widget real, String section) {
-    if (_session.isAuthenticated || !_protectedTabs.contains(index)) {
-      return real;
-    }
-    return AuthRequiredView(onLogin: () => _openLogin(section));
-  }
+  Widget _protected(Widget child) =>
+      SessionRequiredView(embedded: true, builder: (_) => child);
 
   @override
   Widget build(BuildContext context) {
@@ -131,30 +90,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final isSearchTab = _currentIndex == 1;
 
     final List<Widget> screens = [
-      _protected(0, MapScreen(key: ValueKey(_session.isAuthenticated)), 'Mapa'),
+      _protected(MapScreen(key: ValueKey(_session.isAuthenticated))),
+      _protected(SearchScreen(onExploreMap: () => _onTabTapped(0))),
       _protected(
-        1,
-        SearchScreen(onExploreMap: () => _onTabTapped(0)),
-        'Búsqueda',
-      ),
-      _protected(
-        2,
         LostObjectsScreen(
           repository: LostObjectsRepositoryImpl(),
           showAppBar: false,
         ),
-        'Objetos perdidos',
       ),
       _protected(
-        3,
         ReportsScreen(
           onNavigateToTab: _onTabTapped,
           incidentRepository: IncidentRemoteDataSource(client: _apiClient),
         ),
-        'Reportes de incidencias',
       ),
       _protected(
-        4,
         ProfileScreen(
           session: _session,
           onNavigateToTab: _onTabTapped,
@@ -172,7 +122,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 .showSnackBar(SnackBar(content: Text(message)));
           },
         ),
-        'Perfil del usuario',
       ),
     ];
 

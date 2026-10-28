@@ -51,10 +51,13 @@ class AppRoutes {
       authRepository: authRepository,
     ) as MaterialPageRoute<dynamic>;
     const protected = {
+      home,
       professors,
       reports,
       reportDetail,
       lostFound,
+      lostObjects,
+      createLostObject,
       lostItemDetail,
       savedPlaces,
       myReports,
@@ -225,9 +228,8 @@ class AppRoutes {
       case createLostObject:
         return MaterialPageRoute(
           settings: settings,
-          builder: (_) => CreateLostObjectScreen(
-            repository: LostObjectsRepositoryImpl(),
-          ),
+          builder: (_) =>
+              CreateLostObjectScreen(repository: LostObjectsRepositoryImpl()),
         );
 
       case profile:
