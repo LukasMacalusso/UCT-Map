@@ -181,4 +181,21 @@ public class ReportHandler : IReportHandler
 
         return new ComplaintSearchCriteria(title, description, status);
     }
+    public async Task<ErrorOr<Success>> DeleteAsync(string id)
+    {
+        var ticket = await _ticketRepository.GetByIdAsync(id);
+        if (ticket is null) return Error.NotFound(
+                code: "LostObject.NotFound",
+                description: $"LostObject with ID '{id}' was not found."
+            );
+
+        var response = await _ticketRepository.DeleteAsync(ticket.Id!);
+
+        if (!response) return Error.Failure(
+                code: "LostObject.UpdateFailed",
+                description: $"Failed to update status for LostObject with ID '{id}'."
+            );
+
+        return Result.Success;
+    }
 }
