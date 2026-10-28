@@ -5,6 +5,9 @@ import '../screens/search/search_screen.dart';
 import '../screens/lost_objects/lost_objects_screen.dart';
 import '../../data/repositories/lost_objects_repository_impl.dart';
 import '../screens/reports/reports_screen.dart';
+import '../screens/tickets/tickets_screen.dart';
+import '../../data/datasources/reports_remote_ds.dart';
+import '../../data/repositories/reports_repository_impl.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/login/session_required_view.dart';
 import '../../application/session/session_controller.dart';
@@ -108,7 +111,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ProfileScreen(
           session: _session,
           onNavigateToTab: _onTabTapped,
-
           onLogout: () async {
             var message = 'Sesión cerrada correctamente';
             try {
@@ -129,7 +131,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       appBar: AppBar(
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
-        // En la pantalla de buscar sale solo el botón hamburguesa a la izquierda para categorías
         leading: isSearchTab
             ? Builder(
                 builder: (context) {
@@ -165,14 +166,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
         ),
         centerTitle: true,
-        // En la pantalla de buscar no sale el avatar de la derecha
         actions: isSearchTab
             ? null
             : [
                 Padding(
                   padding: const EdgeInsets.only(right: 12.0),
                   child: GestureDetector(
-                    onTap: () => _onTabTapped(4), // Ir al perfil
+                    onTap: () => _onTabTapped(4),
                     child: Tooltip(
                       message: 'Ver Perfil del Estudiante',
                       child: Container(

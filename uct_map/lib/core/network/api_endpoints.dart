@@ -44,6 +44,8 @@ class ApiEndpoints {
   static const String incidentReports = '/api/incident/reports';
   static String incidentReportDetail(String reportId) =>
       '/api/incident/reports/$reportId';
+  static String incidentReportStatus(String id) =>
+      '/api/incident/reports/$id/report/status';
   static String incidentTicketStatus(String ticketId) =>
       '/api/incident/tickets/$ticketId/status';
 }
