@@ -112,4 +112,21 @@ public class LostObjectHandler : ILostObjectHandler
 
         return new LostObjectPageResponse(items, result.TotalCount, criteria.Page, criteria.PageSize);
     }
+    public async Task<ErrorOr<Success>> DeleteAsync(string id)
+    {
+        var lostObject = await _lostObjectRepository.GetByIdAsync(id);
+        if (lostObject is null) return Error.NotFound(
+                code: "LostObject.NotFound",
+                description: $"LostObject with ID '{id}' was not found."
+            );
+
+        var response = await _lostObjectRepository.DeleteAsync(lostObject.Id!);
+
+        if (!response) return Error.Failure(
+                code: "LostObject.UpdateFailed",
+                description: $"Failed to update status for LostObject with ID '{id}'."
+            );
+
+        return Result.Success;
+    }
 }
