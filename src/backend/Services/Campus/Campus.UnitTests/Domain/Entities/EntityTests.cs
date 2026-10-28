@@ -23,21 +23,27 @@ public class EntityTests
     public void Campus_ShouldCreateAndInitializeProperly()
     {
         var coords = new Coordinate(-38.73, -72.59);
-        var campus = new CampusEntity("Campus San Juan Pablo II", "Rudecindo Ortega 02950", coords);
+        var campus = new CampusEntity("Campus San Juan Pablo II", "Rudecindo Ortega 02950", coords, 16.5m, 45.0m, 120.5m);
 
         Assert.NotEqual(Guid.Empty, campus.Id);
         Assert.Equal("Campus San Juan Pablo II", campus.Name);
         Assert.Equal("Rudecindo Ortega 02950", campus.Address);
         Assert.Equal(coords, campus.Coordinates);
+        Assert.Equal(16.5m, campus.Zoom);
+        Assert.Equal(45.0m, campus.Pitch);
+        Assert.Equal(120.5m, campus.Bearing);
         Assert.Empty(campus.Buildings);
         Assert.Empty(campus.Structures);
 
         var newCoords = new Coordinate(-38.74, -72.60);
-        campus.Update("Campus Norte", "Av. Alemania 0211", newCoords);
+        campus.Update("Campus Norte", "Av. Alemania 0211", newCoords, 17.0m, 30.0m, 90.0m);
 
         Assert.Equal("Campus Norte", campus.Name);
         Assert.Equal("Av. Alemania 0211", campus.Address);
         Assert.Equal(newCoords, campus.Coordinates);
+        Assert.Equal(17.0m, campus.Zoom);
+        Assert.Equal(30.0m, campus.Pitch);
+        Assert.Equal(90.0m, campus.Bearing);
     }
 
     [Fact]

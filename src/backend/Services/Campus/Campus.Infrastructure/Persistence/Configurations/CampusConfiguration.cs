@@ -9,6 +9,26 @@ public class CampusConfiguration : IEntityTypeConfiguration<CampusEntity>
 {
     public void Configure(EntityTypeBuilder<CampusEntity> builder)
     {
+        builder.Property(c => c.Name)
+               .IsRequired()
+               .HasMaxLength(100);
+
+        builder.Property(c => c.Address)
+               .IsRequired()
+               .HasMaxLength(100);
+
+        builder.Property(c => c.Zoom)
+               .HasPrecision(4, 2)
+               .IsRequired();
+
+        builder.Property(c => c.Pitch)
+               .HasPrecision(4, 2)
+               .IsRequired();
+
+        builder.Property(c => c.Bearing)
+               .HasPrecision(5, 2)
+               .IsRequired();
+
         builder.HasMany(c => c.Buildings)
                .WithOne(b => b.Campus)
                .HasForeignKey(b => b.CampusId)

@@ -7,19 +7,28 @@ public record CampusDto(
     string Name,
     string Address,
     double Latitude,
-    double Longitude
+    double Longitude,
+    decimal Zoom = 0m,
+    decimal Pitch = 0m,
+    decimal Bearing = 0m
 );
 
 public record CreateCampusDto(
     string Name,
     string Address,
     double Latitude,
-    double Longitude
+    double Longitude,
+    decimal Zoom = 0m,
+    decimal Pitch = 0m,
+    decimal Bearing = 0m
 );
 
 public record UpdateCampusDto(
     string Name,
     string Address,
     double Latitude,
-    double Longitude
+    double Longitude,
+    decimal Zoom = 0m,
+    decimal Pitch = 0m,
+    decimal Bearing = 0m
 );
