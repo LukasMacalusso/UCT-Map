@@ -10,7 +10,7 @@ import 'profile_settings_screen.dart';
 class ProfileScreen extends StatefulWidget {
   final SessionController? session;
   final Function(int)? onNavigateToTab;
-  final VoidCallback? onLogout;
+  final Future<void> Function()? onLogout;
   final int savedPlacesCount;
   final int reportsCount;
   final int notificationsCount;
@@ -190,9 +190,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: () async {
                 Navigator.pop(ctx);
                 if (widget.onLogout != null) {
-                  widget.onLogout!();
-                } else if (widget.session != null) {
-                  await widget.session!.signOut();
+                  await widget.onLogout!();
+                  return;
+                }
+                try {
+                  if (widget.session != null) {
+                    await widget.session!.signOut();
+                  }
+                } catch (_) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Sesión cerrada, pero no se pudo borrar el token local.',
+                      ),
+                    ),
+                  );
+                  return;
                 }
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(

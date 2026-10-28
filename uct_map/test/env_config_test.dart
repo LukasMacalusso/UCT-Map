@@ -13,7 +13,7 @@ void main() {
       EnvConfig.reset();
 
       expect(EnvConfig.appEnv, 'development');
-      expect(EnvConfig.apiBaseUrl, 'http://localhost:5052');
+      expect(EnvConfig.apiBaseUrl, 'http://localhost:5000');
       expect(EnvConfig.apiTimeoutSeconds, 15);
       expect(EnvConfig.apiTimeout, const Duration(seconds: 15));
       expect(EnvConfig.apiKey, isEmpty);

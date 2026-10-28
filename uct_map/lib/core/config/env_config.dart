@@ -62,7 +62,10 @@ class EnvConfig {
   /// URL Base del API Gateway o backend principal.
   static String get apiBaseUrl =>
       _get('API_BASE_URL') ??
-      const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:5052');
+      const String.fromEnvironment(
+        'API_BASE_URL',
+        defaultValue: 'http://localhost:5000',
+      );
 
   /// Tiempo límite de peticiones HTTP en segundos.
   static int get apiTimeoutSeconds {
@@ -76,6 +79,22 @@ class EnvConfig {
 
   /// [Duration] correspondiente a [apiTimeoutSeconds].
   static Duration get apiTimeout => Duration(seconds: apiTimeoutSeconds);
+
+  /// Emisor esperado en los tokens (Identity).
+  static String get jwtIssuer =>
+      _get('JWT_ISSUER') ??
+      const String.fromEnvironment(
+        'JWT_ISSUER',
+        defaultValue: 'https://identity-api',
+      );
+
+  /// Audiencia esperada en los tokens (API Gateway).
+  static String get jwtAudience =>
+      _get('JWT_AUDIENCE') ??
+      const String.fromEnvironment(
+        'JWT_AUDIENCE',
+        defaultValue: 'api-gateway',
+      );
 
   /// Clave de API opcional para autenticación contra Gateway o servicios externos.
   static String get apiKey =>

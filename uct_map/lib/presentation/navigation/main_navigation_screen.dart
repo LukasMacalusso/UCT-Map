@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../screens/map/map_screen.dart';
 import '../screens/search/search_screen.dart';
 import '../screens/lost_found/lost_found_screen.dart';
@@ -24,7 +25,9 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _currentIndex;
-  final _session = SessionController();
+
+  /// Sesión compartida de la aplicación: la misma para todas las pantallas.
+  late SessionController _session;
   bool _didReadInitialArgs = false;
   late final AuthenticatedClient _apiClient;
 
@@ -42,11 +45,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _session = ApiClientProvider.session;
     ApiClientProvider.initialize(_session);
     _apiClient = ApiClientProvider.defaultClient;
-    _session.restore().then((_) {
+    _session.addListener(_sessionChanged);
+    _session.ready.then((_) {
       if (mounted) setState(() {});
     });
+  }
+
+  void _sessionChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -69,14 +78,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   void dispose() {
-    _apiClient.close();
-    _session.dispose();
+    // El cliente y la sesión son compartidos: no se cierran aquí.
+    _session.removeListener(_sessionChanged);
     super.dispose();
   }
 
   Future<void> _openLogin(String section) async {
-    final result =
-        await Navigator.pushNamed(context, '/login', arguments: section);
+    final result = await Navigator.pushNamed(
+      context,
+      '/login',
+      arguments: section,
+    );
     if (result is Map && result['ok'] == true && mounted) {
       final userId = (result['userId'] ?? '').toString();
       final email = (result['email'] ?? '').toString();
@@ -92,14 +104,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         await _session.signInReal(
           AuthLoginResult(userId: userId, email: email, token: token),
         );
-      } on AuthFailure {
+      } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No se pudo iniciar sesión.')),
         );
         return;
       }
-      setState(() {});
+      if (mounted) setState(() {});
     }
   }
 
@@ -117,35 +129,43 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     final List<Widget> screens = [
       MapScreen(key: ValueKey(_session.isAuthenticated)),
-      SearchScreen(
-        onExploreMap: () => _onTabTapped(0),
+      SearchScreen(onExploreMap: () => _onTabTapped(0)),
+      _protected(
+        2,
+        LostFoundScreen(
+          onNavigateToTab: _onTabTapped,
+          incidentRepository: IncidentRemoteDataSource(client: _apiClient),
+        ),
+        'Objetos perdidos',
       ),
       _protected(
-          2,
-          LostFoundScreen(
-            onNavigateToTab: _onTabTapped,
-            incidentRepository: IncidentRemoteDataSource(client: _apiClient),
-          ),
-          'Objetos perdidos'),
+        3,
+        ReportsScreen(
+          onNavigateToTab: _onTabTapped,
+          incidentRepository: IncidentRemoteDataSource(client: _apiClient),
+        ),
+        'Reportes de incidencias',
+      ),
       _protected(
-          3,
-          ReportsScreen(
-            onNavigateToTab: _onTabTapped,
-            incidentRepository: IncidentRemoteDataSource(client: _apiClient),
-          ),
-          'Reportes de incidencias'),
-      _protected(
-          4,
-          ProfileScreen(
-            session: _session,
-            onNavigateToTab: _onTabTapped,
-            onLogout: () {
-              _session.signOut().then((_) {
-                if (mounted) setState(() {});
-              });
-            },
-          ),
-          'Perfil del usuario'),
+        4,
+        ProfileScreen(
+          session: _session,
+          onNavigateToTab: _onTabTapped,
+          onLogout: () async {
+            var message = 'Sesión cerrada correctamente';
+            try {
+              await _session.signOut();
+            } catch (_) {
+              message =
+                  'Sesión cerrada, pero no se pudo borrar el token local.';
+            }
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(message)));
+          },
+        ),
+        'Perfil del usuario',
+      ),
     ];
 
     return Scaffold(
@@ -227,10 +247,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         currentIndex: _currentIndex,
         onSelectTab: _onTabTapped,
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: _onTabTapped,
