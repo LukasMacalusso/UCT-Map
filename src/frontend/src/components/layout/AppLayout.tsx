@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { SectionButton } from '../ui/SectionButton';
 import { Avatar } from '../media/Avatar';
@@ -19,9 +20,26 @@ import { GlobalModals } from './GlobalModals';
 import { useUiState } from '../../states/uiState';
 
 export const AppLayout = () => {
-  const { isExpanded, setIsExpanded } = useNavStore();
+  const { isExpanded, isHidden, setIsExpanded, setIsHidden } = useNavStore();
   const location = useLocation();
   const user = useAuthState((state) => state.user);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== 'h' || event.ctrlKey || event.metaKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+      setIsHidden(!isHidden);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isHidden, setIsHidden]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => window.dispatchEvent(new Event('resize')), 320);
+    return () => window.clearTimeout(timeout);
+  }, [isHidden]);
 
   const getRoleConfig = (role?: Role): { label: string; color: PageColor } => {
     if (!role) return { label: 'INVITADO', color: 'gray' };
@@ -45,13 +63,19 @@ export const AppLayout = () => {
   return (
     <div className="flex h-screen bg-page-dark overflow-hidden font-sans relative">
 
-      <div className="w-[88px] flex-shrink-0 h-full bg-page-blue z-0" />
+      <div
+        className={`flex-shrink-0 h-full bg-page-blue z-0 transition-all duration-300 ${
+          isHidden ? 'w-0' : 'w-[88px]'
+        }`}
+      />
 
       <nav
         className={`absolute left-0 top-0 bottom-0 bg-page-blue flex flex-col gap-4 py-8 px-4 h-full shadow-xl transition-all duration-300 z-50 ${
+          isHidden ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
+        } ${
           isExpanded ? 'w-[320px]' : 'w-[88px]'
         }`}
-        onMouseEnter={() => setIsExpanded(true)}
+        onMouseEnter={() => !isHidden && setIsExpanded(true)}
         onMouseLeave={() => setIsExpanded(false)}
       >
         {/* LOGO CONTAINER */}
@@ -73,7 +97,7 @@ export const AppLayout = () => {
             <div
               className={`flex flex-col justify-center transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap ${
                 !isExpanded
-                  ? 'max-w-[250px] opacity-100 ml-3'
+                  ? 'max-w-[250px] opacity-100 ml-1'
                   : 'max-w-0 opacity-0 ml-0'
               }`}
             >
@@ -188,7 +212,7 @@ export const AppLayout = () => {
         */}
       <div
         className={`absolute inset-0 bg-black transition-opacity duration-300 z-40 pointer-events-none ${
-          isExpanded ? 'opacity-50' : 'opacity-0'
+          isExpanded && !isHidden ? 'opacity-50' : 'opacity-0'
         }`}
         style={{ left: '88px' }}
       />

@@ -1,5 +1,6 @@
 export interface RoomData {
-  title: string;
-  type: string;
-  capacity: number | string;
+  name: string;
+  floor: number;
+  code?: string;
+  capacity?: number | string;
 }

@@ -9,24 +9,32 @@ interface ActiveBuildingCardProps {
 }
 
 export const ActiveBuildingCard = ({ building, onClose }: ActiveBuildingCardProps) => {
-  const { data: rooms, isLoading, isError } = useBuildingRooms(building?.id || '');
+  const { data: rooms, isLoading } = useBuildingRooms(building?.id || '');
 
   if (!building) return null;
 
   // Map RoomDto to RoomData expected by BuildingDetailCard
   const mappedRooms: RoomData[] = rooms?.map(r => ({
-    title: r.name,
-    type: "Sala Regular",
-    capacity: `Piso ${r.floor}${r.number ? ` - Sala ${r.number}` : ''}`,
+    name: r.name,
+    floor: r.floor,
+    code: r.number,
   })) || [];
+
+  const schedule = building.metadata?.schedule || "Sin horario registrado";
+  const floors = building.metadata?.floorsCount
+    ? `${building.metadata.floorsCount} ${building.metadata.floorsCount === 1 ? 'piso' : 'pisos'}`
+    : '';
 
   return (
     <div className="w-full h-full">
       <BuildingDetailCard
         title={building.name}
         subtitle="UCT Campus"
-        schedule={isLoading ? "Cargando..." : isError ? "Error al cargar salas" : "08:00 - 22:00"}
+        floors={floors}
+        withUctBorder={false}
+        schedule={schedule}
         rooms={mappedRooms}
+        roomsLoading={isLoading}
         onClose={onClose}
       />
     </div>
