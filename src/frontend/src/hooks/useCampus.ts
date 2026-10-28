@@ -1,12 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { campusService } from '../services/campusService';
 import type { BuildingLocationDto } from '../dtos/campus/BuildingLocationDto';
+import type { CampusDto } from '../dtos/campus/CampusDto';
 import type { RoomDto } from '../dtos/campus/RoomDto';
 
-export const useBuildingLocations = (campusId?: string) => {
+export const useCampuses = () => {
+  return useQuery<CampusDto[], Error>({
+    queryKey: ['campuses'],
+    queryFn: () => campusService.getCampuses(),
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  });
+};
+
+export const useBuildingLocations = (campusId?: string, enabled = true) => {
   return useQuery<BuildingLocationDto[], Error>({
     queryKey: ['buildingLocations', campusId],
     queryFn: () => campusService.getBuildingLocations(campusId),
+    enabled,
     staleTime: 1000 * 60 * 5, // Cache the locations for 5 minutes since they rarely change
   });
 };

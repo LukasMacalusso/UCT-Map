@@ -19,7 +19,7 @@ import { MapEditorPanel } from '../modules/admin/MapEditorPanel';
 import { BuildingFormModal } from '../modules/admin/BuildingFormModal';
 import { MapSidePanel } from '../modules/map/MapSidePanel';
 import { MapHeatmapPanel } from '../modules/map/MapHeatmapPanel';
-import { useBuildingLocations } from '../hooks/useCampus';
+import { useBuildingLocations, useCampuses } from '../hooks/useCampus';
 import { MapMarker } from '../components/ui/MapMarker';
 import { ActiveBuildingCard } from '../modules/map/ActiveBuildingCard';
 import type { BuildingLocationDto } from '../dtos/campus/BuildingLocationDto';
@@ -39,34 +39,6 @@ const MAX_ZOOM = 19;
 const INITIAL_ZOOM = 15;
 const INITIAL_PITCH = 50;
 const INITIAL_BEARING = -20;
-
-interface CampusZone {
-  value: string;
-  label: string;
-  center: [number, number];
-  zoom: number;
-  pitch: number;
-  bearing: number;
-}
-
-const CAMPUS_ZONES: CampusZone[] = [
-  {
-    value: 'campus1',
-    label: 'Campus San Juan Pablo II',
-    center: [-72.6019, -38.7368],
-    zoom: 15.5,
-    pitch: 50,
-    bearing: -20,
-  },
-  {
-    value: 'campus2',
-    label: 'Campus Norte',
-    center: [-72.6205, -38.7245],
-    zoom: 16,
-    pitch: 45,
-    bearing: 25,
-  },
-];
 
 const MOCK_SPREAD = 0.006;
 
@@ -153,10 +125,15 @@ export const MapView = () => {
   const [isBuildingCardOpen, setIsBuildingCardOpen] = React.useState(false);
   const [isMapLoaded, setIsMapLoaded] = React.useState(false);
   const [mapError, setMapError] = React.useState<string | null>(null);
-  const [selectedCampus, setSelectedCampus] = React.useState(CAMPUS_ZONES[0].value);
+  const [selectedCampus, setSelectedCampus] = React.useState('');
   const [is3D, setIs3D] = React.useState(true);
 
-  const { data: buildings, isLoading: areBuildingsLoading } = useBuildingLocations();
+  const { data: campuses, isLoading: areCampusesLoading } = useCampuses();
+  const activeCampusId = selectedCampus || campuses?.[0]?.id || '';
+  const { data: buildings, isLoading: areBuildingsLoading } = useBuildingLocations(
+    activeCampusId || undefined,
+    !areCampusesLoading,
+  );
 
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const mapRef = React.useRef<MapboxMap | null>(null);
@@ -164,13 +141,10 @@ export const MapView = () => {
   const removalRef = React.useRef<number | null>(null);
   const cardCloseTimeoutRef = React.useRef<number | null>(null);
 
-  const mapSearchOptions = [
-    { value: 'biblioteca', label: 'Biblioteca Central' },
-    { value: 'casino', label: 'Casino' },
-    { value: 'edificio-c', label: 'Edificio C' },
-    { value: 'gimnasio', label: 'Gimnasio' },
-    { value: 'auditorio', label: 'Auditorio Principal' }
-  ];
+  const mapSearchOptions = (buildings ?? []).map((building) => ({
+    value: building.id,
+    label: building.name,
+  }));
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -336,14 +310,15 @@ export const MapView = () => {
   const handleCampusChange = (value: string) => {
     setSelectedCampus(value);
     const map = mapRef.current;
-    const campus = CAMPUS_ZONES.find(zone => zone.value === value);
+    const campus = campuses?.find((item) => item.id === value);
     if (!map || !campus) return;
+    const coordinate: [number, number] = [campus.longitude, campus.latitude];
     setMapInteraction(map, false);
     map.once('moveend', () => setMapInteraction(map, true));
-    flyToCoordinate(map, campus.center, {
-      zoom: campus.zoom,
-      pitch: is3D ? campus.pitch : 0,
-      bearing: is3D ? campus.bearing : 0,
+    flyToCoordinate(map, isWithinCampus(coordinate) ? coordinate : CAMPUS_CENTER, {
+      zoom: INITIAL_ZOOM,
+      pitch: is3D ? INITIAL_PITCH : 0,
+      bearing: is3D ? INITIAL_BEARING : 0,
     });
   };
 
@@ -395,6 +370,10 @@ export const MapView = () => {
             onChange={(val) => setSearchQuery(val)}
             icon={<SearchIcon className="w-6 h-6 text-gray-500" />}
             options={mapSearchOptions}
+            onSelectOption={(option) => {
+              const building = buildings?.find((item) => item.id === option.value);
+              if (building) handleBuildingClick(building);
+            }}
           />
         </div>
 
@@ -402,8 +381,8 @@ export const MapView = () => {
           <Select
             label="Campus"
             labelColor={textPageColors.dark}
-            options={CAMPUS_ZONES.map(zone => ({ value: zone.value, label: zone.label }))}
-            value={selectedCampus}
+            options={(campuses ?? []).map((campus) => ({ value: campus.id, label: campus.name }))}
+            value={activeCampusId}
             onChange={handleCampusChange}
             icon={<BuildingIcon className="w-6 h-6 text-gray-700" />}
           />

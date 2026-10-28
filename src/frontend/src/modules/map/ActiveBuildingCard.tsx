@@ -9,7 +9,7 @@ interface ActiveBuildingCardProps {
 }
 
 export const ActiveBuildingCard = ({ building, onClose }: ActiveBuildingCardProps) => {
-  const { data: rooms, isLoading, isError } = useBuildingRooms(building?.id || '');
+  const { data: rooms, isLoading } = useBuildingRooms(building?.id || '');
 
   if (!building) return null;
 
@@ -20,7 +20,7 @@ export const ActiveBuildingCard = ({ building, onClose }: ActiveBuildingCardProp
     code: r.number,
   })) || [];
 
-  const schedule = isLoading ? "Cargando..." : isError ? "Error al cargar salas" : "08:00 - 22:00";
+  const schedule = building.metadata?.schedule || "Sin horario registrado";
   const floors = building.metadata?.floorsCount
     ? `${building.metadata.floorsCount} ${building.metadata.floorsCount === 1 ? 'piso' : 'pisos'}`
     : '';

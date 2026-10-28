@@ -11,7 +11,6 @@ interface AuthState {
   login: (token: string, user: UserIdentity) => void;
   logout: () => void;
 
-  // --- TEMPORAL MOCK TEST ---
   mockLoginAs: (role: Role) => void;
 }
 
@@ -79,7 +78,6 @@ export const useAuthState = create<AuthState>((set) => ({
     set({ user: null, token: null, isAuthenticated: false });
   },
 
-  // --- TEMPORAL MOCK TEST ---
   mockLoginAs: (role) => {
     const mockUser: UserIdentity = {
       id: '123',
