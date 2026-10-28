@@ -10,6 +10,10 @@ import '../../presentation/screens/lost_found/lost_item_detail_screen.dart';
 import '../../presentation/screens/lost_objects/create_lost_object_screen.dart';
 import '../../presentation/screens/lost_objects/lost_objects_screen.dart';
 import '../../data/repositories/lost_objects_repository_impl.dart';
+import '../../data/repositories/reports_repository_impl.dart';
+import '../../presentation/screens/tickets/create_ticket_screen.dart';
+import '../../presentation/screens/tickets/ticket_detail_screen.dart';
+import '../../presentation/screens/tickets/tickets_screen.dart';
 import '../../presentation/screens/professors/professors_screen.dart';
 import '../../presentation/screens/profile/my_lost_items_screen.dart';
 import '../../presentation/screens/profile/my_reports_screen.dart';
@@ -28,6 +32,9 @@ class AppRoutes {
   static const String professors = '/professors';
   static const String reports = '/reports';
   static const String reportDetail = '/reports/detail';
+  static const String tickets = '/tickets';
+  static const String createTicket = '/tickets/create';
+  static const String ticketDetail = '/tickets/detail';
   static const String lostFound = '/lost-found';
   static const String lostObjects = '/lost-objects';
   static const String createLostObject = '/lost-objects/create';
@@ -199,6 +206,34 @@ class AppRoutes {
           settings: settings,
           builder: (_) => CreateLostObjectScreen(
             repository: LostObjectsRepositoryImpl(),
+          ),
+        );
+
+      case tickets:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => TicketsScreen(
+            repository: ReportsRepositoryImpl(),
+            showAppBar: true,
+          ),
+        );
+
+      case createTicket:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => CreateTicketScreen(
+            repository: ReportsRepositoryImpl(),
+          ),
+        );
+
+      case ticketDetail:
+        final arg = settings.arguments;
+        final id = arg is String ? arg : '';
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => TicketDetailScreen(
+            ticketId: id,
+            repository: ReportsRepositoryImpl(),
           ),
         );
 

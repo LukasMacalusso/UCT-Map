@@ -7,6 +7,9 @@ import '../screens/lost_objects/lost_objects_screen.dart';
 import '../../data/datasources/lost_objects_remote_ds.dart';
 import '../../data/repositories/lost_objects_repository_impl.dart';
 import '../screens/reports/reports_screen.dart';
+import '../screens/tickets/tickets_screen.dart';
+import '../../data/datasources/reports_remote_ds.dart';
+import '../../data/repositories/reports_repository_impl.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/login/auth_required_view.dart';
 import '../../application/session/session_controller.dart';
@@ -143,9 +146,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
       _protected(
         3,
-        ReportsScreen(
-          onNavigateToTab: _onTabTapped,
-          incidentRepository: IncidentRemoteDataSource(client: _apiClient),
+        TicketsScreen(
+          repository: ReportsRepositoryImpl(
+            remoteDataSource: ReportsRemoteDataSource(
+              client: _apiClient,
+              tokenProvider: () => _session.token,
+            ),
+          ),
+          showAppBar: false,
         ),
         'Reportes de incidencias',
       ),
