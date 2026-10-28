@@ -3,6 +3,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/datasources/incident_remote_ds.dart';
 import '../../../domain/entities/lost_item.dart';
 import '../../../domain/repositories/incident_repository.dart';
+import '../login/session_required_view.dart';
 import 'lost_item_detail_screen.dart';
 
 class LostFoundScreen extends StatefulWidget {
@@ -535,9 +536,11 @@ class _LostItemCard extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => LostItemDetailScreen(
-                            item: item,
-                            onNavigateToTab: onNavigateToTab,
+                          builder: (_) => SessionRequiredView(
+                            builder: (_) => LostItemDetailScreen(
+                              item: item,
+                              onNavigateToTab: onNavigateToTab,
+                            ),
                           ),
                         ),
                       );

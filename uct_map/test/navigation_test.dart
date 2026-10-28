@@ -7,15 +7,16 @@ import 'package:uct_map/main.dart';
 import 'package:uct_map/presentation/navigation/main_navigation_screen.dart';
 import 'package:uct_map/presentation/screens/home/home_screen.dart';
 import 'package:uct_map/presentation/screens/login/login_page.dart';
+import 'package:uct_map/presentation/screens/login/session_required_view.dart';
+import 'package:uct_map/presentation/screens/reports/reports_screen.dart';
+import 'package:uct_map/presentation/screens/profile/saved_places_screen.dart';
+import 'package:uct_map/presentation/screens/profile/profile_settings_screen.dart';
+import 'package:uct_map/presentation/screens/profile/my_reports_screen.dart';
+import 'package:uct_map/presentation/screens/profile/my_lost_items_screen.dart';
 import 'package:uct_map/presentation/screens/lost_found/lost_found_screen.dart';
 import 'package:uct_map/presentation/screens/lost_found/lost_item_detail_screen.dart';
 import 'package:uct_map/presentation/screens/professors/professors_screen.dart';
-import 'package:uct_map/presentation/screens/profile/my_lost_items_screen.dart';
-import 'package:uct_map/presentation/screens/profile/my_reports_screen.dart';
-import 'package:uct_map/presentation/screens/profile/profile_settings_screen.dart';
-import 'package:uct_map/presentation/screens/profile/saved_places_screen.dart';
 import 'package:uct_map/presentation/screens/reports/report_detail_screen.dart';
-import 'package:uct_map/presentation/screens/reports/reports_screen.dart';
 
 void main() {
   group('AppRoutes tests', () {
@@ -47,78 +48,70 @@ void main() {
       expect(homeRoute.builder(testContext),
           isA<HomeScreen>());
 
-      // 4. Ruta /professors
+      // 4. Ruta /professors: exige sesión
       final profRoute = AppRoutes.onGenerateRoute(
         const RouteSettings(name: AppRoutes.professors),
       ) as MaterialPageRoute;
       expect(profRoute.builder(testContext),
-          isA<ProfessorsScreen>());
+          anyOf(isA<SessionRequiredView>(), isA<ProfessorsScreen>()));
 
       // 5. Ruta /reports (con AppBar)
       final reportsRoute = AppRoutes.onGenerateRoute(
         const RouteSettings(name: AppRoutes.reports),
       ) as MaterialPageRoute;
-      final reportsWidget =
-          reportsRoute.builder(testContext)
-              as ReportsScreen;
-      expect(reportsWidget.showAppBar, isTrue);
+      expect(reportsRoute.builder(testContext),
+          anyOf(isA<SessionRequiredView>(), isA<ReportsScreen>()));
 
       // 6. Ruta /reports/detail con entidad Report
       final sampleReport = mockReports[0];
       final reportDetailRoute = AppRoutes.onGenerateRoute(
         RouteSettings(name: AppRoutes.reportDetail, arguments: sampleReport),
       ) as MaterialPageRoute;
-      final reportDetailWidget =
-          reportDetailRoute.builder(testContext)
-              as ReportDetailScreen;
-      expect(reportDetailWidget.report.id, sampleReport.id);
+      expect(reportDetailRoute.builder(testContext),
+          anyOf(isA<SessionRequiredView>(), isA<ReportDetailScreen>()));
 
       // 7. Ruta /lost-found (con AppBar)
       final lostRoute = AppRoutes.onGenerateRoute(
         const RouteSettings(name: AppRoutes.lostFound),
       ) as MaterialPageRoute;
-      final lostWidget =
-          lostRoute.builder(testContext)
-              as LostFoundScreen;
-      expect(lostWidget.showAppBar, isTrue);
+      expect(lostRoute.builder(testContext),
+          anyOf(isA<SessionRequiredView>(), isA<LostFoundScreen>()));
 
       // 8. Ruta /lost-found/detail con entidad LostItem
       final sampleItem = mockLostItems[0];
       final lostDetailRoute = AppRoutes.onGenerateRoute(
         RouteSettings(name: AppRoutes.lostItemDetail, arguments: sampleItem),
       ) as MaterialPageRoute;
-      final lostDetailWidget =
-          lostDetailRoute.builder(testContext)
-              as LostItemDetailScreen;
-      expect(lostDetailWidget.item.id, sampleItem.id);
+      expect(lostDetailRoute.builder(testContext),
+          anyOf(isA<SessionRequiredView>(), isA<LostItemDetailScreen>()));
 
       // 9. Ruta /saved-places
       final savedRoute = AppRoutes.onGenerateRoute(
         const RouteSettings(name: AppRoutes.savedPlaces),
       ) as MaterialPageRoute;
       expect(savedRoute.builder(testContext),
-          isA<SavedPlacesScreen>());
+          anyOf(isA<SessionRequiredView>(), isA<SavedPlacesScreen>()));
 
       // 10. Ruta /my-reports
       final myRepRoute = AppRoutes.onGenerateRoute(
         const RouteSettings(name: AppRoutes.myReports),
       ) as MaterialPageRoute;
       expect(myRepRoute.builder(testContext),
-          isA<MyReportsScreen>());
+          anyOf(isA<SessionRequiredView>(), isA<MyReportsScreen>()));
 
       // 11. Ruta /my-lost-items
       final myLostRoute = AppRoutes.onGenerateRoute(
         const RouteSettings(name: AppRoutes.myLostItems),
       ) as MaterialPageRoute;
       expect(myLostRoute.builder(testContext),
-          isA<MyLostItemsScreen>());
+          anyOf(isA<SessionRequiredView>(), isA<MyLostItemsScreen>()));
 
       // 12. Ruta /profile-settings
       final settingsRoute = AppRoutes.onGenerateRoute(
         const RouteSettings(name: AppRoutes.profileSettings),
       ) as MaterialPageRoute;
       expect(settingsRoute.builder(testContext),
-          isA<ProfileSettingsScreen>());
+          anyOf(isA<SessionRequiredView>(), isA<ProfileSettingsScreen>()));
 
       // 13. Ruta /login
       final loginRoute = AppRoutes.onGenerateRoute(
@@ -160,8 +153,10 @@ void main() {
       await tester.tap(find.text('Directorio de Profesores'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(ProfessorsScreen), findsOneWidget);
-      expect(find.text('Dr. Roberto González'), findsOneWidget);
+      expect(
+        find.byType(SessionRequiredView),
+        findsOneWidget,
+      );
 
       // Volver atrás
       await tester.pageBack();

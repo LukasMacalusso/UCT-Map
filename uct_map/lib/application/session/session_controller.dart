@@ -7,7 +7,6 @@ import '../../core/config/env_config.dart';
 import '../../data/storage/token_storage.dart';
 import '../../domain/entities/auth_session.dart';
 import '../../domain/entities/user.dart';
-import '../../domain/entities/user_role.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 // Sesión en memoria con forma del backend y token persistido.
@@ -64,9 +63,7 @@ class SessionController extends ChangeNotifier {
         user: User.fromLogin(
           userId: result.userId,
           email: result.email,
-          role: claims.roles.isNotEmpty
-              ? claims.roles.first
-              : UserRole.desconocido,
+          roles: claims.roles,
         ),
         loginAt: DateTime.now(),
         token: result.token,
@@ -110,9 +107,7 @@ class SessionController extends ChangeNotifier {
           user: User.fromLogin(
             userId: claims.subject,
             email: claims.email,
-            role: claims.roles.isNotEmpty
-                ? claims.roles.first
-                : UserRole.desconocido,
+            roles: claims.roles,
           ),
           loginAt: DateTime.now(),
           token: token,

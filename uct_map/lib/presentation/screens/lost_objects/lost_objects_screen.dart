@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/models/lost_object_dto.dart';
 import '../../../domain/entities/lost_object.dart';
 import '../../../domain/repositories/lost_objects_repository.dart';
+import '../login/session_required_view.dart';
 import 'create_lost_object_screen.dart';
 import 'widgets/lost_object_status_badge.dart';
 
@@ -323,11 +324,13 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
   void _openCreateScreen() async {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => CreateLostObjectScreen(repository: widget.repository),
+        builder: (_) => SessionRequiredView(
+          builder: (_) => CreateLostObjectScreen(repository: widget.repository),
+        ),
       ),
     );
 
-    if (result == true) {
+    if (mounted && result == true) {
       _fetchObjects();
     }
   }
@@ -493,7 +496,7 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
         itemCount: items.length + 1,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           if (index == items.length) {
             return _buildPaginationBar();
