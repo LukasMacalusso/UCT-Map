@@ -132,14 +132,16 @@ class ProblemDetails {
 
 /// Excepción especializada para errores RFC 7807.
 class ProblemDetailsException extends ApiException {
-  final ProblemDetails problemDetails;
-
-  ProblemDetailsException(this.problemDetails)
+  ProblemDetailsException(ProblemDetails problemDetails)
       : super(
           problemDetails.userMessage,
           problemDetails.status,
           problemDetails.toJson(),
+          problemDetails,
         );
+
+  @override
+  ProblemDetails get problemDetails => super.problemDetails!;
 
   String? get errorTitle => problemDetails.title;
   String? get errorType => problemDetails.type;
