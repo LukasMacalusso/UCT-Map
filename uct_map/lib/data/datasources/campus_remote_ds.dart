@@ -1,11 +1,9 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:http/http.dart' as http;
 
+import '../../core/network/api_client.dart';
+import '../../core/network/api_client_provider.dart';
 import '../../core/network/api_config.dart';
 import '../../core/network/api_endpoints.dart';
-import '../../core/network/api_exception.dart';
 
 import '../../domain/entities/building.dart';
 import '../../domain/entities/campus.dart';
@@ -19,157 +17,157 @@ import '../models/campus_model.dart';
 import '../models/category_model.dart';
 import '../models/room_model.dart';
 import '../models/structure_model.dart';
-import '../../core/network/api_client_provider.dart';
+import '../models/campus_location_dto.dart';
 
-/// Datasource remoto para consumir /api/campus a través del API Gateway.
+/// Consumo centralizado de Campus Service mediante API Gateway.
+/// Reutiliza ApiClient, la sesión JWT y el manejo de errores existente.
 class CampusRemoteDataSource implements CampusRepository {
   CampusRemoteDataSource({http.Client? client, ApiConfig? config})
-    : _client = client ?? ApiClientProvider.defaultClient,
-      _config = config ?? ApiConfig();
+    : _api = client == null && config == null
+          ? ApiClientProvider.apiClient
+          : ApiClient(
+              client: client ?? ApiClientProvider.defaultClient,
+              config: config,
+            );
 
-  final http.Client _client;
-  final ApiConfig _config;
+  final ApiClient _api;
 
-  @override
-  Future<List<Campus>> getCampuses() async {
-    final uri = _config.uri(ApiEndpoints.campusList);
-    try {
-      final res = await _client.get(uri).timeout(_config.timeout);
-      if (res.statusCode == 200) {
-        final decoded = jsonDecode(res.body);
-        if (decoded is List) {
-          return decoded
-              .whereType<Map<String, dynamic>>()
-              .map((c) => CampusModel.fromJson(c))
-              .toList();
-        }
-      }
-      throw ApiException.fromResponse(res.statusCode, res.body);
-    } on http.ClientException {
-      return fallbackCampuses;
-    } on TimeoutException {
-      return fallbackCampuses;
-    }
+  Future<List<T>> _list<T>(
+    String path,
+    T Function(Map<String, dynamic>) parse, {
+    Map<String, dynamic>? query,
+  }) async {
+    final data = await _api.getJson<List<dynamic>>(
+      path,
+      queryParameters: query,
+    );
+
+    return data
+        .map((value) => parse((value as Map).cast<String, dynamic>()))
+        .toList();
   }
 
-  @override
-  Future<List<Building>> getBuildings(String campusId) async {
-    final uri = _config.uri(ApiEndpoints.campusBuildings(campusId));
-    try {
-      final res = await _client.get(uri).timeout(_config.timeout);
-      if (res.statusCode == 200) {
-        final decoded = jsonDecode(res.body);
-        if (decoded is List) {
-          return decoded
-              .whereType<Map<String, dynamic>>()
-              .map((b) => BuildingModel.fromJson(b))
-              .toList();
-        }
-      }
-      throw ApiException.fromResponse(res.statusCode, res.body);
-    } on http.ClientException {
-      return [];
-    } on TimeoutException {
-      return [];
-    }
+  Future<T> _one<T>(String path, T Function(Map<String, dynamic>) parse) async {
+    final data = await _api.getJson<Map<String, dynamic>>(path);
+    return parse(data);
   }
 
-  @override
-  Future<List<Room>> getRooms(String buildingId) async {
-    final uri = _config.uri(ApiEndpoints.buildingRooms(buildingId));
-    try {
-      final res = await _client.get(uri).timeout(_config.timeout);
-      if (res.statusCode == 200) {
-        final decoded = jsonDecode(res.body);
-        if (decoded is List) {
-          return decoded
-              .whereType<Map<String, dynamic>>()
-              .map((r) => RoomModel.fromJson(r))
-              .toList();
-        }
+  Map<String, dynamic>? _query(Map<String, String?> items) {
+    final filtered = <String, dynamic>{};
+
+    for (final entry in items.entries) {
+      if (entry.value != null && entry.value!.trim().isNotEmpty) {
+        filtered[entry.key] = entry.value;
       }
-      throw ApiException.fromResponse(res.statusCode, res.body);
-    } on http.ClientException {
-      return [];
-    } on TimeoutException {
-      return [];
     }
+
+    return filtered.isEmpty ? null : filtered;
   }
 
-  @override
-  Future<List<Structure>> getStructures(String campusId) async {
-    final uri = _config.uri(ApiEndpoints.campusStructures(campusId));
-
-    try {
-      final res = await _client.get(uri).timeout(_config.timeout);
-
-      if (res.statusCode == 200) {
-        final decoded = jsonDecode(res.body);
-
-        if (decoded is List) {
-          return decoded
-              .whereType<Map<String, dynamic>>()
-              .map((json) => StructureModel.fromJson(json))
-              .toList();
-        }
-      }
-
-      throw ApiException.fromResponse(res.statusCode, res.body);
-    } on http.ClientException {
-      return [];
-    } on TimeoutException {
-      return [];
-    }
-  }
+  // -------------------------------------------------------------
+  // CAMPUS
+  // -------------------------------------------------------------
 
   @override
-  Future<List<Category>> getCategories() async {
-    final uri = _config.uri(ApiEndpoints.campusCategories);
+  Future<List<Campus>> getCampuses() =>
+      _list(ApiEndpoints.campusList, CampusModel.fromJson);
 
-    try {
-      final res = await _client.get(uri).timeout(_config.timeout);
+  @override
+  Future<Campus> getCampusById(String id) =>
+      _one(ApiEndpoints.campusDetail(id), CampusModel.fromJson);
 
-      if (res.statusCode == 200) {
-        final decoded = jsonDecode(res.body);
+  // -------------------------------------------------------------
+  // BUILDINGS
+  // -------------------------------------------------------------
 
-        if (decoded is List) {
-          return decoded
-              .whereType<Map<String, dynamic>>()
-              .map((json) => CategoryModel.fromJson(json))
-              .toList();
-        }
-      }
+  @override
+  Future<List<Building>> getBuildings(String campusId) => _list(
+    ApiEndpoints.campusBuildingsList,
+    BuildingModel.fromJson,
+    query: {'campusId': campusId},
+  );
 
-      throw ApiException.fromResponse(res.statusCode, res.body);
-    } on http.ClientException {
-      return [];
-    } on TimeoutException {
-      return [];
-    }
-  }
+  @override
+  Future<Building> getBuildingById(String id) =>
+      _one(ApiEndpoints.buildingDetail(id), BuildingModel.fromJson);
 
-  // Campus de ejemplo para ver la funcionalidad sin red o con servicios apagados.
-  static const List<Campus> fallbackCampuses = [
-    Campus(
-      id: 'campus-sjpii',
-      name: 'Campus San Juan Pablo II',
-      address: 'Rudecindo Ortega 02950, Temuco',
-      latitude: -38.7042,
-      longitude: -72.5849,
-    ),
-    Campus(
-      id: 'campus-sf',
-      name: 'Campus San Francisco',
-      address: 'Manuel Montt 056, Temuco',
-      latitude: -38.7369,
-      longitude: -72.6021,
-    ),
-    Campus(
-      id: 'campus-menchaca',
-      name: 'Campus Menchaca Lira',
-      address: 'Av. Alemania 0422, Temuco',
-      latitude: -38.7361,
-      longitude: -72.6080,
-    ),
-  ];
+  @override
+  Future<List<BuildingLocationDto>> getBuildingLocations({String? campusId}) =>
+      _list(
+        ApiEndpoints.campusBuildingLocationsPath,
+        BuildingLocationDto.fromJson,
+        query: _query({'campusId': campusId}),
+      );
+
+  // -------------------------------------------------------------
+  // ROOMS
+  // -------------------------------------------------------------
+
+  @override
+  Future<List<Room>> getRooms(String buildingId) =>
+      _list(ApiEndpoints.buildingRooms(buildingId), RoomModel.fromJson);
+
+  @override
+  Future<Room> getRoomById(String id) =>
+      _one(ApiEndpoints.roomDetail(id), RoomModel.fromJson);
+
+  @override
+  Future<List<Room>> searchRooms(String term) => _list(
+    ApiEndpoints.campusRoomSearchPath,
+    RoomModel.fromJson,
+    query: {'term': term},
+  );
+
+  @override
+  Future<List<Room>> getRoomsFiltered({
+    String? buildingId,
+    String? categoryId,
+  }) => _list(
+    ApiEndpoints.campusRooms,
+    RoomModel.fromJson,
+    query: _query({'buildingId': buildingId, 'categoryId': categoryId}),
+  );
+
+  // -------------------------------------------------------------
+  // STRUCTURES
+  // -------------------------------------------------------------
+
+  @override
+  Future<List<Structure>> getStructures(String campusId) =>
+      getStructuresFiltered(campusId: campusId);
+
+  @override
+  Future<List<Structure>> getStructuresFiltered({
+    String? campusId,
+    String? categoryId,
+  }) => _list(
+    ApiEndpoints.campusStructuresList,
+    StructureModel.fromJson,
+    query: _query({'campusId': campusId, 'categoryId': categoryId}),
+  );
+
+  @override
+  Future<Structure> getStructureById(String id) =>
+      _one(ApiEndpoints.structureDetail(id), StructureModel.fromJson);
+
+  @override
+  Future<List<StructureLocationDto>> getStructureLocations({
+    String? campusId,
+  }) => _list(
+    ApiEndpoints.campusStructureLocationsPath,
+    StructureLocationDto.fromJson,
+    query: _query({'campusId': campusId}),
+  );
+
+  // -------------------------------------------------------------
+  // CATEGORIES
+  // -------------------------------------------------------------
+
+  @override
+  Future<List<Category>> getCategories() =>
+      _list(ApiEndpoints.campusCategories, CategoryModel.fromJson);
+
+  @override
+  Future<Category> getCategoryById(String id) =>
+      _one(ApiEndpoints.categoryDetail(id), CategoryModel.fromJson);
 }

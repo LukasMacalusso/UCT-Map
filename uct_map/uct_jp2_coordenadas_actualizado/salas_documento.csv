@@ -1,0 +1,152 @@
+﻿campus,numeroEdificio,nombreEdificio,codigoSala,piso,numeroSala
+Campus San Juan Pablo II,1,FAAD,CJP01_115,1,115
+Campus San Juan Pablo II,1,FAAD,CJP01_120,1,120
+Campus San Juan Pablo II,1,FAAD,CJP01_125,1,125
+Campus San Juan Pablo II,1,FAAD,CJP01_130,1,130
+Campus San Juan Pablo II,1,FAAD,CJP01_135,1,135
+Campus San Juan Pablo II,1,FAAD,CJP01_150,1,150
+Campus San Juan Pablo II,1,FAAD,CJP01_310,3,310
+Campus San Juan Pablo II,1,FAAD,CJP01_330,3,330
+Campus San Juan Pablo II,1,FAAD,CJP01_350,3,350
+Campus San Juan Pablo II,1,FAAD,CJP01_410,4,410
+Campus San Juan Pablo II,1,FAAD,CJP01_420,4,420
+Campus San Juan Pablo II,1,FAAD,CJP01_430,4,430
+Campus San Juan Pablo II,1,FAAD,CJP01_450,4,450
+Campus San Juan Pablo II,1,FAAD,CJP01_510,5,510
+Campus San Juan Pablo II,1,FAAD,CJP01_550,5,550
+Campus San Juan Pablo II,2,Diseño,CJP02_105,1,105
+Campus San Juan Pablo II,2,Diseño,CJP02_110,1,110
+Campus San Juan Pablo II,2,Diseño,CJP02_115,1,115
+Campus San Juan Pablo II,2,Diseño,CJP02_120,1,120
+Campus San Juan Pablo II,2,Diseño,CJP02_125,1,125
+Campus San Juan Pablo II,2,Diseño,CJP02_130,1,130
+Campus San Juan Pablo II,2,Diseño,CJP02_150,1,150
+Campus San Juan Pablo II,2,Diseño,CJP02_210,2,210
+Campus San Juan Pablo II,2,Diseño,CJP02_212,2,212
+Campus San Juan Pablo II,2,Diseño,CJP02_214,2,214
+Campus San Juan Pablo II,2,Diseño,CJP02_216,2,216
+Campus San Juan Pablo II,2,Diseño,CJP02_218,2,218
+Campus San Juan Pablo II,3,Agustina Hidalgo,CJP03_103,1,103
+Campus San Juan Pablo II,3,Agustina Hidalgo,CJP03_105,1,105
+Campus San Juan Pablo II,3,Agustina Hidalgo,CJP03_107,1,107
+Campus San Juan Pablo II,3,Agustina Hidalgo,CJP03_109,1,109
+Campus San Juan Pablo II,3,Agustina Hidalgo,CJP03_301,3,301
+Campus San Juan Pablo II,3,Agustina Hidalgo,CJP03_302,3,302
+Campus San Juan Pablo II,3,Agustina Hidalgo,CJP03_303,3,303
+Campus San Juan Pablo II,3,Agustina Hidalgo,CJP03_304,3,304
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_101,1,101
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_103,1,103
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_107,1,107
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_117,1,117
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_132,1,132
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_134,1,134
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_175,1,175
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_201,2,201
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_203,2,203
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_215,2,215
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_217,2,217
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_232,2,232
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_234,2,234
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_236,2,236
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_238,2,238
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_261,2,261
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_263,2,263
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_265,2,265
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_275,2,275
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_301,3,301
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_317,3,317
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_325,3,325
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_332,3,332
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_334,3,334
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_350,3,350
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_361,3,361
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_363,3,363
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_365,3,365
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_375,3,375
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_432,4,432
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_461,4,461
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_463,4,463
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_465,4,465
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_475,4,475
+Campus San Juan Pablo II,7,Ricardo Ferrando,CJP07_590,5,590
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_102,1,102
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_105,1,105
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_108,1,108
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_125,1,125
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_135,1,135
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_136,1,136
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_139,1,139
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_146,1,146
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_162,1,162
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_165,1,165
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_170,1,170
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_175,1,175
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_180,1,180
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_185,1,185
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_190,1,190
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_195,1,195
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_260,2,260
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_262,2,262
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_268,2,268
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_270,2,270
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_275,2,275
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_280,2,280
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_285,2,285
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_290,2,290
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_362,3,362
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_365,3,365
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_370,3,370
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_375,3,375
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_380,3,380
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_385,3,385
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_390,3,390
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_462,4,462
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_465,4,465
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_470,4,470
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_475,4,475
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_480,4,480
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_485,4,485
+Campus San Juan Pablo II,8,Adalberto Salas,CJP08_490,4,490
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_110,1,110
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_120,1,120
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_125,1,125
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_155,1,155
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_165,1,165
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_203,2,203
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_205,2,205
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_210,2,210
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_225,2,225
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_230,2,230
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_305,3,305
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_307,3,307
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_310,3,310
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_315,3,315
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_320,3,320
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_325,3,325
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_330,3,330
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_403,4,403
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_405,4,405
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_410,4,410
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_415,4,415
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_420,4,420
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_425,4,425
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_430,4,430
+Campus San Juan Pablo II,10,WaldoMerchant,CJP10_435,4,435
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_100,1,100
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_150,1,150
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_155,1,155
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_160,1,160
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_165,1,165
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_180,1,180
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_190,1,190
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_205,2,205
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_210,2,210
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_215,2,215
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_220,2,220
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_225,2,225
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_244,2,244
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_246,2,246
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_250,2,250
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_255,2,255
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_260,2,260
+Campus San Juan Pablo II,12,Complejo Deportivo,CJP12_265,2,265

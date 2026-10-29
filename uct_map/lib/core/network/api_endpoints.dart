@@ -9,17 +9,61 @@ class ApiEndpoints {
   static const String identityMe = '/api/identity/me';
 
   // -------------------------------------------------------------
-  // Campus Service (Mapas, Edificios, Salas) -> /api/campus
+  // Campus Service -> /api/campus
   // -------------------------------------------------------------
-  static const String campusList = '/api/campus';
+
+  // Campus
+  static const String campusList = '/api/campus/campuses';
+
+  static String campusDetail(String campusId) =>
+      '/api/campus/campuses/$campusId';
+
+  // Edificios
+  static const String campusBuildingsList = '/api/campus/buildings';
+
   static String campusBuildings(String campusId) =>
-      '/api/campus/$campusId/buildings';
+      '/api/campus/buildings?campusId=$campusId';
+
+  static String buildingDetail(String buildingId) =>
+      '/api/campus/buildings/$buildingId';
+
   static String buildingRooms(String buildingId) =>
       '/api/campus/buildings/$buildingId/rooms';
+
+  static String buildingLocations(String campusId) =>
+      '/api/campus/buildings/locations?campusId=$campusId';
+
+  static const String campusBuildingLocationsPath =
+      '/api/campus/buildings/locations';
+  // Salas
+  static const String campusRooms = '/api/campus/rooms';
+
+  static String roomDetail(String roomId) => '/api/campus/rooms/$roomId';
+
+  static String roomSearch(String term) =>
+      '/api/campus/rooms/search?term=${Uri.encodeQueryComponent(term)}';
+
+  static const String campusRoomSearchPath = '/api/campus/rooms/search';
+  // Estructuras
+  static const String campusStructuresList = '/api/campus/structures';
+
   static String campusStructures(String campusId) =>
-      '/api/campus/$campusId/structures';
+      '/api/campus/structures?campusId=$campusId';
+
+  static String structureDetail(String structureId) =>
+      '/api/campus/structures/$structureId';
+
+  static String structureLocations(String campusId) =>
+      '/api/campus/structures/locations?campusId=$campusId';
+
+  static const String campusStructureLocationsPath =
+      '/api/campus/structures/locations';
+
+  // Categorías
   static const String campusCategories = '/api/campus/categories';
-  static const String campusRoute = '/api/campus/route';
+
+  static String categoryDetail(String categoryId) =>
+      '/api/campus/categories/$categoryId';
 
   // -------------------------------------------------------------
   // Schedule Service (Directorio, Citas, Horarios) -> /api/schedule
