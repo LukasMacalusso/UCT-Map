@@ -189,6 +189,16 @@
     {
       "name": "01. Identity Service",
       "description": "Endpoints corresponding to Identity and User Management.",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{jwt_token}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Get All Users",
