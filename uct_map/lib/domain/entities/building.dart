@@ -9,6 +9,8 @@ class Building {
   final double latitude;
   final double longitude;
   final List<Room> rooms;
+  final String schedule;
+  final List<String> services;
 
   const Building({
     required this.id,
@@ -18,6 +20,8 @@ class Building {
     required this.latitude,
     required this.longitude,
     this.rooms = const [],
+    this.schedule = '',
+    this.services = const [],
   });
 
   factory Building.fromJson(Map<String, dynamic> json) {
@@ -53,6 +57,10 @@ class Building {
                   0.0)
               .toDouble(),
       rooms: rooms,
+      schedule: (json['schedule'] ?? json['Schedule'] ?? '').toString(),
+      services: ((json['services'] ?? json['Services']) as List? ?? const [])
+          .map((e) => e.toString())
+          .toList(),
     );
   }
 
@@ -63,5 +71,7 @@ class Building {
     'floorsCount': floorsCount,
     'coordinates': {'latitude': latitude, 'longitude': longitude},
     'rooms': rooms.map((room) => room.toJson()).toList(),
+    'schedule': schedule,
+    'services': services,
   };
 }

@@ -39,6 +39,7 @@ dependencies:
   flutter_map: ^8.3.2
   latlong2: ^0.9.1
   flutter_dotenv: ^6.0.1
+  mapbox_maps_flutter: 3.33.1
 
 dev_dependencies:
   flutter_test:
