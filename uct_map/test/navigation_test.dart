@@ -154,7 +154,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.byType(SessionRequiredView),
+        find.byType(ProfessorsScreen),
         findsOneWidget,
       );
 

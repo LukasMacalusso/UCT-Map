@@ -90,11 +90,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isSearchTab = _currentIndex == 1;
 
     final List<Widget> screens = [
-      _protected(MapScreen(key: ValueKey(_session.isAuthenticated))),
-      _protected(SearchScreen(onExploreMap: () => _onTabTapped(0))),
+      MapScreen(key: ValueKey(_session.isAuthenticated)),
+      SearchScreen(onExploreMap: () => _onTabTapped(0)),
       _protected(
         LostObjectsScreen(
           repository: LostObjectsRepositoryImpl(),
@@ -112,8 +111,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           showAppBar: false,
         ),
       ),
-      _protected(
-        ProfileScreen(
+      ProfileScreen(
           session: _session,
           onNavigateToTab: _onTabTapped,
           onLogout: () async {
@@ -129,39 +127,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 .showSnackBar(SnackBar(content: Text(message)));
           },
         ),
-      ),
     ];
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
-        leading: isSearchTab
-            ? Builder(
-                builder: (context) {
-                  return IconButton(
-                    icon: const Icon(Icons.menu, color: Colors.white),
-                    tooltip: 'Categorías',
-                    onPressed: () {
-                      Scaffold.of(context).openDrawer();
-                    },
-                  );
-                },
-              )
-            : Builder(
-                builder: (context) {
-                  return InkWell(
-                    onTap: () {
-                      Scaffold.of(context).openDrawer();
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: UctLogo(height: 36, width: 36),
-                    ),
-                  );
-                },
+        leading: Builder(
+          builder: (context) {
+            return InkWell(
+              onTap: () {
+                Scaffold.of(context).openDrawer();
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: UctLogo(height: 36, width: 36),
               ),
+            );
+          },
+        ),
         title: Text(
           _titles[_currentIndex],
           style: const TextStyle(
@@ -171,9 +156,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
         ),
         centerTitle: true,
-        actions: isSearchTab
-            ? null
-            : [
+        actions: [
                 Padding(
                   padding: const EdgeInsets.only(right: 12.0),
                   child: GestureDetector(

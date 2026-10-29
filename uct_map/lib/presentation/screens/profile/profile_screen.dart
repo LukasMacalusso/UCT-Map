@@ -272,8 +272,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = widget.session?.currentUser;
-    final userName = user?.name ?? user?.email ?? 'Sin sesión';
-    final userEmail = user?.email ?? '';
+    final userName = (widget.session?.isAuthenticated == true) ? (user?.name ?? user?.email ?? 'Usuario') : 'Invitado';
+    final userEmail = (widget.session?.isAuthenticated == true) ? (user?.email ?? '') : 'Modo invitado (sin cuenta)';
     final userRole = user?.role;
 
     return SingleChildScrollView(
@@ -416,10 +416,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => SessionRequiredView(
-                    builder: (_) => SavedPlacesScreen(
+                  builder: (_) => SavedPlacesScreen(
                       onNavigateToTab: widget.onNavigateToTab,
-                    ),
                   ),
                 ),
               );
@@ -504,9 +502,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => SessionRequiredView(
-                    builder: (_) => const ProfileSettingsScreen(),
-                  ),
+                  builder: (_) => const ProfileSettingsScreen(),
                 ),
               );
             },
