@@ -14,6 +14,7 @@ public class RoomEndpointsTests : ApiTestBase
     private const string Endpoint = "/api/campus/rooms";
     private const string CampusEndpoint = "/api/campus/campuses";
     private const string BuildingEndpoint = "/api/campus/buildings";
+    private const string GroupEndpoint = "/api/campus/category-groups";
     private const string CategoryEndpoint = "/api/campus/categories";
 
     public RoomEndpointsTests(PostgreSqlFixture fixture) : base(fixture) { }
@@ -26,7 +27,10 @@ public class RoomEndpointsTests : ApiTestBase
         var buildingRes = await Http.PostAsync(BuildingEndpoint, JsonBody(new CreateBuildingDto(campus!.Id, "Edificio For Rooms", 3, 0, 0)));
         var building = await ReadJsonAsync<BuildingDto>(buildingRes);
 
-        var catRes = await Http.PostAsync(CategoryEndpoint, JsonBody(new CreateCategoryDto("Categoria For Rooms", "icon", "desc")));
+        var groupRes = await Http.PostAsync(GroupEndpoint, JsonBody(new CreateCategoryGroupDto("Grupo For Rooms")));
+        var group = await ReadJsonAsync<CategoryGroupDto>(groupRes);
+
+        var catRes = await Http.PostAsync(CategoryEndpoint, JsonBody(new CreateCategoryDto(group!.Id, "Categoria For Rooms", "icon", "desc")));
         var cat = await ReadJsonAsync<CategoryDto>(catRes);
 
         return (building!.Id, cat!.Id);
@@ -36,14 +40,14 @@ public class RoomEndpointsTests : ApiTestBase
     public async Task Post_WhenDependenciesExist_CreatesRoomAndReturns201()
     {
         var (buildingId, categoryId) = await SetupDependenciesAsync();
-        var body = new CreateRoomDto(buildingId, categoryId, "Sala 101 E2E", 1, "101");
+        var body = new CreateRoomDto(buildingId, categoryId, "101 E2E", 1);
 
         var response = await Http.PostAsync(Endpoint, JsonBody(body));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var created = await ReadJsonAsync<RoomDto>(response);
         Assert.NotNull(created);
-        Assert.Equal("Sala 101 E2E", created.Name);
+        Assert.Equal("101 E2E", created.Name);
         Assert.Equal(buildingId, created.BuildingId);
         Assert.Equal(categoryId, created.CategoryId);
 
@@ -55,7 +59,7 @@ public class RoomEndpointsTests : ApiTestBase
     public async Task GetAll_ReturnsListOfRooms()
     {
         var (buildingId, categoryId) = await SetupDependenciesAsync();
-        var body = new CreateRoomDto(buildingId, categoryId, "Sala Para Listar", 1, "SPL-1");
+        var body = new CreateRoomDto(buildingId, categoryId, "SPL-1", 1);
         await Http.PostAsync(Endpoint, JsonBody(body));
 
         var response = await Http.GetAsync(Endpoint);
@@ -70,7 +74,7 @@ public class RoomEndpointsTests : ApiTestBase
     public async Task SearchAndGetByBuilding_ReturnsRooms()
     {
         var (buildingId, categoryId) = await SetupDependenciesAsync();
-        var body = new CreateRoomDto(buildingId, categoryId, "Auditorio Principal", 1, "AUD-1");
+        var body = new CreateRoomDto(buildingId, categoryId, "Auditorio", 1);
         await Http.PostAsync(Endpoint, JsonBody(body));
 
         var searchRes = await Http.GetAsync($"{Endpoint}/search?term=Auditorio");
@@ -88,10 +92,10 @@ public class RoomEndpointsTests : ApiTestBase
     public async Task Put_WhenValid_UpdatesRoomAndReturnsNoContent()
     {
         var (buildingId, categoryId) = await SetupDependenciesAsync();
-        var createRes = await Http.PostAsync(Endpoint, JsonBody(new CreateRoomDto(buildingId, categoryId, "Sala Vieja", 1, "10")));
+        var createRes = await Http.PostAsync(Endpoint, JsonBody(new CreateRoomDto(buildingId, categoryId, "Sala Vieja", 1)));
         var created = await ReadJsonAsync<RoomDto>(createRes);
 
-        var updateBody = new UpdateRoomDto(buildingId, categoryId, "Sala Nueva", 2, "20");
+        var updateBody = new UpdateRoomDto(buildingId, categoryId, "Sala Nueva", 2);
         var updateRes = await Http.PutAsync($"{Endpoint}/{created!.Id}", JsonBody(updateBody));
 
         Assert.Equal(HttpStatusCode.NoContent, updateRes.StatusCode);
@@ -106,7 +110,7 @@ public class RoomEndpointsTests : ApiTestBase
     public async Task Delete_WhenValid_DeletesRoomAndReturnsNoContent()
     {
         var (buildingId, categoryId) = await SetupDependenciesAsync();
-        var createRes = await Http.PostAsync(Endpoint, JsonBody(new CreateRoomDto(buildingId, categoryId, "Sala Borrar", 1, "99")));
+        var createRes = await Http.PostAsync(Endpoint, JsonBody(new CreateRoomDto(buildingId, categoryId, "Sala Borrar", 1)));
         var created = await ReadJsonAsync<RoomDto>(createRes);
 
         var deleteRes = await Http.DeleteAsync($"{Endpoint}/{created!.Id}");

@@ -39,8 +39,10 @@ public class CategoryController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is mandatory." });
 
-        var dto = await _handler.CreateAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
+        var (dto, error) = await _handler.CreateAsync(request, cancellationToken);
+        if (error is not null) return BadRequest(new { message = error });
+
+        return CreatedAtAction(nameof(GetById), new { id = dto!.Id }, dto);
     }
 
     [HttpPut("{id:guid}")]
@@ -48,7 +50,8 @@ public class CategoryController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is mandatory." });
 
-        var success = await _handler.UpdateAsync(id, request, cancellationToken);
+        var (success, error) = await _handler.UpdateAsync(id, request, cancellationToken);
+        if (error is not null) return BadRequest(new { message = error });
         if (!success) return NotFound(new { message = $"Category with ID '{id}' was not found." });
 
         return NoContent();

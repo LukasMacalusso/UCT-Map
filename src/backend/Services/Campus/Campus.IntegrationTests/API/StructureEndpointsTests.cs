@@ -13,6 +13,7 @@ public class StructureEndpointsTests : ApiTestBase
 {
     private const string Endpoint = "/api/campus/structures";
     private const string CampusEndpoint = "/api/campus/campuses";
+    private const string GroupEndpoint = "/api/campus/category-groups";
     private const string CategoryEndpoint = "/api/campus/categories";
 
     public StructureEndpointsTests(PostgreSqlFixture fixture) : base(fixture) { }
@@ -22,7 +23,10 @@ public class StructureEndpointsTests : ApiTestBase
         var campusRes = await Http.PostAsync(CampusEndpoint, JsonBody(new CreateCampusDto("Campus For Structure", "Dir", 0, 0)));
         var campus = await ReadJsonAsync<CampusDto>(campusRes);
 
-        var catRes = await Http.PostAsync(CategoryEndpoint, JsonBody(new CreateCategoryDto("Categoria For Structure", "icon", "desc")));
+        var groupRes = await Http.PostAsync(GroupEndpoint, JsonBody(new CreateCategoryGroupDto("Grupo For Structure")));
+        var group = await ReadJsonAsync<CategoryGroupDto>(groupRes);
+
+        var catRes = await Http.PostAsync(CategoryEndpoint, JsonBody(new CreateCategoryDto(group!.Id, "Categoria For Structure", "icon", "desc")));
         var cat = await ReadJsonAsync<CategoryDto>(catRes);
 
         return (campus!.Id, cat!.Id);

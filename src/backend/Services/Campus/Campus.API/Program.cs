@@ -17,6 +17,7 @@ builder.Services.AddDbContext<CampusDbContext>(options =>
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<CampusHandler>();
 builder.Services.AddScoped<BuildingHandler>();
+builder.Services.AddScoped<CategoryGroupHandler>();
 builder.Services.AddScoped<CategoryHandler>();
 builder.Services.AddScoped<RoomHandler>();
 builder.Services.AddScoped<StructureHandler>();

@@ -11,23 +11,32 @@ public class Campus
     public string Address { get; private set; } = string.Empty;
 
     public Coordinate Coordinates { get; private set; } = null!;
+    public decimal Zoom { get; private set; }
+    public decimal Pitch { get; private set; }
+    public decimal Bearing { get; private set; }
 
     public ICollection<Building> Buildings { get; private set; } = new List<Building>();
     public ICollection<Structure> Structures { get; private set; } = new List<Structure>();
 
-    public Campus(string name, string address, Coordinate coordinates)
+    public Campus(string name, string address, Coordinate coordinates, decimal zoom = 0m, decimal pitch = 0m, decimal bearing = 0m)
     {
         this.Id = Guid.NewGuid();
         this.Name = name;
         this.Address = address;
         this.Coordinates = coordinates;
+        this.Zoom = zoom;
+        this.Pitch = pitch;
+        this.Bearing = bearing;
     }
 
-    public void Update(string name, string address, Coordinate coordinates)
+    public void Update(string name, string address, Coordinate coordinates, decimal zoom = 0m, decimal pitch = 0m, decimal bearing = 0m)
     {
         this.Name = name;
         this.Address = address;
         this.Coordinates = coordinates;
+        this.Zoom = zoom;
+        this.Pitch = pitch;
+        this.Bearing = bearing;
     }
 
     public void UpdateLocation(Coordinate coordinates)

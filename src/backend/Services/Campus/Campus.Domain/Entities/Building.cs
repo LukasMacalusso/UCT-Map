@@ -10,46 +10,50 @@ public class Building
     public Guid CampusId { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public int FloorsCount { get; private set; }
-    public string Schedule { get; private set; } = string.Empty;
-    public List<string> Services { get; private set; } = new();
+    public TimeOnly? OpenTime { get; private set; }
+    public TimeOnly? CloseTime { get; private set; }
+    public string? Services { get; private set; }
 
     public Coordinate Coordinates { get; private set; } = null!;
 
     public Campus Campus { get; private set; } = null!;
     public ICollection<Room> Rooms { get; private set; } = new List<Room>();
 
-    public Building(string name, int floorsCount, Coordinate coordinates, Campus campus, string schedule = "", List<string>? services = null)
+    public Building(string name, int floorsCount, Coordinate coordinates, Campus campus, TimeOnly? openTime = null, TimeOnly? closeTime = null, string? services = null)
     {
         this.Id = Guid.NewGuid();
         this.Name = name;
         this.FloorsCount = floorsCount;
         this.Coordinates = coordinates;
-        this.Schedule = schedule ?? string.Empty;
-        this.Services = services ?? new List<string>();
+        this.OpenTime = openTime;
+        this.CloseTime = closeTime;
+        this.Services = services;
 
         this.Campus = campus;
         this.CampusId = campus.Id;
     }
 
-    public Building(string name, int floorsCount, Coordinate coordinates, Guid campusId, string schedule = "", List<string>? services = null)
+    public Building(string name, int floorsCount, Coordinate coordinates, Guid campusId, TimeOnly? openTime = null, TimeOnly? closeTime = null, string? services = null)
     {
         this.Id = Guid.NewGuid();
         this.Name = name;
         this.FloorsCount = floorsCount;
         this.Coordinates = coordinates;
         this.CampusId = campusId;
-        this.Schedule = schedule ?? string.Empty;
-        this.Services = services ?? new List<string>();
+        this.OpenTime = openTime;
+        this.CloseTime = closeTime;
+        this.Services = services;
     }
 
-    public void Update(string name, int floorsCount, Coordinate coordinates, Guid campusId, string schedule = "", List<string>? services = null)
+    public void Update(string name, int floorsCount, Coordinate coordinates, Guid campusId, TimeOnly? openTime = null, TimeOnly? closeTime = null, string? services = null)
     {
         this.Name = name;
         this.FloorsCount = floorsCount;
         this.Coordinates = coordinates;
         this.CampusId = campusId;
-        this.Schedule = schedule ?? string.Empty;
-        this.Services = services ?? new List<string>();
+        this.OpenTime = openTime;
+        this.CloseTime = closeTime;
+        this.Services = services;
     }
 
     public void UpdateLocation(Coordinate coordinates)

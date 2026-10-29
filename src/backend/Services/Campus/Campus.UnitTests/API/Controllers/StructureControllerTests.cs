@@ -196,7 +196,7 @@ public class StructureControllerTests
         };
         var categories = new List<Category>
         {
-            new("Recreación", "icon", "desc")
+            new("Recreación", "icon", "desc", Guid.NewGuid())
         };
         // Reflection or setter trick for Category Id if protected, or category mock
         typeof(Category).GetProperty("Id")?.SetValue(categories[0], categoryId);
