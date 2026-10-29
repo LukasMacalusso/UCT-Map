@@ -58,18 +58,17 @@ class AppRoutes {
       authRepository: authRepository,
     ) as MaterialPageRoute<dynamic>;
     const protected = {
-      home,
-      professors,
       reports,
       reportDetail,
+      tickets,
+      createTicket,
+      ticketDetail,
       lostFound,
       lostObjects,
       createLostObject,
       lostItemDetail,
-      savedPlaces,
       myReports,
       myLostItems,
-      profileSettings,
     };
     if (!protected.contains(settings.name)) return route;
     return MaterialPageRoute<dynamic>(
