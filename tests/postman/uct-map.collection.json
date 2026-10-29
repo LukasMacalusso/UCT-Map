@@ -11,7 +11,7 @@
         "type": "text/javascript",
         "exec": [
           "const reqName = pm.info.requestName || '';",
-          "const isSecurityNegativeTest = reqName.includes('Without Token') || reqName.includes('Malformed Token');",
+          "const isSecurityNegativeTest = reqName.includes('Without Token') || reqName.includes('Malformed Token') || reqName.includes('No Auth');",
           "if (!isSecurityNegativeTest && !pm.environment.get('jwt_token')) {",
           "    pm.sendRequest({",
           "        url: pm.environment.get('baseUrl') + '/api/identity/login',",
@@ -40,19 +40,27 @@
       "description": "Tests public routing, perimeter security, and token issuance.",
       "item": [
         {
-          "name": "01. Public Route - Check Identity Service (No Auth)",
+          "name": "01. Public Route - Register E2E User (No Auth)",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Accept",
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{test_name}}\",\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+            },
             "url": {
-              "raw": "{{baseUrl}}/api/identity",
+              "raw": "{{baseUrl}}/api/identity/register",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "identity"]
+              "path": ["api", "identity", "register"]
             }
           },
           "event": [
@@ -61,11 +69,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 for public route\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test(\"Response is an array of users\", function () {",
-                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "pm.test(\"Status code is 201 or 400 for public register route\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
                   "});"
                 ]
               }

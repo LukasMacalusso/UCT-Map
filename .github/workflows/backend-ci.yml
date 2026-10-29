@@ -5,6 +5,8 @@ on:
     branches: [ "main", "taller-2" ]
     paths:
       - 'src/backend/**'
+      - 'tests/postman/**'
+      - 'docker-compose.yml'
       - '.github/workflows/**'
   pull_request:
     branches: [ "main", "taller-2" ]
@@ -57,3 +59,55 @@ jobs:
           indicators: true
           output: both
           thresholds: '75 90'
+
+  e2e-gateway-tests:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Start Backend and API Gateway Containers
+        run: |
+          docker compose up -d --build postgres mongodb identity-api campus-api incident-api schedule-api api-gateway
+
+      - name: Wait for API Gateway and Seed E2E User
+        run: |
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/campus/campuses || true)
+            if [ "$STATUS" = "401" ]; then
+              echo "API Gateway is up and enforcing auth!"
+              break
+            fi
+            echo "Waiting for API Gateway... ($i/30)"
+            sleep 2
+          done
+
+          for i in {1..30}; do
+            REG_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/identity/register \
+              -H "Content-Type: application/json" \
+              -d '{"name":"E2E Test User","email":"e2e_test@uct.cl","password":"Password123!"}' || true)
+            if [ "$REG_STATUS" = "201" ] || [ "$REG_STATUS" = "400" ]; then
+              echo "Identity service is ready and E2E user is seeded ($REG_STATUS)!"
+              break
+            fi
+            echo "Waiting for Identity Service migrations... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run Newman E2E Tests
+        run: make test-e2e
+
+      - name: Dump Docker Logs on Failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop and Clean Containers
+        if: always()
+        run: docker compose down -v
