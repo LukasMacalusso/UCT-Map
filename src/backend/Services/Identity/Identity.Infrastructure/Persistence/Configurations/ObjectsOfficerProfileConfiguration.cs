@@ -6,7 +6,8 @@ namespace Identity.Infrastructure.Persistence.Configurations;
 
 public class ObjectsOfficerProfileConfiguration : IEntityTypeConfiguration<ObjectsOfficerProfile>
 {
-    public void Configure(EntityTypeBuilder<ObjectsOfficerProfile> builder) {
+    public void Configure(EntityTypeBuilder<ObjectsOfficerProfile> builder)
+    {
         builder.ToTable("ObjectsOfficerProfiles");
         builder.HasOne<User>().WithMany().HasForeignKey(profile => profile.UserId);
     }

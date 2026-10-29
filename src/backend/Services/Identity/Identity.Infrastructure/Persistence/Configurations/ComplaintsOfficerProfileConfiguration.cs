@@ -6,7 +6,8 @@ namespace Identity.Infrastructure.Persistence.Configurations;
 
 public class ComplaintsOfficerProfileConfiguration : IEntityTypeConfiguration<ComplaintsOfficerProfile>
 {
-    public void Configure(EntityTypeBuilder<ComplaintsOfficerProfile> builder) {
+    public void Configure(EntityTypeBuilder<ComplaintsOfficerProfile> builder)
+    {
         builder.ToTable("ComplaintsOfficerProfiles");
         builder.HasOne<User>().WithMany().HasForeignKey(profile => profile.UserId);
     }
