@@ -72,6 +72,24 @@ public class MeetingHandler
         }
     }
 
+    public async Task<ErrorOr<MeetingDto>> CancelAsync(Guid id, Guid requesterRefId, CancellationToken cancellationToken)
+    {
+        var meeting = await _repository.GetByIdAsync(id, cancellationToken);
+        if (meeting is null) return Error.NotFound(description: $"Meeting '{id}' not found.");
+
+        if (requesterRefId != meeting.StudentRefId && requesterRefId != meeting.TeacherRefId)
+            return Error.Forbidden(description: "Only the student or the teacher of the meeting can cancel it.");
+
+        try
+        {
+            meeting.Cancel();
+        }
+        catch (InvalidOperationException ex) { return Error.Conflict(description: ex.Message); }
+
+        await _repository.UpdateAsync(meeting, cancellationToken);
+        return MeetingDto.FromEntity(meeting);
+    }
+
     private static string? DescribeConflict(Meeting meeting, IReadOnlyList<Meeting> overlapping)
     {
         if (overlapping.Any(m => m.TeacherRefId == meeting.TeacherRefId))

@@ -8,6 +8,8 @@ public class FakeMeetingRepository : IMeetingRepository
 {
     public List<Meeting> Items { get; } = [];
 
+    public List<Guid> UpdatedIds { get; } = [];
+
     public Task<Meeting?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(Items.FirstOrDefault(m => m.Id == id));
@@ -59,6 +61,12 @@ public class FakeMeetingRepository : IMeetingRepository
     public Task AddAsync(Meeting meeting, CancellationToken cancellationToken = default)
     {
         Items.Add(meeting);
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateAsync(Meeting meeting, CancellationToken cancellationToken = default)
+    {
+        UpdatedIds.Add(meeting.Id);
         return Task.CompletedTask;
     }
 

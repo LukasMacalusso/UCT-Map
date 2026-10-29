@@ -33,4 +33,6 @@ public interface IMeetingRepository
         CancellationToken cancellationToken = default);
 
     Task AddAsync(Meeting meeting, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(Meeting meeting, CancellationToken cancellationToken = default);
 }
