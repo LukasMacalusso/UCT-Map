@@ -101,6 +101,13 @@
                 "exec": [
                   "pm.test(\"Gateway rejects unauthenticated request with 401\", function () {",
                   "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Gateway returns standardized ProblemDetails JSON on 401\", function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql(401);",
+                  "    pm.expect(body.title).to.eql(\"Unauthorized\");",
+                  "    pm.expect(body.detail).to.be.a(\"string\");",
+                  "    pm.expect(body.instance).to.eql(\"/api/campus/campuses\");",
                   "});"
                 ]
               }
@@ -135,6 +142,46 @@
                 "exec": [
                   "pm.test(\"Gateway rejects malformed JWT with 401\", function () {",
                   "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Gateway returns standardized ProblemDetails JSON on malformed JWT\", function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql(401);",
+                  "    pm.expect(body.title).to.eql(\"Unauthorized\");",
+                  "    pm.expect(body.detail).to.be.a(\"string\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03b. Unknown Route - Unmapped Gateway Path (No Auth, Expect 404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/unknown/resource",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "unknown", "resource"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Gateway returns 404 ProblemDetails for unmapped route\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql(404);",
+                  "    pm.expect(body.title).to.eql(\"Not Found\");",
+                  "    pm.expect(body.instance).to.eql(\"/api/unknown/resource\");",
                   "});"
                 ]
               }
