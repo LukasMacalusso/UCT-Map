@@ -56,6 +56,22 @@ public class FakeMeetingRepository : IMeetingRepository
         return Task.FromResult(result);
     }
 
+    public Task<IReadOnlyList<Meeting>> GetActiveInRoomsAsync(
+        IReadOnlyCollection<Guid> structureRefIds,
+        DateTime start,
+        DateTime end,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<Meeting> result = Items
+            .Where(m => m.Status != MeetingStatus.Cancelled)
+            .Where(m => m.StructureRefId != null && structureRefIds.Contains(m.StructureRefId.Value))
+            .Where(m => m.ScheduledAt < end && m.EndsAt > start)
+            .OrderBy(m => m.ScheduledAt)
+            .ToList();
+
+        return Task.FromResult(result);
+    }
+
     public Task AddAsync(Meeting meeting, CancellationToken cancellationToken = default)
     {
         Items.Add(meeting);
