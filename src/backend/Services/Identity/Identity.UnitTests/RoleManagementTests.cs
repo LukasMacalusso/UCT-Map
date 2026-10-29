@@ -115,6 +115,22 @@ public sealed class RoleManagementTests
         }
     }
 
+    [Fact]
+    public void IdentityEndpoints_RequireAuthenticationExceptLoginAndRegister()
+    {
+        var controller = typeof(IdentityController);
+        var authorize = Assert.Single(controller.GetCustomAttributes(typeof(AuthorizeAttribute), true));
+
+        Assert.Null(controller.GetMethod(nameof(IdentityController.Login))?
+            .GetCustomAttributes(typeof(AuthorizeAttribute), true)
+            .SingleOrDefault());
+        Assert.NotEmpty(controller.GetMethod(nameof(IdentityController.Login))?
+            .GetCustomAttributes(typeof(AllowAnonymousAttribute), true) ?? []);
+        Assert.NotEmpty(controller.GetMethod(nameof(IdentityController.Register))?
+            .GetCustomAttributes(typeof(AllowAnonymousAttribute), true) ?? []);
+        Assert.NotNull(authorize);
+    }
+
     private static ServiceProvider CreateServices()
     {
         var services = new ServiceCollection();

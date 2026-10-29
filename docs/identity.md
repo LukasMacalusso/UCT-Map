@@ -10,8 +10,9 @@ service health checks.
 ## 🔒 Authentication
 
 The login endpoint returns a JWT for the authenticated user. The current API
-configuration does not register JWT authentication or authorization middleware,
-so the endpoints documented below do not require an `Authorization` header.
+configuration validates JWT authentication and authorization middleware. Except
+for login and registration, the endpoints below require an `Authorization`
+header with a valid JWT.
 The token includes the user's role in the explicit `role` claim. For example:
 
 ```json
@@ -39,7 +40,7 @@ authenticate until an administrator reactivates the account.
 ### 📌 1.1 Get All Users
 
 - **Route**: `GET /api/identity`
-- **Access**: Public
+- **Access**: Authenticated users
 - **Description**: Returns all registered users.
 
 **📤 Success Response (200 OK)**
@@ -130,7 +131,7 @@ The JWT returned in `token` includes the authenticated user's role in the
 ### 📌 1.4 Get User by ID
 
 - **Route**: `GET /api/identity/{userId}`
-- **Access**: Public
+- **Access**: Authenticated users
 - **Description**: Returns the user identified by `userId`.
 
 **📥 Route Parameters**
