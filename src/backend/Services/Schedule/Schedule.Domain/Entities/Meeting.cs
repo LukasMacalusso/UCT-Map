@@ -37,6 +37,17 @@ public class Meeting
         this.Status = MeetingStatus.Pending;
     }
 
+    public void Cancel()
+    {
+        if (this.Status is MeetingStatus.Cancelled or MeetingStatus.Completed)
+        {
+            throw new InvalidOperationException(
+                $"A {this.Status.ToString().ToLowerInvariant()} meeting cannot be cancelled.");
+        }
+
+        this.Status = MeetingStatus.Cancelled;
+    }
+
     protected Meeting() { }
 }
 
