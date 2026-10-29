@@ -10,11 +10,13 @@ namespace Identity.API.Controllers;
 
 [ApiController]
 [Route("api/identity")]
+[Authorize]
 public class IdentityController(
     LoginHandler loginUseCase,
     RegisterUserHandler registerUserUseCase,
     GetUserByIdHandler getUserByIdUseCase) : ControllerBase
 {
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(
         [FromBody] LoginRequest request,
@@ -30,6 +32,7 @@ public class IdentityController(
         );
     }
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register(
         [FromBody] RegisterRequest request,
