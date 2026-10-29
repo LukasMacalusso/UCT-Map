@@ -10,17 +10,15 @@ public class Room
 
     public string Name { get; private set; } = string.Empty;
     public int Floor { get; private set; }
-    public string? Number { get; private set; }
 
     public Building Building { get; private set; } = null!;
     public Category Category { get; private set; } = null!;
 
-    public Room(string name, int floor, string? number, Building building, Category category)
+    public Room(string name, int floor, Building building, Category category)
     {
         this.Id = Guid.NewGuid();
         this.Name = name;
         this.Floor = floor;
-        this.Number = number;
 
         this.Building = building;
         this.BuildingId = building.Id;
@@ -29,21 +27,19 @@ public class Room
         this.CategoryId = category.Id;
     }
 
-    public Room(string name, int floor, string? number, Guid buildingId, Guid categoryId)
+    public Room(string name, int floor, Guid buildingId, Guid categoryId)
     {
         this.Id = Guid.NewGuid();
         this.Name = name;
         this.Floor = floor;
-        this.Number = number;
         this.BuildingId = buildingId;
         this.CategoryId = categoryId;
     }
 
-    public void Update(string name, int floor, string? number, Guid buildingId, Guid categoryId)
+    public void Update(string name, int floor, Guid buildingId, Guid categoryId)
     {
         this.Name = name;
         this.Floor = floor;
-        this.Number = number;
         this.BuildingId = buildingId;
         this.CategoryId = categoryId;
     }

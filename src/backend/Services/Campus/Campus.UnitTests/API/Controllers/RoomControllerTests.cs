@@ -38,7 +38,7 @@ public class RoomControllerTests
     {
         var rooms = new List<Room>
         {
-            new("Sala 101", 1, "101", Guid.NewGuid(), Guid.NewGuid())
+            new("101", 1, Guid.NewGuid(), Guid.NewGuid())
         };
         _repository.GetAllAsync(Arg.Any<Expression<Func<Room, bool>>>(), Arg.Any<CancellationToken>()).Returns(rooms);
 
@@ -72,11 +72,11 @@ public class RoomControllerTests
     {
         var rooms = new List<Room>
         {
-            new("Laboratorio Química", 1, "LQ-1", Guid.NewGuid(), Guid.NewGuid())
+            new("LQ-1", 1, Guid.NewGuid(), Guid.NewGuid())
         };
         _repository.GetAllAsync(Arg.Any<Expression<Func<Room, bool>>>(), Arg.Any<CancellationToken>()).Returns(rooms);
 
-        var result = await _controller.Search("Química", CancellationToken.None);
+        var result = await _controller.Search("LQ", CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var dtos = Assert.IsAssignableFrom<IEnumerable<RoomDto>>(okResult.Value);
@@ -89,7 +89,7 @@ public class RoomControllerTests
         var buildingId = Guid.NewGuid();
         var rooms = new List<Room>
         {
-            new("Sala 201", 2, "201", buildingId, Guid.NewGuid())
+            new("201", 2, buildingId, Guid.NewGuid())
         };
         _repository.GetAllAsync(Arg.Any<Expression<Func<Room, bool>>>(), Arg.Any<CancellationToken>()).Returns(rooms);
 
@@ -103,14 +103,14 @@ public class RoomControllerTests
     [Fact]
     public async Task GetById_WhenFound_ShouldReturnOk()
     {
-        var room = new Room("Sala 1", 1, "1", Guid.NewGuid(), Guid.NewGuid());
+        var room = new Room("1", 1, Guid.NewGuid(), Guid.NewGuid());
         _repository.GetByIdAsync(room.Id, Arg.Any<CancellationToken>()).Returns(room);
 
         var result = await _controller.GetById(room.Id, CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(result);
         var dto = Assert.IsType<RoomDto>(okResult.Value);
-        Assert.Equal("Sala 1", dto.Name);
+        Assert.Equal("1", dto.Name);
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public class RoomControllerTests
     [Fact]
     public async Task Create_WhenNameIsEmpty_ShouldReturnBadRequest()
     {
-        var request = new CreateRoomDto(Guid.NewGuid(), Guid.NewGuid(), "", 1, "1");
+        var request = new CreateRoomDto(Guid.NewGuid(), Guid.NewGuid(), "", 1);
 
         var result = await _controller.Create(request, CancellationToken.None);
 
@@ -138,7 +138,7 @@ public class RoomControllerTests
     [Fact]
     public async Task Create_WhenBuildingOrCategoryNotFound_ShouldReturnProblem404()
     {
-        var request = new CreateRoomDto(Guid.NewGuid(), Guid.NewGuid(), "Sala 1", 1, "1");
+        var request = new CreateRoomDto(Guid.NewGuid(), Guid.NewGuid(), "1", 1);
         _buildingRepository.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>()).Returns(false);
 
         var result = await _controller.Create(request, CancellationToken.None);
@@ -152,7 +152,7 @@ public class RoomControllerTests
     {
         var buildingId = Guid.NewGuid();
         var categoryId = Guid.NewGuid();
-        var request = new CreateRoomDto(buildingId, categoryId, "Sala 1", 1, "1");
+        var request = new CreateRoomDto(buildingId, categoryId, "1", 1);
 
         _buildingRepository.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
         _categoryRepository.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
@@ -161,13 +161,13 @@ public class RoomControllerTests
 
         var created = Assert.IsType<CreatedAtActionResult>(result);
         var dto = Assert.IsType<RoomDto>(created.Value);
-        Assert.Equal("Sala 1", dto.Name);
+        Assert.Equal("1", dto.Name);
     }
 
     [Fact]
     public async Task Update_WhenNameIsEmpty_ShouldReturnBadRequest()
     {
-        var request = new UpdateRoomDto(Guid.NewGuid(), Guid.NewGuid(), "", 1, "1");
+        var request = new UpdateRoomDto(Guid.NewGuid(), Guid.NewGuid(), "", 1);
 
         var result = await _controller.Update(Guid.NewGuid(), request, CancellationToken.None);
 
@@ -180,7 +180,7 @@ public class RoomControllerTests
         var id = Guid.NewGuid();
         _repository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((Room?)null);
 
-        var request = new UpdateRoomDto(Guid.NewGuid(), Guid.NewGuid(), "Sala", 1, "1");
+        var request = new UpdateRoomDto(Guid.NewGuid(), Guid.NewGuid(), "1", 1);
 
         var result = await _controller.Update(id, request, CancellationToken.None);
 
@@ -193,13 +193,13 @@ public class RoomControllerTests
     {
         var buildingId = Guid.NewGuid();
         var categoryId = Guid.NewGuid();
-        var room = new Room("Antigua", 1, "1", buildingId, categoryId);
+        var room = new Room("1", 1, buildingId, categoryId);
 
         _repository.GetByIdAsync(room.Id, Arg.Any<CancellationToken>()).Returns(room);
         _buildingRepository.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
         _categoryRepository.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
 
-        var request = new UpdateRoomDto(buildingId, categoryId, "Nueva", 2, "2");
+        var request = new UpdateRoomDto(buildingId, categoryId, "2", 2);
 
         var result = await _controller.Update(room.Id, request, CancellationToken.None);
 
@@ -221,7 +221,7 @@ public class RoomControllerTests
     [Fact]
     public async Task Delete_WhenValid_ShouldReturnNoContent()
     {
-        var room = new Room("Borrar", 1, null, Guid.NewGuid(), Guid.NewGuid());
+        var room = new Room("Borrar", 1, Guid.NewGuid(), Guid.NewGuid());
         _repository.GetByIdAsync(room.Id, Arg.Any<CancellationToken>()).Returns(room);
 
         var result = await _controller.Delete(room.Id, CancellationToken.None);

@@ -8,6 +8,10 @@ public class StructureConfiguration : IEntityTypeConfiguration<Structure>
 {
     public void Configure(EntityTypeBuilder<Structure> builder)
     {
+        builder.Property(s => s.Name)
+               .IsRequired()
+               .HasMaxLength(100);
+
         builder.OwnsOne(s => s.Coordinates);
     }
 }

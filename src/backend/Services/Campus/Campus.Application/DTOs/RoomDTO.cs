@@ -7,22 +7,19 @@ public record RoomDto(
     Guid BuildingId,
     Guid CategoryId,
     string Name,
-    int Floor,
-    string? Number
+    int Floor
 );
 
 public record CreateRoomDto(
     Guid BuildingId,
     Guid CategoryId,
     string Name,
-    int Floor,
-    string? Number
+    int Floor
 );
 
 public record UpdateRoomDto(
     Guid BuildingId,
     Guid CategoryId,
     string Name,
-    int Floor,
-    string? Number
+    int Floor
 );
