@@ -1,11 +1,11 @@
 import 'dart:convert';
 
-import 'package:flutter/services.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uct_map/core/network/api_client_provider.dart';
 import 'package:uct_map/domain/repositories/auth_repository.dart';
+import 'package:uct_map/presentation/screens/map/map_screen.dart';
 import 'package:uct_map/main.dart';
+import 'helpers/mock_mapbox_platform.dart';
 
 class _OkRepo implements AuthRepository {
   @override
@@ -26,17 +26,9 @@ class _OkRepo implements AuthRepository {
   }
 }
 
-void _mockSecureStorage() {
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(
-    const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-    (call) async => null,
-  );
-}
-
 void main() {
   testWidgets('Smoke test de inicio de la aplicación UCT Map', (WidgetTester tester) async {
-    _mockSecureStorage();
+    setupMockMapboxPlatform();
     await tester.pumpWidget(UctMapApp(authRepository: _OkRepo()));
     await tester.pump();
 
@@ -56,7 +48,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.byType(MapScreen), findsOneWidget);
 
     await ApiClientProvider.session.signOut();
   });

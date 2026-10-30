@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-import 'package:uct_map/core/network/api_exception.dart';
 import 'package:uct_map/core/network/problem_details.dart';
 import 'package:uct_map/data/datasources/reports_remote_ds.dart';
 import 'package:uct_map/data/models/report_dto.dart';
@@ -437,6 +436,7 @@ void main() {
       expect(submitBtn, findsOneWidget);
 
       // Intentar enviar vacío
+      await tester.ensureVisible(submitBtn);
       await tester.tap(submitBtn);
       await tester.pumpAndSettle();
 
@@ -451,6 +451,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Enviar
+      await tester.ensureVisible(submitBtn);
       await tester.tap(submitBtn);
       await tester.pumpAndSettle();
 
@@ -492,7 +493,7 @@ void main() {
 
     testWidgets('TicketsScreen renderiza listado y filtros', (tester) async {
       final fakeRepo = _FakeReportsRepository();
-      fakeRepo.mockResponse = const PaginatedReportsResponse(
+      fakeRepo.mockResponse = PaginatedReportsResponse(
         items: [
           Ticket(
             id: 'rep-99',
@@ -500,7 +501,7 @@ void main() {
             ticketType: TicketStatus.pending,
             isActive: true,
             reportedAt: DateTime(2026, 10, 28),
-            complaintDetails: ComplaintDetails(
+            complaintDetails: const ComplaintDetails(
               title: 'Reclamo por cargador',
               description: 'Cargador blanco de celular',
               status: ComplaintStatus.claim,
@@ -585,7 +586,7 @@ class _FakeReportsRepository implements ReportsRepository {
 
   @override
   Future<Ticket> getReportById(String id) async {
-    return const Ticket(
+    return Ticket(
       id: 'fake-id',
       structureRefId: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
       ticketType: TicketStatus.pending,
