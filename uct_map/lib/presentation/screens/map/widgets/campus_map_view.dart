@@ -37,7 +37,6 @@ class CampusMapViewState extends State<CampusMapView> {
   static const _campusTextLayerId = 'uct-campus-icon';
 
   static const _blue = 0xFF003865;
-  static const _yellow = 0xFFEAA221;
 
   void focusOnBuilding(Building building) {
     final campus = widget.campus;
