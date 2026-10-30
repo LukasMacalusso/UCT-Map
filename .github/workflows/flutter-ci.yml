@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - taller-4
+      - TI4-94
     paths:
       - 'uct_map/**'
       - '.github/workflows/flutter-ci.yml'
@@ -12,6 +13,7 @@ on:
     branches:
       - main
       - taller-4
+      - TI4-94
   workflow_dispatch:
 
 concurrency:
@@ -87,12 +89,18 @@ jobs:
       - name: Run Tests with Coverage
         run: flutter test --coverage
 
-      - name: Upload Coverage to Artifacts
+      - name: Generate JaCoCo XML Coverage Report & Verify 90% Threshold
+        if: always()
+        run: dart run tool/generate_jacoco_report.dart
+
+      - name: Upload JaCoCo & LCOV Coverage to Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: lcov-coverage
-          path: uct_map/coverage/lcov.info
+          name: jacoco-coverage-report
+          path: |
+            uct_map/coverage/jacoco.xml
+            uct_map/coverage/lcov.info
           if-no-files-found: ignore
 
       - name: Generate Code Coverage Summary
@@ -105,13 +113,17 @@ jobs:
               END {
                 if (lf > 0) {
                   pct = (lh / lf) * 100
-                  print "### 📊 Cobertura de Código (Unit & Widget Tests)" >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  target = 90.0
+                  status = (pct >= target) ? "✅ Cumplido (>= 90%)" : "⚠️ En progreso (< 90%)"
+                  print "### 📊 Reporte de Cobertura JaCoCo (TI4-94)" >> ENVIRON["GITHUB_STEP_SUMMARY"]
                   print "" >> ENVIRON["GITHUB_STEP_SUMMARY"]
                   print "| Métrica | Valor |" >> ENVIRON["GITHUB_STEP_SUMMARY"]
                   print "|---|---|" >> ENVIRON["GITHUB_STEP_SUMMARY"]
                   printf "| **Líneas evaluadas** | %d |\n", lf >> ENVIRON["GITHUB_STEP_SUMMARY"]
                   printf "| **Líneas cubiertas** | %d |\n", lh >> ENVIRON["GITHUB_STEP_SUMMARY"]
-                  printf "| **Porcentaje de cobertura** | **%.2f%%** |\n", pct >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  printf "| **Porcentaje actual** | **%.2f%%** |\n", pct >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  printf "| **Umbral objetivo** | **%.2f%%** |\n", target >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  printf "| **Estado JaCoCo** | %s |\n", status >> ENVIRON["GITHUB_STEP_SUMMARY"]
                 }
               }
             ' coverage/lcov.info
