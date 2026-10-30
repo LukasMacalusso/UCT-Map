@@ -26,8 +26,9 @@ jobs:
 
       - name: Verify PR Title (Conventional Commits)
         id: check-pr-title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          PR_TITLE="${{ github.event.pull_request.title }}"
           echo "Evaluando título del PR: '$PR_TITLE'"
           
           # Si se corre con workflow_dispatch, usar un título de prueba o saltar
@@ -92,11 +93,12 @@ jobs:
 
       - name: Verify PR Description Not Empty
         id: check-pr-body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BODY="${{ github.event.pull_request.body }}"
             # Limpiar espacios en blanco
-            CLEANED_BODY=$(echo "$BODY" | tr -d '[:space:]')
+            CLEANED_BODY=$(echo "$PR_BODY" | tr -d '[:space:]')
             if [ ${#CLEANED_BODY} -lt 15 ]; then
               echo "⚠️ ADVERTENCIA: La descripción del PR está vacía o es muy corta."
               echo "Por favor utiliza la plantilla .github/pull_request_template.md."
