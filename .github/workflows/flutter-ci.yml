@@ -6,6 +6,7 @@ on:
       - main
       - taller-4
       - TI4-94
+      - TI4-98
     paths:
       - 'uct_map/**'
       - '.github/workflows/flutter-ci.yml'
@@ -14,6 +15,7 @@ on:
       - main
       - taller-4
       - TI4-94
+      - TI4-98
   workflow_dispatch:
 
 concurrency:

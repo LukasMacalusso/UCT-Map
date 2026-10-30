@@ -1,0 +1,14 @@
+# Code Owners para UCT-Map
+# Se requiere la revisión y aprobación de al menos un propietario de código para fusionar cambios.
+
+# Responsables globales de todo el repositorio
+* @LukasMacalusso @h1mee3 @Canteroxx @patitojavi
+
+# Workflows y configuración de CI/CD
+/.github/ @LukasMacalusso @h1mee3
+
+# Documentación del proyecto y políticas de merge
+/docs/ @LukasMacalusso @h1mee3
+
+# Código de la aplicación móvil (Flutter)
+/uct_map/ @LukasMacalusso @h1mee3 @Canteroxx @patitojavi
