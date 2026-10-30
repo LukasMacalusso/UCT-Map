@@ -436,6 +436,7 @@ void main() {
       expect(submitBtn, findsOneWidget);
 
       // Intentar enviar vacío
+      await tester.ensureVisible(submitBtn);
       await tester.tap(submitBtn);
       await tester.pumpAndSettle();
 
@@ -450,6 +451,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Enviar
+      await tester.ensureVisible(submitBtn);
       await tester.tap(submitBtn);
       await tester.pumpAndSettle();
 

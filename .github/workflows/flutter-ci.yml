@@ -95,18 +95,27 @@ jobs:
           path: uct_map/coverage/lcov.info
           if-no-files-found: ignore
 
-      - name: Code Coverage Summary Report
+      - name: Generate Code Coverage Summary
         if: always()
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        with:
-          filename: 'uct_map/coverage/lcov.info'
-          badge: true
-          fail_below_min: false
-          format: markdown
-          hide_branch_rate: false
-          hide_complexity: true
-          indicators: true
-          output: both
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            awk -F':' '
+              /^LF:/ { lf += $2 }
+              /^LH:/ { lh += $2 }
+              END {
+                if (lf > 0) {
+                  pct = (lh / lf) * 100
+                  print "### 📊 Cobertura de Código (Unit & Widget Tests)" >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  print "" >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  print "| Métrica | Valor |" >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  print "|---|---|" >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  printf "| **Líneas evaluadas** | %d |\n", lf >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  printf "| **Líneas cubiertas** | %d |\n", lh >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  printf "| **Porcentaje de cobertura** | **%.2f%%** |\n", pct >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                }
+              }
+            ' coverage/lcov.info
+          fi
 
   build-web:
     name: Build Web App

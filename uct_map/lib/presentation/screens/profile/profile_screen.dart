@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../application/session/session_controller.dart';
 import '../../../domain/entities/user_role.dart';
-import '../login/session_required_view.dart';
 import 'saved_places_screen.dart';
 import 'my_reports_screen.dart';
 import 'my_lost_items_screen.dart';
@@ -444,10 +443,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => SessionRequiredView(
-                    builder: (_) => MyReportsScreen(
-                      onNavigateToTab: widget.onNavigateToTab,
-                    ),
+                  builder: (_) => MyReportsScreen(
+                    onNavigateToTab: widget.onNavigateToTab,
                   ),
                 ),
               );
@@ -474,10 +471,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => SessionRequiredView(
-                    builder: (_) => MyLostItemsScreen(
-                      onNavigateToTab: widget.onNavigateToTab,
-                    ),
+                  builder: (_) => MyLostItemsScreen(
+                    onNavigateToTab: widget.onNavigateToTab,
                   ),
                 ),
               );

@@ -444,6 +444,7 @@ void main() {
       expect(submitFinder, findsOneWidget);
 
       // Intentar enviar vacío
+      await tester.ensureVisible(submitFinder);
       await tester.tap(submitFinder);
       await tester.pumpAndSettle();
 
@@ -461,6 +462,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Enviar formulario válido
+      await tester.ensureVisible(submitFinder);
       await tester.tap(submitFinder);
       await tester.pumpAndSettle();
 
