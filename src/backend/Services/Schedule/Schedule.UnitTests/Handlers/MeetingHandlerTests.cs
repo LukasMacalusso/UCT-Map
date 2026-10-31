@@ -2,6 +2,7 @@ using ErrorOr;
 using Schedule.Application.DTOs;
 using Schedule.Application.Handlers;
 using Schedule.Domain.Entities;
+using Schedule.Domain.Enums;
 using Schedule.UnitTests.Fakes;
 
 namespace Schedule.UnitTests.Handlers;
@@ -184,5 +185,68 @@ public class MeetingHandlerTests
         Assert.True(result.IsError);
         Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
         Assert.Empty(_repository.Items);
+    }
+
+    [Fact]
+    public async Task CancelAsync_WhenRequesterIsTheStudent_CancelsAndSaves()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30);
+        _repository.Items.Add(meeting);
+
+        var result = await _handler.CancelAsync(meeting.Id, meeting.StudentRefId, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("Cancelled", result.Value.Status);
+        Assert.Equal(MeetingStatus.Cancelled, meeting.Status);
+        Assert.Contains(meeting.Id, _repository.UpdatedIds);
+    }
+
+    [Fact]
+    public async Task CancelAsync_WhenRequesterIsTheTeacher_Cancels()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30);
+        _repository.Items.Add(meeting);
+
+        var result = await _handler.CancelAsync(meeting.Id, meeting.TeacherRefId, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("Cancelled", result.Value.Status);
+    }
+
+    [Fact]
+    public async Task CancelAsync_WhenRequesterIsNotAParticipant_ReturnsForbiddenAndDoesNotSave()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30);
+        _repository.Items.Add(meeting);
+
+        var result = await _handler.CancelAsync(meeting.Id, Guid.NewGuid(), CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
+        Assert.Equal(MeetingStatus.Pending, meeting.Status);
+        Assert.Empty(_repository.UpdatedIds);
+    }
+
+    [Fact]
+    public async Task CancelAsync_WhenMeetingDoesNotExist_ReturnsNotFound()
+    {
+        var result = await _handler.CancelAsync(Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
+    }
+
+    [Fact]
+    public async Task CancelAsync_WhenAlreadyCancelled_ReturnsConflictAndDoesNotSave()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30);
+        meeting.Cancel();
+        _repository.Items.Add(meeting);
+
+        var result = await _handler.CancelAsync(meeting.Id, meeting.StudentRefId, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Empty(_repository.UpdatedIds);
     }
 }

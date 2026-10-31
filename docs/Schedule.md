@@ -166,6 +166,21 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 ---
 
+### 2.4 Cancel Meeting
+- **Route**: `PATCH /api/schedule/meetings/{id}/cancel`
+- **Access**: Only the student or the teacher of the meeting
+- **Description**: Cancels a meeting. The user is identified by the `sub` claim of the JWT, which must match the meeting's `studentRefId` or `teacherRefId`. A cancelled meeting no longer blocks its time slot. No request body is needed.
+
+**Success Response (200 OK)**: the meeting (same object as in 2.1) with `"status": "Cancelled"`.
+
+**Error Responses**
+- **`401 Unauthorized`**: If the `Authorization` header is missing or the token has no valid user id.
+- **`403 Forbidden`**: If the user is neither the student nor the teacher of the meeting.
+- **`404 Not Found`**: If no meeting exists with that id.
+- **`409 Conflict`**: If the meeting is already cancelled or completed.
+
+---
+
 ## 3. Teachers
 *Read-only views that aggregate a teacher's office hours and meetings.*
 

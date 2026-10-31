@@ -1,5 +1,6 @@
 using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
+using Schedule.Application.Common;
 using Schedule.Application.DTOs;
 using Schedule.Application.Handlers;
 
@@ -49,5 +50,26 @@ public class MeetingsController : ControllerBase
         }
 
         return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
+    }
+
+    [HttpPatch("{id:guid}/cancel")]
+    public async Task<ActionResult<MeetingDto>> Cancel(Guid id, CancellationToken cancellationToken)
+    {
+        var requesterRefId = JwtUserIdReader.GetUserId(Request.Headers.Authorization.ToString());
+        if (requesterRefId is null) return Unauthorized(new { message = "A valid token with the user id is required." });
+
+        var result = await _handler.CancelAsync(id, requesterRefId.Value, cancellationToken);
+        if (result.IsError)
+        {
+            var body = new { message = result.FirstError.Description };
+            return result.FirstError.Type switch
+            {
+                ErrorType.NotFound => NotFound(body),
+                ErrorType.Forbidden => StatusCode(StatusCodes.Status403Forbidden, body),
+                _ => Conflict(body)
+            };
+        }
+
+        return Ok(result.Value);
     }
 }
