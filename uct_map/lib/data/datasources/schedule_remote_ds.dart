@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 
 import '../../core/network/api_client_provider.dart';
 import '../../core/network/api_config.dart';
-import '../../core/network/api_endpoints.dart';
 import '../../core/network/api_exception.dart';
 import '../../domain/entities/office_hour.dart';
 import '../../domain/entities/professor.dart';
@@ -50,24 +49,25 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
 
   @override
   Future<List<Professor>> getProfessors() async {
-    final uri = _config.uri(ApiEndpoints.scheduleProfessors);
-    try {
-      final res = await _client.get(uri).timeout(_config.timeout);
-      if (res.statusCode == 200) {
-        final decoded = jsonDecode(res.body);
-        if (decoded is List) {
-          return decoded
-              .whereType<Map<String, dynamic>>()
-              .map((p) => Professor.fromJson(p))
-              .toList();
-        }
-      }
-      throw ApiException.fromResponse(res.statusCode, res.body);
-    } on http.ClientException {
-      return fallbackProfessors;
-    } on TimeoutException {
-      return fallbackProfessors;
+    final users = await _request('/api/identity') as List;
+    final professors = <Professor>[];
+    for (final user in users.whereType<Map<String, dynamic>>()) {
+      if (user['role'] != 'Teacher' || user['isSuspended'] == true) continue;
+      final id = user['userId'] as String;
+      final hours = await getOfficeHours(id);
+      professors.add(
+        Professor(
+          id: id,
+          name: user['name'] as String,
+          email: user['email'] as String,
+          department: '',
+          office: '',
+          officeHours: hours,
+          structureRefId: hours.isEmpty ? null : hours.first.structureRefId,
+        ),
+      );
     }
+    return professors;
   }
 
   @override
@@ -133,55 +133,4 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
       'Schedule aún no ofrece cambios de estado de citas.',
     );
   }
-  // Profesores de ejemplo para ver la funcionalidad sin red o con servicios apagados.
-  static const List<Professor> fallbackProfessors = [
-    Professor(
-      id: 'prof-1',
-      name: 'Dr. Roberto González',
-      department: 'Ingeniería de Software',
-      office: 'Oficina 304 - Edificio Central',
-      email: 'rgonzalez@uct.cl',
-      officeHours: [
-        OfficeHour(
-          id: 'oh-1',
-          teacherRefId: 'prof-1',
-          dayOfWeek: 2,
-          startTime: '10:00',
-          endTime: '12:00',
-        ),
-      ],
-    ),
-    Professor(
-      id: 'prof-2',
-      name: 'Dra. Marcela Soto',
-      department: 'Ciencias de la Computación',
-      office: 'Oficina 210 - Edificio C',
-      email: 'msoto@uct.cl',
-      officeHours: [
-        OfficeHour(
-          id: 'oh-2',
-          teacherRefId: 'prof-2',
-          dayOfWeek: 4,
-          startTime: '14:30',
-          endTime: '16:30',
-        ),
-      ],
-    ),
-    Professor(
-      id: 'prof-3',
-      name: 'Mg. Carlos Peña',
-      department: 'Redes y Telecomunicaciones',
-      office: 'Oficina 105 - Laboratorios',
-      email: 'cpena@uct.cl',
-      officeHours: [
-        OfficeHour(
-          id: 'oh-3',
-          teacherRefId: 'prof-3',
-          dayOfWeek: 3,
-          startTime: '09:00',
-          endTime: '11:00',
-        ),
-      ],
-    ),
-  ];
 }

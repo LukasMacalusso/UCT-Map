@@ -30,6 +30,7 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
   List<Professor> _professors = [];
   bool _loading = true;
   String _searchQuery = '';
+  String? _error;
 
   SessionController get _session => ApiClientProvider.session;
   bool get _canBook =>
@@ -44,7 +45,10 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
   }
 
   Future<void> _loadProfessors() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final list = await _repository.getProfessors();
       if (mounted) {
@@ -54,14 +58,17 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'No se pudo cargar el directorio. Reintenta.';
+        });
+      }
     }
   }
 
   List<Professor> get _filteredProfessors {
-    final base = _professors.isNotEmpty
-        ? _professors
-        : ScheduleRemoteDataSource.fallbackProfessors;
+    final base = _professors;
     if (_searchQuery.trim().isEmpty) return base;
     final q = _searchQuery.toLowerCase();
     return base.where((p) {
@@ -295,6 +302,19 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
       ),
       body: Column(
         children: [
+          if (_error != null)
+            ListTile(
+              title: Text(_error!),
+              trailing: IconButton(
+                onPressed: _loadProfessors,
+                icon: const Icon(Icons.refresh),
+              ),
+            ),
+          if (!_loading && _error == null && list.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('No hay profesores disponibles.'),
+            ),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
@@ -325,6 +345,8 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                ? const Center(child: Text('El directorio no está disponible.'))
                 : list.isEmpty
                 ? const Center(child: Text('No se encontraron profesores.'))
                 : ListView.builder(
