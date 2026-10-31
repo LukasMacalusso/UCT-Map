@@ -3,6 +3,7 @@ import { toApiError } from '../api/apiError';
 import type { BuildingLocationDto } from '../dtos/campus/BuildingLocationDto';
 import type { CampusDto } from '../dtos/campus/CampusDto';
 import type { RoomDto } from '../dtos/campus/RoomDto';
+import type { StructureDto } from '../dtos/campus/StructureDto';
 
 export const campusService = {
   getCampuses: async (): Promise<CampusDto[]> => {
@@ -35,6 +36,17 @@ export const campusService = {
       return data;
     } catch (error) {
       throw toApiError(error, 'Error al buscar salas');
+    }
+  },
+
+  getStructures: async (campusId?: string): Promise<StructureDto[]> => {
+    try {
+      const { data } = await httpClient.get<StructureDto[]>('/api/campus/structures', {
+        params: campusId ? { campusId } : undefined,
+      });
+      return data;
+    } catch (error) {
+      throw toApiError(error, 'Error al cargar las estructuras');
     }
   },
 

@@ -4,6 +4,7 @@ import { campusService } from '../services/campusService';
 import type { BuildingLocationDto } from '../dtos/campus/BuildingLocationDto';
 import type { CampusDto } from '../dtos/campus/CampusDto';
 import type { RoomDto } from '../dtos/campus/RoomDto';
+import type { StructureDto } from '../dtos/campus/StructureDto';
 
 export const useCampuses = () => {
   return useQuery<CampusDto[], Error>({
@@ -28,6 +29,15 @@ export const useSearchRooms = (term: string) => {
     queryFn: () => campusService.searchRooms(term),
     enabled: term.trim().length > 2,
     staleTime: 1000 * 60,
+  });
+};
+
+export const useStructures = (campusId?: string, enabled = true) => {
+  return useQuery<StructureDto[], Error>({
+    queryKey: queryKeys.structures(campusId),
+    queryFn: () => campusService.getStructures(campusId),
+    enabled,
+    staleTime: 1000 * 60 * 5,
   });
 };
 
