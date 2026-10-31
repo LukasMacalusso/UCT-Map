@@ -74,6 +74,7 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
   void _showBookingDialog(Professor prof) {
     if (!_canBook) return;
     final bookingToken = _session.token;
+    String? bookingError;
     DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
     TimeOfDay selectedTime = const TimeOfDay(hour: 10, minute: 0);
 
@@ -104,6 +105,11 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (bookingError != null)
+                      Text(
+                        bookingError!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
                     Text(
                       'Departamento: ${prof.department}',
                       style: const TextStyle(fontSize: 13, color: Colors.grey),
@@ -173,7 +179,6 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
                     ),
                     onPressed: () async {
                       if (!_canBook || _session.token != bookingToken) return;
-                      Navigator.pop(dialogCtx);
                       final scheduledAt = DateTime(
                         selectedDate.year,
                         selectedDate.month,
@@ -181,10 +186,33 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
                         selectedTime.hour,
                         selectedTime.minute,
                       );
+                      final matchingHours = prof.officeHours.where((h) {
+                        final start = h.startTime
+                            .split(':')
+                            .map(int.parse)
+                            .toList();
+                        final end = h.endTime
+                            .split(':')
+                            .map(int.parse)
+                            .toList();
+                        final minute =
+                            scheduledAt.hour * 60 + scheduledAt.minute;
+                        return h.dayOfWeek == scheduledAt.weekday &&
+                            minute >= start[0] * 60 + start[1] &&
+                            minute + 30 <= end[0] * 60 + end[1];
+                      }).toList();
+                      if (matchingHours.isEmpty) {
+                        setDialogState(
+                          () => bookingError = 'Selecciona una cita de 30 minutos dentro del horario de atención.',
+                        );
+                        return;
+                      }
+                      Navigator.pop(dialogCtx);
                       try {
                         await _repository.createMeeting(
                           teacherRefId: prof.id,
-                          structureRefId: prof.structureRefId ?? prof.office,
+                          structureRefId:
+                              matchingHours.first.structureRefId ?? '',
                           scheduledAt: scheduledAt,
                         );
                         if (mounted && _session.token == bookingToken) {

@@ -11,6 +11,8 @@ abstract class ScheduleRepository {
     required String teacherRefId,
     required String structureRefId,
     required DateTime scheduledAt,
+    String? studentRefId,
+    int durationMinutes = 30,
   });
   Future<bool> updateMeetingStatus(String meetingId, MeetingStatus status);
 }

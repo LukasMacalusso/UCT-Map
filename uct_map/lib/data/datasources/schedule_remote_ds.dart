@@ -12,14 +12,41 @@ import '../../domain/entities/professor.dart';
 import '../../domain/entities/schedule_meeting.dart';
 import '../../domain/repositories/schedule_repository.dart';
 
-/// Datasource remoto para consumir /api/schedule a través del API Gateway.
+/// Contratos de Identity y Schedule a través del Gateway.
 class ScheduleRemoteDataSource implements ScheduleRepository {
   ScheduleRemoteDataSource({http.Client? client, ApiConfig? config})
-      : _client = client ?? ApiClientProvider.defaultClient,
-        _config = config ?? ApiConfig();
+    : _client = client ?? ApiClientProvider.defaultClient,
+      _config = config ?? ApiConfig();
 
   final http.Client _client;
   final ApiConfig _config;
+
+  Future<dynamic> _request(
+    String path, {
+    Map<String, dynamic>? query,
+    Map<String, dynamic>? body,
+  }) async {
+    try {
+      final uri = _config.uri(path, query);
+      final response = body == null
+          ? await _client.get(uri).timeout(_config.timeout)
+          : await _client
+                .post(
+                  uri,
+                  headers: const {'Content-Type': 'application/json'},
+                  body: jsonEncode(body),
+                )
+                .timeout(_config.timeout);
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw ApiException.fromResponse(response.statusCode, response.body);
+      }
+      return jsonDecode(response.body);
+    } on http.ClientException {
+      throw const NetworkException();
+    } on TimeoutException {
+      throw const NetworkException('Tiempo de espera agotado.');
+    }
+  }
 
   @override
   Future<List<Professor>> getProfessors() async {
@@ -45,46 +72,33 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
 
   @override
   Future<List<OfficeHour>> getOfficeHours(String teacherId) async {
-    final uri = _config.uri(ApiEndpoints.professorOfficeHours(teacherId));
-    try {
-      final res = await _client.get(uri).timeout(_config.timeout);
-      if (res.statusCode == 200) {
-        final decoded = jsonDecode(res.body);
-        if (decoded is List) {
-          return decoded
-              .whereType<Map<String, dynamic>>()
-              .map((h) => OfficeHour.fromJson(h))
-              .toList();
-        }
-      }
-      throw ApiException.fromResponse(res.statusCode, res.body);
-    } on http.ClientException {
-      return [];
-    } on TimeoutException {
-      return [];
-    }
+    final data = await _request(
+      '/api/schedule/office-hours',
+      query: {'teacherId': teacherId},
+    ) as List;
+    return data
+        .map((h) => OfficeHour.fromJson(h as Map<String, dynamic>))
+        .toList();
   }
 
   @override
   Future<List<ScheduleMeeting>> getMyMeetings() async {
-    final uri = _config.uri(ApiEndpoints.scheduleMeetings);
-    try {
-      final res = await _client.get(uri).timeout(_config.timeout);
-      if (res.statusCode == 200) {
-        final decoded = jsonDecode(res.body);
-        if (decoded is List) {
-          return decoded
-              .whereType<Map<String, dynamic>>()
-              .map((m) => ScheduleMeeting.fromJson(m))
-              .toList();
-        }
-      }
-      throw ApiException.fromResponse(res.statusCode, res.body);
-    } on http.ClientException {
-      return [];
-    } on TimeoutException {
-      return [];
-    }
+    final user = ApiClientProvider.session.currentUser;
+    if (user == null) throw const UnauthorizedException();
+    final now = DateTime.now();
+    final from = DateTime(now.year, now.month, now.day).toIso8601String();
+    final to = DateTime(now.year, now.month, now.day + 60).toIso8601String();
+    final teacher = user.role.toShortString() == 'profesor';
+    final data = await _request(
+      teacher
+          ? '/api/schedule/meetings'
+          : '/api/schedule/students/${user.id}/meetings',
+      query: {'from': from, 'to': to, if (teacher) 'teacherId': user.id},
+    );
+    final items = teacher ? data as List : data['meetings'] as List;
+    return items
+        .map((m) => ScheduleMeeting.fromJson(m as Map<String, dynamic>))
+        .toList();
   }
 
   @override
@@ -92,53 +106,33 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
     required String teacherRefId,
     required String structureRefId,
     required DateTime scheduledAt,
+    String? studentRefId,
+    int durationMinutes = 30,
   }) async {
-    final uri = _config.uri(ApiEndpoints.scheduleMeetings);
-    try {
-      final res = await _client
-          .post(
-            uri,
-            headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'teacherRefId': teacherRefId,
-              'structureRefId': structureRefId,
-              'scheduledAt': scheduledAt.toIso8601String(),
-            }),
-          )
-          .timeout(_config.timeout);
-
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final decoded = jsonDecode(res.body);
-        if (decoded is Map<String, dynamic>) {
-          return ScheduleMeeting.fromJson(decoded);
-        }
-      }
-      throw ApiException.fromResponse(res.statusCode, res.body);
-    } on http.ClientException {
-      throw const NetworkException();
-    } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al agendar cita.');
-    }
+    final student = studentRefId ?? ApiClientProvider.session.currentUser?.id;
+    if (student == null) throw const UnauthorizedException();
+    final data = await _request(
+      '/api/schedule/meetings',
+      body: {
+        'teacherRefId': teacherRefId,
+        'studentRefId': student,
+        'structureRefId': structureRefId.isEmpty ? null : structureRefId,
+        'scheduledAt': scheduledAt.toIso8601String(),
+        'durationMinutes': durationMinutes,
+      },
+    );
+    return ScheduleMeeting.fromJson(data as Map<String, dynamic>);
   }
 
   @override
-  Future<bool> updateMeetingStatus(String meetingId, MeetingStatus status) async {
-    final uri = _config.uri(ApiEndpoints.meetingStatus(meetingId));
-    try {
-      final res = await _client
-          .patch(
-            uri,
-            headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({'status': status.name}),
-          )
-          .timeout(_config.timeout);
-
-      return res.statusCode == 200 || res.statusCode == 204;
-    } on Exception {
-      return false;
-    }
+  Future<bool> updateMeetingStatus(
+    String meetingId,
+    MeetingStatus status,
+  ) async {
+    throw UnsupportedError(
+      'Schedule aún no ofrece cambios de estado de citas.',
+    );
   }
-
   // Profesores de ejemplo para ver la funcionalidad sin red o con servicios apagados.
   static const List<Professor> fallbackProfessors = [
     Professor(
