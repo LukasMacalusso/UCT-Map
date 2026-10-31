@@ -1,0 +1,13 @@
+# =============================================================================
+# Archivos locales del stack con CREDENCIALES / SECRETOS.
+# No se suben al repositorio. Usa .env.example como plantilla.
+# =============================================================================
+# Los patrones llevan "/" al inicio para aplicar SOLO en la raiz del repo y
+# no afectar las reglas específicas de cada proyecto.
+/postgres-init.sql
+/.env
+/.env.local
+
+# Overrides locales de Docker Compose
+docker-compose.override.yml
+docker-compose.*.local.yml

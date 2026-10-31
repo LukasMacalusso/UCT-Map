@@ -14,6 +14,8 @@ import '../../core/network/api_client_provider.dart';
 import '../../core/network/authenticated_client.dart';
 import '../widgets/uct_logo.dart';
 import '../widgets/custom_drawer.dart';
+import '../../domain/entities/campus.dart';
+import '../screens/map/widgets/campus_search_sheet.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   final int initialIndex;
@@ -29,6 +31,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   /// Sesión compartida de la aplicación: la misma para todas las pantallas.
   late SessionController _session;
+  final _selectedCampus = ValueNotifier<Campus?>(null);
+  var _mapScreenKey = GlobalKey<MapScreenState>();
+  bool? _lastAuthenticated;
   bool _didReadInitialArgs = false;
   late final AuthenticatedClient _apiClient;
 
@@ -54,7 +59,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _sessionChanged() {
-    if (mounted) setState(() {});
+    if (mounted)
+      setState(() {
+        final authenticated = _session.isAuthenticated;
+        if (_lastAuthenticated != authenticated) {
+          _lastAuthenticated = authenticated;
+          _mapScreenKey = GlobalKey<MapScreenState>();
+        }
+      });
   }
 
   @override
@@ -75,10 +87,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
+  void _showSearchResult(CampusSearchResult result) {
+    _onTabTapped(0);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _mapScreenKey.currentState?.showSearchResult(result);
+    });
+  }
+
   @override
   void dispose() {
     // El cliente y la sesión son compartidos: no se cierran aquí.
     _session.removeListener(_sessionChanged);
+    _selectedCampus.dispose();
     super.dispose();
   }
 
@@ -90,8 +110,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final theme = Theme.of(context);
 
     final List<Widget> screens = [
-      MapScreen(key: ValueKey(_session.isAuthenticated)),
-      SearchScreen(onExploreMap: () => _onTabTapped(0)),
+      MapScreen(key: _mapScreenKey, selectedCampus: _selectedCampus),
+      SearchScreen(
+        onExploreMap: () => _onTabTapped(0),
+        selectedCampus: _selectedCampus,
+        onResult: _showSearchResult,
+      ),
       _protected(
         LostObjectsScreen(
           repository: LostObjectsRepositoryImpl(),
@@ -110,21 +134,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ),
       ),
       ProfileScreen(
-          session: _session,
-          onNavigateToTab: _onTabTapped,
-          onLogout: () async {
-            var message = 'Sesión cerrada correctamente';
-            try {
-              await _session.signOut();
-            } catch (_) {
-              message =
-                  'Sesión cerrada, pero no se pudo borrar el token local.';
-            }
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(message)));
-          },
-        ),
+        session: _session,
+        onNavigateToTab: _onTabTapped,
+        onLogout: () async {
+          var message = 'Sesión cerrada correctamente';
+          try {
+            await _session.signOut();
+          } catch (_) {
+            message = 'Sesión cerrada, pero no se pudo borrar el token local.';
+          }
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(message)));
+        },
+      ),
     ];
 
     return Scaffold(
@@ -155,36 +178,36 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ),
         centerTitle: true,
         actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 12.0),
-                  child: GestureDetector(
-                    onTap: () => _onTabTapped(4),
-                    child: Tooltip(
-                      message: 'Ver Perfil del Estudiante',
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: _currentIndex == 4
-                                ? theme.colorScheme.secondary
-                                : Colors.white.withValues(alpha: 0.8),
-                            width: 2,
-                          ),
-                        ),
-                        child: const CircleAvatar(
-                          radius: 17,
-                          backgroundColor: Colors.white,
-                          child: Icon(
-                            Icons.person,
-                            color: Color(0xFF003865),
-                            size: 22,
-                          ),
-                        ),
-                      ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: GestureDetector(
+              onTap: () => _onTabTapped(4),
+              child: Tooltip(
+                message: 'Ver Perfil del Estudiante',
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: _currentIndex == 4
+                          ? theme.colorScheme.secondary
+                          : Colors.white.withValues(alpha: 0.8),
+                      width: 2,
+                    ),
+                  ),
+                  child: const CircleAvatar(
+                    radius: 17,
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.person,
+                      color: Color(0xFF003865),
+                      size: 22,
                     ),
                   ),
                 ),
-              ],
+              ),
+            ),
+          ),
+        ],
       ),
       drawer: CustomDrawer(
         currentIndex: _currentIndex,
