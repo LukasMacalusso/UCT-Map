@@ -1,14 +1,15 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AdministrationView } from './AdministrationView';
+import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { useAuthState } from '../states/authState';
 import { Role } from '../constants/role';
 import type { UserIdentity } from '../interfaces/identities/UserIdentity';
 
 const { getAllUsersMock } = vi.hoisted(() => ({ getAllUsersMock: vi.fn() }));
 
-vi.mock('../services/userManagementService', () => ({
-  userManagementService: {
+vi.mock('../services/userService', () => ({
+  userService: {
     getAllUsers: getAllUsersMock,
     suspendUser: vi.fn(),
     reactivateUser: vi.fn(),
@@ -33,7 +34,7 @@ describe('AdministrationView', () => {
 
   it('lista los usuarios cargados', async () => {
     getAllUsersMock.mockResolvedValue(makeUsers(3));
-    render(<AdministrationView />);
+    renderWithQueryClient(<AdministrationView />);
 
     expect(await screen.findByText('Usuario 0')).toBeInTheDocument();
     expect(screen.getByText('Usuario 2')).toBeInTheDocument();
@@ -41,7 +42,7 @@ describe('AdministrationView', () => {
 
   it('muestra la paginación según la cantidad de contenido', async () => {
     getAllUsersMock.mockResolvedValue(makeUsers(25));
-    render(<AdministrationView />);
+    renderWithQueryClient(<AdministrationView />);
 
     await screen.findByText('Usuario 0');
     expect(screen.getByLabelText('Ir a la página 2')).toBeInTheDocument();
@@ -49,7 +50,7 @@ describe('AdministrationView', () => {
 
   it('navega a la segunda página', async () => {
     getAllUsersMock.mockResolvedValue(makeUsers(25));
-    render(<AdministrationView />);
+    renderWithQueryClient(<AdministrationView />);
 
     await screen.findByText('Usuario 0');
     fireEvent.click(screen.getByLabelText('Ir a la página 2'));
@@ -60,7 +61,7 @@ describe('AdministrationView', () => {
 
   it('oculta la paginación cuando hay una sola página', async () => {
     getAllUsersMock.mockResolvedValue(makeUsers(5));
-    render(<AdministrationView />);
+    renderWithQueryClient(<AdministrationView />);
 
     await screen.findByText('Usuario 0');
     expect(screen.queryByLabelText('Paginación')).not.toBeInTheDocument();
@@ -68,7 +69,7 @@ describe('AdministrationView', () => {
 
   it('no permite suspender la propia cuenta del administrador', async () => {
     getAllUsersMock.mockResolvedValue(makeUsers(3));
-    render(<AdministrationView />);
+    renderWithQueryClient(<AdministrationView />);
 
     await screen.findByText('Usuario 0');
     const selfButton = screen.getByTitle('No puedes suspender tu propia cuenta');
@@ -77,7 +78,7 @@ describe('AdministrationView', () => {
 
   it('abre el perfil del usuario al hacer click en "Ver perfil"', async () => {
     getAllUsersMock.mockResolvedValue(makeUsers(3));
-    render(<AdministrationView />);
+    renderWithQueryClient(<AdministrationView />);
 
     await screen.findByText('Usuario 0');
     fireEvent.click(screen.getAllByRole('button', { name: 'Ver perfil' })[0]);
@@ -87,7 +88,7 @@ describe('AdministrationView', () => {
 
   it('dice "Tus Contribuciones" al abrir tu propio perfil', async () => {
     getAllUsersMock.mockResolvedValue(makeUsers(3));
-    render(<AdministrationView />);
+    renderWithQueryClient(<AdministrationView />);
 
     await screen.findByText('Usuario 0');
     fireEvent.click(screen.getAllByRole('button', { name: 'Ver perfil' })[0]);
@@ -97,7 +98,7 @@ describe('AdministrationView', () => {
 
   it('dice "Contribuciones" (sin "Tus") al abrir el perfil de otro usuario', async () => {
     getAllUsersMock.mockResolvedValue(makeUsers(3));
-    render(<AdministrationView />);
+    renderWithQueryClient(<AdministrationView />);
 
     await screen.findByText('Usuario 0');
     fireEvent.click(screen.getAllByRole('button', { name: 'Ver perfil' })[1]);
@@ -110,7 +111,7 @@ describe('AdministrationView', () => {
     const users = makeUsers(3);
     users[1] = { ...users[1], isSuspended: true };
     getAllUsersMock.mockResolvedValue(users);
-    render(<AdministrationView />);
+    renderWithQueryClient(<AdministrationView />);
 
     await screen.findByText('Usuario 0');
     fireEvent.click(screen.getAllByRole('button', { name: 'Todos los roles' })[0]);

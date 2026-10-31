@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Select } from '../components/ui/Select';
 import { SearchInput } from '../components/ui/SearchInput';
 import { Button } from '../components/ui/Button';
@@ -8,7 +8,7 @@ import { Pagination } from '../components/ui/Pagination';
 import { ModalOverlay } from '../components/layout/ModalOverlay';
 import { UserProfilePanel } from '../modules/global/UserProfilePanel';
 import { UserManagementCard } from '../modules/admin/UserManagementCard';
-import { userManagementService } from '../services/userManagementService';
+import { useToggleUserSuspension, useUpdateUserRole, useUsers } from '../hooks/useUsers';
 import { useAuthState } from '../states/authState';
 import { Role } from '../constants/role';
 import type { UserIdentity } from '../interfaces/identities/UserIdentity';
@@ -24,10 +24,10 @@ const labelOf = (user: UserIdentity) => `${user.name} (${user.email})`;
 export const AdministrationView = () => {
   const currentUserId = useAuthState((state) => state.user?.id);
 
-  const [users, setUsers] = useState<UserIdentity[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data: users = [], isLoading, isFetching, error: usersError, refetch } = useUsers();
+  const updateUserRole = useUpdateUserRole();
+  const toggleUserSuspension = useToggleUserSuspension();
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState('todos');
@@ -44,50 +44,31 @@ export const AdministrationView = () => {
     { value: 'suspendidos', label: 'Suspendidos' },
   ];
 
-  const loadUsers = useCallback(async () => {
-    setError(null);
-    try {
-      setUsers(await userManagementService.getAllUsers());
-    } catch {
-      setError('No se pudieron cargar los usuarios. Intenta nuevamente.');
-    }
-  }, []);
+  const error = actionError ?? (usersError ? 'No se pudieron cargar los usuarios. Intenta nuevamente.' : null);
+  const isRefreshing = isFetching && !isLoading;
 
-  useEffect(() => {
-    setIsLoading(true);
-    loadUsers().finally(() => setIsLoading(false));
-  }, [loadUsers]);
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await loadUsers();
-    setIsRefreshing(false);
+  const handleRefresh = () => {
+    setActionError(null);
+    refetch();
   };
 
-  const handleToggleSuspension = async (userId: string, isSuspended: boolean) => {
-    setError(null);
-    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isSuspended } : u)));
-    try {
-      if (isSuspended) await userManagementService.suspendUser(userId);
-      else await userManagementService.reactivateUser(userId);
-    } catch {
-      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isSuspended: !isSuspended } : u)));
-      setError('No se pudo cambiar el estado de la cuenta.');
-    }
+  const handleToggleSuspension = (userId: string, isSuspended: boolean) => {
+    setActionError(null);
+    toggleUserSuspension.mutate(
+      { userId, isSuspended },
+      { onError: () => setActionError('No se pudo cambiar el estado de la cuenta.') },
+    );
   };
 
-  const handleRoleChange = async (userId: string, newRole: Role) => {
+  const handleRoleChange = (userId: string, newRole: Role) => {
     const previousRole = users.find((u) => u.id === userId)?.role;
     if (!previousRole || previousRole === newRole) return;
 
-    setError(null);
-    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-    try {
-      await userManagementService.updateUserRole(userId, newRole);
-    } catch {
-      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: previousRole } : u)));
-      setError('No se pudo cambiar el rol del usuario.');
-    }
+    setActionError(null);
+    updateUserRole.mutate(
+      { userId, role: newRole },
+      { onError: () => setActionError('No se pudo cambiar el rol del usuario.') },
+    );
   };
 
   const query = searchQuery.trim().toLowerCase();

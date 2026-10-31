@@ -10,7 +10,7 @@ vi.mock('../api/httpClient', () => ({
 }));
 
 import httpClient from '../api/httpClient';
-import { userManagementService } from './userManagementService';
+import { userService } from './userService';
 import { Role } from '../constants/role';
 
 const mocked = httpClient as unknown as {
@@ -20,7 +20,7 @@ const mocked = httpClient as unknown as {
   delete: ReturnType<typeof vi.fn>;
 };
 
-describe('userManagementService', () => {
+describe('userService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -33,7 +33,7 @@ describe('userManagementService', () => {
       ],
     });
 
-    const users = await userManagementService.getAllUsers();
+    const users = await userService.getAllUsers();
 
     expect(mocked.get).toHaveBeenCalledWith('/api/identity');
     expect(users[0]).toEqual({
@@ -48,19 +48,19 @@ describe('userManagementService', () => {
 
   it('suspendUser hace POST al endpoint de suspensión', async () => {
     mocked.post.mockResolvedValue({});
-    await userManagementService.suspendUser('abc');
+    await userService.suspendUser('abc');
     expect(mocked.post).toHaveBeenCalledWith('/api/identity/abc/suspension', {});
   });
 
   it('reactivateUser hace DELETE al endpoint de suspensión', async () => {
     mocked.delete.mockResolvedValue({});
-    await userManagementService.reactivateUser('abc');
+    await userService.reactivateUser('abc');
     expect(mocked.delete).toHaveBeenCalledWith('/api/identity/abc/suspension', {});
   });
 
   it('updateUserRole hace PUT reemplazando los roles por el nuevo', async () => {
     mocked.put.mockResolvedValue({});
-    await userManagementService.updateUserRole('abc', Role.Admin);
+    await userService.updateUserRole('abc', Role.Admin);
     expect(mocked.put).toHaveBeenCalledWith('/api/identity/abc/roles', { roles: [Role.Admin] });
   });
 });
