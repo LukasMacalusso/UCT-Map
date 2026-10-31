@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/network/api_client_provider.dart';
 import '../../../../domain/entities/building.dart';
 import '../../../../data/models/campus_location_dto.dart';
-import '../../../../data/datasources/campus_remote_ds.dart';
 import '../../../../domain/entities/category.dart';
 
 /// Resultado de busqueda: la ubicacion de una sala es la de su edificio.
@@ -63,20 +62,8 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
   List<CampusSearchResult> _results = [];
   int _requestId = 0;
   String _type = 'Todos';
-  String? _category;
   bool _searched = false;
   Timer? _debounce;
-  List<Category> _categories = [];
-
-  @override
-  void initState() {
-    super.initState();
-    (widget.loadCategories?.call() ?? CampusRemoteDataSource().getCategories())
-        .then((categories) {
-          if (mounted) setState(() => _categories = categories);
-        })
-        .catchError((_) {});
-  }
 
   @override
   void didUpdateWidget(covariant CampusSearchSheet oldWidget) {
@@ -191,19 +178,12 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
-    final categories = {
-      for (final c in _categories) c.id: c.name,
-      for (final s in widget.structures)
-        if (s.categoryName.isNotEmpty) s.categoryId: s.categoryName,
-    };
     final results = _results.where((r) {
       if (_type == 'Edificios' && (r.structure != null || r.roomCode != null))
         return false;
       if (_type == 'Salas' && r.roomCode == null) return false;
       if (_type == 'Servicios' && r.structure == null) return false;
-      return _category == null ||
-          r.structure?.categoryId == _category ||
-          r.categoryId == _category;
+      return true;
     }).toList();
     if (widget.embedded) return _buildSearchPage(results);
     return Padding(
@@ -276,19 +256,7 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
                           selected: _type == type,
                           onSelected: (_) => setState(() {
                             _type = type;
-                            _category = null;
                           }),
-                        ),
-                      ),
-                    for (final category in categories.entries)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(category.value),
-                          selected: _category == category.key,
-                          onSelected: (selected) => setState(
-                            () => _category = selected ? category.key : null,
-                          ),
                         ),
                       ),
                   ],
@@ -474,7 +442,6 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
                       _debounce?.cancel();
                       setState(() {
                         _type = 'Todos';
-                        _category = null;
                         _results = [];
                         _searched = false;
                         _loading = false;
@@ -484,7 +451,6 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
                     }
                     setState(() {
                       _type = category.$1;
-                      _category = null;
                     });
                     if (_controller.text.trim().isEmpty) {
                       _searchAll();
@@ -527,26 +493,6 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
               ),
           ],
         ),
-        if (_categories.isNotEmpty &&
-            (_type == 'Salas' || _type == 'Servicios'))
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final category in _categories)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(category.name),
-                      selected: _category == category.id,
-                      onSelected: (selected) => setState(
-                        () => _category = selected ? category.id : null,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
         if (_loading)
           const Padding(
             padding: EdgeInsets.only(top: 12),
