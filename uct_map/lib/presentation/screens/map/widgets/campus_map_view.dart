@@ -5,6 +5,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide Size;
 
 import '../../../../domain/entities/building.dart';
 import '../../../../domain/entities/campus.dart';
+import '../../../../data/models/campus_location_dto.dart';
 import '../campuses/campus_area_registry.dart';
 
 /// Vista cartografica independiente del orquestador MapScreen.
@@ -17,12 +18,18 @@ class CampusMapView extends StatefulWidget {
     required this.buildings,
     required this.onCampusTap,
     required this.onBuildingTap,
+    required this.structures,
+    required this.onStructureTap,
+    this.routeCoordinates,
   });
 
   final Campus? campus;
   final List<Building> buildings;
+  final List<StructureLocationDto> structures;
+  final ValueChanged<StructureLocationDto> onStructureTap;
   final ValueChanged<Campus> onCampusTap;
   final void Function(int number, Building building) onBuildingTap;
+  final List<List<double>>? routeCoordinates;
 
   @override
   State<CampusMapView> createState() => CampusMapViewState();
@@ -31,12 +38,17 @@ class CampusMapView extends StatefulWidget {
 class CampusMapViewState extends State<CampusMapView> {
   static const _campusSourceId = 'uct-campus-source';
   static const _buildingSourceId = 'uct-building-source';
+  static const _routeSourceId = 'uct-route-source';
+  static const _locationSourceId = 'uct-location-source';
+  static const _structureSourceId = 'uct-structure-source';
+  static const _structureLayerId = 'uct-structure-circles';
   static const _buildingCircleLayerId = 'uct-building-circles';
   static const _buildingTextLayerId = 'uct-building-numbers';
   static const _campusLayerId = 'uct-campus-circle';
   static const _campusTextLayerId = 'uct-campus-icon';
 
   static const _blue = 0xFF003865;
+  static const _yellow = 0xFFEAA221;
 
   void focusOnBuilding(Building building) {
     final campus = widget.campus;
@@ -60,6 +72,10 @@ class CampusMapViewState extends State<CampusMapView> {
   MapboxMap? _map;
   GeoJsonSource? _campusSource;
   GeoJsonSource? _buildingSource;
+  GeoJsonSource? _routeSource;
+  GeoJsonSource? _locationSource;
+  GeoJsonSource? _structureSource;
+  List<double>? _location;
   bool _styleReady = false;
   int _revision = 0;
   int _boundsRevision = 0;
@@ -124,6 +140,141 @@ class CampusMapViewState extends State<CampusMapView> {
           },
       ],
     });
+  }
+
+  String _routeGeoJson() => jsonEncode({
+    'type': 'FeatureCollection',
+    'features': widget.routeCoordinates == null
+        ? []
+        : [
+            {
+              'type': 'Feature',
+              'properties': <String, dynamic>{},
+              'geometry': {
+                'type': 'LineString',
+                'coordinates': widget.routeCoordinates,
+              },
+            },
+          ],
+  });
+
+  String _structureGeoJson() => jsonEncode({
+    'type': 'FeatureCollection',
+    'features': [
+      for (final s in widget.structures)
+        {
+          'type': 'Feature',
+          'properties': {'id': s.id},
+          'geometry': {
+            'type': 'Point',
+            'coordinates': [s.location.longitude, s.location.latitude],
+          },
+        },
+    ],
+  });
+
+  void focusOnStructure(StructureLocationDto structure) {
+    final campus = widget.campus;
+    if (campus == null || _map == null) return;
+    final area = areaForCampus(campus);
+    _viewportController.moveTo(
+      CameraViewportState(
+        center: _position(
+          structure.location.longitude,
+          structure.location.latitude,
+        ),
+        zoom: 18.5.clamp(area.minZoom, area.maxZoom),
+        pitch: area.pitch,
+        bearing: area.bearing,
+      ),
+      transition: EasingViewportTransition(
+        duration: const Duration(milliseconds: 900),
+      ),
+    );
+  }
+
+  String _locationGeoJson() => jsonEncode({
+    'type': 'FeatureCollection',
+    'features': _location == null
+        ? []
+        : [
+            {
+              'type': 'Feature',
+              'properties': <String, dynamic>{},
+              'geometry': {'type': 'Point', 'coordinates': _location},
+            },
+          ],
+  });
+
+  Future<int> _removeCampusBounds(MapboxMap map) async {
+    final revision = ++_boundsRevision;
+    await map.setBounds(
+      CameraBoundsOptions(
+        bounds: CoordinateBounds(
+          southwest: _position(-180, -85),
+          northeast: _position(180, 85),
+          infiniteBounds: true,
+        ),
+        minZoom: 0,
+        maxZoom: 22,
+      ),
+    );
+    return revision;
+  }
+
+  Future<void> focusOnLocation(double latitude, double longitude) async {
+    final map = _map;
+    if (map == null) throw StateError('El mapa aún no está listo');
+    _location = [longitude, latitude];
+    await _locationSource?.updateGeoJSON(_locationGeoJson());
+    final revision = await _removeCampusBounds(map);
+    if (!mounted || revision != _boundsRevision) return;
+    final campus = widget.campus;
+    final area = campus == null ? null : areaForCampus(campus);
+    _viewportController.moveTo(
+      CameraViewportState(
+        center: _position(longitude, latitude),
+        zoom: 16,
+        pitch: area?.pitch ?? 50,
+        bearing: area?.bearing ?? -20,
+      ),
+      transition: EasingViewportTransition(
+        duration: const Duration(milliseconds: 900),
+      ),
+    );
+  }
+
+  Future<void> fitRoute(List<List<double>> coordinates) async {
+    final map = _map;
+    if (map == null || coordinates.length < 2) return;
+    try {
+      final revision = await _removeCampusBounds(map);
+      if (!mounted || revision != _boundsRevision) return;
+      final campus = widget.campus;
+      final area = campus == null ? null : areaForCampus(campus);
+      final pitch = area?.pitch ?? 50;
+      final bearing = area?.bearing ?? -20;
+      final camera = await map.cameraForCoordinates(
+        coordinates.map((p) => _position(p[0], p[1])).toList(),
+        MbxEdgeInsets(top: 220, left: 60, bottom: 180, right: 60),
+        bearing,
+        pitch,
+      );
+      if (!mounted || revision != _boundsRevision) return;
+      _viewportController.moveTo(
+        CameraViewportState(
+          center: camera.center,
+          zoom: camera.zoom,
+          pitch: pitch,
+          bearing: bearing,
+        ),
+        transition: EasingViewportTransition(
+          duration: const Duration(milliseconds: 850),
+        ),
+      );
+    } catch (error) {
+      debugPrint('[UCT Mapbox] No se pudo centrar la ruta: $error');
+    }
   }
 
   @override
@@ -236,8 +387,70 @@ class CampusMapViewState extends State<CampusMapView> {
         id: _buildingSourceId,
         data: _buildingGeoJson(),
       );
+      final routeSource = GeoJsonSource(
+        id: _routeSourceId,
+        data: _routeGeoJson(),
+      );
+      final locationSource = GeoJsonSource(
+        id: _locationSourceId,
+        data: _locationGeoJson(),
+      );
+      final structureSource = GeoJsonSource(
+        id: _structureSourceId,
+        data: _structureGeoJson(),
+      );
       await map.addSource(campusSource);
       await map.addSource(buildingSource);
+      await map.addSource(routeSource);
+      await map.addSource(locationSource);
+      await map.addSource(structureSource);
+
+      await map.addLayer(
+        CircleLayer(
+          id: _structureLayerId,
+          sourceId: _structureSourceId,
+          circleRadius: 10,
+          circleColor: _yellow,
+          circleStrokeColor: _blue,
+          circleStrokeWidth: 2,
+        ),
+      );
+      map.addInteraction(
+        TapInteraction(FeaturesetDescriptor(layerId: _structureLayerId), (
+          feature,
+          context,
+        ) {
+          final id = feature.properties['id']?.toString();
+          for (final structure in widget.structures) {
+            if (structure.id == id) {
+              widget.onStructureTap(structure);
+              break;
+            }
+          }
+        }),
+        interactionID: 'uct-structure-tap',
+      );
+
+      await map.addLayer(
+        CircleLayer(
+          id: 'uct-location-dot',
+          sourceId: _locationSourceId,
+          circleRadius: 8,
+          circleColor: 0xFF1684F8,
+          circleStrokeColor: 0xFFFFFFFF,
+          circleStrokeWidth: 3,
+        ),
+      );
+
+      await map.addLayer(
+        LineLayer(
+          id: 'uct-route-line',
+          sourceId: _routeSourceId,
+          lineColor: _blue,
+          lineWidth: 6,
+          lineOpacity: 0.9,
+        ),
+      );
 
       await map.addLayer(
         CircleLayer(
@@ -333,6 +546,9 @@ class CampusMapViewState extends State<CampusMapView> {
       if (!mounted || revision != _revision) return;
       _campusSource = campusSource;
       _buildingSource = buildingSource;
+      _routeSource = routeSource;
+      _locationSource = locationSource;
+      _structureSource = structureSource;
       _styleReady = true;
       await _refreshSources();
     } catch (error) {
@@ -345,6 +561,9 @@ class CampusMapViewState extends State<CampusMapView> {
     try {
       await _campusSource?.updateGeoJSON(_campusGeoJson());
       await _buildingSource?.updateGeoJSON(_buildingGeoJson());
+      await _routeSource?.updateGeoJSON(_routeGeoJson());
+      await _locationSource?.updateGeoJSON(_locationGeoJson());
+      await _structureSource?.updateGeoJSON(_structureGeoJson());
     } catch (error) {
       debugPrint('[UCT Mapbox] Error actualizando marcadores: $error');
     }

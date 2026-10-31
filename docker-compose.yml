@@ -1,0 +1,121 @@
+
+name: uct-map
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+    networks:
+      - uct-network
+
+  mongodb:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_PASSWORD:?Define MONGO_PASSWORD}"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "mongosh --quiet -u root -p $$MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin --eval 'db.adminCommand({ping:1}).ok' | grep 1"
+      interval: 10s
+      timeout: 5s
+      retries: 15
+    networks:
+      - uct-network
+
+  campus-api:
+    build:
+      context: .
+      dockerfile: src/backend/Services/Campus/Dockerfile
+    environment:
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__CampusDb: "Host=postgres;Database=uct_campus_db;Username=root;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - uct-network
+
+  identity-api:
+    build:
+      context: .
+      dockerfile: src/backend/Services/Identity/Dockerfile
+    environment:
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__IdentityDb: "Host=postgres;Database=uct_identity_db;Username=root;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+      JwtConfig__Issuer: "https://identity-api"
+      JwtConfig__Audience: "api-gateway"
+      JwtConfig__Key: "${UCT_JWT_KEY:?Define UCT_JWT_KEY}"
+      JwtConfig__TokenValidationMins: "30"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - uct-network
+
+  schedule-api:
+    build:
+      context: .
+      dockerfile: src/backend/Services/Schedule/Dockerfile
+    environment:
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__ScheduleDb: "Host=postgres;Database=uct_schedule_db;Username=root;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - uct-network
+
+  incident-api:
+    build:
+      context: .
+      dockerfile: src/backend/Services/Incident/Dockerfile
+    environment:
+      ASPNETCORE_HTTP_PORTS: "8080"
+      MongoDB__ConnectionString: "mongodb://root:${MONGO_PASSWORD:?Define MONGO_PASSWORD}@mongodb:27017/?authSource=admin"
+      MongoDB__DatabaseName: "uct_incident_db"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - uct-network
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: src/backend/ApiGateway/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_HTTP_PORTS: "8080"
+      JwtConfig__Issuer: "https://identity-api"
+      JwtConfig__Audience: "api-gateway"
+      JwtConfig__Key: "${UCT_JWT_KEY:?Define UCT_JWT_KEY}"
+    depends_on:
+      - campus-api
+      - identity-api
+      - incident-api
+      - schedule-api
+    networks:
+      - uct-network
+
+networks:
+  uct-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongodb_data:
