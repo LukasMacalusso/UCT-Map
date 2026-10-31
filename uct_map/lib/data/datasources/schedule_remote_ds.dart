@@ -49,12 +49,23 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
 
   @override
   Future<List<Professor>> getProfessors() async {
+    final session = ApiClientProvider.currentSession;
+    final token = session?.token;
+    void checkSession() {
+      if (session != null && session.token != token) {
+        throw const UnauthorizedException('La sesión cambió.');
+      }
+    }
+
     final users = await _request('/api/identity') as List;
+    checkSession();
     final professors = <Professor>[];
     for (final user in users.whereType<Map<String, dynamic>>()) {
+      checkSession();
       if (user['role'] != 'Teacher' || user['isSuspended'] == true) continue;
       final id = user['userId'] as String;
       final hours = await getOfficeHours(id);
+      checkSession();
       professors.add(
         Professor(
           id: id,

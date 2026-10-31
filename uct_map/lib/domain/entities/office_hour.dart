@@ -7,6 +7,33 @@ class OfficeHour {
   final String startTime; // ej. "14:30"
   final String endTime; // ej. "16:00"
 
+  String get startLabel => _timeLabel(startTime);
+  String get endLabel => _timeLabel(endTime);
+
+  bool contains(DateTime start, {int durationMinutes = 30}) {
+    if (durationMinutes <= 0 || start.weekday != dayOfWeek) return false;
+    final ticks =
+        (start.hour * 3600 + start.minute * 60 + start.second) * 10000000 +
+        (start.millisecond * 1000 + start.microsecond) * 10;
+    return ticks >= _timeTicks(startTime) &&
+        ticks + durationMinutes * 60 * 10000000 <= _timeTicks(endTime);
+  }
+
+  static String _timeLabel(String value) =>
+      _timeTicks(value) % (60 * 10000000) == 0 ? value.substring(0, 5) : value;
+
+  static int _timeTicks(String value) {
+    final match = RegExp(
+      r'^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d)(?:\.(\d{1,7}))?)?$',
+    ).firstMatch(value);
+    if (match == null) throw const FormatException('Hora de atención inválida');
+    return (int.parse(match[1]!) * 3600 +
+                int.parse(match[2]!) * 60 +
+                int.parse(match[3] ?? '0')) *
+            10000000 +
+        int.parse((match[4] ?? '').padRight(7, '0'));
+  }
+
   const OfficeHour({
     required this.id,
     required this.teacherRefId,
@@ -54,7 +81,7 @@ class OfficeHour {
   }
 
   factory OfficeHour.fromJson(Map<String, dynamic> json) {
-    return OfficeHour(
+    final hour = OfficeHour(
       id: (json['id'] ?? json['Id'] ?? '').toString(),
       teacherRefId: (json['teacherRefId'] ?? json['TeacherRefId'] ?? '')
           .toString(),
@@ -63,12 +90,19 @@ class OfficeHour {
       startTime: (json['startTime'] ?? json['StartTime'] ?? '').toString(),
       endTime: (json['endTime'] ?? json['EndTime'] ?? '').toString(),
     );
+    if (_timeTicks(hour.endTime) <= _timeTicks(hour.startTime)) {
+      throw const FormatException(
+        'El fin de atención debe ser posterior al inicio',
+      );
+    }
+    return hour;
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'teacherRefId': teacherRefId,
-    'dayOfWeek': dayOfWeek,
+    'structureRefId': structureRefId,
+    'dayOfWeek': dayOfWeek % 7,
     'startTime': startTime,
     'endTime': endTime,
   };

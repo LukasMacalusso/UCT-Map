@@ -1,10 +1,5 @@
 /// Estado de una cita o reunión agendada con un docente.
-enum MeetingStatus {
-  pending,
-  confirmed,
-  cancelled,
-  completed,
-}
+enum MeetingStatus { pending, confirmed, cancelled, completed }
 
 extension MeetingStatusExt on MeetingStatus {
   String get label {
@@ -33,8 +28,9 @@ extension MeetingStatusExt on MeetingStatus {
         return MeetingStatus.completed;
       case 'pending':
       case 'pendiente':
-      default:
         return MeetingStatus.pending;
+      default:
+        throw const FormatException('Estado de cita desconocido');
     }
   }
 }
@@ -50,6 +46,9 @@ class ScheduleMeeting {
   final String? teacherName;
   final String? structureName;
 
+  bool get isActive =>
+      status == MeetingStatus.pending || status == MeetingStatus.confirmed;
+
   const ScheduleMeeting({
     required this.id,
     required this.teacherRefId,
@@ -63,29 +62,36 @@ class ScheduleMeeting {
 
   factory ScheduleMeeting.fromJson(Map<String, dynamic> json) {
     final dateRaw = json['scheduledAt'] ?? json['ScheduledAt'];
-    final parsedDate = dateRaw is String
-        ? (DateTime.tryParse(dateRaw) ?? DateTime.now())
-        : DateTime.now();
+    final parsedDate = dateRaw is String ? DateTime.tryParse(dateRaw) : null;
+    if (parsedDate == null) {
+      throw const FormatException('Fecha de cita inválida');
+    }
 
     final statusRaw = json['status'] ?? json['Status'];
     return ScheduleMeeting(
       id: (json['id'] ?? json['Id'] ?? '').toString(),
-      teacherRefId: (json['teacherRefId'] ?? json['TeacherRefId'] ?? '').toString(),
-      studentRefId: (json['studentRefId'] ?? json['StudentRefId'] ?? '').toString(),
-      structureRefId: (json['structureRefId'] ?? json['StructureRefId'] ?? '').toString(),
+      teacherRefId: (json['teacherRefId'] ?? json['TeacherRefId'] ?? '')
+          .toString(),
+      studentRefId: (json['studentRefId'] ?? json['StudentRefId'] ?? '')
+          .toString(),
+      structureRefId: (json['structureRefId'] ?? json['StructureRefId'] ?? '')
+          .toString(),
       scheduledAt: parsedDate,
       status: MeetingStatusExt.fromString(statusRaw?.toString()),
-      teacherName: json['teacherName']?.toString() ?? json['TeacherName']?.toString(),
-      structureName: json['structureName']?.toString() ?? json['StructureName']?.toString(),
+      teacherName:
+          json['teacherName']?.toString() ?? json['TeacherName']?.toString(),
+      structureName:
+          json['structureName']?.toString() ??
+          json['StructureName']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'teacherRefId': teacherRefId,
-        'studentRefId': studentRefId,
-        'structureRefId': structureRefId,
-        'scheduledAt': scheduledAt.toIso8601String(),
-        'status': status.name,
-      };
+    'id': id,
+    'teacherRefId': teacherRefId,
+    'studentRefId': studentRefId,
+    'structureRefId': structureRefId,
+    'scheduledAt': scheduledAt.toIso8601String(),
+    'status': status.name,
+  };
 }

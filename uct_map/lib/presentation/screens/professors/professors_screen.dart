@@ -5,6 +5,9 @@ import '../../../core/network/api_client_provider.dart';
 import '../../../core/navigation/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/datasources/schedule_remote_ds.dart';
+import '../../../data/datasources/campus_remote_ds.dart';
+import '../../../domain/repositories/campus_repository.dart';
+import '../../widgets/office_hour_card.dart';
 import '../../../domain/entities/professor.dart';
 import '../../../domain/entities/app_permission.dart';
 import '../../../domain/repositories/schedule_repository.dart';
@@ -16,10 +19,12 @@ class ProfessorsScreen extends StatefulWidget {
     super.key,
     this.onNavigateToTab,
     this.scheduleRepository,
+    this.campusRepository,
   });
 
   final Function(int)? onNavigateToTab;
   final ScheduleRepository? scheduleRepository;
+  final CampusRepository? campusRepository;
 
   @override
   State<ProfessorsScreen> createState() => _ProfessorsScreenState();
@@ -27,7 +32,13 @@ class ProfessorsScreen extends StatefulWidget {
 
 class _ProfessorsScreenState extends State<ProfessorsScreen> {
   late final ScheduleRepository _repository;
+  late final CampusRepository _campus =
+      widget.campusRepository ?? CampusRemoteDataSource();
   List<Professor> _professors = [];
+  Map<String, String> _locations = {};
+  bool _locationError = false;
+  String? _loadedToken;
+  int _loadVersion = 0;
   bool _loading = true;
   String _searchQuery = '';
   String? _error;
@@ -41,25 +52,79 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
   void initState() {
     super.initState();
     _repository = widget.scheduleRepository ?? ScheduleRemoteDataSource();
+    _loadedToken = _session.token;
+    _session.addListener(_sessionChanged);
     _loadProfessors();
   }
 
+  @override
+  void dispose() {
+    _session.removeListener(_sessionChanged);
+    super.dispose();
+  }
+
+  void _sessionChanged() {
+    if (_loadedToken == _session.token) return;
+    _loadedToken = _session.token;
+    _loadVersion++;
+    setState(() {
+      _professors = [];
+      _locations = {};
+      _locationError = false;
+      _error = null;
+      _loading = _session.isAuthenticated;
+    });
+    if (_session.isAuthenticated) _loadProfessors();
+  }
+
   Future<void> _loadProfessors() async {
+    final version = ++_loadVersion;
+    final token = _session.token;
+    bool current() =>
+        mounted && version == _loadVersion && _session.token == token;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       final list = await _repository.getProfessors();
-      if (mounted) {
+      if (!current()) return;
+      final locations = <String, String>{};
+      var locationError = false;
+      final ids = list
+          .expand((p) => p.officeHours)
+          .map((h) => h.structureRefId)
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      for (final id in ids) {
+        if (!current()) return;
+        try {
+          final structure = await _campus.getStructureById(id);
+          if (!current()) return;
+          if (structure.id == id && structure.name.trim().isNotEmpty) {
+            locations[id] = structure.name;
+          } else {
+            locationError = true;
+          }
+        } catch (_) {
+          if (!current()) return;
+          locationError = true;
+        }
+      }
+      if (current()) {
         setState(() {
           _professors = list;
+          _locations = locations;
+          _locationError = locationError;
           _loading = false;
         });
       }
     } catch (_) {
-      if (mounted) {
+      if (current()) {
         setState(() {
+          _professors = [];
+          _locations = {};
           _loading = false;
           _error = 'No se pudo cargar el directorio. Reintenta.';
         });
@@ -118,7 +183,9 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
                         style: const TextStyle(color: Colors.red),
                       ),
                     Text(
-                      'Departamento: ${prof.department}',
+                      prof.department.isEmpty
+                          ? prof.email
+                          : 'Departamento: ${prof.department}',
                       style: const TextStyle(fontSize: 13, color: Colors.grey),
                     ),
                     const SizedBox(height: 12),
@@ -193,21 +260,16 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
                         selectedTime.hour,
                         selectedTime.minute,
                       );
-                      final matchingHours = prof.officeHours.where((h) {
-                        final start = h.startTime
-                            .split(':')
-                            .map(int.parse)
-                            .toList();
-                        final end = h.endTime
-                            .split(':')
-                            .map(int.parse)
-                            .toList();
-                        final minute =
-                            scheduledAt.hour * 60 + scheduledAt.minute;
-                        return h.dayOfWeek == scheduledAt.weekday &&
-                            minute >= start[0] * 60 + start[1] &&
-                            minute + 30 <= end[0] * 60 + end[1];
-                      }).toList();
+                      final matchingHours = prof.officeHours
+                          .where((h) => h.contains(scheduledAt))
+                          .toList();
+                      if (!scheduledAt.isAfter(DateTime.now())) {
+                        setDialogState(
+                          () => bookingError =
+                              'Selecciona una fecha y hora futuras.',
+                        );
+                        return;
+                      }
                       if (matchingHours.isEmpty) {
                         setDialogState(
                           () => bookingError = 'Selecciona una cita de 30 minutos dentro del horario de atención.',
@@ -320,7 +382,7 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
             child: TextField(
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
-                hintText: 'Buscar profesor por nombre o departamento...',
+                hintText: 'Buscar profesor...',
                 prefixIcon: const Icon(Icons.search, color: AppColors.uctBlue),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -379,7 +441,9 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
                             ),
                           ),
                           subtitle: Text(
-                            prof.department,
+                            prof.department.isEmpty
+                                ? prof.email
+                                : prof.department,
                             style: const TextStyle(
                               color: AppColors.subtitle,
                               fontSize: 13,
@@ -401,7 +465,9 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
-                                          'Ubicación: ${prof.office}',
+                                          prof.office.isEmpty
+                                              ? 'Ubicación según bloque de atención'
+                                              : 'Ubicación: ${prof.office}',
                                           style: const TextStyle(
                                             color: AppColors.ink,
                                             fontSize: 13,
@@ -430,29 +496,31 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
                                       ),
                                     ],
                                   ),
-                                  if (prof.officeHours.isNotEmpty) ...[
-                                    const SizedBox(height: 12),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Horario de Atención',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (prof.officeHours.isEmpty)
+                                    const Text('Sin horarios registrados.'),
+                                  ...prof.officeHours.map(
+                                    (h) => OfficeHourCard(
+                                      hour: h,
+                                      location: _locations[h.structureRefId],
+                                    ),
+                                  ),
+                                  if (_locationError)
                                     const Text(
-                                      'Horarios de Atención:',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
+                                      'Algunas ubicaciones no se pudieron cargar. Se muestran sus referencias.',
                                     ),
-                                    const SizedBox(height: 4),
-                                    ...prof.officeHours.map(
-                                      (h) => Text(
-                                        '• ${h.dayName}: ${h.startTime} - ${h.endTime}',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
                                   const SizedBox(height: 12),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
+                                  Wrap(
+                                    alignment: WrapAlignment.end,
+                                    spacing: 8,
+                                    runSpacing: 8,
                                     children: [
                                       OutlinedButton.icon(
                                         onPressed: () =>
