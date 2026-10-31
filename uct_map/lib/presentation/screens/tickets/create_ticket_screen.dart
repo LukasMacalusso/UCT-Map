@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/network/api_client_provider.dart';
+import '../../../domain/entities/app_permission.dart';
+
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/problem_details.dart';
 import '../../../core/theme/app_colors.dart';
@@ -144,7 +147,12 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
 
     final dto = CreateReportDto(
       structureRefId: _structureRefIdController.text.trim(),
-      ticketType: _selectedTicketType,
+      ticketType:
+          AppPermission.manageReports.allows(
+            ApiClientProvider.session.currentUser?.role,
+          )
+          ? _selectedTicketType
+          : TicketStatus.pending,
       isActive: _isActive,
       reportedAt: DateTime.now(),
       lostObjectId: _lostObjectIdController.text.trim().isNotEmpty
@@ -214,7 +222,12 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: ApiClientProvider.session,
+    builder: (context, _) => _buildContent(context),
+  );
+
+  Widget _buildContent(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -248,12 +261,19 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.shield_outlined, color: AppColors.uctBlue, size: 22),
+                      Icon(
+                        Icons.shield_outlined,
+                        color: AppColors.uctBlue,
+                        size: 22,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'El autor del reporte se asignará automáticamente desde tu sesión (Token JWT) por seguridad.',
-                          style: TextStyle(fontSize: 12.5, color: AppColors.ink),
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.ink,
+                          ),
                         ),
                       ),
                     ],
@@ -289,7 +309,10 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                   children: _presetStructures.entries.map((entry) {
                     return ActionChip(
                       avatar: const Icon(Icons.place_outlined, size: 14),
-                      label: Text(entry.key, style: const TextStyle(fontSize: 11)),
+                      label: Text(
+                        entry.key,
+                        style: const TextStyle(fontSize: 11),
+                      ),
                       onPressed: () {
                         setState(() {
                           _structureRefIdController.text = entry.value;
@@ -300,34 +323,37 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                 ),
                 const SizedBox(height: 18),
 
-                // Tipo de Ticket / Estado inicial
-                _buildFieldLabel('Tipo de Ticket (Estado Inicial)'),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.fieldBorder),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<TicketStatus>(
-                      value: _selectedTicketType,
-                      isExpanded: true,
-                      items: TicketStatus.values.map((s) {
-                        return DropdownMenuItem(
-                          value: s,
-                          child: Text('${s.label} (${s.value})'),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() => _selectedTicketType = val);
-                        }
-                      },
+                if (AppPermission.manageReports.allows(
+                  ApiClientProvider.session.currentUser?.role,
+                )) ...[
+                  // Tipo de Ticket / Estado inicial
+                  _buildFieldLabel('Tipo de Ticket (Estado Inicial)'),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.fieldBorder),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<TicketStatus>(
+                        value: _selectedTicketType,
+                        isExpanded: true,
+                        items: TicketStatus.values.map((s) {
+                          return DropdownMenuItem(
+                            value: s,
+                            child: Text('${s.label} (${s.value})'),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _selectedTicketType = val);
+                          }
+                        },
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 18),
-
+                  const SizedBox(height: 18),
+                ],
                 // SECCIÓN: OBJETO PERDIDO ASOCIADO (SELECTOR INTERACTIVO)
                 _buildFieldLabel('Objeto Perdido Asociado (Opcional)'),
                 _buildLostObjectSelector(),
@@ -349,8 +375,11 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                         children: [
                           const Row(
                             children: [
-                              Icon(Icons.report_problem_outlined,
-                                  color: AppColors.uctBlue, size: 20),
+                              Icon(
+                                Icons.report_problem_outlined,
+                                color: AppColors.uctBlue,
+                                size: 20,
+                              ),
                               SizedBox(width: 8),
                               Text(
                                 'Detalles de la Queja / Reclamo',
@@ -365,7 +394,8 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                           Switch(
                             value: _includeComplaint,
                             activeColor: AppColors.uctBlue,
-                            onChanged: (val) => setState(() => _includeComplaint = val),
+                            onChanged: (val) =>
+                                setState(() => _includeComplaint = val),
                           ),
                         ],
                       ),
@@ -401,7 +431,8 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                           maxLines: 3,
                           textInputAction: TextInputAction.done,
                           decoration: _inputDecoration(
-                            hint: 'Detalla lo ocurrido, lugar, fecha y motivo...',
+                            hint:
+                                'Detalla lo ocurrido, lugar, fecha y motivo...',
                             prefixIcon: Icons.description_outlined,
                           ),
                           validator: (val) {
@@ -437,7 +468,9 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                               }).toList(),
                               onChanged: (val) {
                                 if (val != null) {
-                                  setState(() => _selectedComplaintStatus = val);
+                                  setState(
+                                    () => _selectedComplaintStatus = val,
+                                  );
                                 }
                               },
                             ),
@@ -473,8 +506,13 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                           )
                         : const Icon(Icons.send_rounded),
                     label: Text(
-                      _isSubmitting ? 'Registrando reporte...' : 'Crear Reporte / Incidencia',
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      _isSubmitting
+                          ? 'Registrando reporte...'
+                          : 'Crear Reporte / Incidencia',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -510,8 +548,10 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
                         color: Colors.grey.shade200,
-                        child: const Icon(Icons.inventory_2_outlined,
-                            color: AppColors.subtitle),
+                        child: const Icon(
+                          Icons.inventory_2_outlined,
+                          color: AppColors.subtitle,
+                        ),
                       ),
                     ),
                   ),
@@ -547,7 +587,10 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                         _selectedLostObject!.description,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, color: AppColors.subtitle),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.subtitle,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -579,7 +622,11 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.swap_horiz_rounded, size: 16, color: AppColors.uctBlue),
+                  Icon(
+                    Icons.swap_horiz_rounded,
+                    size: 16,
+                    color: AppColors.uctBlue,
+                  ),
                   SizedBox(width: 6),
                   Text(
                     'Cambiar por otro objeto',
@@ -642,13 +689,19 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                       SizedBox(height: 2),
                       Text(
                         'Toca para explorar la lista con fotos y buscar por nombre',
-                        style: TextStyle(fontSize: 11.5, color: AppColors.subtitle),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.subtitle,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios_rounded,
-                    size: 14, color: AppColors.hint),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: AppColors.hint,
+                ),
               ],
             ),
           ),
@@ -665,7 +718,10 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                 _isManualIdInput
                     ? 'Ocultar entrada manual de ID'
                     : '¿Prefieres ingresar el ID manual?',
-                style: const TextStyle(fontSize: 11.5, color: AppColors.subtitle),
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  color: AppColors.subtitle,
+                ),
               ),
             ),
           ],
@@ -856,7 +912,11 @@ class _LostObjectPickerModalState extends State<_LostObjectPickerModal> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.inventory_2_outlined, color: AppColors.uctBlue, size: 20),
+                  Icon(
+                    Icons.inventory_2_outlined,
+                    color: AppColors.uctBlue,
+                    size: 20,
+                  ),
                   SizedBox(width: 8),
                   Text(
                     'Seleccionar Objeto Perdido',
@@ -894,7 +954,10 @@ class _LostObjectPickerModalState extends State<_LostObjectPickerModal> {
                   : null,
               filled: true,
               fillColor: const Color(0xFFF8FAFC),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 10,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(color: AppColors.fieldBorder),
@@ -945,7 +1008,11 @@ class _LostObjectPickerModalState extends State<_LostObjectPickerModal> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade400),
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 48,
+                color: Colors.grey.shade400,
+              ),
               const SizedBox(height: 12),
               const Text(
                 'No se encontraron objetos',
@@ -971,7 +1038,10 @@ class _LostObjectPickerModalState extends State<_LostObjectPickerModal> {
         final isSelected = widget.selectedId == item.id;
 
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 6,
+          ),
           leading: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: SizedBox(
@@ -1024,7 +1094,11 @@ class _LostObjectPickerModalState extends State<_LostObjectPickerModal> {
               LostObjectStatusBadge(status: item.status, isCompact: true),
               if (isSelected) ...[
                 const SizedBox(width: 8),
-                const Icon(Icons.check_circle_rounded, color: AppColors.uctBlue, size: 20),
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.uctBlue,
+                  size: 20,
+                ),
               ],
             ],
           ),

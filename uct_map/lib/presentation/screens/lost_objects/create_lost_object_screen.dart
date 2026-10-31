@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/network/api_client_provider.dart';
+import '../../../domain/entities/app_permission.dart';
+
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/problem_details.dart';
 import '../../../core/theme/app_colors.dart';
@@ -12,10 +15,7 @@ import '../../../domain/repositories/lost_objects_repository.dart';
 class CreateLostObjectScreen extends StatefulWidget {
   final LostObjectsRepository repository;
 
-  const CreateLostObjectScreen({
-    super.key,
-    required this.repository,
-  });
+  const CreateLostObjectScreen({super.key, required this.repository});
 
   @override
   State<CreateLostObjectScreen> createState() => _CreateLostObjectScreenState();
@@ -83,7 +83,12 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
     final dto = CreateLostObjectDto(
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
-      status: _selectedStatus,
+      status:
+          AppPermission.manageObjects.allows(
+            ApiClientProvider.session.currentUser?.role,
+          )
+          ? _selectedStatus
+          : LostObjectStatus.pending,
       photoUrl: _photoUrlController.text.trim(),
       structureId: _structureIdController.text.trim(),
     );
@@ -149,7 +154,12 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: ApiClientProvider.session,
+    builder: (context, _) => _buildContent(context),
+  );
+
+  Widget _buildContent(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -183,12 +193,19 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, color: AppColors.uctBlue, size: 22),
+                      const Icon(
+                        Icons.info_outline,
+                        color: AppColors.uctBlue,
+                        size: 22,
+                      ),
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
                           'Ingresa los datos del objeto. Recuerda que la foto debe estar subida a un servidor público accesible.',
-                          style: TextStyle(fontSize: 12.5, color: AppColors.ink),
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.ink,
+                          ),
                         ),
                       ),
                     ],
@@ -309,32 +326,36 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
 
                 const SizedBox(height: 18),
 
-                // Selector de Estado inicial
-                _buildFieldLabel('Estado inicial'),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.fieldBorder),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<LostObjectStatus>(
-                      value: _selectedStatus,
-                      isExpanded: true,
-                      items: LostObjectStatus.values.map((s) {
-                        return DropdownMenuItem(
-                          value: s,
-                          child: Text('${s.label} (${s.value})'),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() => _selectedStatus = val);
-                        }
-                      },
+                if (AppPermission.manageObjects.allows(
+                  ApiClientProvider.session.currentUser?.role,
+                )) ...[
+                  // Selector de Estado inicial
+                  _buildFieldLabel('Estado inicial'),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.fieldBorder),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<LostObjectStatus>(
+                        value: _selectedStatus,
+                        isExpanded: true,
+                        items: LostObjectStatus.values.map((s) {
+                          return DropdownMenuItem(
+                            value: s,
+                            child: Text('${s.label} (${s.value})'),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _selectedStatus = val);
+                          }
+                        },
+                      ),
                     ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 30),
 
                 // Botón enviar
@@ -362,8 +383,13 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
                           )
                         : const Icon(Icons.cloud_upload_outlined),
                     label: Text(
-                      _isSubmitting ? 'Guardando objeto...' : 'Publicar Objeto Perdido',
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      _isSubmitting
+                          ? 'Guardando objeto...'
+                          : 'Publicar Objeto Perdido',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -406,7 +432,9 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
               height: 160,
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) return child;
-                return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                return const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                );
               },
               errorBuilder: (context, error, stackTrace) {
                 return Container(
@@ -416,11 +444,17 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.broken_image_outlined, color: Colors.red.shade400),
+                      Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.red.shade400,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'No se pudo cargar la imagen desde la URL provista.',
-                        style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -438,7 +472,11 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
                 ),
                 child: const Text(
                   'Vista Previa',
-                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),

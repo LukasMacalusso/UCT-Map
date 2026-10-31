@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/network/api_client_provider.dart';
+import '../../../domain/entities/app_permission.dart';
+
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/problem_details.dart';
 import '../../../core/theme/app_colors.dart';
@@ -29,6 +32,11 @@ class LostObjectsScreen extends StatefulWidget {
 }
 
 class _LostObjectsScreenState extends State<LostObjectsScreen> {
+  bool get _canManage =>
+      ApiClientProvider.session.isAuthenticated &&
+      AppPermission.manageObjects.allows(
+        ApiClientProvider.session.currentUser?.role,
+      );
   final _searchController = TextEditingController();
   Timer? _debounceTimer;
 
@@ -113,7 +121,11 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
     }
   }
 
-  Future<void> _changeStatus(LostObject item, LostObjectStatus newStatus) async {
+  Future<void> _changeStatus(
+    LostObject item,
+    LostObjectStatus newStatus,
+  ) async {
+    if (!mounted || !_canManage) return;
     if (item.status == newStatus) return;
 
     // Mostrar feedback inmediato
@@ -164,6 +176,8 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
   }
 
   void _showStatusDialog(LostObject item) {
+    if (!_canManage) return;
+    final actionToken = ApiClientProvider.session.token;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -198,7 +212,10 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                   item.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, color: AppColors.subtitle),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.subtitle,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 ...LostObjectStatus.values.map((s) {
@@ -209,7 +226,9 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                     title: Text(
                       s.label,
                       style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                         color: isSelected ? AppColors.uctBlue : AppColors.ink,
                       ),
                     ),
@@ -217,6 +236,11 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                         ? const Icon(Icons.check, color: AppColors.uctBlue)
                         : null,
                     onTap: () {
+                      if (!mounted ||
+                          !_canManage ||
+                          actionToken != ApiClientProvider.session.token) {
+                        return;
+                      }
                       Navigator.pop(ctx);
                       _changeStatus(item, s);
                     },
@@ -251,12 +275,18 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                   children: [
                     const Text(
                       'Opciones de Ordenamiento',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     const Text(
                       'Ordenar por:',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -265,17 +295,20 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                         ChoiceChip(
                           label: const Text('Fecha (ReportedAt)'),
                           selected: tempSortBy == 'ReportedAt',
-                          onSelected: (val) => setModalState(() => tempSortBy = 'ReportedAt'),
+                          onSelected: (val) =>
+                              setModalState(() => tempSortBy = 'ReportedAt'),
                         ),
                         ChoiceChip(
                           label: const Text('Título'),
                           selected: tempSortBy == 'Title',
-                          onSelected: (val) => setModalState(() => tempSortBy = 'Title'),
+                          onSelected: (val) =>
+                              setModalState(() => tempSortBy = 'Title'),
                         ),
                         ChoiceChip(
                           label: const Text('Estado'),
                           selected: tempSortBy == 'Status',
-                          onSelected: (val) => setModalState(() => tempSortBy = 'Status'),
+                          onSelected: (val) =>
+                              setModalState(() => tempSortBy = 'Status'),
                         ),
                       ],
                     ),
@@ -283,7 +316,11 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Orden descendente'),
-                      subtitle: Text(tempDesc ? 'Más recientes primero' : 'Más antiguos primero'),
+                      subtitle: Text(
+                        tempDesc
+                            ? 'Más recientes primero'
+                            : 'Más antiguos primero',
+                      ),
                       value: tempDesc,
                       onChanged: (val) => setModalState(() => tempDesc = val),
                     ),
@@ -366,7 +403,10 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
         backgroundColor: AppColors.uctBlue,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_a_photo_outlined),
-        label: const Text('Reportar Objeto', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: const Text(
+          'Reportar Objeto',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       body: Column(
         children: [
@@ -391,7 +431,11 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
             decoration: InputDecoration(
               hintText: 'Buscar por título...',
               hintStyle: const TextStyle(fontSize: 13, color: AppColors.hint),
-              prefixIcon: const Icon(Icons.search, color: AppColors.subtitle, size: 20),
+              prefixIcon: const Icon(
+                Icons.search,
+                color: AppColors.subtitle,
+                size: 20,
+              ),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 18),
@@ -403,7 +447,10 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                   : null,
               filled: true,
               fillColor: const Color(0xFFF8FAFC),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 10,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(color: AppColors.fieldBorder),
@@ -543,8 +590,11 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.image_not_supported_outlined,
-                                  size: 36, color: Colors.grey.shade400),
+                              Icon(
+                                Icons.image_not_supported_outlined,
+                                size: 36,
+                                color: Colors.grey.shade400,
+                              ),
                               const SizedBox(height: 4),
                               Text(
                                 'Imagen no disponible',
@@ -612,7 +662,11 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                 // Estructura / Edificio
                 Row(
                   children: [
-                    const Icon(Icons.apartment_rounded, size: 14, color: AppColors.uctBlue),
+                    const Icon(
+                      Icons.apartment_rounded,
+                      size: 14,
+                      color: AppColors.uctBlue,
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -633,11 +687,18 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                 if (item.date != null)
                   Row(
                     children: [
-                      const Icon(Icons.access_time_rounded, size: 14, color: AppColors.hint),
+                      const Icon(
+                        Icons.access_time_rounded,
+                        size: 14,
+                        color: AppColors.hint,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'Registrado: ${_formatDate(item.date!)}',
-                        style: const TextStyle(fontSize: 11.5, color: AppColors.hint),
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.hint,
+                        ),
                       ),
                     ],
                   ),
@@ -646,29 +707,44 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                 const Divider(height: 1),
                 const SizedBox(height: 10),
 
+                if (_canManage && item.id.isEmpty)
+                  const Text(
+                    'Cambio de estado no disponible: el backend no devuelve el ID del objeto.',
+                  ),
+
                 // Botón para cambiar estado
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Estado: ${item.status.label}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: item.id.isNotEmpty
-                          ? () => _showStatusDialog(item)
-                          : null,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.uctBlue,
-                        side: const BorderSide(color: AppColors.uctBlue),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
-                      icon: const Icon(Icons.edit_note_rounded, size: 16),
-                      label: const Text('Cambiar Estado', style: TextStyle(fontSize: 12)),
                     ),
+                    if (_canManage)
+                      OutlinedButton.icon(
+                        onPressed: item.id.isNotEmpty
+                            ? () => _showStatusDialog(item)
+                            : null,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.uctBlue,
+                          side: const BorderSide(color: AppColors.uctBlue),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                        ),
+                        icon: const Icon(Icons.edit_note_rounded, size: 16),
+                        label: const Text(
+                          'Cambiar Estado',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ),
                   ],
                 ),
               ],
@@ -742,7 +818,11 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
             const SizedBox(height: 18),
             const Text(
               'No se encontraron objetos',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.ink),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -765,7 +845,9 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.uctBlue,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
               label: const Text('Limpiar Filtros'),
@@ -787,7 +869,11 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
             const SizedBox(height: 16),
             const Text(
               'No se pudo conectar con el servicio',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.ink),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -801,7 +887,9 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.uctBlue,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text('Reintentar'),

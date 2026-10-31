@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/network/api_client_provider.dart';
+import '../../../domain/entities/app_permission.dart';
+
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/problem_details.dart';
 import '../../../core/theme/app_colors.dart';
@@ -23,6 +26,11 @@ class TicketDetailScreen extends StatefulWidget {
 }
 
 class _TicketDetailScreenState extends State<TicketDetailScreen> {
+  bool get _canManage =>
+      ApiClientProvider.session.isAuthenticated &&
+      AppPermission.manageReports.allows(
+        ApiClientProvider.session.currentUser?.role,
+      );
   bool _isLoading = true;
   String? _errorMessage;
   Ticket? _ticket;
@@ -66,6 +74,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   }
 
   Future<void> _changeStatus() async {
+    if (!_canManage) return;
+    final actionToken = ApiClientProvider.session.token;
     final ticket = _ticket;
     if (ticket == null) return;
 
@@ -82,7 +92,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           builder: (context, setModalState) {
             return SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,7 +120,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     const SizedBox(height: 12),
                     const Text(
                       'Estado del Ticket:',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -116,10 +132,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       children: TicketStatus.values.map((s) {
                         final isSel = selectedTicketStatus == s;
                         return ChoiceChip(
-                          avatar: isSel ? const Icon(Icons.check, size: 14) : null,
+                          avatar: isSel
+                              ? const Icon(Icons.check, size: 14)
+                              : null,
                           label: Text(s.label),
                           selected: isSel,
-                          onSelected: (_) => setModalState(() => selectedTicketStatus = s),
+                          onSelected: (_) =>
+                              setModalState(() => selectedTicketStatus = s),
                         );
                       }).toList(),
                     ),
@@ -127,7 +146,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       const SizedBox(height: 16),
                       const Text(
                         'Estado de Queja / Reclamo:',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Wrap(
@@ -136,10 +158,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         children: ComplaintStatus.values.map((cs) {
                           final isSel = selectedComplaintStatus == cs;
                           return ChoiceChip(
-                            avatar: isSel ? const Icon(Icons.check, size: 14) : null,
+                            avatar: isSel
+                                ? const Icon(Icons.check, size: 14)
+                                : null,
                             label: Text(cs.label),
                             selected: isSel,
-                            onSelected: (_) => setModalState(() => selectedComplaintStatus = cs),
+                            onSelected: (_) => setModalState(
+                              () => selectedComplaintStatus = cs,
+                            ),
                           );
                         }).toList(),
                       ),
@@ -157,6 +183,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                           ),
                         ),
                         onPressed: () async {
+                          if (!mounted ||
+                              !_canManage ||
+                              actionToken != ApiClientProvider.session.token) {
+                            return;
+                          }
                           Navigator.pop(ctx, true);
                           try {
                             await widget.repository.updateReportStatus(
@@ -165,7 +196,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                               complainStatus: selectedComplaintStatus,
                             );
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              ScaffoldMessenger.of(this.context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Estado actualizado con éxito'),
                                   backgroundColor: Color(0xFF047857),
@@ -175,9 +206,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                             }
                           } catch (err) {
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              ScaffoldMessenger.of(this.context).showSnackBar(
                                 SnackBar(
-                                  content: Text(err.toString()),
+                                  content: const Text(
+                                    'No se pudo actualizar el estado.',
+                                  ),
                                   backgroundColor: Colors.red.shade700,
                                 ),
                               );
@@ -202,7 +235,12 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: ApiClientProvider.session,
+    builder: (context, _) => _buildContent(context),
+  );
+
+  Widget _buildContent(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -220,7 +258,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         ],
       ),
       body: _buildBody(),
-      bottomNavigationBar: _ticket != null
+      bottomNavigationBar: _ticket != null && _canManage
           ? SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -248,7 +286,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.uctBlue));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.uctBlue),
+      );
     }
 
     if (_errorMessage != null) {
@@ -320,7 +360,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               ),
               child: Text(
                 complaint!.description,
-                style: const TextStyle(fontSize: 14, height: 1.4, color: AppColors.ink),
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: AppColors.ink,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -328,7 +372,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
           const Text(
             'Información Técnica',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.ink),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppColors.ink,
+            ),
           ),
           const SizedBox(height: 10),
 
@@ -348,7 +396,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             'Fecha Reportada:',
             '${ticket.reportedAt.day}/${ticket.reportedAt.month}/${ticket.reportedAt.year} ${ticket.reportedAt.hour}:${ticket.reportedAt.minute}',
           ),
-          _buildInfoRow('Activo:', ticket.isActive ? 'Sí (Activo)' : 'No (Inactivo)'),
+          _buildInfoRow(
+            'Activo:',
+            ticket.isActive ? 'Sí (Activo)' : 'No (Inactivo)',
+          ),
 
           if (ticket.lostObjectId?.isNotEmpty == true) ...[
             const SizedBox(height: 12),
@@ -371,7 +422,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: AppColors.subtitle, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.subtitle,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 2),
           SelectableText(

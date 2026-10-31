@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/lost_item.dart';
+import '../../domain/entities/app_permission.dart';
+import '../../presentation/screens/roles/admin_users_screen.dart';
+import '../../presentation/screens/roles/teacher_schedule_screen.dart';
 import '../../domain/entities/report.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../presentation/navigation/main_navigation_screen.dart';
@@ -27,6 +30,11 @@ import '../../presentation/screens/reports/reports_screen.dart';
 /// Centralized route definitions and generator for the UCT Map app.
 class AppRoutes {
   AppRoutes._();
+
+  static const String teacherSchedule = '/teacher-schedule';
+  static const String manageUsers = '/manage-users';
+  static const String manageObjects = '/manage-objects';
+  static const String manageReports = '/manage-reports';
 
   static const String initial = '/';
   static const String main = '/main';
@@ -57,7 +65,24 @@ class AppRoutes {
       settings,
       authRepository: authRepository,
     ) as MaterialPageRoute<dynamic>;
+    final rolePermission = switch (settings.name) {
+      teacherSchedule => AppPermission.teacherSchedule,
+      manageUsers => AppPermission.manageUsers,
+      manageObjects => AppPermission.manageObjects,
+      manageReports => AppPermission.manageReports,
+      _ => null,
+    };
+    if (rolePermission != null) {
+      return MaterialPageRoute<dynamic>(
+        settings: settings,
+        builder: (_) => SessionRequiredView(
+          permission: rolePermission,
+          builder: route.builder,
+        ),
+      );
+    }
     const protected = {
+      professors,
       reports,
       reportDetail,
       tickets,
@@ -82,6 +107,32 @@ class AppRoutes {
     AuthRepository? authRepository,
   }) {
     switch (settings.name) {
+      case teacherSchedule:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const TeacherScheduleScreen(),
+        );
+      case manageUsers:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const AdminUsersScreen(),
+        );
+      case manageObjects:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => LostObjectsScreen(
+            repository: LostObjectsRepositoryImpl(),
+            showAppBar: true,
+          ),
+        );
+      case manageReports:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => TicketsScreen(
+            repository: ReportsRepositoryImpl(),
+            showAppBar: true,
+          ),
+        );
       case initial:
       case main:
         int initialIndex = 0;
@@ -250,9 +301,8 @@ class AppRoutes {
       case createTicket:
         return MaterialPageRoute(
           settings: settings,
-          builder: (_) => CreateTicketScreen(
-            repository: ReportsRepositoryImpl(),
-          ),
+          builder: (_) =>
+              CreateTicketScreen(repository: ReportsRepositoryImpl()),
         );
 
       case ticketDetail:

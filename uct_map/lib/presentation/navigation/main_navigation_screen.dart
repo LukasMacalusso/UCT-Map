@@ -183,7 +183,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             child: GestureDetector(
               onTap: () => _onTabTapped(4),
               child: Tooltip(
-                message: 'Ver Perfil del Estudiante',
+                message: 'Ver perfil',
                 child: Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
