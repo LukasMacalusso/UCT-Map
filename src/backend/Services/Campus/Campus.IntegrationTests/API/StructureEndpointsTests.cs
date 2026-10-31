@@ -86,12 +86,14 @@ public class StructureEndpointsTests : ApiTestBase
         var (campusId, categoryId) = await SetupDependenciesAsync();
         await Http.PostAsync(Endpoint, JsonBody(new CreateStructureDto(campusId, categoryId, "Estructura Mapa", -38.7, -72.5)));
 
-        var response = await Http.GetAsync($"{Endpoint}/locations");
+        var response = await Http.GetAsync($"{Endpoint}/locations?campusId={campusId}&categoryId={categoryId}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var list = await ReadJsonAsync<List<StructureLocationDto>>(response);
         Assert.NotNull(list);
-        Assert.NotEmpty(list);
+        var structure = Assert.Single(list);
+        Assert.Equal("Categoria For Structure", structure.Metadata.CategoryName);
+        Assert.Equal("icon", structure.Metadata.CategoryIcon);
     }
 
     [DockerFact]

@@ -46,15 +46,26 @@ public class BuildingEndpointsTests : ApiTestBase
     public async Task GetLocations_ReturnsLocationsOfBuildings()
     {
         var campusId = await CreateCampusHelperAsync("Campus Para Locations");
-        var body = new CreateBuildingDto(campusId, "Edificio Locations", 3, -38.736, -72.596);
+        var body = new CreateBuildingDto(
+            campusId,
+            "Edificio Locations",
+            3,
+            -38.736,
+            -72.596,
+            new TimeOnly(8, 0),
+            new TimeOnly(20, 0),
+            "Wifi, Biblioteca"
+        );
         await Http.PostAsync(Endpoint, JsonBody(body));
 
-        var response = await Http.GetAsync($"{Endpoint}/locations");
+        var response = await Http.GetAsync($"{Endpoint}/locations?campusId={campusId}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var list = await ReadJsonAsync<List<BuildingLocationDto>>(response);
         Assert.NotNull(list);
-        Assert.NotEmpty(list);
+        var building = Assert.Single(list);
+        Assert.Equal("08:00 - 20:00", building.Metadata.Schedule);
+        Assert.Equal(new[] { "Wifi", "Biblioteca" }, building.Metadata.Services);
     }
 
     [DockerFact]

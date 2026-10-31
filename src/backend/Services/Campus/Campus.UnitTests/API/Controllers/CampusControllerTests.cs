@@ -18,13 +18,13 @@ namespace Campus.UnitTests.API.Controllers;
 
 public class CampusControllerTests
 {
-    private readonly IGenericRepository<CampusEntity> _repository;
+    private readonly ICampusRepository _repository;
     private readonly CampusHandler _handler;
     private readonly CampusController _controller;
 
     public CampusControllerTests()
     {
-        _repository = Substitute.For<IGenericRepository<CampusEntity>>();
+        _repository = Substitute.For<ICampusRepository>();
         _handler = new CampusHandler(_repository);
         _controller = new CampusController(_handler);
     }
@@ -250,5 +250,38 @@ public class CampusControllerTests
         var result = await _controller.UpdateLocation(Guid.NewGuid(), request, CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task GetMap_WhenIdIsEmpty_ShouldReturnBadRequest()
+    {
+        var result = await _controller.GetMap(Guid.Empty, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetMap_WhenNotFound_ShouldReturnNotFound()
+    {
+        var id = Guid.NewGuid();
+        _repository.GetByIdWithMapDataAsync(id, Arg.Any<CancellationToken>()).Returns((CampusEntity?)null);
+
+        var result = await _controller.GetMap(id, CancellationToken.None);
+
+        Assert.IsType<NotFoundObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetMap_WhenFound_ShouldReturnOkWithCampusMapDto()
+    {
+        var campus = new CampusEntity("Campus Central", "Dir 1", new Coordinate(-38.73, -72.60), 16m, 45m, -15m);
+        _repository.GetByIdWithMapDataAsync(campus.Id, Arg.Any<CancellationToken>()).Returns(campus);
+
+        var result = await _controller.GetMap(campus.Id, CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var dto = Assert.IsType<CampusMapDto>(okResult.Value);
+        Assert.Equal("Campus Central", dto.Name);
+        Assert.Equal(16m, dto.Camera.Zoom);
     }
 }

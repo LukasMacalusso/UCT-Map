@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Campus.Domain.Interfaces;
 using Campus.Domain.Entities;
 using Campus.Domain.ValueObjects;
 using Campus.Application.DTOs;
+using Campus.Application.Mappers;
 
 namespace Campus.Application.Handlers;
 
@@ -25,19 +27,14 @@ public class StructureHandler
 
     public async Task<IEnumerable<StructureDto>> GetAllAsync(Guid? campusId, Guid? categoryId, CancellationToken cancellationToken)
     {
-        var structures = await _repository.GetAllAsync(s =>
-            (!campusId.HasValue || s.CampusId == campusId.Value) &&
-            (!categoryId.HasValue || s.CategoryId == categoryId.Value),
-        cancellationToken);
-
-        return structures.Select(s => new StructureDto(s.Id, s.CampusId, s.CategoryId, s.Name, s.Coordinates.Latitude, s.Coordinates.Longitude));
+        var structures = await _repository.GetAllAsync(BuildFilterPredicate(campusId, categoryId), cancellationToken);
+        return structures.Select(s => s.ToDto());
     }
 
     public async Task<StructureDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var structure = await _repository.GetByIdAsync(id, cancellationToken);
-        if (structure == null) return null;
-        return new StructureDto(structure.Id, structure.CampusId, structure.CategoryId, structure.Name, structure.Coordinates.Latitude, structure.Coordinates.Longitude);
+        return structure?.ToDto();
     }
 
     public async Task<(StructureDto? dto, string? error)> CreateAsync(CreateStructureDto request, CancellationToken cancellationToken)
@@ -54,7 +51,7 @@ public class StructureHandler
         await _repository.AddAsync(structure, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
 
-        return (new StructureDto(structure.Id, structure.CampusId, structure.CategoryId, structure.Name, structure.Coordinates.Latitude, structure.Coordinates.Longitude), null);
+        return (structure.ToDto(), null);
     }
 
     public async Task<(bool success, string? error)> UpdateAsync(Guid id, UpdateStructureDto request, CancellationToken cancellationToken)
@@ -76,18 +73,29 @@ public class StructureHandler
         return (true, null);
     }
 
-    public async Task<IEnumerable<StructureLocationDto>> GetAllLocationsAsync(Guid? campusId, CancellationToken cancellationToken)
+    public async Task<IEnumerable<StructureLocationDto>> GetAllLocationsAsync(Guid? campusId, Guid? categoryId, CancellationToken cancellationToken)
     {
-        var structures = await _repository.GetAllAsync(campusId.HasValue ? s => s.CampusId == campusId.Value : null, cancellationToken);
-        var categories = (await _categoryRepository.GetAllAsync(null, cancellationToken)).ToDictionary(c => c.Id, c => c.Name);
+        var structures = (await _repository.GetAllAsync(BuildFilterPredicate(campusId, categoryId), cancellationToken)).ToList();
+        if (structures.Count == 0)
+            return Array.Empty<StructureLocationDto>();
 
-        return structures.Select(s => new StructureLocationDto(
-            s.Id,
-            s.Name,
-            new LocationDto(s.Coordinates.Latitude, s.Coordinates.Longitude),
-            new StructureMetadataDto(s.CampusId, s.CategoryId, categories.TryGetValue(s.CategoryId, out var name) ? name : string.Empty)
-        ));
+        var categoryIds = structures.Select(s => s.CategoryId).Distinct().ToHashSet();
+        var categories = (await _categoryRepository.GetAllAsync(c => categoryIds.Contains(c.Id), cancellationToken))
+            .ToDictionary(c => c.Id);
+
+        return structures.Select(s => categories.TryGetValue(s.CategoryId, out var category)
+            ? s.ToLocationDto(category.Name, category.Icon)
+            : s.ToLocationDto(string.Empty, string.Empty));
     }
+
+    private static Expression<Func<Structure, bool>>? BuildFilterPredicate(Guid? campusId, Guid? categoryId) =>
+        (campusId, categoryId) switch
+        {
+            ({ } cId, { } catId) => s => s.CampusId == cId && s.CategoryId == catId,
+            ({ } cId, null) => s => s.CampusId == cId,
+            (null, { } catId) => s => s.CategoryId == catId,
+            _ => null
+        };
 
     public async Task<bool> UpdateLocationAsync(Guid id, UpdateLocationDto request, CancellationToken cancellationToken)
     {

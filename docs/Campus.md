@@ -124,6 +124,67 @@ Handles the university's geographic and physical infrastructure, including campu
 
 ---
 
+### 1.7 Get Campus Unified Map
+- **Route**: `GET /api/campus/campuses/{id}/map`
+- **Access**: Any authenticated user
+- **Description**: Returns a unified georeferenced payload optimized to initialize the web map for a campus in a single request (camera viewport, building markers, and structure markers).
+
+**Success Response (200 OK)**
+```json
+{
+  "id": "uuid",
+  "name": "Campus San Francisco",
+  "address": "Manuel Montt 056, Temuco",
+  "camera": {
+    "center": {
+      "latitude": -38.7335,
+      "longitude": -72.6020
+    },
+    "zoom": 16.0,
+    "pitch": 50.0,
+    "bearing": -20.0
+  },
+  "buildings": [
+    {
+      "id": "uuid",
+      "name": "Edificio 16",
+      "location": {
+        "latitude": -38.7336,
+        "longitude": -72.6021
+      },
+      "metadata": {
+        "campusId": "uuid",
+        "floorsCount": 3,
+        "schedule": "08:00 - 21:00",
+        "services": ["Wifi", "Baños", "Calefacción"]
+      }
+    }
+  ],
+  "structures": [
+    {
+      "id": "uuid",
+      "name": "Punto de Estudio San Francisco",
+      "location": {
+        "latitude": -38.7338,
+        "longitude": -72.6025
+      },
+      "metadata": {
+        "campusId": "uuid",
+        "categoryId": "uuid",
+        "categoryName": "Sala de Estudio",
+        "categoryIcon": "users"
+      }
+    }
+  ]
+}
+```
+
+**Error Responses**
+- **`400 Bad Request`**: Empty `id`.
+- **`404 Not Found`**: Campus not found.
+
+---
+
 ## 2. Buildings
 *Represents buildings inside a university campus, including their floor count, schedules, and services.*
 
@@ -297,6 +358,7 @@ Handles the university's geographic and physical infrastructure, including campu
 | Parameter | Type | Required | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `campusId` | `uuid` | No | — | Filter structures by campus. |
+| `categoryId` | `uuid` | No | — | Filter structures by category. |
 
 **Success Response (200 OK)**
 ```json
@@ -311,7 +373,8 @@ Handles the university's geographic and physical infrastructure, including campu
     "metadata": {
       "campusId": "uuid",
       "categoryId": "uuid",
-      "categoryName": "Estacionamiento"
+      "categoryName": "Estacionamiento",
+      "categoryIcon": "car"
     }
   }
 ]

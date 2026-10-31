@@ -72,20 +72,64 @@ public class BuildingHandlerTests
         var campusId = Guid.NewGuid();
         var buildings = new List<Building>
         {
-            new("Edificio Central", 5, new Coordinate(-38.73, -72.59), campusId)
+            new(
+                "Edificio Central",
+                5,
+                new Coordinate(-38.73, -72.59),
+                campusId,
+                openTime: new TimeOnly(8, 0),
+                closeTime: new TimeOnly(20, 30),
+                services: "Wifi,  Baños , Biblioteca"
+            ),
+            new(
+                "Edificio Abierto",
+                2,
+                new Coordinate(-38.74, -72.60),
+                campusId,
+                openTime: new TimeOnly(7, 30),
+                closeTime: null,
+                services: "   "
+            ),
+            new(
+                "Edificio Cierre",
+                1,
+                new Coordinate(-38.75, -72.61),
+                campusId,
+                openTime: null,
+                closeTime: new TimeOnly(22, 0),
+                services: null
+            ),
+            new(
+                "Edificio Sin Horario",
+                3,
+                new Coordinate(-38.76, -72.62),
+                campusId
+            )
         };
 
         _repository.GetAllAsync(null, Arg.Any<CancellationToken>())
             .Returns(buildings);
 
-        var result = await _handler.GetAllLocationsAsync(null, CancellationToken.None);
+        var result = (await _handler.GetAllLocationsAsync(null, CancellationToken.None)).ToList();
 
-        var location = Assert.Single(result);
-        Assert.Equal("Edificio Central", location.Name);
-        Assert.Equal(-38.73, location.Location.Latitude);
-        Assert.Equal(-72.59, location.Location.Longitude);
-        Assert.Equal(campusId, location.Metadata.CampusId);
-        Assert.Equal(5, location.Metadata.FloorsCount);
+        Assert.Equal(4, result.Count);
+
+        Assert.Equal("Edificio Central", result[0].Name);
+        Assert.Equal(-38.73, result[0].Location.Latitude);
+        Assert.Equal(-72.59, result[0].Location.Longitude);
+        Assert.Equal(campusId, result[0].Metadata.CampusId);
+        Assert.Equal(5, result[0].Metadata.FloorsCount);
+        Assert.Equal("08:00 - 20:30", result[0].Metadata.Schedule);
+        Assert.Equal(new[] { "Wifi", "Baños", "Biblioteca" }, result[0].Metadata.Services);
+
+        Assert.Equal("07:30", result[1].Metadata.Schedule);
+        Assert.Empty(result[1].Metadata.Services);
+
+        Assert.Equal("22:00", result[2].Metadata.Schedule);
+        Assert.Empty(result[2].Metadata.Services);
+
+        Assert.Null(result[3].Metadata.Schedule);
+        Assert.Empty(result[3].Metadata.Services);
     }
 
     [Fact]

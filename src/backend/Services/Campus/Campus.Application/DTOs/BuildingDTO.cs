@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Campus.Application.DTOs;
@@ -63,25 +64,11 @@ public record UpdateBuildingDto(
     string? Services = null
 );
 
-public record LocationDto(
-    double Latitude,
-    double Longitude
-);
-
-public record UpdateLocationDto(
-    [Range(-90.0, 90.0, ErrorMessage = "Latitude must be between -90 and 90.")]
-    double Latitude,
-
-    [Range(-180.0, 180.0, ErrorMessage = "Longitude must be between -180 and 180.")]
-    double Longitude
-);
-
 public record BuildingMetadataDto(
     Guid CampusId,
     int FloorsCount,
-    TimeOnly? OpenTime = null,
-    TimeOnly? CloseTime = null,
-    string? Services = null
+    string? Schedule,
+    IReadOnlyList<string> Services
 );
 
 public record BuildingLocationDto(

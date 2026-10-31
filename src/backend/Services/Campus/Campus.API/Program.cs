@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Campus.Infrastructure.Persistence;
+using Campus.Infrastructure.Persistence.Repositories;
 using Campus.Domain.Interfaces;
 using Campus.Application.Handlers;
 
@@ -15,6 +16,7 @@ builder.Services.AddDbContext<CampusDbContext>(options =>
 
 // DI Registrations
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+builder.Services.AddScoped<ICampusRepository, CampusRepository>();
 builder.Services.AddScoped<CampusHandler>();
 builder.Services.AddScoped<BuildingHandler>();
 builder.Services.AddScoped<CategoryGroupHandler>();

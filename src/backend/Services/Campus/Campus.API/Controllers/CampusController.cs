@@ -34,6 +34,16 @@ public class CampusController : ControllerBase
         return Ok(dto);
     }
 
+    [HttpGet("{id:guid}/map")]
+    public async Task<ActionResult<CampusMapDto>> GetMap(Guid id, CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty) return BadRequest(new { message = "The 'id' parameter cannot be empty." });
+
+        var dto = await _handler.GetMapByIdAsync(id, cancellationToken);
+        if (dto is null) return NotFound(new { message = $"Campus with ID '{id}' was not found." });
+        return Ok(dto);
+    }
+
     [HttpPost]
     public async Task<ActionResult<CampusDto>> Create([FromBody] CreateCampusDto request, CancellationToken cancellationToken)
     {

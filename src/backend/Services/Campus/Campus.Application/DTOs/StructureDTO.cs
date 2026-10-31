@@ -51,7 +51,8 @@ public record UpdateStructureDto(
 public record StructureMetadataDto(
     Guid CampusId,
     Guid CategoryId,
-    string CategoryName
+    string CategoryName,
+    string CategoryIcon
 );
 
 public record StructureLocationDto(

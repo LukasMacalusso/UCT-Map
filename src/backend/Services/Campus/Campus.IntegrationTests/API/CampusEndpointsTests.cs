@@ -95,4 +95,70 @@ public class CampusEndpointsTests : ApiTestBase
         var getRes = await Http.GetAsync($"{Endpoint}/{created.Id}");
         Assert.Equal(HttpStatusCode.NotFound, getRes.StatusCode);
     }
+
+    [DockerFact]
+    public async Task GetMap_WhenCampusExists_ReturnsUnifiedMapPayload()
+    {
+        var campusRes = await Http.PostAsync(
+            Endpoint,
+            JsonBody(new CreateCampusDto("Campus Mapa", "Manuel Montt 056", -38.7335, -72.6020, 16.0m, 50.0m, -20.0m))
+        );
+        var campus = await ReadJsonAsync<CampusDto>(campusRes);
+
+        var groupRes = await Http.PostAsync("/api/campus/category-groups", JsonBody(new CreateCategoryGroupDto("Espacios Exterior")));
+        var group = await ReadJsonAsync<CategoryGroupDto>(groupRes);
+
+        var catRes = await Http.PostAsync("/api/campus/categories", JsonBody(new CreateCategoryDto(group!.Id, "Estacionamiento", "car", "Zona vehicular")));
+        var category = await ReadJsonAsync<CategoryDto>(catRes);
+
+        await Http.PostAsync(
+            "/api/campus/buildings",
+            JsonBody(new CreateBuildingDto(
+                campus!.Id,
+                "Edificio 16",
+                3,
+                -38.7336,
+                -72.6021,
+                new TimeOnly(8, 0),
+                new TimeOnly(21, 0),
+                "Wifi, Baños"
+            ))
+        );
+
+        await Http.PostAsync(
+            "/api/campus/structures",
+            JsonBody(new CreateStructureDto(campus.Id, category!.Id, "Estacionamiento Norte", -38.7338, -72.6025))
+        );
+
+        var mapRes = await Http.GetAsync($"{Endpoint}/{campus.Id}/map");
+
+        Assert.Equal(HttpStatusCode.OK, mapRes.StatusCode);
+        var map = await ReadJsonAsync<CampusMapDto>(mapRes);
+        Assert.NotNull(map);
+        Assert.Equal(campus.Id, map.Id);
+        Assert.Equal("Campus Mapa", map.Name);
+        Assert.Equal(-38.7335, map.Camera.Center.Latitude);
+        Assert.Equal(-72.6020, map.Camera.Center.Longitude);
+        Assert.Equal(16.0m, map.Camera.Zoom);
+        Assert.Equal(50.0m, map.Camera.Pitch);
+        Assert.Equal(-20.0m, map.Camera.Bearing);
+
+        var building = Assert.Single(map.Buildings);
+        Assert.Equal("Edificio 16", building.Name);
+        Assert.Equal("08:00 - 21:00", building.Metadata.Schedule);
+        Assert.Equal(new[] { "Wifi", "Baños" }, building.Metadata.Services);
+
+        var structure = Assert.Single(map.Structures);
+        Assert.Equal("Estacionamiento Norte", structure.Name);
+        Assert.Equal("Estacionamiento", structure.Metadata.CategoryName);
+        Assert.Equal("car", structure.Metadata.CategoryIcon);
+    }
+
+    [DockerFact]
+    public async Task GetMap_WhenCampusDoesNotExist_ReturnsNotFound()
+    {
+        var mapRes = await Http.GetAsync($"{Endpoint}/{Guid.NewGuid()}/map");
+
+        Assert.Equal(HttpStatusCode.NotFound, mapRes.StatusCode);
+    }
 }

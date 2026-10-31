@@ -14,6 +14,8 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
     private readonly CampusDbContext _context;
     private readonly DbSet<T> _dbSet;
 
+    protected CampusDbContext Context => _context;
+
     public GenericRepository(CampusDbContext context)
     {
         _context = context;
