@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from '../states/authState';
-import { Role } from '../constants/role';
 import { Button } from '../components/ui/Button';
 import { LoginForm } from '../modules/auth/LoginForm';
 import { RegisterForm } from '../modules/auth/RegisterForm';
@@ -33,7 +32,6 @@ const backgroundData: LoginBackgroundData[] = [
 
 export const LoginView = () => {
   const navigate = useNavigate();
-  const mockLoginAs = useAuthState((state) => state.mockLoginAs);
   const logout = useAuthState((state) => state.logout);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -52,11 +50,6 @@ export const LoginView = () => {
 
     return () => clearInterval(intervalId);
   }, []);
-
-  const handleLogin = (role: Role) => {
-    mockLoginAs(role);
-    navigate('/map');
-  };
 
   const handleGuest = () => {
     logout();
@@ -180,40 +173,7 @@ export const LoginView = () => {
         </div>
       </div>
 
-      {/* Dev Tool Panel */}
-      <div className="hidden md:flex absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm p-3 rounded-2xl shadow-xl border border-gray-200 flex-col items-center gap-2.5 w-48 z-20">
-        <div className="flex flex-col items-center gap-0">
-          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Dev Tool</h2>
-        </div>
 
-        <div className="flex flex-col w-full gap-1.5">
-          <Button onClick={handleGuest} color="gray" size="sm" className="!w-full !px-2 !py-1 !text-xs">
-            Invitado
-          </Button>
-
-          <div className="w-full h-px bg-gray-100 my-0.5"></div>
-
-          <Button onClick={() => handleLogin(Role.Student)} color="blue" size="sm" className="!w-full !px-2 !py-1 !text-xs">
-            Estudiante
-          </Button>
-
-          <Button onClick={() => handleLogin(Role.Teacher)} color="dark" size="sm" className="!w-full !px-2 !py-1 !text-xs">
-            Profesor
-          </Button>
-
-          <Button onClick={() => handleLogin(Role.ComplaintsOfficer)} color="blue" size="sm" className="!w-full !px-2 !py-1 !text-xs">
-            Enc. Incidentes
-          </Button>
-
-          <Button onClick={() => handleLogin(Role.ObjectsOfficer)} color="blue" size="sm" className="!w-full !px-2 !py-1 !text-xs">
-            Enc. Objetos
-          </Button>
-
-          <Button onClick={() => handleLogin(Role.Admin)} color="purple" size="sm" className="!w-full !px-2 !py-1 !text-xs">
-            Admin
-          </Button>
-        </div>
-      </div>
 
     </div>
   );

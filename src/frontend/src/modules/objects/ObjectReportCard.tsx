@@ -14,7 +14,7 @@ export interface ObjectReportCardProps {
   statusColor?: 'blue' | 'green' | 'yellow' | 'red' | 'gray' | 'white';
   photoUrl?: string;
   building: string;
-  code: string;
+  code?: string;
   actions: ObjectReportAction[];
   compact?: boolean;
   className?: string;
@@ -40,8 +40,8 @@ export const ObjectReportCard = ({
       <div className="flex flex-col flex-1 min-w-0 gap-2">
         {/* Title and state */}
         <div className="flex justify-between items-center mb-1">
-          <h2 className={`${compact ? 'text-lg' : 'text-2xl'} font-bold text-gray-800 uppercase tracking-wide leading-tight truncate mr-2`}>{title}</h2>
-          <Tag label={status} color={statusColor as any} className={compact ? '!text-xs !px-2.5 !py-0.5' : '!text-sm !px-3.5 !py-1 font-semibold flex-shrink-0'} />
+          <h2 className={`${compact ? 'text-lg' : 'text-2xl'} font-bold text-gray-800 uppercase tracking-wide leading-tight line-clamp-2 mr-2`}>{title}</h2>
+          <Tag label={status} color={statusColor} className={compact ? '!text-xs !px-2.5 !py-0.5' : '!text-sm !px-3.5 !py-1 font-semibold flex-shrink-0'} />
         </div>
 
         {/* User actions */}
@@ -63,7 +63,9 @@ export const ObjectReportCard = ({
         {/* Code and ubication */}
         <div className={`flex flex-col gap-2 ${compact ? 'mt-1' : 'mt-2'}`}>
           <IconText icon={<MapPinIcon className={compact ? 'w-4 h-4' : 'w-5 h-5'} />} text={building} className={compact ? '!text-xs' : '!text-sm'} />
-          <IconText icon={<TicketIcon className={compact ? 'w-4 h-4' : 'w-5 h-5'} />} text={code} className={compact ? '!text-xs' : '!text-sm'} />
+          {code && (
+            <IconText icon={<TicketIcon className={compact ? 'w-4 h-4' : 'w-5 h-5'} />} text={code} className={compact ? '!text-xs' : '!text-sm'} />
+          )}
         </div>
       </div>
     </Panel>

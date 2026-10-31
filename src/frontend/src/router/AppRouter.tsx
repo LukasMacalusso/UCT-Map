@@ -19,14 +19,13 @@ export const AppRouter = () => {
 
         {/* Public general routes */}
         <Route path="/map" element={<MapView />} />
-        <Route path="/reports" element={<IncidentsView />} />
-        <Route path="/objects" element={<ObjectsView />} />
-        <Route path="/reports" element={<IncidentsView />} />
         <Route path="/showcase" element={<ShowcaseView />} />
 
         {/* Protected general routes */}
         <Route element={<ProtectedRoute unauthorizedTo="/login" />}>
           <Route path="/contacts" element={<ContactsView />} />
+          <Route path="/reports" element={<IncidentsView />} />
+          <Route path="/objects" element={<ObjectsView />} />
         </Route>
 
         {/* Role-Restricted Routes */}

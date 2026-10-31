@@ -1,47 +1,35 @@
 import httpClient from '../api/httpClient';
+import { toApiError } from '../api/apiError';
+
+const LOGIN_ERRORS: Record<number, string> = {
+  400: 'Datos incompletos o formato incorrecto',
+  401: 'Credenciales inválidas',
+  403: 'Cuenta suspendida o sin permisos para acceder',
+  429: 'Demasiados intentos fallidos. Intenta más tarde',
+  500: 'Error interno del servidor. Intenta más tarde',
+};
+
+const REGISTER_ERRORS: Record<number, string> = {
+  400: 'Datos inválidos o el correo ya está registrado',
+  500: 'Error interno del servidor. Intenta más tarde',
+};
 
 export const authService = {
   login: async (email: string, password: string) => {
     try {
-      const response = await httpClient.post('/api/identity/login', { email, password });
-      return response.data;
-    } catch (err: any) {
-      const status = err.response?.status;
-
-      if (status === 400) {
-        throw new Error('Datos incompletos o formato incorrecto');
-      } else if (status === 401) {
-        throw new Error('Credenciales inválidas');
-      } else if (status === 403) {
-        throw new Error('Cuenta suspendida o sin permisos para acceder');
-      } else if (status === 429) {
-        throw new Error('Demasiados intentos fallidos. Intenta más tarde');
-      } else if (status >= 500) {
-        throw new Error('Error interno del servidor. Intenta más tarde');
-      } else if (typeof err.response?.data === 'string' && err.response.data.trim()) {
-        throw new Error(err.response.data);
-      } else {
-        throw new Error('Error al procesar la solicitud');
-      }
+      const { data } = await httpClient.post('/api/identity/login', { email, password });
+      return data;
+    } catch (error) {
+      throw toApiError(error, 'Error al procesar la solicitud', LOGIN_ERRORS);
     }
   },
 
   register: async (name: string, email: string, password: string) => {
     try {
-      const response = await httpClient.post('/api/identity/register', { name, email, password });
-      return response.data;
-    } catch (err: any) {
-      const status = err.response?.status;
-
-      if (status === 400) {
-        throw new Error('Datos inválidos o el correo ya está registrado');
-      } else if (status >= 500) {
-        throw new Error('Error interno del servidor. Intenta más tarde');
-      } else if (typeof err.response?.data === 'string' && err.response.data.trim()) {
-        throw new Error(err.response.data);
-      } else {
-        throw new Error('Error al procesar el registro');
-      }
+      const { data } = await httpClient.post('/api/identity/register', { name, email, password });
+      return data;
+    } catch (error) {
+      throw toApiError(error, 'Error al procesar el registro', REGISTER_ERRORS);
     }
-  }
+  },
 };

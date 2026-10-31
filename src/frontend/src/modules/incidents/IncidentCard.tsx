@@ -38,14 +38,14 @@ export const IncidentCard = ({
       {/* Ubication and state */}
       <div className="flex justify-between items-center mb-1">
         <IconText icon={<MapPinIcon className={compact ? 'w-4 h-4' : 'w-5 h-5'} />} text={location} className={compact ? '!text-xs font-medium' : '!text-sm font-medium'} />
-        <Tag label={status} color={statusColor as any} className={`${compact ? '!text-xs !px-2.5 !py-0.5' : '!text-xs !px-3 !py-1 font-semibold'} uppercase`} />
+        <Tag label={status} color={statusColor} className={`${compact ? '!text-xs !px-2.5 !py-0.5' : '!text-xs !px-3 !py-1 font-semibold'} uppercase`} />
       </div>
 
       {/* Incident image */}
       <PhotoFrame src={photoUrl} className={`w-full ${compact ? 'h-28 rounded-xl' : 'h-52 rounded-2xl'} object-cover mb-1 shadow-sm`} />
 
       {/* Incident name */}
-      <h2 className={`${compact ? 'text-lg' : 'text-xl'} font-bold text-gray-800 leading-tight`}>
+      <h2 className={`${compact ? 'text-lg' : 'text-xl'} font-bold text-gray-800 leading-tight line-clamp-2`}>
         {title}
       </h2>
 
