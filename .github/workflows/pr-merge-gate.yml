@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - taller-4
+      - TI4-96
       - TI4-98
   workflow_dispatch:
 

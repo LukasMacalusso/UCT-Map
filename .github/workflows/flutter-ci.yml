@@ -6,6 +6,7 @@ on:
       - main
       - taller-4
       - TI4-94
+      - TI4-96
       - TI4-98
     paths:
       - 'uct_map/**'
@@ -15,6 +16,7 @@ on:
       - main
       - taller-4
       - TI4-94
+      - TI4-96
       - TI4-98
   workflow_dispatch:
 
@@ -206,7 +208,6 @@ jobs:
 
       - name: Build Android Debug APK
         run: flutter build apk --debug
-        continue-on-error: true # Prevención por compatibilidad entre Mapbox SDK y Gradle 9
 
       - name: Upload Android APK Artifact
         if: success()
