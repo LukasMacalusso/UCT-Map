@@ -290,40 +290,51 @@ var assemblies = [
   {
     "name": "Incident.API",
     "classes": [
-      { "name": "Incident.API.Controllers.HealthController", "rp": "Incident.API_HealthController.html", "cl": 12, "ucl": 8, "cal": 20, "tl": 39, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.API.Controllers.LostObjectsController", "rp": "Incident.API_LostObjectsController.html", "cl": 59, "ucl": 0, "cal": 59, "tl": 90, "cb": 6, "tb": 6, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.API.Controllers.ReportsController", "rp": "Incident.API_ReportsController.html", "cl": 44, "ucl": 0, "cal": 44, "tl": 70, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.API.Controllers.HealthController", "rp": "Incident.API_HealthController.html", "cl": 20, "ucl": 0, "cal": 20, "tl": 39, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.API.Controllers.LostObjectsController", "rp": "Incident.API_LostObjectsController.html", "cl": 74, "ucl": 0, "cal": 74, "tl": 107, "cb": 8, "tb": 8, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.API.Controllers.ReportsController", "rp": "Incident.API_ReportsController.html", "cl": 80, "ucl": 0, "cal": 80, "tl": 114, "cb": 10, "tb": 10, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Program", "rp": "Incident.API_Program.html", "cl": 15, "ucl": 0, "cal": 15, "tl": 30, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
   {
     "name": "Incident.Application",
     "classes": [
-      { "name": "Incident.Application.DTOs.CreateLostObjectRequest", "rp": "Incident.Application_CreateLostObjectRequest.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 15, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.Application.DTOs.CreateReportRequest", "rp": "Incident.Application_CreateReportRequest.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 12, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.Application.DTOs.LostObjectList", "rp": "Incident.Application_LostObjectList.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 18, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.Application.DTOs.LostObjectResponse", "rp": "Incident.Application_LostObjectResponse.html", "cl": 4, "ucl": 3, "cal": 7, "tl": 18, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.Application.DTOs.TicketResponse", "rp": "Incident.Application_TicketResponse.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 16, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.Application.DTOs.UpdateStatus", "rp": "Incident.Application_UpdateStatus.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 15, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.Application.DTOs.UpdateStatusReport", "rp": "Incident.Application_UpdateStatusReport.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 12, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.Application.Handlers.LostObjectHandler", "rp": "Incident.Application_LostObjectHandler.html", "cl": 70, "ucl": 0, "cal": 70, "tl": 105, "cb": 21, "tb": 22, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.Application.Handlers.ReportHandler", "rp": "Incident.Application_ReportHandler.html", "cl": 52, "ucl": 0, "cal": 52, "tl": 80, "cb": 14, "tb": 14, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.Common.JwtUserIdReader", "rp": "Incident.Application_JwtUserIdReader.html", "cl": 36, "ucl": 0, "cal": 36, "tl": 66, "cb": 24, "tb": 24, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.DTOs.ComplaintSearchRequest", "rp": "Incident.Application_ComplaintSearchRequest.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 37, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.DTOs.CreateLostObjectRequest", "rp": "Incident.Application_CreateLostObjectRequest.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 23, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.DTOs.CreateReportRequest", "rp": "Incident.Application_CreateReportRequest.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 37, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.DTOs.LostObjectPageResponse", "rp": "Incident.Application_LostObjectPageResponse.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 22, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.DTOs.LostObjectResponse", "rp": "Incident.Application_LostObjectResponse.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 22, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.DTOs.LostObjectSearchRequest", "rp": "Incident.Application_LostObjectSearchRequest.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 23, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.DTOs.TicketPageResponse", "rp": "Incident.Application_TicketPageResponse.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 24, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.DTOs.TicketResponse", "rp": "Incident.Application_TicketResponse.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 24, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.DTOs.TicketSearchRequest", "rp": "Incident.Application_TicketSearchRequest.html", "cl": 12, "ucl": 0, "cal": 12, "tl": 37, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.DTOs.UpdateStatus", "rp": "Incident.Application_UpdateStatus.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 23, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.DTOs.UpdateStatusReport", "rp": "Incident.Application_UpdateStatusReport.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 37, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.Handlers.LostObjectHandler", "rp": "Incident.Application_LostObjectHandler.html", "cl": 96, "ucl": 0, "cal": 96, "tl": 141, "cb": 37, "tb": 38, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Application.Handlers.ReportHandler", "rp": "Incident.Application_ReportHandler.html", "cl": 152, "ucl": 0, "cal": 152, "tl": 210, "cb": 72, "tb": 72, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
   {
     "name": "Incident.Domain",
     "classes": [
       { "name": "Incident.Domain.Entities.ComplaintDetails", "rp": "Incident.Domain_ComplaintDetails.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 17, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Incident.Domain.Entities.GeoPoint", "rp": "Incident.Domain_GeoPoint.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 20, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.Domain.Entities.LostObject", "rp": "Incident.Domain_LostObject.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 30, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.Domain.Entities.Ticket", "rp": "Incident.Domain_Ticket.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 45, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Domain.Entities.LostObject", "rp": "Incident.Domain_LostObject.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 33, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Domain.Entities.Ticket", "rp": "Incident.Domain_Ticket.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 44, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Domain.Queries.ComplaintSearchCriteria", "rp": "Incident.Domain_ComplaintSearchCriteria.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 24, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Domain.Queries.LostObjectSearchCriteria", "rp": "Incident.Domain_LostObjectSearchCriteria.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 15, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Domain.Queries.PagedResult\u003CT\u003E", "rp": "Incident.Domain_PagedResult_1.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 15, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Domain.Queries.TicketSearchCriteria", "rp": "Incident.Domain_TicketSearchCriteria.html", "cl": 13, "ucl": 0, "cal": 13, "tl": 24, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
   {
     "name": "Incident.Infrastructure",
     "classes": [
-      { "name": "Incident.Infrastructure.DependencyInjection", "rp": "Incident.Infrastructure_DependencyInjection.html", "cl": 16, "ucl": 6, "cal": 22, "tl": 42, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.Infrastructure.Persistence.MongoDbContext", "rp": "Incident.Infrastructure_MongoDbContext.html", "cl": 5, "ucl": 1, "cal": 6, "tl": 24, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Infrastructure.DependencyInjection", "rp": "Incident.Infrastructure_DependencyInjection.html", "cl": 22, "ucl": 0, "cal": 22, "tl": 42, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Infrastructure.Persistence.MongoDbContext", "rp": "Incident.Infrastructure_MongoDbContext.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 24, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Incident.Infrastructure.Persistence.Repositories.MongoRepository\u003CT\u003E", "rp": "Incident.Infrastructure_MongoRepository_1.html", "cl": 20, "ucl": 0, "cal": 20, "tl": 42, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.Infrastructure.Persistence.Repositories.ObjectRepository", "rp": "Incident.Infrastructure_ObjectRepository.html", "cl": 14, "ucl": 0, "cal": 14, "tl": 34, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Incident.Infrastructure.Persistence.Repositories.TicketRepository", "rp": "Incident.Infrastructure_TicketRepository.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 22, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Infrastructure.Persistence.Repositories.ObjectRepository", "rp": "Incident.Infrastructure_ObjectRepository.html", "cl": 22, "ucl": 0, "cal": 22, "tl": 45, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Infrastructure.Persistence.Repositories.TicketRepository", "rp": "Incident.Infrastructure_TicketRepository.html", "cl": 29, "ucl": 0, "cal": 29, "tl": 55, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Infrastructure.Persistence.Search.LostObjectFilters", "rp": "Incident.Infrastructure_LostObjectFilters.html", "cl": 20, "ucl": 0, "cal": 20, "tl": 43, "cb": 22, "tb": 22, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Incident.Infrastructure.Persistence.Search.TicketFilters", "rp": "Incident.Infrastructure_TicketFilters.html", "cl": 34, "ucl": 0, "cal": 34, "tl": 71, "cb": 38, "tb": 38, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
 ];
 
@@ -332,9 +343,17 @@ var metrics = [{ "name": "Crap Score", "abbreviation": "crp", "explanationUrl": 
 var historicCoverageExecutionTimes = [];
 
 var riskHotspotMetrics = [
+      { "name": "Crap Score", "explanationUrl": "https://googletesting.blogspot.de/2011/02/this-code-is-crap.html" },
+      { "name": "Cyclomatic complexity", "explanationUrl": "https://en.wikipedia.org/wiki/Cyclomatic_complexity" },
 ];
 
 var riskHotspots = [
+  {
+    "assembly": "Incident.Infrastructure", "class": "Incident.Infrastructure.Persistence.Search.TicketFilters", "reportPath": "Incident.Infrastructure_TicketFilters.html", "methodName": "Build(Incident.Domain.Queries.TicketSearchCriteria)", "methodShortName": "Build(...)", "fileIndex": 0, "line": 14,
+    "metrics": [
+      { "value": 32, "exceeded": true },
+      { "value": 32, "exceeded": true },
+    ]},
 ];
 
 var branchCoverageAvailable = true;

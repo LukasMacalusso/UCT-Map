@@ -92,4 +92,23 @@ public class ReportsController : ControllerBase
                 return Problem(statusCode: statusCode, title: firstError.Description);
             });
     }
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete([FromRoute] string id)
+    {
+        var userRefRole = JwtUserIdReader.GetUserRoleToken(Request.Headers.Authorization.ToString());
+        var userRefId = JwtUserIdReader.GetUserIdToken(Request.Headers.Authorization.ToString());
+        var result = await _reportHandler.DeleteAsync(id, userRefRole!, userRefId!.Value.ToString());
+        return result.Match(
+            page => Ok(page),
+            errors =>
+            {
+                var firstError = errors.First();
+                var statusCode = firstError.Type switch
+                {
+                    ErrorType.NotFound => StatusCodes.Status404NotFound,
+                    _ => StatusCodes.Status400BadRequest
+                };
+                return Problem(statusCode: statusCode, title: firstError.Description);
+            });
+    }
 }

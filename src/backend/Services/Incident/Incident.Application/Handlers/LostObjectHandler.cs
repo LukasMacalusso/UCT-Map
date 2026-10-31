@@ -3,6 +3,7 @@ using Incident.Application.DTOs;
 using Incident.Domain.Entities;
 using Incident.Domain.Interfaces;
 using Incident.Domain.Queries;
+using Incident.Application.Common;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
@@ -111,5 +112,30 @@ public class LostObjectHandler : ILostObjectHandler
             .ToList();
 
         return new LostObjectPageResponse(items, result.TotalCount, criteria.Page, criteria.PageSize);
+    }
+    public async Task<ErrorOr<Success>> DeleteAsync(string id, string userRefRole)
+    {
+        var lostObject = await _lostObjectRepository.GetByIdAsync(id);
+        if (lostObject is null) return Error.NotFound(
+                code: "LostObject.NotFound",
+                description: $"LostObject with ID '{id}' was not found."
+            );
+
+        if (userRefRole is not ("Admin" or "ObjectsOfficer"))
+        {
+            return Error.Unauthorized(
+                code: "LostObject.Unauthorized",
+                description: $"'{userRefRole}' is not authorized"
+            );
+        }
+
+        var response = await _lostObjectRepository.DeleteAsync(lostObject.Id!);
+
+        if (!response) return Error.Failure(
+                code: "LostObject.UpdateFailed",
+                description: $"Failed to update status for LostObject with ID '{id}'."
+            );
+
+        return Result.Success;
     }
 }

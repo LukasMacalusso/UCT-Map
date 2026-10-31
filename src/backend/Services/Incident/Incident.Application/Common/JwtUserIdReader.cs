@@ -37,4 +37,30 @@ public static class JwtUserIdReader
             return null;
         }
     }
+    public static string? GetUserRoleToken(string? authorizationHeader)
+    {
+        if (string.IsNullOrWhiteSpace(authorizationHeader)) return null;
+
+        const string prefix = "Bearer ";
+        if (!authorizationHeader.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return null;
+
+        var token = authorizationHeader[prefix.Length..].Trim();
+        var handler = new JwtSecurityTokenHandler();
+        if (!handler.CanReadToken(token)) return null;
+
+        try
+        {
+            var jwt = handler.ReadJwtToken(token);
+
+            var role = jwt.Claims.FirstOrDefault(c =>
+                c.Type == "role" ||
+                c.Type == System.Security.Claims.ClaimTypes.Role)?.Value;
+
+            return role;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

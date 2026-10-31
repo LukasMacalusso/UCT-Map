@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.AspNetCore.Http;
+using Incident.Application.Common;
 using ErrorOr;
 using MongoDB.Bson;
 namespace Incident.API.Controllers;
@@ -72,6 +73,24 @@ public class LostObjectsController : ControllerBase
     public async Task<IActionResult> Search([FromQuery] LostObjectSearchRequest request, CancellationToken ct)
     {
         var result = await _lostObjectHandler.SearchAsync(request, ct);
+        return result.Match(
+            page => Ok(page),
+            errors =>
+            {
+                var firstError = errors.First();
+                var statusCode = firstError.Type switch
+                {
+                    ErrorType.NotFound => StatusCodes.Status404NotFound,
+                    _ => StatusCodes.Status400BadRequest
+                };
+                return Problem(statusCode: statusCode, title: firstError.Description);
+            });
+    }
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete([FromRoute] string id)
+    {
+        var userRefRole = JwtUserIdReader.GetUserRoleToken(Request.Headers.Authorization.ToString());
+        var result = await _lostObjectHandler.DeleteAsync(id, userRefRole!);
         return result.Match(
             page => Ok(page),
             errors =>

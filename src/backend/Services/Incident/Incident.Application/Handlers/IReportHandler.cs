@@ -12,4 +12,5 @@ public interface IReportHandler
     Task<ErrorOr<Success>> UpdateStatusTicketAsync(string id, UpdateStatusReport status);
     Task<ErrorOr<Success>> UpdateStatusComplainAsync(int? status, Ticket ticket);
     Task<ErrorOr<TicketPageResponse>> SearchAsync(TicketSearchRequest request, CancellationToken ct);
+    Task<ErrorOr<Success>> DeleteAsync(string id, string userRefRole, string userRefId);
 }
