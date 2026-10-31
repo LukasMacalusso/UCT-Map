@@ -231,4 +231,99 @@ public class BuildingControllerTests
 
         Assert.IsType<NoContentResult>(result);
     }
+
+    [Fact]
+    public async Task Create_WhenCampusIdIsEmpty_ShouldReturnBadRequest()
+    {
+        var request = new CreateBuildingDto(Guid.Empty, "Edificio Valido", 3, -38.7, -72.6);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Create_WhenNameExceeds100Characters_ShouldReturnBadRequest()
+    {
+        var request = new CreateBuildingDto(Guid.NewGuid(), new string('A', 101), 3, -38.7, -72.6);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Create_WhenFloorsCountIsLessThanOne_ShouldReturnBadRequest()
+    {
+        var request = new CreateBuildingDto(Guid.NewGuid(), "Edificio A", 0, -38.7, -72.6);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Create_WhenLatitudeIsOutOfRange_ShouldReturnBadRequest()
+    {
+        var request = new CreateBuildingDto(Guid.NewGuid(), "Edificio A", 3, 95.0, -72.6);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Create_WhenLongitudeIsOutOfRange_ShouldReturnBadRequest()
+    {
+        var request = new CreateBuildingDto(Guid.NewGuid(), "Edificio A", 3, -38.7, 185.0);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Create_WhenOpenTimeIsLaterThanCloseTime_ShouldReturnBadRequest()
+    {
+        var request = new CreateBuildingDto(
+            Guid.NewGuid(),
+            "Edificio A",
+            3,
+            -38.7,
+            -72.6,
+            OpenTime: new TimeOnly(20, 0),
+            CloseTime: new TimeOnly(8, 0)
+        );
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Create_WhenServicesExceeds150Characters_ShouldReturnBadRequest()
+    {
+        var request = new CreateBuildingDto(
+            Guid.NewGuid(),
+            "Edificio A",
+            3,
+            -38.7,
+            -72.6,
+            Services: new string('S', 151)
+        );
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateLocation_WhenCoordinatesOutOfRange_ShouldReturnBadRequest()
+    {
+        var request = new UpdateLocationDto(100.0, -72.6);
+
+        var result = await _controller.UpdateLocation(Guid.NewGuid(), request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
 }

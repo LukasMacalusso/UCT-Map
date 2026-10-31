@@ -37,7 +37,13 @@ public class CategoryController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<CategoryDto>> Create([FromBody] CreateCategoryDto request, CancellationToken cancellationToken)
     {
+        if (request.CategoryGroupId == Guid.Empty) return BadRequest(new { message = "The 'categoryGroupId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is mandatory." });
+        if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
+        if (string.IsNullOrWhiteSpace(request.Icon)) return BadRequest(new { message = "Icon is mandatory." });
+        if (request.Icon.Length > 100) return BadRequest(new { message = "Icon cannot exceed 100 characters." });
+        if (request.Description != null && request.Description.Length > 250)
+            return BadRequest(new { message = "Description cannot exceed 250 characters." });
 
         var (dto, error) = await _handler.CreateAsync(request, cancellationToken);
         if (error is not null) return BadRequest(new { message = error });
@@ -48,7 +54,13 @@ public class CategoryController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCategoryDto request, CancellationToken cancellationToken)
     {
+        if (request.CategoryGroupId == Guid.Empty) return BadRequest(new { message = "The 'categoryGroupId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is mandatory." });
+        if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
+        if (string.IsNullOrWhiteSpace(request.Icon)) return BadRequest(new { message = "Icon is mandatory." });
+        if (request.Icon.Length > 100) return BadRequest(new { message = "Icon cannot exceed 100 characters." });
+        if (request.Description != null && request.Description.Length > 250)
+            return BadRequest(new { message = "Description cannot exceed 250 characters." });
 
         var (success, error) = await _handler.UpdateAsync(id, request, cancellationToken);
         if (error is not null) return BadRequest(new { message = error });

@@ -155,4 +155,54 @@ public class CategoryControllerTests
 
         Assert.IsType<NoContentResult>(result);
     }
+
+    [Fact]
+    public async Task Create_WhenCategoryGroupIdIsEmpty_ShouldReturnBadRequest()
+    {
+        var request = new CreateCategoryDto(Guid.Empty, "Aula", "book", "desc");
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenNameExceeds100Characters_ShouldReturnBadRequest()
+    {
+        var request = new CreateCategoryDto(Guid.NewGuid(), new string('A', 101), "book", "desc");
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenIconIsEmpty_ShouldReturnBadRequest()
+    {
+        var request = new CreateCategoryDto(Guid.NewGuid(), "Aula", "", "desc");
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenIconExceeds100Characters_ShouldReturnBadRequest()
+    {
+        var request = new CreateCategoryDto(Guid.NewGuid(), "Aula", new string('I', 101), "desc");
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenDescriptionExceeds250Characters_ShouldReturnBadRequest()
+    {
+        var request = new CreateCategoryDto(Guid.NewGuid(), "Aula", "book", new string('D', 251));
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
 }

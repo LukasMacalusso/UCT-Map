@@ -49,7 +49,12 @@ public class StructureController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<StructureDto>> Create([FromBody] CreateStructureDto request, CancellationToken cancellationToken)
     {
+        if (request.CampusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' parameter cannot be empty." });
+        if (request.CategoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is Required." });
+        if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
+        if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
+            return BadRequest(new { message = "Coordinates out of valid range." });
 
         var (dto, error) = await _handler.CreateAsync(request, cancellationToken);
         if (error != null) return BadRequest(new { message = error });
@@ -60,7 +65,12 @@ public class StructureController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateStructureDto request, CancellationToken cancellationToken)
     {
+        if (request.CampusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' parameter cannot be empty." });
+        if (request.CategoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is Required." });
+        if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
+        if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
+            return BadRequest(new { message = "Coordinates out of valid range." });
 
         var (success, error) = await _handler.UpdateAsync(id, request, cancellationToken);
         if (error != null) return BadRequest(new { message = error });
@@ -72,6 +82,9 @@ public class StructureController : ControllerBase
     [HttpPatch("{id:guid}/location")]
     public async Task<IActionResult> UpdateLocation(Guid id, [FromBody] UpdateLocationDto request, CancellationToken cancellationToken)
     {
+        if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
+            return BadRequest(new { message = "Coordinates out of valid range." });
+
         var success = await _handler.UpdateLocationAsync(id, request, cancellationToken);
         if (!success) return NotFound(new { message = $"Structure with ID '{id}' was not found." });
 
