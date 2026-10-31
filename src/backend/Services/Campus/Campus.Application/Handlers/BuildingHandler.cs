@@ -7,6 +7,7 @@ using Campus.Domain.Interfaces;
 using Campus.Domain.Entities;
 using Campus.Domain.ValueObjects;
 using Campus.Application.DTOs;
+using Campus.Application.Mappers;
 using ErrorOr;
 
 namespace Campus.Application.Handlers;
@@ -25,18 +26,13 @@ public class BuildingHandler
     public async Task<IEnumerable<BuildingDto>> GetAllAsync(Guid? campusId, CancellationToken cancellationToken)
     {
         var buildings = await _repository.GetAllAsync(campusId.HasValue ? b => b.CampusId == campusId.Value : null, cancellationToken);
-        return buildings.Select(b => new BuildingDto(b.Id, b.CampusId, b.Name, b.FloorsCount, b.Coordinates.Latitude, b.Coordinates.Longitude, b.OpenTime, b.CloseTime, b.Services));
+        return buildings.Select(b => b.ToDto());
     }
 
     public async Task<IEnumerable<BuildingLocationDto>> GetAllLocationsAsync(Guid? campusId, CancellationToken cancellationToken)
     {
         var buildings = await _repository.GetAllAsync(campusId.HasValue ? b => b.CampusId == campusId.Value : null, cancellationToken);
-        return buildings.Select(b => new BuildingLocationDto(
-            b.Id,
-            b.Name,
-            new LocationDto(b.Coordinates.Latitude, b.Coordinates.Longitude),
-            new BuildingMetadataDto(b.CampusId, b.FloorsCount, b.OpenTime, b.CloseTime, b.Services)
-        ));
+        return buildings.Select(b => b.ToLocationDto());
     }
 
     public async Task<ErrorOr<BuildingDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
@@ -45,7 +41,7 @@ public class BuildingHandler
         if (building == null)
             return Error.NotFound("Building.NotFound", $"Building with ID '{id}' was not found.");
 
-        return new BuildingDto(building.Id, building.CampusId, building.Name, building.FloorsCount, building.Coordinates.Latitude, building.Coordinates.Longitude, building.OpenTime, building.CloseTime, building.Services);
+        return building.ToDto();
     }
 
     public async Task<ErrorOr<BuildingDto>> CreateAsync(CreateBuildingDto request, CancellationToken cancellationToken)
@@ -59,7 +55,7 @@ public class BuildingHandler
         await _repository.AddAsync(building, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
 
-        return new BuildingDto(building.Id, building.CampusId, building.Name, building.FloorsCount, building.Coordinates.Latitude, building.Coordinates.Longitude, building.OpenTime, building.CloseTime, building.Services);
+        return building.ToDto();
     }
 
     public async Task<ErrorOr<Success>> UpdateAsync(Guid id, UpdateBuildingDto request, CancellationToken cancellationToken)

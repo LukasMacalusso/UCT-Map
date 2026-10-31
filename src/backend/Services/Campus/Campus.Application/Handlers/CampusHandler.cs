@@ -6,15 +6,16 @@ using System.Threading.Tasks;
 using Campus.Domain.Interfaces;
 using Campus.Domain.ValueObjects;
 using Campus.Application.DTOs;
+using Campus.Application.Mappers;
 using CampusEntity = Campus.Domain.Entities.Campus;
 
 namespace Campus.Application.Handlers;
 
 public class CampusHandler
 {
-    private readonly IGenericRepository<CampusEntity> _repository;
+    private readonly ICampusRepository _repository;
 
-    public CampusHandler(IGenericRepository<CampusEntity> repository)
+    public CampusHandler(ICampusRepository repository)
     {
         _repository = repository;
     }
@@ -22,14 +23,19 @@ public class CampusHandler
     public async Task<IEnumerable<CampusDto>> GetAllAsync(CancellationToken cancellationToken)
     {
         var campuses = await _repository.GetAllAsync(null, cancellationToken);
-        return campuses.Select(c => new CampusDto(c.Id, c.Name, c.Address, c.Coordinates.Latitude, c.Coordinates.Longitude, c.Zoom, c.Pitch, c.Bearing));
+        return campuses.Select(c => c.ToDto());
     }
 
     public async Task<CampusDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var campus = await _repository.GetByIdAsync(id, cancellationToken);
-        if (campus == null) return null;
-        return new CampusDto(campus.Id, campus.Name, campus.Address, campus.Coordinates.Latitude, campus.Coordinates.Longitude, campus.Zoom, campus.Pitch, campus.Bearing);
+        return campus?.ToDto();
+    }
+
+    public async Task<CampusMapDto?> GetMapByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var campus = await _repository.GetByIdWithMapDataAsync(id, cancellationToken);
+        return campus?.ToMapDto();
     }
 
     public async Task<CampusDto> CreateAsync(CreateCampusDto request, CancellationToken cancellationToken)
@@ -38,7 +44,7 @@ public class CampusHandler
         var campus = new CampusEntity(request.Name, request.Address, coordinates, request.Zoom, request.Pitch, request.Bearing);
         await _repository.AddAsync(campus, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
-        return new CampusDto(campus.Id, campus.Name, campus.Address, campus.Coordinates.Latitude, campus.Coordinates.Longitude, campus.Zoom, campus.Pitch, campus.Bearing);
+        return campus.ToDto();
     }
 
     public async Task<bool> UpdateAsync(Guid id, UpdateCampusDto request, CancellationToken cancellationToken)

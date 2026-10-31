@@ -235,4 +235,60 @@ public class StructureHandlerTests
         _repository.Received(1).Delete(structure);
         await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task GetAllLocationsAsync_WhenEmpty_ShouldReturnEmptyWithoutQueryingCategories()
+    {
+        _repository.GetAllAsync(null, Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<Structure>());
+
+        var result = await _handler.GetAllLocationsAsync(null, null, CancellationToken.None);
+
+        Assert.Empty(result);
+        await _categoryRepository.DidNotReceive().GetAllAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetAllLocationsAsync_ShouldMapCategoryNameAndIconAndHandleMissingCategory()
+    {
+        var campusId = Guid.NewGuid();
+        var category = new Category("Sala de Estudio", "users", "Espacio común", Guid.NewGuid());
+        var missingCategoryId = Guid.NewGuid();
+
+        var structures = new List<Structure>
+        {
+            new("Punto Estudio", new Coordinate(-38.73, -72.60), campusId, category.Id),
+            new("Banca", new Coordinate(-38.74, -72.61), campusId, missingCategoryId)
+        };
+
+        _repository.GetAllAsync(Arg.Any<Expression<Func<Structure, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(structures);
+        _categoryRepository.GetAllAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Category> { category });
+
+        var result = (await _handler.GetAllLocationsAsync(campusId, null, CancellationToken.None)).ToList();
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("Sala de Estudio", result[0].Metadata.CategoryName);
+        Assert.Equal("users", result[0].Metadata.CategoryIcon);
+        Assert.Equal(string.Empty, result[1].Metadata.CategoryName);
+        Assert.Equal(string.Empty, result[1].Metadata.CategoryIcon);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOnlyCategoryId_ShouldFilterByCategoryPredicate()
+    {
+        var categoryId = Guid.NewGuid();
+        var structures = new List<Structure>
+        {
+            new("Cancha", new Coordinate(-38.7, -72.5), Guid.NewGuid(), categoryId)
+        };
+
+        _repository.GetAllAsync(Arg.Any<Expression<Func<Structure, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(structures);
+
+        var result = await _handler.GetAllAsync(null, categoryId, CancellationToken.None);
+
+        Assert.Single(result);
+    }
 }

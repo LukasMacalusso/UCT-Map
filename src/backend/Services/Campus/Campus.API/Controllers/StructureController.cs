@@ -30,11 +30,12 @@ public class StructureController : ControllerBase
     }
 
     [HttpGet("locations")]
-    public async Task<ActionResult<IEnumerable<StructureLocationDto>>> GetLocations([FromQuery] Guid? campusId, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<StructureLocationDto>>> GetLocations([FromQuery] Guid? campusId, [FromQuery] Guid? categoryId, CancellationToken cancellationToken)
     {
         if (campusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' query parameter cannot be empty." });
+        if (categoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' query parameter cannot be empty." });
 
-        var structures = await _handler.GetAllLocationsAsync(campusId, cancellationToken);
+        var structures = await _handler.GetAllLocationsAsync(campusId, categoryId, cancellationToken);
         return Ok(structures);
     }
 

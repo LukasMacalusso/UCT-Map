@@ -202,20 +202,30 @@ public class StructureControllerTests
         typeof(Category).GetProperty("Id")?.SetValue(categories[0], categoryId);
 
         _repository.GetAllAsync(Arg.Any<Expression<Func<Structure, bool>>>(), Arg.Any<CancellationToken>()).Returns(structures);
-        _categoryRepository.GetAllAsync(null, Arg.Any<CancellationToken>()).Returns(categories);
+        _categoryRepository.GetAllAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(categories);
 
-        var result = await _controller.GetLocations(null, CancellationToken.None);
+        var result = await _controller.GetLocations(null, null, CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var dtos = Assert.IsAssignableFrom<IEnumerable<StructureLocationDto>>(okResult.Value);
+        var dtos = Assert.IsAssignableFrom<IEnumerable<StructureLocationDto>>(okResult.Value).ToList();
         Assert.Single(dtos);
-        Assert.Equal("Recreación", dtos.First().Metadata.CategoryName);
+        Assert.Equal("Recreación", dtos[0].Metadata.CategoryName);
+        Assert.Equal("icon", dtos[0].Metadata.CategoryIcon);
     }
 
     [Fact]
     public async Task GetLocations_WithEmptyCampusId_ShouldReturnBadRequest()
     {
-        var result = await _controller.GetLocations(Guid.Empty, CancellationToken.None);
+        var result = await _controller.GetLocations(Guid.Empty, null, CancellationToken.None);
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.NotNull(badRequestResult.Value);
+    }
+
+    [Fact]
+    public async Task GetLocations_WithEmptyCategoryId_ShouldReturnBadRequest()
+    {
+        var result = await _controller.GetLocations(null, Guid.Empty, CancellationToken.None);
 
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
         Assert.NotNull(badRequestResult.Value);
