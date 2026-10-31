@@ -55,8 +55,10 @@ Para ejecutar las pruebas de integracion de forma local en el proyecto:
 
 ```bash
 cd uct_map
-flutter test integration_test/app_integration_test.dart
+flutter test integration_test/app_integration_test.dart -d linux
 ```
+
+(En caso de contar con multiples dispositivos o emuladores conectados, puedes especificar el dispositivo objetivo mediante `-d <device_id>`, por ejemplo `-d linux`, `-d chrome` o el ID del emulador Android).
 
 O utilizando Flutter Driver:
 

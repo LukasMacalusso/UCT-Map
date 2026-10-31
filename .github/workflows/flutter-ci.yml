@@ -255,4 +255,4 @@ jobs:
           flutter config --enable-linux-desktop
 
       - name: Run Mobile Integration Tests
-        run: xvfb-run -a flutter test integration_test/app_integration_test.dart
+        run: xvfb-run -a flutter test integration_test/app_integration_test.dart -d linux
