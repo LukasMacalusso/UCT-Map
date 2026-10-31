@@ -19,6 +19,26 @@ class OfficeHour {
         ticks + durationMinutes * 60 * 10000000 <= _timeTicks(endTime);
   }
 
+  /// Inicios de consultas completas, a precisión de minutos, dentro del bloque.
+  List<DateTime> slotsOn(DateTime date, {int durationMinutes = 30}) {
+    if (durationMinutes <= 0 || date.weekday != dayOfWeek) return [];
+    const minuteTicks = 60 * 10000000;
+    final first = (_timeTicks(startTime) + minuteTicks - 1) ~/ minuteTicks;
+    final slots = <DateTime>[];
+    for (var minute = first; minute < 24 * 60; minute += durationMinutes) {
+      final start = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        minute ~/ 60,
+        minute % 60,
+      );
+      if (!contains(start, durationMinutes: durationMinutes)) break;
+      slots.add(start);
+    }
+    return slots;
+  }
+
   static String _timeLabel(String value) =>
       _timeTicks(value) % (60 * 10000000) == 0 ? value.substring(0, 5) : value;
 

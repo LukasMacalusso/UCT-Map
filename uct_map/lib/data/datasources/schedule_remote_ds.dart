@@ -7,6 +7,7 @@ import '../../core/network/api_client_provider.dart';
 import '../../core/network/api_config.dart';
 import '../../core/network/api_exception.dart';
 import '../../domain/entities/office_hour.dart';
+import '../../domain/entities/booking_interval.dart';
 import '../../domain/entities/professor.dart';
 import '../../domain/entities/schedule_meeting.dart';
 import '../../domain/repositories/schedule_repository.dart';
@@ -110,6 +111,62 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
     return items
         .map((m) => ScheduleMeeting.fromJson(m as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<List<BookingInterval>> getBusyIntervals({
+    required String teacherId,
+    required DateTime date,
+  }) async {
+    final session = ApiClientProvider.session;
+    final user = session.currentUser;
+    final token = session.token;
+    if (!session.isAuthenticated || user == null) {
+      throw const UnauthorizedException();
+    }
+    final from = DateTime(date.year, date.month, date.day);
+    final to = DateTime(date.year, date.month, date.day + 1);
+    final query = {'from': from.toIso8601String(), 'to': to.toIso8601String()};
+    final responses = await Future.wait([
+      _request(
+        '/api/schedule/meetings',
+        query: {...query, 'teacherId': teacherId},
+      ),
+      _request('/api/schedule/students/${user.id}/meetings', query: query),
+    ]);
+    if (session.token != token) {
+      throw const UnauthorizedException('La sesión cambió.');
+    }
+    final teacherMeetings = responses[0] as List;
+    final ownMeetings = responses[1]['meetings'] as List;
+    final intervals = <BookingInterval>[];
+    for (final (items, ownerField, ownerId) in [
+      (teacherMeetings, 'teacherRefId', teacherId),
+      (ownMeetings, 'studentRefId', user.id),
+    ]) {
+      for (final value in items) {
+        final item = value as Map<String, dynamic>;
+        if (item[ownerField] != ownerId) {
+          throw const ForbiddenException(
+            'La respuesta no corresponde a la consulta.',
+          );
+        }
+        final status = MeetingStatusExt.fromString(item['status'] as String?);
+        if (status == MeetingStatus.cancelled) continue;
+        final start = DateTime.tryParse(item['scheduledAt'] as String? ?? '');
+        final duration = item['durationMinutes'];
+        if (start == null || duration is! int || duration <= 0) {
+          throw const FormatException('Intervalo ocupado inválido.');
+        }
+        intervals.add(
+          BookingInterval(
+            start: start,
+            end: start.add(Duration(minutes: duration)),
+          ),
+        );
+      }
+    }
+    return intervals;
   }
 
   @override
