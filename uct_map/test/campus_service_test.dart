@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:uct_map/core/network/api_config.dart';
+import 'package:uct_map/core/network/api_exception.dart';
 import 'package:uct_map/data/datasources/campus_remote_ds.dart';
 import 'package:uct_map/domain/entities/campus.dart';
 import 'package:uct_map/data/models/building_model.dart';
@@ -93,17 +94,13 @@ void main() {
       },
     );
 
-    test('CampusRemoteDataSource activa fallback ante error de red', () async {
+    test('CampusRemoteDataSource informa errores de red', () async {
       final mockClient = MockClient((request) async {
         throw http.ClientException('Connection refused');
       });
 
       final ds = CampusRemoteDataSource(client: mockClient);
-      final result = await ds.getCampuses();
-
-      // Debe retornar los campus de fallback para mantener operativa la app
-      expect(result.isNotEmpty, isTrue);
-      expect(result.any((c) => c.name.contains('San Juan Pablo II')), isTrue);
+      await expectLater(ds.getCampuses(), throwsA(isA<NetworkException>()));
     });
   });
 }
