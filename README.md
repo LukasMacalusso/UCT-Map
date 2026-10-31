@@ -4,7 +4,7 @@ Aplicación móvil desarrollada en Flutter para la navegación interactiva de ca
 
 ---
 
-## 🚀 Flujo de Trabajo y Políticas de Integración
+## Flujo de Trabajo y Políticas de Integración
 
 - **Condiciones de Apruebo y Rechazo de Merge**: Consulta la normativa completa y obligatoria en [docs/MERGE_CONDITIONS.md](docs/MERGE_CONDITIONS.md).
 - **Plantilla de Pull Request**: Configurada con checklist de criterios de aceptación en [.github/pull_request_template.md](.github/pull_request_template.md).
@@ -13,7 +13,7 @@ Aplicación móvil desarrollada en Flutter para la navegación interactiva de ca
 
 ---
 
-## 🧪 Pruebas y Cobertura de Código
+## Pruebas y Cobertura de Código
 
 Para ejecutar localmente la suite de pruebas unitarias y de widgets con generación de reporte JaCoCo XML:
 
@@ -23,9 +23,18 @@ flutter test --coverage
 dart run tool/generate_jacoco_report.dart
 ```
 
+Para ejecutar las pruebas de integración de la aplicación móvil:
+
+```bash
+cd uct_map
+flutter test integration_test/app_integration_test.dart
+```
+
+Documentación detallada de pruebas de integración disponible en [docs/INTEGRATION_TESTS.md](docs/INTEGRATION_TESTS.md).
+
 ---
 
-## 🛠️ Tecnologías del Proyecto
+## Tecnologías del Proyecto
 
 - **Framework**: Flutter (Dart 3.x)
 - **Mapas**: Mapbox Maps SDK para Flutter
