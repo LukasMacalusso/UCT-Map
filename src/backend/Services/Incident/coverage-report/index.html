@@ -17,7 +17,7 @@
 <table>
 <tr>
 <th>Parser:</th>
-<td class="limit-width " title="MultiReport (6x Cobertura)">MultiReport (6x Cobertura)</td>
+<td class="limit-width " title="MultiReport (2x Cobertura)">MultiReport (2x Cobertura)</td>
 </tr>
 <tr>
 <th>Assemblies:</th>
@@ -25,15 +25,15 @@
 </tr>
 <tr>
 <th>Classes:</th>
-<td class="limit-width right" title="22">22</td>
+<td class="limit-width right" title="33">33</td>
 </tr>
 <tr>
 <th>Files:</th>
-<td class="limit-width right" title="19">19</td>
+<td class="limit-width right" title="24">24</td>
 </tr>
 <tr>
 <th>Coverage date:</th>
-<td class="limit-width " title="09-10-2026 - 10:36:27 p. m. - 10-10-2026 - 12:00:04 a. m.">09-10-2026 - 10:36:27 p. m. - 10-10-2026 - 12:00:04 a. m.</td>
+<td class="limit-width " title="31-10-2026 - 3:41:04 a. m. - 31-10-2026 - 3:41:25 a. m.">31-10-2026 - 3:41:04 a. m. - 31-10-2026 - 3:41:25 a. m.</td>
 </tr>
 </table>
 </div>
@@ -42,28 +42,28 @@
 <div class="card">
 <div class="card-header">Line coverage</div>
 <div class="card-body">
-<div class="large cardpercentagebar cardpercentagebar5">95%</div>
+<div class="large cardpercentagebar cardpercentagebar0">100%</div>
 <div class="table">
 <table>
 <tr>
 <th>Covered lines:</th>
-<td class="limit-width right" title="373">373</td>
+<td class="limit-width right" title="752">752</td>
 </tr>
 <tr>
 <th>Uncovered lines:</th>
-<td class="limit-width right" title="18">18</td>
+<td class="limit-width right" title="0">0</td>
 </tr>
 <tr>
 <th>Coverable lines:</th>
-<td class="limit-width right" title="391">391</td>
+<td class="limit-width right" title="752">752</td>
 </tr>
 <tr>
 <th>Total lines:</th>
-<td class="limit-width right" title="751">751</td>
+<td class="limit-width right" title="1288">1288</td>
 </tr>
 <tr>
 <th>Line coverage:</th>
-<td class="limit-width right" title="373 of 391">95.3%</td>
+<td class="limit-width right" title="752 of 752">100%</td>
 </tr>
 </table>
 </div>
@@ -72,20 +72,20 @@
 <div class="card">
 <div class="card-header">Branch coverage</div>
 <div class="card-body">
-<div class="large cardpercentagebar cardpercentagebar2">98%</div>
+<div class="large cardpercentagebar cardpercentagebar0">99%</div>
 <div class="table">
 <table>
 <tr>
 <th>Covered branches:</th>
-<td class="limit-width right" title="53">53</td>
+<td class="limit-width right" title="219">219</td>
 </tr>
 <tr>
 <th>Total branches:</th>
-<td class="limit-width right" title="54">54</td>
+<td class="limit-width right" title="220">220</td>
 </tr>
 <tr>
 <th>Branch coverage:</th>
-<td class="limit-width right" title="53 of 54">98.1%</td>
+<td class="limit-width right" title="219 of 220">99.5%</td>
 </tr>
 </table>
 </div>
@@ -103,8 +103,32 @@
 </div>
 <h1>Risk Hotspots</h1>
 <risk-hotspots>
+<div class="table-responsive">
+<table class="overview table-fixed stripped">
+<colgroup>
+<col class="column-min-200" />
+<col class="column-min-200" />
+<col class="column-min-200" />
+<col class="column105" />
+<col class="column105" />
+</colgroup>
+<thead><tr><th>Assembly</th>
+<th>Class</th>
+<th>Method</th>
+<th>Crap Score <a href="https://googletesting.blogspot.de/2011/02/this-code-is-crap.html" target="_blank"><i class="icon-info-circled"></i></a></th>
+<th>Cyclomatic complexity <a href="https://en.wikipedia.org/wiki/Cyclomatic_complexity" target="_blank"><i class="icon-info-circled"></i></a></th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Incident.Infrastructure</td>
+<td><a href="Incident.Infrastructure_TicketFilters.html">Incident.Infrastructure.Persistence.Search.TicketFilters</a></td>
+<td title="Build(Incident.Domain.Queries.TicketSearchCriteria)"><a href="Incident.Infrastructure_TicketFilters.html#file0_line14">Build(...)</a></td><td class="lightred right">32</td>
+<td class="lightred right">32</td>
+</tr>
+</tbody>
+</table>
+</div>
 </risk-hotspots>
-<p>No risk hotspots found.</p>
 <h1>Coverage</h1>
 <coverage-info>
 <div class="table-responsive">
@@ -126,36 +150,47 @@
 <tr class="header"><th></th><th colspan="6" class="center">Line coverage</th><th colspan="4" class="center">Branch coverage</th></tr>
 <tr><th>Name</th><th class="right">Covered</th><th class="right">Uncovered</th><th class="right">Coverable</th><th class="right">Total</th><th class="center" colspan="2">Percentage</th><th class="right">Covered</th><th class="right">Total</th><th class="center" colspan="2">Percentage</th></tr></thead>
 <tbody>
-<tr><th>Incident.API</th><th class="right">130</th><th class="right">8</th><th class="right">138</th><th class="right">229</th><th title="130/138" class="right">94.2%</th><th><table class="coverage"><tr><td class="green covered94">&nbsp;</td><td class="red covered6">&nbsp;</td></tr></table></th><th class="right">12</th><th class="right">12</th><th class="right" title="12/12">100%</th><th><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></th></tr>
-<tr><td><a href="Incident.API_HealthController.html">Incident.API.Controllers.HealthController</a></td><td class="right">12</td><td class="right">8</td><td class="right">20</td><td class="right">39</td><td title="12/20" class="right">60%</td><td><table class="coverage"><tr><td class="green covered60">&nbsp;</td><td class="red covered40">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.API_LostObjectsController.html">Incident.API.Controllers.LostObjectsController</a></td><td class="right">59</td><td class="right">0</td><td class="right">59</td><td class="right">90</td><td title="59/59" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">6</td><td class="right">6</td><td class="right" title="6/6">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.API_ReportsController.html">Incident.API.Controllers.ReportsController</a></td><td class="right">44</td><td class="right">0</td><td class="right">44</td><td class="right">70</td><td title="44/44" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">4</td><td class="right">4</td><td class="right" title="4/4">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td></tr>
+<tr><th>Incident.API</th><th class="right">189</th><th class="right">0</th><th class="right">189</th><th class="right">290</th><th title="189/189" class="right">100%</th><th><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></th><th class="right">20</th><th class="right">20</th><th class="right" title="20/20">100%</th><th><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></th></tr>
+<tr><td><a href="Incident.API_HealthController.html">Incident.API.Controllers.HealthController</a></td><td class="right">20</td><td class="right">0</td><td class="right">20</td><td class="right">39</td><td title="20/20" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.API_LostObjectsController.html">Incident.API.Controllers.LostObjectsController</a></td><td class="right">74</td><td class="right">0</td><td class="right">74</td><td class="right">107</td><td title="74/74" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">8</td><td class="right">8</td><td class="right" title="8/8">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.API_ReportsController.html">Incident.API.Controllers.ReportsController</a></td><td class="right">80</td><td class="right">0</td><td class="right">80</td><td class="right">114</td><td title="80/80" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">10</td><td class="right">10</td><td class="right" title="10/10">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td></tr>
 <tr><td><a href="Incident.API_Program.html">Program</a></td><td class="right">15</td><td class="right">0</td><td class="right">15</td><td class="right">30</td><td title="15/15" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">2</td><td class="right">2</td><td class="right" title="2/2">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td></tr>
-<tr><th>Incident.Application</th><th class="right">154</th><th class="right">3</th><th class="right">157</th><th class="right">291</th><th title="154/157" class="right">98%</th><th><table class="coverage"><tr><td class="green covered98">&nbsp;</td><td class="red covered2">&nbsp;</td></tr></table></th><th class="right">35</th><th class="right">36</th><th class="right" title="35/36">97.2%</th><th><table class="coverage"><tr><td class="green covered97">&nbsp;</td><td class="red covered3">&nbsp;</td></tr></table></th></tr>
-<tr><td><a href="Incident.Application_CreateLostObjectRequest.html">Incident.Application.DTOs.CreateLostObjectRequest</a></td><td class="right">7</td><td class="right">0</td><td class="right">7</td><td class="right">15</td><td title="7/7" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.Application_CreateReportRequest.html">Incident.Application.DTOs.CreateReportRequest</a></td><td class="right">6</td><td class="right">0</td><td class="right">6</td><td class="right">12</td><td title="6/6" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.Application_LostObjectList.html">Incident.Application.DTOs.LostObjectList</a></td><td class="right">4</td><td class="right">0</td><td class="right">4</td><td class="right">18</td><td title="4/4" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.Application_LostObjectResponse.html">Incident.Application.DTOs.LostObjectResponse</a></td><td class="right">4</td><td class="right">3</td><td class="right">7</td><td class="right">18</td><td title="4/7" class="right">57.1%</td><td><table class="coverage"><tr><td class="green covered57">&nbsp;</td><td class="red covered43">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.Application_TicketResponse.html">Incident.Application.DTOs.TicketResponse</a></td><td class="right">9</td><td class="right">0</td><td class="right">9</td><td class="right">16</td><td title="9/9" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.Application_UpdateStatus.html">Incident.Application.DTOs.UpdateStatus</a></td><td class="right">1</td><td class="right">0</td><td class="right">1</td><td class="right">15</td><td title="1/1" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.Application_UpdateStatusReport.html">Incident.Application.DTOs.UpdateStatusReport</a></td><td class="right">1</td><td class="right">0</td><td class="right">1</td><td class="right">12</td><td title="1/1" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.Application_LostObjectHandler.html">Incident.Application.Handlers.LostObjectHandler</a></td><td class="right">70</td><td class="right">0</td><td class="right">70</td><td class="right">105</td><td title="70/70" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">21</td><td class="right">22</td><td class="right" title="21/22">95.4%</td><td><table class="coverage"><tr><td class="green covered95">&nbsp;</td><td class="red covered5">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.Application_ReportHandler.html">Incident.Application.Handlers.ReportHandler</a></td><td class="right">52</td><td class="right">0</td><td class="right">52</td><td class="right">80</td><td title="52/52" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">14</td><td class="right">14</td><td class="right" title="14/14">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td></tr>
-<tr><th>Incident.Domain</th><th class="right">26</th><th class="right">0</th><th class="right">26</th><th class="right">112</th><th title="26/26" class="right">100%</th><th><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></th><th class="right">0</th><th class="right">0</th><th class="right" title="-"></th><th><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></th></tr>
+<tr><th>Incident.Application</th><th class="right">357</th><th class="right">0</th><th class="right">357</th><th class="right">726</th><th title="357/357" class="right">100%</th><th><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></th><th class="right">133</th><th class="right">134</th><th class="right" title="133/134">99.2%</th><th><table class="coverage"><tr><td class="green covered99">&nbsp;</td><td class="red covered1">&nbsp;</td></tr></table></th></tr>
+<tr><td><a href="Incident.Application_JwtUserIdReader.html">Incident.Application.Common.JwtUserIdReader</a></td><td class="right">36</td><td class="right">0</td><td class="right">36</td><td class="right">66</td><td title="36/36" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">24</td><td class="right">24</td><td class="right" title="24/24">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Application_ComplaintSearchRequest.html">Incident.Application.DTOs.ComplaintSearchRequest</a></td><td class="right">4</td><td class="right">0</td><td class="right">4</td><td class="right">37</td><td title="4/4" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Application_CreateLostObjectRequest.html">Incident.Application.DTOs.CreateLostObjectRequest</a></td><td class="right">7</td><td class="right">0</td><td class="right">7</td><td class="right">23</td><td title="7/7" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Application_CreateReportRequest.html">Incident.Application.DTOs.CreateReportRequest</a></td><td class="right">8</td><td class="right">0</td><td class="right">8</td><td class="right">37</td><td title="8/8" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Application_LostObjectPageResponse.html">Incident.Application.DTOs.LostObjectPageResponse</a></td><td class="right">6</td><td class="right">0</td><td class="right">6</td><td class="right">22</td><td title="6/6" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Application_LostObjectResponse.html">Incident.Application.DTOs.LostObjectResponse</a></td><td class="right">8</td><td class="right">0</td><td class="right">8</td><td class="right">22</td><td title="8/8" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Application_LostObjectSearchRequest.html">Incident.Application.DTOs.LostObjectSearchRequest</a></td><td class="right">8</td><td class="right">0</td><td class="right">8</td><td class="right">23</td><td title="8/8" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Application_TicketPageResponse.html">Incident.Application.DTOs.TicketPageResponse</a></td><td class="right">6</td><td class="right">0</td><td class="right">6</td><td class="right">24</td><td title="6/6" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Application_TicketResponse.html">Incident.Application.DTOs.TicketResponse</a></td><td class="right">9</td><td class="right">0</td><td class="right">9</td><td class="right">24</td><td title="9/9" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Application_TicketSearchRequest.html">Incident.Application.DTOs.TicketSearchRequest</a></td><td class="right">12</td><td class="right">0</td><td class="right">12</td><td class="right">37</td><td title="12/12" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Application_UpdateStatus.html">Incident.Application.DTOs.UpdateStatus</a></td><td class="right">1</td><td class="right">0</td><td class="right">1</td><td class="right">23</td><td title="1/1" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Application_UpdateStatusReport.html">Incident.Application.DTOs.UpdateStatusReport</a></td><td class="right">4</td><td class="right">0</td><td class="right">4</td><td class="right">37</td><td title="4/4" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Application_LostObjectHandler.html">Incident.Application.Handlers.LostObjectHandler</a></td><td class="right">96</td><td class="right">0</td><td class="right">96</td><td class="right">141</td><td title="96/96" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">37</td><td class="right">38</td><td class="right" title="37/38">97.3%</td><td><table class="coverage"><tr><td class="green covered97">&nbsp;</td><td class="red covered3">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Application_ReportHandler.html">Incident.Application.Handlers.ReportHandler</a></td><td class="right">152</td><td class="right">0</td><td class="right">152</td><td class="right">210</td><td title="152/152" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">72</td><td class="right">72</td><td class="right" title="72/72">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td></tr>
+<tr><th>Incident.Domain</th><th class="right">53</th><th class="right">0</th><th class="right">53</th><th class="right">192</th><th title="53/53" class="right">100%</th><th><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></th><th class="right">0</th><th class="right">0</th><th class="right" title="-"></th><th><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></th></tr>
 <tr><td><a href="Incident.Domain_ComplaintDetails.html">Incident.Domain.Entities.ComplaintDetails</a></td><td class="right">3</td><td class="right">0</td><td class="right">3</td><td class="right">17</td><td title="3/3" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
 <tr><td><a href="Incident.Domain_GeoPoint.html">Incident.Domain.Entities.GeoPoint</a></td><td class="right">8</td><td class="right">0</td><td class="right">8</td><td class="right">20</td><td title="8/8" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.Domain_LostObject.html">Incident.Domain.Entities.LostObject</a></td><td class="right">6</td><td class="right">0</td><td class="right">6</td><td class="right">30</td><td title="6/6" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.Domain_Ticket.html">Incident.Domain.Entities.Ticket</a></td><td class="right">9</td><td class="right">0</td><td class="right">9</td><td class="right">45</td><td title="9/9" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
-<tr><th>Incident.Infrastructure</th><th class="right">63</th><th class="right">7</th><th class="right">70</th><th class="right">164</th><th title="63/70" class="right">90%</th><th><table class="coverage"><tr><td class="green covered90">&nbsp;</td><td class="red covered10">&nbsp;</td></tr></table></th><th class="right">6</th><th class="right">6</th><th class="right" title="6/6">100%</th><th><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></th></tr>
-<tr><td><a href="Incident.Infrastructure_DependencyInjection.html">Incident.Infrastructure.DependencyInjection</a></td><td class="right">16</td><td class="right">6</td><td class="right">22</td><td class="right">42</td><td title="16/22" class="right">72.7%</td><td><table class="coverage"><tr><td class="green covered73">&nbsp;</td><td class="red covered27">&nbsp;</td></tr></table></td><td class="right">4</td><td class="right">4</td><td class="right" title="4/4">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.Infrastructure_MongoDbContext.html">Incident.Infrastructure.Persistence.MongoDbContext</a></td><td class="right">5</td><td class="right">1</td><td class="right">6</td><td class="right">24</td><td title="5/6" class="right">83.3%</td><td><table class="coverage"><tr><td class="green covered83">&nbsp;</td><td class="red covered17">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Domain_LostObject.html">Incident.Domain.Entities.LostObject</a></td><td class="right">7</td><td class="right">0</td><td class="right">7</td><td class="right">33</td><td title="7/7" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Domain_Ticket.html">Incident.Domain.Entities.Ticket</a></td><td class="right">9</td><td class="right">0</td><td class="right">9</td><td class="right">44</td><td title="9/9" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Domain_ComplaintSearchCriteria.html">Incident.Domain.Queries.ComplaintSearchCriteria</a></td><td class="right">4</td><td class="right">0</td><td class="right">4</td><td class="right">24</td><td title="4/4" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Domain_LostObjectSearchCriteria.html">Incident.Domain.Queries.LostObjectSearchCriteria</a></td><td class="right">8</td><td class="right">0</td><td class="right">8</td><td class="right">15</td><td title="8/8" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Domain_PagedResult_1.html">Incident.Domain.Queries.PagedResult&lt;T&gt;</a></td><td class="right">1</td><td class="right">0</td><td class="right">1</td><td class="right">15</td><td title="1/1" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Domain_TicketSearchCriteria.html">Incident.Domain.Queries.TicketSearchCriteria</a></td><td class="right">13</td><td class="right">0</td><td class="right">13</td><td class="right">24</td><td title="13/13" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><th>Incident.Infrastructure</th><th class="right">153</th><th class="right">0</th><th class="right">153</th><th class="right">322</th><th title="153/153" class="right">100%</th><th><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></th><th class="right">66</th><th class="right">66</th><th class="right" title="66/66">100%</th><th><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></th></tr>
+<tr><td><a href="Incident.Infrastructure_DependencyInjection.html">Incident.Infrastructure.DependencyInjection</a></td><td class="right">22</td><td class="right">0</td><td class="right">22</td><td class="right">42</td><td title="22/22" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">4</td><td class="right">4</td><td class="right" title="4/4">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Infrastructure_MongoDbContext.html">Incident.Infrastructure.Persistence.MongoDbContext</a></td><td class="right">6</td><td class="right">0</td><td class="right">6</td><td class="right">24</td><td title="6/6" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
 <tr><td><a href="Incident.Infrastructure_MongoRepository_1.html">Incident.Infrastructure.Persistence.Repositories.MongoRepository&lt;T&gt;</a></td><td class="right">20</td><td class="right">0</td><td class="right">20</td><td class="right">42</td><td title="20/20" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">2</td><td class="right">2</td><td class="right" title="2/2">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.Infrastructure_ObjectRepository.html">Incident.Infrastructure.Persistence.Repositories.ObjectRepository</a></td><td class="right">14</td><td class="right">0</td><td class="right">14</td><td class="right">34</td><td title="14/14" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
-<tr><td><a href="Incident.Infrastructure_TicketRepository.html">Incident.Infrastructure.Persistence.Repositories.TicketRepository</a></td><td class="right">8</td><td class="right">0</td><td class="right">8</td><td class="right">22</td><td title="8/8" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Infrastructure_ObjectRepository.html">Incident.Infrastructure.Persistence.Repositories.ObjectRepository</a></td><td class="right">22</td><td class="right">0</td><td class="right">22</td><td class="right">45</td><td title="22/22" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Infrastructure_TicketRepository.html">Incident.Infrastructure.Persistence.Repositories.TicketRepository</a></td><td class="right">29</td><td class="right">0</td><td class="right">29</td><td class="right">55</td><td title="29/29" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">0</td><td class="right">0</td><td class="right" title="-"></td><td><table class="coverage"><tr><td class="gray covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Infrastructure_LostObjectFilters.html">Incident.Infrastructure.Persistence.Search.LostObjectFilters</a></td><td class="right">20</td><td class="right">0</td><td class="right">20</td><td class="right">43</td><td title="20/20" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">22</td><td class="right">22</td><td class="right" title="22/22">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td></tr>
+<tr><td><a href="Incident.Infrastructure_TicketFilters.html">Incident.Infrastructure.Persistence.Search.TicketFilters</a></td><td class="right">34</td><td class="right">0</td><td class="right">34</td><td class="right">71</td><td title="34/34" class="right">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td><td class="right">38</td><td class="right">38</td><td class="right" title="38/38">100%</td><td><table class="coverage"><tr><td class="green covered100">&nbsp;</td></tr></table></td></tr>
 </tbody>
 </table>
 </div>
 </coverage-info>
-<div class="footer">Generated by: ReportGenerator 5.5.11.0<br />10-10-2026 - 12:00:38 a. m.<br /><a href="https://github.com/danielpalme/ReportGenerator">GitHub</a> | <a href="https://reportgenerator.io">reportgenerator.io</a></div></div></div>
+<div class="footer">Generated by: ReportGenerator 5.5.11.0<br />31-10-2026 - 3:41:37 a. m.<br /><a href="https://github.com/danielpalme/ReportGenerator">GitHub</a> | <a href="https://reportgenerator.io">reportgenerator.io</a></div></div></div>
 <script type="text/javascript" src="main.js"></script>
 </body></html>
