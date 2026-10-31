@@ -271,8 +271,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = widget.session?.currentUser;
-    final userName = (widget.session?.isAuthenticated == true) ? (user?.name ?? user?.email ?? 'Usuario') : 'Invitado';
-    final userEmail = (widget.session?.isAuthenticated == true) ? (user?.email ?? '') : 'Modo invitado (sin cuenta)';
+    final userName = (widget.session?.isAuthenticated == true)
+        ? (user?.name ?? user?.email ?? 'Usuario')
+        : 'Invitado';
+    final userEmail = (widget.session?.isAuthenticated == true)
+        ? (user?.email ?? '')
+        : 'Modo invitado (sin cuenta)';
     final userRole = user?.role;
 
     return SingleChildScrollView(
@@ -400,6 +404,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 24),
 
           // 3. Los 5 botones principales según el diseño Figma:
+          if (widget.session?.isAuthenticated == true &&
+              userRole == UserRole.estudiante) ...[
+            _buildMenuButton(
+              title: 'Mis citas',
+              subtitle: 'Consultar tus próximas consultas',
+              icon: Icons.event_note,
+              iconColor: AppColors.uctBlue,
+              onTap: () => Navigator.pushNamed(context, '/my-meetings'),
+            ),
+            const SizedBox(height: 12),
+          ],
           // 1) Mis favoritos o guardados
           _buildMenuButton(
             title: 'Mis favoritos o guardados',
@@ -416,7 +431,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => SavedPlacesScreen(
-                      onNavigateToTab: widget.onNavigateToTab,
+                    onNavigateToTab: widget.onNavigateToTab,
                   ),
                 ),
               );
@@ -443,9 +458,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => MyReportsScreen(
-                    onNavigateToTab: widget.onNavigateToTab,
-                  ),
+                  builder: (_) =>
+                      MyReportsScreen(onNavigateToTab: widget.onNavigateToTab),
                 ),
               );
               if (result is int && widget.onNavigateToTab != null) {
