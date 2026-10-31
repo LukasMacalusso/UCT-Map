@@ -38,6 +38,7 @@ public class CategoryGroupController : ControllerBase
     public async Task<ActionResult<CategoryGroupDto>> Create([FromBody] CreateCategoryGroupDto request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is mandatory." });
+        if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
 
         var dto = await _handler.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
@@ -47,6 +48,7 @@ public class CategoryGroupController : ControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCategoryGroupDto request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is mandatory." });
+        if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
 
         var success = await _handler.UpdateAsync(id, request, cancellationToken);
         if (!success) return NotFound(new { message = $"CategoryGroup with ID '{id}' was not found." });

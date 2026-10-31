@@ -228,4 +228,64 @@ public class RoomControllerTests
 
         Assert.IsType<NoContentResult>(result);
     }
+
+    [Fact]
+    public async Task Create_WhenBuildingIdIsEmpty_ShouldReturnBadRequest()
+    {
+        var request = new CreateRoomDto(Guid.Empty, Guid.NewGuid(), "101", 1);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Create_WhenCategoryIdIsEmpty_ShouldReturnBadRequest()
+    {
+        var request = new CreateRoomDto(Guid.NewGuid(), Guid.Empty, "101", 1);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Create_WhenNameExceeds20Characters_ShouldReturnBadRequest()
+    {
+        var request = new CreateRoomDto(Guid.NewGuid(), Guid.NewGuid(), new string('R', 21), 1);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Create_WhenFloorIsLessThanOne_ShouldReturnBadRequest()
+    {
+        var request = new CreateRoomDto(Guid.NewGuid(), Guid.NewGuid(), "101", 0);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Update_WhenNameExceeds20Characters_ShouldReturnBadRequest()
+    {
+        var request = new UpdateRoomDto(Guid.NewGuid(), Guid.NewGuid(), new string('R', 21), 1);
+
+        var result = await _controller.Update(Guid.NewGuid(), request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Update_WhenFloorIsLessThanOne_ShouldReturnBadRequest()
+    {
+        var request = new UpdateRoomDto(Guid.NewGuid(), Guid.NewGuid(), "101", -1);
+
+        var result = await _controller.Update(Guid.NewGuid(), request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
 }

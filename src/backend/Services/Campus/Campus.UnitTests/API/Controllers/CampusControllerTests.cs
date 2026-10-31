@@ -181,4 +181,74 @@ public class CampusControllerTests
 
         Assert.IsType<NoContentResult>(result);
     }
+
+    [Fact]
+    public async Task Create_WhenNameExceeds100Characters_ShouldReturnBadRequest()
+    {
+        var request = new CreateCampusDto(new string('C', 101), "Manuel Montt 056", -38.73, -72.60);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenAddressIsEmpty_ShouldReturnBadRequest()
+    {
+        var request = new CreateCampusDto("Campus Norte", "", -38.73, -72.60);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenAddressExceeds100Characters_ShouldReturnBadRequest()
+    {
+        var request = new CreateCampusDto("Campus Norte", new string('D', 101), -38.73, -72.60);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenCoordinatesOutOfRange_ShouldReturnBadRequest()
+    {
+        var request = new CreateCampusDto("Campus Norte", "Dir", -95.0, -72.60);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenCameraParametersOutOfRange_ShouldReturnBadRequest()
+    {
+        var request = new CreateCampusDto("Campus Norte", "Dir", -38.73, -72.60, Zoom: 30.0m);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Update_WhenNameExceeds100Characters_ShouldReturnBadRequest()
+    {
+        var request = new UpdateCampusDto(new string('C', 101), "Dir", -38.73, -72.60);
+
+        var result = await _controller.Update(Guid.NewGuid(), request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateLocation_WhenCoordinatesOutOfRange_ShouldReturnBadRequest()
+    {
+        var request = new UpdateLocationDto(-38.73, 200.0);
+
+        var result = await _controller.UpdateLocation(Guid.NewGuid(), request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
 }

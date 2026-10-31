@@ -59,7 +59,11 @@ public class RoomController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateRoomDto request, CancellationToken cancellationToken)
     {
+        if (request.BuildingId == Guid.Empty) return BadRequest(new { message = "The 'buildingId' parameter cannot be empty." });
+        if (request.CategoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is required." });
+        if (request.Name.Length > 20) return BadRequest(new { message = "Room name cannot exceed 20 characters." });
+        if (request.Floor < 1) return BadRequest(new { message = "Floor must be at least 1." });
 
         var result = await _handler.CreateAsync(request, cancellationToken);
         return result.Match(
@@ -76,7 +80,11 @@ public class RoomController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRoomDto request, CancellationToken cancellationToken)
     {
+        if (request.BuildingId == Guid.Empty) return BadRequest(new { message = "The 'buildingId' parameter cannot be empty." });
+        if (request.CategoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is required." });
+        if (request.Name.Length > 20) return BadRequest(new { message = "Room name cannot exceed 20 characters." });
+        if (request.Floor < 1) return BadRequest(new { message = "Floor must be at least 1." });
 
         var result = await _handler.UpdateAsync(id, request, cancellationToken);
         return result.Match(

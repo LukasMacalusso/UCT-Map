@@ -268,4 +268,54 @@ public class StructureControllerTests
 
         Assert.IsType<NoContentResult>(result);
     }
+
+    [Fact]
+    public async Task Create_WhenCampusIdIsEmpty_ShouldReturnBadRequest()
+    {
+        var request = new CreateStructureDto(Guid.Empty, Guid.NewGuid(), "Pérgola", -38.73, -72.60);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenCategoryIdIsEmpty_ShouldReturnBadRequest()
+    {
+        var request = new CreateStructureDto(Guid.NewGuid(), Guid.Empty, "Pérgola", -38.73, -72.60);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenNameExceeds100Characters_ShouldReturnBadRequest()
+    {
+        var request = new CreateStructureDto(Guid.NewGuid(), Guid.NewGuid(), new string('P', 101), -38.73, -72.60);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Create_WhenCoordinatesOutOfRange_ShouldReturnBadRequest()
+    {
+        var request = new CreateStructureDto(Guid.NewGuid(), Guid.NewGuid(), "Pérgola", 95.0, -72.60);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task UpdateLocation_WhenCoordinatesOutOfRange_ShouldReturnBadRequest()
+    {
+        var request = new UpdateLocationDto(-38.73, 205.0);
+
+        var result = await _controller.UpdateLocation(Guid.NewGuid(), request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
 }

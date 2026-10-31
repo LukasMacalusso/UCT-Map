@@ -53,7 +53,16 @@ public class BuildingController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateBuildingDto request, CancellationToken cancellationToken)
     {
+        if (request.CampusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is required." });
+        if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
+        if (request.FloorsCount < 1) return BadRequest(new { message = "FloorsCount must be at least 1." });
+        if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
+            return BadRequest(new { message = "Coordinates out of valid range." });
+        if (request.OpenTime.HasValue && request.CloseTime.HasValue && request.OpenTime >= request.CloseTime)
+            return BadRequest(new { message = "OpenTime must be earlier than CloseTime." });
+        if (request.Services != null && request.Services.Length > 150)
+            return BadRequest(new { message = "Services cannot exceed 150 characters." });
 
         var result = await _handler.CreateAsync(request, cancellationToken);
 
@@ -71,7 +80,16 @@ public class BuildingController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBuildingDto request, CancellationToken cancellationToken)
     {
+        if (request.CampusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is required." });
+        if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
+        if (request.FloorsCount < 1) return BadRequest(new { message = "FloorsCount must be at least 1." });
+        if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
+            return BadRequest(new { message = "Coordinates out of valid range." });
+        if (request.OpenTime.HasValue && request.CloseTime.HasValue && request.OpenTime >= request.CloseTime)
+            return BadRequest(new { message = "OpenTime must be earlier than CloseTime." });
+        if (request.Services != null && request.Services.Length > 150)
+            return BadRequest(new { message = "Services cannot exceed 150 characters." });
 
         var result = await _handler.UpdateAsync(id, request, cancellationToken);
 
@@ -89,6 +107,9 @@ public class BuildingController : ControllerBase
     [HttpPatch("{id:guid}/location")]
     public async Task<IActionResult> UpdateLocation(Guid id, [FromBody] UpdateLocationDto request, CancellationToken cancellationToken)
     {
+        if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
+            return BadRequest(new { message = "Coordinates out of valid range." });
+
         var result = await _handler.UpdateLocationAsync(id, request, cancellationToken);
 
         return result.Match(
