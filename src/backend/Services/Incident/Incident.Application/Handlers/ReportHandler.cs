@@ -189,7 +189,8 @@ public class ReportHandler : IReportHandler
                 description: $"LostObject with ID '{id}' was not found."
             );
 
-        if (userRefId != lostObject.UserRefId.ToString()) {
+        if (userRefId != lostObject.UserRefId.ToString())
+        {
             if (userRefRole is not ("Admin" or "ObjectsOfficer" or "ComplaintsOfficer"))
             {
                 return Error.Unauthorized(
