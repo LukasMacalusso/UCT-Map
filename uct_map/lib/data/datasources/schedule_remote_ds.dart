@@ -8,6 +8,7 @@ import '../../core/network/api_config.dart';
 import '../../core/network/api_exception.dart';
 import '../../domain/entities/office_hour.dart';
 import '../../domain/entities/booking_interval.dart';
+import '../../domain/entities/user_role.dart';
 import '../../domain/entities/professor.dart';
 import '../../domain/entities/schedule_meeting.dart';
 import '../../domain/repositories/schedule_repository.dart';
@@ -95,22 +96,41 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
 
   @override
   Future<List<ScheduleMeeting>> getMyMeetings() async {
-    final user = ApiClientProvider.session.currentUser;
-    if (user == null) throw const UnauthorizedException();
+    final session = ApiClientProvider.session;
+    final user = session.currentUser;
+    final token = session.token;
+    if (!session.isAuthenticated || user == null) {
+      throw const UnauthorizedException();
+    }
+    if (user.role != UserRole.estudiante && user.role != UserRole.profesor) {
+      throw const ForbiddenException();
+    }
     final now = DateTime.now();
     final from = DateTime(now.year, now.month, now.day).toIso8601String();
     final to = DateTime(now.year, now.month, now.day + 60).toIso8601String();
-    final teacher = user.role.toShortString() == 'profesor';
+    final teacher = user.role == UserRole.profesor;
     final data = await _request(
       teacher
           ? '/api/schedule/meetings'
           : '/api/schedule/students/${user.id}/meetings',
       query: {'from': from, 'to': to, if (teacher) 'teacherId': user.id},
     );
+    if (session.token != token) {
+      throw const UnauthorizedException('La sesión cambió.');
+    }
+    if (!teacher && data['studentRefId'] != user.id) {
+      throw const ForbiddenException('La agenda no corresponde a tu cuenta.');
+    }
     final items = teacher ? data as List : data['meetings'] as List;
-    return items
+    final meetings = items
         .map((m) => ScheduleMeeting.fromJson(m as Map<String, dynamic>))
         .toList();
+    if (meetings.any(
+      (m) => (teacher ? m.teacherRefId : m.studentRefId) != user.id,
+    )) {
+      throw const ForbiddenException('La agenda no corresponde a tu cuenta.');
+    }
+    return meetings;
   }
 
   @override

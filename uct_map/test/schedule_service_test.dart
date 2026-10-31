@@ -1,8 +1,10 @@
 import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:uct_map/core/network/api_config.dart';
+import 'package:uct_map/core/network/api_exception.dart';
 import 'package:uct_map/data/datasources/schedule_remote_ds.dart';
 import 'package:uct_map/domain/entities/professor.dart';
 import 'package:uct_map/domain/entities/schedule_meeting.dart';
@@ -23,7 +25,7 @@ void main() {
             'dayOfWeek': 3,
             'startTime': '11:00',
             'endTime': '13:00',
-          }
+          },
         ],
       };
 
@@ -43,11 +45,15 @@ void main() {
         'structureRefId': 'room-101',
         'scheduledAt': '2026-09-25T10:00:00.000Z',
         'status': 'Pending',
+        'durationMinutes': 30,
       };
 
       final mockClient = MockClient((request) async {
         expect(request.method, 'POST');
         expect(request.url.path, '/api/schedule/meetings');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['studentRefId'], 'student-1');
+        expect(body['durationMinutes'], 30);
         return http.Response(jsonEncode(mockMeetingJson), 201);
       });
 
@@ -58,6 +64,7 @@ void main() {
 
       final meeting = await ds.createMeeting(
         teacherRefId: 'prof-1',
+        studentRefId: 'student-1',
         structureRefId: 'room-101',
         scheduledAt: DateTime.parse('2026-09-25T10:00:00.000Z'),
       );
@@ -66,16 +73,16 @@ void main() {
       expect(meeting.status, MeetingStatus.pending);
     });
 
-    test('ScheduleRemoteDataSource activa fallback de profesores ante error de red', () async {
-      final mockClient = MockClient((request) async {
-        throw http.ClientException('Socket error');
-      });
+    test(
+      'ScheduleRemoteDataSource informa error de red sin profesores ficticios',
+      () async {
+        final mockClient = MockClient((request) async {
+          throw http.ClientException('Socket error');
+        });
 
-      final ds = ScheduleRemoteDataSource(client: mockClient);
-      final list = await ds.getProfessors();
-
-      expect(list.isNotEmpty, isTrue);
-      expect(list.any((p) => p.name.contains('Roberto González')), isTrue);
-    });
+        final ds = ScheduleRemoteDataSource(client: mockClient);
+        await expectLater(ds.getProfessors(), throwsA(isA<NetworkException>()));
+      },
+    );
   });
 }
