@@ -82,6 +82,7 @@ class AppRoutes {
       );
     }
     const protected = {
+      professors,
       reports,
       reportDetail,
       tickets,

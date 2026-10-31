@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../login/session_required_view.dart';
+
 import '../../../core/network/api_client_provider.dart';
 import '../../../domain/entities/app_permission.dart';
 
@@ -410,7 +412,9 @@ class _TicketsScreenState extends State<TicketsScreen> {
   void _openCreateScreen() async {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => CreateTicketScreen(repository: widget.repository),
+        builder: (_) => SessionRequiredView(
+          builder: (_) => CreateTicketScreen(repository: widget.repository),
+        ),
       ),
     );
 
@@ -422,9 +426,11 @@ class _TicketsScreenState extends State<TicketsScreen> {
   void _openDetailScreen(Ticket ticket) async {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => TicketDetailScreen(
-          ticketId: ticket.id,
-          repository: widget.repository,
+        builder: (_) => SessionRequiredView(
+          builder: (_) => TicketDetailScreen(
+            ticketId: ticket.id,
+            repository: widget.repository,
+          ),
         ),
       ),
     );

@@ -19,10 +19,8 @@ enum AppPermission {
     }.contains(role),
     bookConsultation => role == UserRole.estudiante,
     teacherSchedule => role == UserRole.profesor,
-    manageObjects =>
-      role == UserRole.funcionarioObjetos || role == UserRole.administrador,
-    manageReports =>
-      role == UserRole.funcionarioQuejas || role == UserRole.administrador,
+    manageObjects => role == UserRole.funcionarioObjetos,
+    manageReports => role == UserRole.funcionarioQuejas,
     manageUsers => role == UserRole.administrador,
   };
 }

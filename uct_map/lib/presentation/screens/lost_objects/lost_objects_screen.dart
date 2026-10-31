@@ -723,27 +723,28 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    OutlinedButton.icon(
-                      onPressed: _canManage && item.id.isNotEmpty
-                          ? () => _showStatusDialog(item)
-                          : null,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.uctBlue,
-                        side: const BorderSide(color: AppColors.uctBlue),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    if (_canManage)
+                      OutlinedButton.icon(
+                        onPressed: item.id.isNotEmpty
+                            ? () => _showStatusDialog(item)
+                            : null,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.uctBlue,
+                          side: const BorderSide(color: AppColors.uctBlue),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
+                        icon: const Icon(Icons.edit_note_rounded, size: 16),
+                        label: const Text(
+                          'Cambiar Estado',
+                          style: TextStyle(fontSize: 12),
                         ),
                       ),
-                      icon: const Icon(Icons.edit_note_rounded, size: 16),
-                      label: const Text(
-                        'Cambiar Estado',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
                   ],
                 ),
               ],
