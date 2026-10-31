@@ -32,5 +32,11 @@ public interface IMeetingRepository
         DateTime end,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Meeting>> GetActiveInRoomsAsync(
+        IReadOnlyCollection<Guid> structureRefIds,
+        DateTime start,
+        DateTime end,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(Meeting meeting, CancellationToken cancellationToken = default);
 }
