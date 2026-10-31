@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -6,8 +7,9 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Pagination } from '../components/ui/Pagination';
 import { ModalOverlay } from '../components/layout/ModalOverlay';
 import { IncidentCard } from '../modules/incidents/IncidentCard';
-import { PublishReportCard, type PublishReportData } from '../modules/objects/PublishReportCard';
+import { PublishReportCard, type PublishIncidentReportData } from '../modules/incidents/PublishReportCard';
 import { useReports, useCreateReport } from '../hooks/useReports';
+import { useAuthState } from '../states/authState';
 import { useCampuses, useStructures } from '../hooks/useCampus';
 import { useUsers } from '../hooks/useUsers';
 import { ComplaintStatus } from '../constants/complaintStatus';
@@ -90,14 +92,21 @@ export const IncidentsView = () => {
     setPage(1);
   };
 
+  const navigate = useNavigate();
+  const isAuthenticated = useAuthState((state) => state.isAuthenticated);
+
   const openCreate = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
     createReport.reset();
     setIsCreateOpen(true);
   };
 
   const closeCreate = () => setIsCreateOpen(false);
 
-  const handlePublish = (report: PublishReportData) => {
+  const handlePublish = (report: PublishIncidentReportData) => {
     createReport.mutate(
       {
         structureRefId: report.structureId,
@@ -160,7 +169,7 @@ export const IncidentsView = () => {
             onClick={openCreate}
             className="font-bold tracking-wide shadow-md hover:scale-105 transition-transform whitespace-nowrap !w-auto px-6 h-[50px] flex items-center justify-center gap-2"
           >
-            <PlusIcon className="w-5 h-5 stroke-[3]" /> CREAR REPORTE
+            <PlusIcon className="w-5 h-5 stroke-[3]" /> PUBLICAR
           </Button>
         </div>
       </div>

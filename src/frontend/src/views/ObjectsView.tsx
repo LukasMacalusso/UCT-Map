@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { SearchInput } from '../components/ui/SearchInput';
@@ -12,6 +13,7 @@ import {
   type ReportLostObjectData,
 } from '../modules/objects/ReportLostObjectCard';
 import { useLostObjects, useCreateLostObject } from '../hooks/useLostObjects';
+import { useAuthState } from '../states/authState';
 import { useCampuses, useStructures } from '../hooks/useCampus';
 import {
   LostObjectStatus,
@@ -118,7 +120,14 @@ export const ObjectsView = () => {
     setPage(1);
   };
 
+  const navigate = useNavigate();
+  const isAuthenticated = useAuthState((state) => state.isAuthenticated);
+
   const openCreate = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
     createLostObject.reset();
     setIsCreateOpen(true);
   };
@@ -167,6 +176,16 @@ export const ObjectsView = () => {
             />
           </div>
 
+          <div className="w-72">
+            <Select
+              label="Edificio"
+              options={structureOptions}
+              value={structureId}
+              onChange={handleStructureChange}
+              icon={<BuildingIcon className="w-5 h-5 text-gray-700" />}
+            />
+          </div>
+
           <div>
             <Button
               variant="solid"
@@ -175,7 +194,7 @@ export const ObjectsView = () => {
               onClick={openCreate}
               className="font-bold tracking-wide shadow-md hover:scale-105 transition-transform whitespace-nowrap !w-auto px-6 h-[50px] flex items-center justify-center gap-2"
             >
-              <PlusIcon className="w-5 h-5 stroke-[3]" /> CREAR REPORTE
+              <PlusIcon className="w-5 h-5 stroke-[3]" /> PUBLICAR
             </Button>
           </div>
         </div>
@@ -188,16 +207,6 @@ export const ObjectsView = () => {
               value={sortOrder}
               onChange={handleSortChange}
               icon={<SortIcon className="w-5 h-5 text-gray-700" />}
-            />
-          </div>
-
-          <div className="w-72">
-            <Select
-              label="Edificio"
-              options={structureOptions}
-              value={structureId}
-              onChange={handleStructureChange}
-              icon={<BuildingIcon className="w-5 h-5 text-gray-700" />}
             />
           </div>
 
