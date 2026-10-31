@@ -7,6 +7,7 @@ on:
       - taller-4
       - TI4-94
       - TI4-96
+      - TI4-97
       - TI4-98
     paths:
       - 'uct_map/**'
@@ -17,6 +18,7 @@ on:
       - taller-4
       - TI4-94
       - TI4-96
+      - TI4-97
       - TI4-98
   workflow_dispatch:
 
@@ -216,3 +218,41 @@ jobs:
           name: app-debug-apk
           path: uct_map/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: ignore
+
+  integration-tests:
+    name: Mobile Integration Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./uct_map
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+          cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
+
+      - name: Prepare Environment (.env)
+        run: |
+          if [ -f .env.example ]; then
+            cp .env.example .env
+          else
+            touch .env
+          fi
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libjsoncpp-dev xvfb
+          flutter config --enable-linux-desktop
+
+      - name: Run Mobile Integration Tests
+        run: xvfb-run -a flutter test integration_test/app_integration_test.dart -d linux
