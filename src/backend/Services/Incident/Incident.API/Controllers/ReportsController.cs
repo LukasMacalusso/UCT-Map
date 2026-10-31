@@ -95,7 +95,9 @@ public class ReportsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete([FromRoute] string id)
     {
-        var result = await _reportHandler.DeleteAsync(id);
+        var userRefRole = JwtUserIdReader.GetUserRoleToken(Request.Headers.Authorization.ToString());
+        var userRefId = JwtUserIdReader.GetUserIdToken(Request.Headers.Authorization.ToString());
+        var result = await _reportHandler.DeleteAsync(id, userRefRole!, userRefId!.Value.ToString());
         return result.Match(
             page => Ok(page),
             errors =>

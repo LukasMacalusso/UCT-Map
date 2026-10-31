@@ -10,7 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Identity.Infrastructure.Authentication;
 
-public sealed class JwtTokenGenerator(UserManager<User> userManager,IOptions<JwtSettings> options) : IJwtTokenGenerator
+public sealed class JwtTokenGenerator(UserManager<User> userManager, IOptions<JwtSettings> options) : IJwtTokenGenerator
 {
     private const string RoleClaimType = "role";
 

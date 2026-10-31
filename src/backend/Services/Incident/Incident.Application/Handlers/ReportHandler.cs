@@ -181,15 +181,24 @@ public class ReportHandler : IReportHandler
 
         return new ComplaintSearchCriteria(title, description, status);
     }
-    public async Task<ErrorOr<Success>> DeleteAsync(string id)
+    public async Task<ErrorOr<Success>> DeleteAsync(string id, string userRefRole, string userRefId)
     {
-        var ticket = await _ticketRepository.GetByIdAsync(id);
-        if (ticket is null) return Error.NotFound(
+        var lostObject = await _ticketRepository.GetByIdAsync(id);
+        if (lostObject is null) return Error.NotFound(
                 code: "LostObject.NotFound",
                 description: $"LostObject with ID '{id}' was not found."
             );
 
-        var response = await _ticketRepository.DeleteAsync(ticket.Id!);
+        if (userRefId != lostObject.UserRefId.ToString()) {
+            if (userRefRole is not ("Admin" or "ObjectsOfficer" or "ComplaintsOfficer"))
+            {
+                return Error.Unauthorized(
+                        code: "LostObject.Unauthorized",
+                        description: $"'{userRefRole}' is not authorized"
+                    );
+            }
+        }
+        var response = await _ticketRepository.DeleteAsync(lostObject.Id!);
 
         if (!response) return Error.Failure(
                 code: "LostObject.UpdateFailed",

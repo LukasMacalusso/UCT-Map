@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.AspNetCore.Http;
+using Incident.Application.Common;
 using ErrorOr;
 using MongoDB.Bson;
 namespace Incident.API.Controllers;
@@ -88,7 +89,8 @@ public class LostObjectsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete([FromRoute] string id)
     {
-        var result = await _lostObjectHandler.DeleteAsync(id);
+        var userRefRole = JwtUserIdReader.GetUserRoleToken(Request.Headers.Authorization.ToString());
+        var result = await _lostObjectHandler.DeleteAsync(id, userRefRole!);
         return result.Match(
             page => Ok(page),
             errors =>

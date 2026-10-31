@@ -11,5 +11,5 @@ public interface ILostObjectHandler
     Task<ErrorOr<LostObjectResponse>> GetByIdAsync(string id);
     Task<ErrorOr<Success>> UpdateStatusAsync(string id, UpdateStatus status);
     Task<ErrorOr<LostObjectPageResponse>> SearchAsync(LostObjectSearchRequest request, CancellationToken ct);
-    Task<ErrorOr<Success>> DeleteAsync(string id);
+    Task<ErrorOr<Success>> DeleteAsync(string id, string userRefRole);
 }
