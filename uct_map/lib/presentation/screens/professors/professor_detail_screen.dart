@@ -79,6 +79,7 @@ class _ProfessorDetailScreenState extends State<ProfessorDetailScreen> {
         _session.currentUser?.role,
       );
       return Scaffold(
+        backgroundColor: const Color(0xFFF3F5F8),
         appBar: AppBar(
           title: const Text('Ficha docente'),
           backgroundColor: AppColors.uctBlue,
@@ -90,60 +91,97 @@ class _ProfessorDetailScreenState extends State<ProfessorDetailScreen> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Color(0xFFE7EEF5),
-                      child: Icon(
-                        Icons.person_outline,
-                        size: 32,
-                        color: AppColors.uctBlue,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: AppColors.uctBlue,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            professor.name,
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.uctBlue,
+                          Expanded(
+                            child: Text(
+                              professor.name,
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                          if (professor.department.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Text(professor.department),
-                          ],
-                          const SizedBox(height: 8),
-                          SelectableText(
-                            professor.email,
-                            style: theme.textTheme.bodyMedium,
+                          const SizedBox(width: 16),
+                          const Icon(
+                            Icons.person_outline,
+                            size: 28,
+                            color: AppColors.uctYellow,
                           ),
                         ],
+                      ),
+                      if (professor.department.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          professor.department,
+                          style: const TextStyle(color: Color(0xFFE0EBF5)),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      SelectableText(
+                        professor.email,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                      if (professor.office.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.place_outlined,
+                              size: 20,
+                              color: Color(0xFFE0EBF5),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                professor.office,
+                                style: const TextStyle(
+                                  color: Color(0xFFE0EBF5),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.calendar_month_outlined,
+                      color: AppColors.uctBlue,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Horario de atención',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.uctBlue,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                if (professor.office.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Text(professor.office),
-                ],
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 16),
-                Text(
-                  'Horario de atención',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 const Text(
                   'Revisa los días y el lugar de atención antes de elegir una cita.',
+                  style: TextStyle(color: AppColors.subtitle, height: 1.5),
                 ),
                 const SizedBox(height: 20),
                 if (hours.isEmpty)
@@ -179,6 +217,13 @@ class _ProfessorDetailScreenState extends State<ProfessorDetailScreen> {
                       child: SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.uctBlue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
                           onPressed: _book,
                           icon: const Icon(Icons.calendar_month),
                           label: const Padding(
