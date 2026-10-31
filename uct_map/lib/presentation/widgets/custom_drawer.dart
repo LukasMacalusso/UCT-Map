@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
+
 import '../../core/navigation/app_routes.dart';
 import 'uct_logo.dart';
+import '../../core/network/api_client_provider.dart';
+import '../../domain/entities/app_permission.dart';
 
 class CustomDrawer extends StatelessWidget {
   final int currentIndex;
   final Function(int)? onSelectTab;
 
-  const CustomDrawer({
-    super.key,
-    required this.currentIndex,
-    this.onSelectTab,
-  });
+  const CustomDrawer({super.key, required this.currentIndex, this.onSelectTab});
 
   void _navigateToTab(BuildContext context, int index) {
     Navigator.pop(context);
@@ -47,10 +46,40 @@ class CustomDrawer extends StatelessWidget {
                 child: UctLogo(height: 48, width: 48),
               ),
             ),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary,
-            ),
+            decoration: BoxDecoration(color: theme.colorScheme.primary),
           ),
+          for (final entry in [
+            (
+              AppPermission.teacherSchedule,
+              'Mis horarios y citas',
+              AppRoutes.teacherSchedule,
+            ),
+            (
+              AppPermission.manageObjects,
+              'Gestionar objetos perdidos',
+              AppRoutes.manageObjects,
+            ),
+            (
+              AppPermission.manageReports,
+              'Gestionar incidentes',
+              AppRoutes.manageReports,
+            ),
+            (
+              AppPermission.manageUsers,
+              'Administrar usuarios',
+              AppRoutes.manageUsers,
+            ),
+          ])
+            if (ApiClientProvider.session.isAuthenticated &&
+                entry.$1.allows(ApiClientProvider.session.currentUser?.role))
+              ListTile(
+                leading: const Icon(Icons.manage_accounts),
+                title: Text(entry.$2),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, entry.$3);
+                },
+              ),
           ListTile(
             leading: const Icon(Icons.dashboard_outlined),
             title: const Text('Inicio y Accesos Rápidos'),
@@ -118,8 +147,10 @@ class CustomDrawer extends StatelessWidget {
             title: const Text('Directorio de Profesores'),
             onTap: () async {
               Navigator.pop(context);
-              final result =
-                  await Navigator.pushNamed(context, AppRoutes.professors);
+              final result = await Navigator.pushNamed(
+                context,
+                AppRoutes.professors,
+              );
               if (result == 0 && context.mounted) {
                 _navigateToTab(context, 0);
               }
@@ -130,8 +161,10 @@ class CustomDrawer extends StatelessWidget {
             title: const Text('Lugares Guardados'),
             onTap: () async {
               Navigator.pop(context);
-              final result =
-                  await Navigator.pushNamed(context, AppRoutes.savedPlaces);
+              final result = await Navigator.pushNamed(
+                context,
+                AppRoutes.savedPlaces,
+              );
               if (result == 0 && context.mounted) {
                 _navigateToTab(context, 0);
               }
@@ -142,8 +175,10 @@ class CustomDrawer extends StatelessWidget {
             title: const Text('Mis Reportes'),
             onTap: () async {
               Navigator.pop(context);
-              final result =
-                  await Navigator.pushNamed(context, AppRoutes.myReports);
+              final result = await Navigator.pushNamed(
+                context,
+                AppRoutes.myReports,
+              );
               if (result == 3 && context.mounted) {
                 _navigateToTab(context, 3);
               }
@@ -154,8 +189,10 @@ class CustomDrawer extends StatelessWidget {
             title: const Text('Objetos Reportados'),
             onTap: () async {
               Navigator.pop(context);
-              final result =
-                  await Navigator.pushNamed(context, AppRoutes.myLostItems);
+              final result = await Navigator.pushNamed(
+                context,
+                AppRoutes.myLostItems,
+              );
               if (result == 2 && context.mounted) {
                 _navigateToTab(context, 2);
               }
