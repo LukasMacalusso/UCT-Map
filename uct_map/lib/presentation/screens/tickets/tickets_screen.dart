@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/network/api_client_provider.dart';
+import '../../../domain/entities/app_permission.dart';
+
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/problem_details.dart';
 import '../../../core/theme/app_colors.dart';
@@ -29,6 +32,11 @@ class TicketsScreen extends StatefulWidget {
 }
 
 class _TicketsScreenState extends State<TicketsScreen> {
+  bool get _canManage =>
+      ApiClientProvider.session.isAuthenticated &&
+      AppPermission.manageReports.allows(
+        ApiClientProvider.session.currentUser?.role,
+      );
   final _searchController = TextEditingController();
   Timer? _debounceTimer;
 
@@ -118,6 +126,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
     required TicketStatus newStatus,
     ComplaintStatus? newComplainStatus,
   }) async {
+    if (!mounted || !_canManage) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Actualizando estado a "${newStatus.label}"...'),
@@ -164,6 +173,8 @@ class _TicketsScreenState extends State<TicketsScreen> {
   }
 
   void _showStatusDialog(Ticket ticket) {
+    if (!_canManage) return;
+    final actionToken = ApiClientProvider.session.token;
     TicketStatus selectedTicketStatus = ticket.ticketType;
     ComplaintStatus? selectedComplaintStatus = ticket.complaintDetails?.status;
 
@@ -177,7 +188,10 @@ class _TicketsScreenState extends State<TicketsScreen> {
           builder: (context, setModalState) {
             return SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +218,10 @@ class _TicketsScreenState extends State<TicketsScreen> {
                     // Estado general del ticket
                     const Text(
                       'Estado del Ticket (TicketStatus):',
-                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -213,7 +230,9 @@ class _TicketsScreenState extends State<TicketsScreen> {
                       children: TicketStatus.values.map((s) {
                         final isSel = selectedTicketStatus == s;
                         return ChoiceChip(
-                          avatar: isSel ? const Icon(Icons.check, size: 14) : null,
+                          avatar: isSel
+                              ? const Icon(Icons.check, size: 14)
+                              : null,
                           label: Text(s.label),
                           selected: isSel,
                           onSelected: (_) =>
@@ -227,7 +246,10 @@ class _TicketsScreenState extends State<TicketsScreen> {
                     if (ticket.complaintDetails != null) ...[
                       const Text(
                         'Estado de Queja / Reclamo (ComplaintStatus):',
-                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Wrap(
@@ -236,11 +258,14 @@ class _TicketsScreenState extends State<TicketsScreen> {
                         children: ComplaintStatus.values.map((cs) {
                           final isSel = selectedComplaintStatus == cs;
                           return ChoiceChip(
-                            avatar: isSel ? const Icon(Icons.check, size: 14) : null,
+                            avatar: isSel
+                                ? const Icon(Icons.check, size: 14)
+                                : null,
                             label: Text(cs.label),
                             selected: isSel,
-                            onSelected: (_) =>
-                                setModalState(() => selectedComplaintStatus = cs),
+                            onSelected: (_) => setModalState(
+                              () => selectedComplaintStatus = cs,
+                            ),
                           );
                         }).toList(),
                       ),
@@ -259,6 +284,11 @@ class _TicketsScreenState extends State<TicketsScreen> {
                           ),
                         ),
                         onPressed: () {
+                          if (!mounted ||
+                              !_canManage ||
+                              actionToken != ApiClientProvider.session.token) {
+                            return;
+                          }
                           Navigator.pop(ctx);
                           _updateTicketStatus(
                             ticket,
@@ -300,12 +330,18 @@ class _TicketsScreenState extends State<TicketsScreen> {
                   children: [
                     const Text(
                       'Opciones de Ordenamiento',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     const Text(
                       'Ordenar por:',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -314,12 +350,14 @@ class _TicketsScreenState extends State<TicketsScreen> {
                         ChoiceChip(
                           label: const Text('Fecha (ReportedAt)'),
                           selected: tempSortBy == 'ReportedAt',
-                          onSelected: (val) => setModalState(() => tempSortBy = 'ReportedAt'),
+                          onSelected: (val) =>
+                              setModalState(() => tempSortBy = 'ReportedAt'),
                         ),
                         ChoiceChip(
                           label: const Text('Estado (Status)'),
                           selected: tempSortBy == 'Status',
-                          onSelected: (val) => setModalState(() => tempSortBy = 'Status'),
+                          onSelected: (val) =>
+                              setModalState(() => tempSortBy = 'Status'),
                         ),
                       ],
                     ),
@@ -327,7 +365,11 @@ class _TicketsScreenState extends State<TicketsScreen> {
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Orden descendente'),
-                      subtitle: Text(tempDesc ? 'Más recientes primero' : 'Más antiguos primero'),
+                      subtitle: Text(
+                        tempDesc
+                            ? 'Más recientes primero'
+                            : 'Más antiguos primero',
+                      ),
                       value: tempDesc,
                       onChanged: (val) => setModalState(() => tempDesc = val),
                     ),
@@ -423,7 +465,10 @@ class _TicketsScreenState extends State<TicketsScreen> {
         backgroundColor: AppColors.uctBlue,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_alert_outlined),
-        label: const Text('Crear Reporte', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: const Text(
+          'Crear Reporte',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       body: Column(
         children: [
@@ -448,7 +493,11 @@ class _TicketsScreenState extends State<TicketsScreen> {
             decoration: InputDecoration(
               hintText: 'Buscar por queja o descripción...',
               hintStyle: const TextStyle(fontSize: 13, color: AppColors.hint),
-              prefixIcon: const Icon(Icons.search, color: AppColors.subtitle, size: 20),
+              prefixIcon: const Icon(
+                Icons.search,
+                color: AppColors.subtitle,
+                size: 20,
+              ),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 18),
@@ -460,7 +509,10 @@ class _TicketsScreenState extends State<TicketsScreen> {
                   : null,
               filled: true,
               fillColor: const Color(0xFFF8FAFC),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 10,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(color: AppColors.fieldBorder),
@@ -630,7 +682,11 @@ class _TicketsScreenState extends State<TicketsScreen> {
             // Estructura
             Row(
               children: [
-                const Icon(Icons.apartment_rounded, size: 14, color: AppColors.uctBlue),
+                const Icon(
+                  Icons.apartment_rounded,
+                  size: 14,
+                  color: AppColors.uctBlue,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -650,7 +706,11 @@ class _TicketsScreenState extends State<TicketsScreen> {
             // Fecha
             Row(
               children: [
-                const Icon(Icons.access_time_rounded, size: 14, color: AppColors.hint),
+                const Icon(
+                  Icons.access_time_rounded,
+                  size: 14,
+                  color: AppColors.hint,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'Reportado: ${_formatDate(ticket.reportedAt)}',
@@ -672,7 +732,11 @@ class _TicketsScreenState extends State<TicketsScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.link_rounded, size: 13, color: Colors.blue.shade700),
+                    Icon(
+                      Icons.link_rounded,
+                      size: 13,
+                      color: Colors.blue.shade700,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Objeto: ${ticket.lostObjectId}',
@@ -697,20 +761,31 @@ class _TicketsScreenState extends State<TicketsScreen> {
               children: [
                 Text(
                   'Estado: ${ticket.ticketType.label}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 OutlinedButton.icon(
-                  onPressed: () => _showStatusDialog(ticket),
+                  onPressed: _canManage
+                      ? () => _showStatusDialog(ticket)
+                      : null,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.uctBlue,
                     side: const BorderSide(color: AppColors.uctBlue),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                   ),
                   icon: const Icon(Icons.edit_note_rounded, size: 16),
-                  label: const Text('Cambiar Estado', style: TextStyle(fontSize: 12)),
+                  label: const Text(
+                    'Cambiar Estado',
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ),
               ],
             ),
@@ -783,7 +858,11 @@ class _TicketsScreenState extends State<TicketsScreen> {
             const SizedBox(height: 18),
             const Text(
               'No se encontraron reportes',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.ink),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -806,7 +885,9 @@ class _TicketsScreenState extends State<TicketsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.uctBlue,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
               label: const Text('Limpiar Filtros'),
@@ -828,7 +909,11 @@ class _TicketsScreenState extends State<TicketsScreen> {
             const SizedBox(height: 16),
             const Text(
               'Error al consultar el servicio',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.ink),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -842,7 +927,9 @@ class _TicketsScreenState extends State<TicketsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.uctBlue,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text('Reintentar'),
