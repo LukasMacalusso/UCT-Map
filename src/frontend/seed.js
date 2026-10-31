@@ -1,89 +1,266 @@
-// Script to seed test data into the Campus database
-// To execute, open a terminal in the src/Frontend directory and run: node seed.js
+// Script to seed test data into the Campus and Incident databases.
+// To execute, open a terminal in the src/frontend directory and run: node seed.js
 
-const API_URL = 'http://localhost:5000/api/campus';
+const API_URL = 'http://localhost:5000/api';
 
-async function postData(endpoint, data) {
+const SEED_USER = {
+  name: 'Usuario Semilla',
+  email: 'seed@uct.cl',
+  password: 'Seed12345!',
+};
+
+async function request(method, endpoint, data, token) {
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: data ? JSON.stringify(data) : undefined,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`${method} ${endpoint}: ${response.status} - ${errorText}`);
+  }
+
+  if (response.status === 204) return null;
+
+  return response.json();
+}
+
+async function postData(endpoint, data, token) {
   try {
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Error at ${endpoint}: ${response.status} - ${errorText}`);
-    }
-
-    const result = await response.json();
-    return result.id; // Assume the backend returns the object with its Id
+    const result = await request('POST', endpoint, data, token);
+    return result?.id ?? null;
   } catch (err) {
     console.error(err.message);
     return null;
   }
 }
 
+const daysAgo = (days) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+async function authenticate() {
+  console.log('Registering seed user...');
+
+  try {
+    await request('POST', '/identity/register', { ...SEED_USER, role: 'Student' });
+    console.log(`Seed user created: ${SEED_USER.email}`);
+  } catch {
+    console.log(`Seed user already exists: ${SEED_USER.email}`);
+  }
+
+  const login = await request('POST', '/identity/login', {
+    email: SEED_USER.email,
+    password: SEED_USER.password,
+  });
+
+  return login.token;
+}
+
 async function runSeed() {
   console.log('Initializing test data injection...');
 
-  // 1. Create a Campus
+  const token = await authenticate();
+
+  if (!token) return console.error('Authentication failed.');
+
   console.log('Creating Campus...');
-  const campusId = await postData('/campuses', {
-    name: 'Campus San Francisco',
-    address: 'Manuel Montt 056, Temuco',
-    latitude: 50, // Relative % position on the map
-    longitude: 50
-  });
+  const campusId = await postData(
+    '/campus/campuses',
+    {
+      name: 'Campus San Francisco',
+      address: 'Manuel Montt 056, Temuco',
+      latitude: 50,
+      longitude: 50,
+    },
+    token,
+  );
 
   if (!campusId) return console.error('Campus creation failed.');
 
-  // 2. Create a Room Category (e.g. Classrooms, Laboratory)
-  console.log('Creating Category...');
-  const categoryId = await postData('/categories', {
-    name: 'Sala de Clases',
-    icon: 'book',
-    description: 'Sala de uso general para clases teóricas'
-  });
+  console.log('Creating Category Groups...');
+  const categoryGroupId = await postData(
+    '/campus/category-groups',
+    { name: 'Infraestructura' },
+    token,
+  );
 
-  if (!categoryId) return console.error('Category creation failed.');
+  if (!categoryGroupId) return console.error('Category group creation failed.');
 
-  // 3. Create Buildings
-  console.log('Creating Buildings...');
+  console.log('Creating Categories...');
+  const classroomCategoryId = await postData(
+    '/campus/categories',
+    {
+      categoryGroupId,
+      name: 'Sala de Clases',
+      icon: 'book',
+      description: 'Sala de uso general para clases teóricas',
+    },
+    token,
+  );
+
+  const commonCategoryId = await postData(
+    '/campus/categories',
+    {
+      categoryGroupId,
+      name: 'Espacio Común',
+      icon: 'users',
+      description: 'Patios, pasillos y áreas de descanso',
+    },
+    token,
+  );
+
+  if (!classroomCategoryId) return console.error('Category creation failed.');
+
+  console.log('Creating Buildings and Structures...');
   const buildings = [
     { name: 'Edificio T', floorsCount: 4, latitude: 35, longitude: 45 },
     { name: 'Biblioteca Central', floorsCount: 2, latitude: 60, longitude: 70 },
-    { name: 'Edificio C', floorsCount: 3, latitude: 20, longitude: 80 }
+    { name: 'Edificio C', floorsCount: 3, latitude: 20, longitude: 80 },
   ];
 
-  for (const b of buildings) {
-    const buildingId = await postData('/buildings', {
-      campusId: campusId,
-      name: b.name,
-      floorsCount: b.floorsCount,
-      latitude: b.latitude,
-      longitude: b.longitude
-    });
+  const structureIds = [];
+
+  for (const building of buildings) {
+    const buildingId = await postData(
+      '/campus/buildings',
+      {
+        campusId,
+        name: building.name,
+        floorsCount: building.floorsCount,
+        latitude: building.latitude,
+        longitude: building.longitude,
+      },
+      token,
+    );
 
     if (buildingId) {
-      // 4. Create Rooms for this Building
-      console.log(`Creating rooms for ${b.name}...`);
+      console.log(`Creating rooms for ${building.name}...`);
+
       for (let i = 1; i <= 3; i++) {
-        await postData('/rooms', {
-          buildingId: buildingId,
-          categoryId: categoryId,
-          name: `Sala ${b.name[b.name.length - 1]}-${i}01`,
-          floor: i,
-          number: `${i}01`
-        });
+        await postData(
+          '/campus/rooms',
+          {
+            buildingId,
+            categoryId: classroomCategoryId,
+            name: `Sala ${building.name[building.name.length - 1]}-${i}01`,
+            floor: i,
+            number: `${i}01`,
+          },
+          token,
+        );
       }
     }
+
+    const structureId = await postData(
+      '/campus/structures',
+      {
+        campusId,
+        categoryId: classroomCategoryId,
+        name: building.name,
+        latitude: building.latitude,
+        longitude: building.longitude,
+      },
+      token,
+    );
+
+    if (structureId) structureIds.push(structureId);
+  }
+
+  const plazaStructureId = await postData(
+    '/campus/structures',
+    {
+      campusId,
+      categoryId: commonCategoryId ?? classroomCategoryId,
+      name: 'Plaza Central',
+      latitude: 50,
+      longitude: 50,
+    },
+    token,
+  );
+
+  if (plazaStructureId) structureIds.push(plazaStructureId);
+
+  if (structureIds.length === 0) return console.error('Structure creation failed.');
+
+  console.log('Creating lost objects...');
+  const lostObjects = [
+    { title: 'Mochila negra', description: 'Mochila con un notebook y su cargador dentro.', status: 0 },
+    { title: 'Llaves con llavero rojo', description: 'Tres llaves y un llavero de plástico rojo.', status: 0 },
+    { title: 'Botella de agua azul', description: 'Botella metálica azul con stickers.', status: 1 },
+    { title: 'Calculadora científica', description: 'Calculadora Casio fx-991 dentro de su estuche.', status: 1 },
+    { title: 'Auriculares inalámbricos', description: 'Estuche blanco con los audífonos dentro.', status: 2 },
+    { title: 'Billetera de cuero', description: 'Billetera café con documentos y tarjetas.', status: 2 },
+    { title: 'Polerón gris', description: 'Polerón gris talla M olvidado en la sala.', status: 3 },
+    { title: 'Cuaderno universitario', description: 'Cuaderno con apuntes de cálculo.', status: 0 },
+    { title: 'Cargador de notebook', description: 'Cargador Lenovo de 65W con cable.', status: 1 },
+    { title: 'Paraguas negro', description: 'Paraguas plegable con mango de madera.', status: 2 },
+    { title: 'Carnet universitario', description: 'Carnet con nombre y carrera del estudiante.', status: 0 },
+    { title: 'Gorro de lana', description: 'Gorro tejido de color verde.', status: 3 },
+  ];
+
+  const lostObjectIds = [];
+
+  for (const [index, lostObject] of lostObjects.entries()) {
+    const lostObjectId = await postData(
+      '/incident/lost-objects',
+      {
+        title: lostObject.title,
+        description: lostObject.description,
+        status: lostObject.status,
+        photoUrl: `https://picsum.photos/seed/uct-${index + 1}/600/400`,
+        structureId: structureIds[index % structureIds.length],
+      },
+      token,
+    );
+
+    if (lostObjectId) lostObjectIds.push(lostObjectId);
+  }
+
+  console.log('Creating reports...');
+  const reports = [
+    { title: 'Baño roto en el segundo piso', description: 'La puerta del baño no cierra y el lavamanos gotea.', ticketType: 0, complaintStatus: 0, days: 1 },
+    { title: 'Luz intermitente en sala de estudio', description: 'El tubo fluorescente de la mesa 4 parpadea constantemente.', ticketType: 1, complaintStatus: 0, days: 2 },
+    { title: 'Silla rota en la sala 301', description: 'Una silla tiene la pata trasera quebrada.', ticketType: 2, complaintStatus: 0, days: 4 },
+    { title: 'Basura acumulada en el pasillo', description: 'Hay bolsas de basura en el pasillo desde el viernes.', ticketType: 0, complaintStatus: 0, days: 5 },
+    { title: 'Proyector sin señal', description: 'El proyector de la sala 102 no entrega imagen.', ticketType: 1, complaintStatus: 1, days: 7 },
+    { title: 'Puerta de emergencia bloqueada', description: 'La salida de emergencia está bloqueada con cajas.', ticketType: 3, complaintStatus: 0, days: 9 },
+    { title: 'Enchufe suelto en laboratorio', description: 'El enchufe de la mesa 2 está suelto y hace chispas.', ticketType: 0, complaintStatus: 0, days: 11 },
+    { title: 'Filtración de agua en el techo', description: 'El techo de la biblioteca gotea cuando llueve.', ticketType: 1, complaintStatus: 0, days: 13 },
+    { title: 'Ventana sin vidrio', description: 'La ventana de la sala 204 perdió el vidrio.', ticketType: 2, complaintStatus: 0, days: 16 },
+    { title: 'Pizarra rayada', description: 'La pizarra de la sala 105 está rayada y no se borra bien.', ticketType: 2, complaintStatus: 0, days: 20 },
+    { title: 'Extintor vencido', description: 'El extintor del pasillo del primer piso está vencido.', ticketType: 0, complaintStatus: 0, days: 25 },
+    { title: 'Ruido en la sala de clases', description: 'Hay ruido constante desde el edificio vecino.', ticketType: 3, complaintStatus: 0, days: 30 },
+  ];
+
+  for (const [index, report] of reports.entries()) {
+    const referencesLostObject = index % 4 === 0 && lostObjectIds.length > 0;
+
+    await postData(
+      '/incident/reports',
+      {
+        structureRefId: structureIds[index % structureIds.length],
+        ticketType: report.ticketType,
+        isActive: true,
+        reportedAt: daysAgo(report.days),
+        ...(referencesLostObject
+          ? { lostObjectId: lostObjectIds[Math.floor(index / 4) % lostObjectIds.length] }
+          : {}),
+        complaint: {
+          title: report.title,
+          description: report.description,
+          status: report.complaintStatus,
+        },
+      },
+      token,
+    );
   }
 
   console.log('Data injection completed successfully.');
-  console.log('Reload the map application to see the seeded data.');
+  console.log(`Seed user: ${SEED_USER.email} / ${SEED_USER.password}`);
+  console.log('Reload the application to see the seeded data.');
 }
 
 runSeed();

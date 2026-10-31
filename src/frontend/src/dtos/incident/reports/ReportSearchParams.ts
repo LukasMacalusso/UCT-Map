@@ -1,5 +1,5 @@
-import type { ComplaintStatus } from "../../constants/complaintStatus";
-import type { TicketStatus } from "../../constants/ticketStatus";
+import type { ComplaintStatus } from "../../../constants/complaintStatus";
+import type { TicketStatus } from "../../../constants/ticketStatus";
 
 export interface ReportSearchParams {
   userRefId?: string;

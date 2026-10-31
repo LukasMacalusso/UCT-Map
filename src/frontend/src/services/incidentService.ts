@@ -4,7 +4,7 @@ import type { ComplaintStatus } from "../constants/complaintStatus";
 import type { LostObjectStatus } from "../constants/lostObjectsStatus";
 import type { TicketStatus } from "../constants/ticketStatus";
 import type { CreateLostObjectRequestDto } from "../dtos/incident/objects/CreateLostObjectRequestDto";
-import type { LostObjectPageApiDto } from "../dtos/incident/objects/LostObjecrPageApiDto";
+import type { LostObjectPageApiDto } from "../dtos/incident/objects/LostObjectPageApiDto";
 import type { LostObjectPageDto } from "../dtos/incident/objects/LostObjectPageDto";
 import type { LostObjectSearchParams } from "../dtos/incident/objects/LostObjectSearchParams";
 import { mapLostObject } from "../dtos/incident/objects/MapLostObjects";
@@ -89,7 +89,7 @@ export const incidentService = {
     try {
       const { data } = await httpClient.post<{ id: string }>(
         '/api/incident/lost-objects',
-        payload,
+        { ...payload, photoUrl: payload.photoUrl ?? '' },
       );
       return data.id;
     } catch (error) {

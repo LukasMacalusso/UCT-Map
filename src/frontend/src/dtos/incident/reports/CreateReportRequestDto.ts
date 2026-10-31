@@ -1,4 +1,4 @@
-import type { TicketStatus } from "../../constants/ticketStatus";
+import type { TicketStatus } from "../../../constants/ticketStatus";
 import type { ComplaintDetailsDto } from "./ComplaintDetailsDto";
 
 export interface CreateReportRequestDto {

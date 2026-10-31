@@ -1,4 +1,4 @@
-import type { ComplaintStatus } from "../../constants/complaintStatus";
+import type { ComplaintStatus } from "../../../constants/complaintStatus";
 
 export interface ComplaintDetailsDto {
   title: string;

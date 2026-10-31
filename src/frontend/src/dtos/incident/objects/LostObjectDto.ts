@@ -1,3 +1,5 @@
+import type { LostObjectStatus } from "../../../constants/lostObjectsStatus";
+
 export interface LostObjectDto {
   title: string;
   description: string;

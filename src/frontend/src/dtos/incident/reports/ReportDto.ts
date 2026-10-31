@@ -1,5 +1,5 @@
-import type { ComplaintStatus } from "../../constants/complaintStatus";
-import type { TicketStatus } from "../../constants/ticketStatus";
+import type { TicketStatus } from "../../../constants/ticketStatus";
+import type { ComplaintDetailsDto } from "./ComplaintDetailsDto";
 
 export interface ReportDto {
   id: string;
@@ -8,6 +8,6 @@ export interface ReportDto {
   ticketType: TicketStatus;
   isActive: boolean;
   reportedAt: string;
-  complaintDetails: ComplaintStatus | null;
+  complaintDetails: ComplaintDetailsDto | null;
   lostObjectId: string | null;
 }

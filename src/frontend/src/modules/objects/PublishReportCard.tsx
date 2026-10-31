@@ -6,37 +6,63 @@ import { FileUpload } from '../../components/ui/FileUpload';
 import { Button } from '../../components/ui/Button';
 import { CloseButton } from '../../components/ui/ExitButton';
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
+import { useCampuses, useStructures } from '../../hooks/useCampus';
 
+export interface PublishReportData {
+  title: string;
+  description: string;
+  structureId: string;
+  files: File[];
+}
 
 interface PublishReportCardProps {
-  onPublish?: (data: { title: string; description: string; campus: string; building: string; files: File[] }) => void;
+  isSubmitting?: boolean;
+  error?: string | null;
+  onPublish?: (data: PublishReportData) => void;
   onDiscard?: () => void;
 }
 
-export const PublishReportCard = ({ onPublish, onDiscard }: PublishReportCardProps) => {
+export const PublishReportCard = ({
+  isSubmitting = false,
+  error,
+  onPublish,
+  onDiscard,
+}: PublishReportCardProps) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [campus, setCampus] = useState('san-juan-pablo-ii');
-  const [building, setBuilding] = useState('edificio-11');
+  const [campusSelection, setCampusSelection] = useState('');
+  const [structureSelection, setStructureSelection] = useState('');
   const [files, setFiles] = useState<File[]>([]);
 
-  const campusOptions = [
-    { value: 'san-juan-pablo-ii', label: 'Campus San Juan Pablo II' },
-    { value: 'san-francisco', label: 'Campus San Francisco' },
-    { value: 'menchaca-lira', label: 'Campus Menchaca Lira' },
-  ];
+  const { data: campuses = [] } = useCampuses();
+  const campusId = campusSelection || campuses[0]?.id || '';
 
-  const buildingOptions = [
-    { value: 'edificio-11', label: 'Edificio 11' },
-    { value: 'edificio-a', label: 'Edificio A' },
-    { value: 'edificio-b', label: 'Edificio B' },
-    { value: 'biblioteca', label: 'Biblioteca Central' },
-  ];
+  const { data: structures = [] } = useStructures(campusId || undefined, !!campusId);
+  const structureId = structureSelection || structures[0]?.id || '';
+
+  const handleCampusChange = (value: string) => {
+    setCampusSelection(value);
+    setStructureSelection('');
+  };
+
+  const campusOptions = campuses.map((campus) => ({ value: campus.id, label: campus.name }));
+  const structureOptions = structures.map((structure) => ({
+    value: structure.id,
+    label: structure.name,
+  }));
+
+  const canPublish =
+    title.trim() !== '' && description.trim() !== '' && structureId !== '' && !isSubmitting;
 
   const handlePublish = () => {
-    if (onPublish) {
-      onPublish({ title, description, campus, building, files });
-    }
+    if (!canPublish || !onPublish) return;
+
+    onPublish({
+      title: title.trim(),
+      description: description.trim(),
+      structureId,
+      files,
+    });
   };
 
   return (
@@ -74,8 +100,8 @@ export const PublishReportCard = ({ onPublish, onDiscard }: PublishReportCardPro
           <Select
             labelColor="text-gray-700"
             options={campusOptions}
-            value={campus}
-            onChange={setCampus}
+            value={campusId}
+            onChange={handleCampusChange}
             icon={<BuildingIcon className="w-5 h-5 text-gray-700" />}
           />
         </div>
@@ -83,13 +109,21 @@ export const PublishReportCard = ({ onPublish, onDiscard }: PublishReportCardPro
         <div className="flex-1 min-w-[180px]">
           <Select
             labelColor="text-gray-700"
-            options={buildingOptions}
-            value={building}
-            onChange={setBuilding}
+            options={structureOptions}
+            value={structureId}
+            onChange={setStructureSelection}
             icon={<BuildingIcon className="w-5 h-5 text-gray-700" />}
           />
         </div>
       </div>
+
+      {campusId && structureOptions.length === 0 && (
+        <p className="text-xs font-medium text-gray-500">
+          Este campus no tiene edificios registrados.
+        </p>
+      )}
+
+      {error && <p className="text-sm font-medium text-red-500">{error}</p>}
 
       <p className="text-xs text-gray-600 leading-relaxed font-medium">
         La publicación de reportes falsos, malintencionados o con contenido inapropiado puede acarrear sanciones, bloqueo de cuenta o la suspensión de privilegios en el sistema.
@@ -113,9 +147,10 @@ export const PublishReportCard = ({ onPublish, onDiscard }: PublishReportCardPro
           size="md"
           width="md"
           onClick={handlePublish}
+          disabled={!canPublish}
           className="font-bold tracking-wide"
         >
-          Publicar
+          {isSubmitting ? 'Publicando...' : 'Publicar'}
         </Button>
       </div>
     </Panel>
