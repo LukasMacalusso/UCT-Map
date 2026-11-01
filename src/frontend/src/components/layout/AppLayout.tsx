@@ -13,6 +13,7 @@ import MapIcon from '../../assets/svg/icons/icon_section_map.svg?react';
 import ReportsIcon from '../../assets/svg/icons/icon_section_incidents.svg?react';
 import ObjectsIcon from '../../assets/svg/icons/icon_section_objects.svg?react';
 import ContactsIcon from '../../assets/svg/icons/icon_section_contacts.svg?react';
+import ScheduleIcon from '../../assets/svg/icons/icon_schedule.svg?react';
 import AdminIcon from '../../assets/svg/icons/icon_admin.svg?react';
 import UserIcon from '../../assets/svg/icons/icon_user.svg?react';
 import { RoleGuard } from '../../router/RoleGuard';
@@ -53,6 +54,7 @@ export const AppLayout = () => {
     if (path.includes('/reports')) return 'Reportes';
     if (path.includes('/objects')) return 'Objetos';
     if (path.includes('/contacts')) return 'Contactos';
+    if (path.includes('/schedule')) return 'Agendamiento';
     if (path.includes('/showcase')) return 'Showcase';
     if (path.includes('/administration')) return 'Administración';
     return '';
@@ -151,6 +153,16 @@ export const AppLayout = () => {
           expandedWidth="288px"
           icon={<ContactsIcon className="w-8 h-8" />}
         />
+
+        <RoleGuard allowedRoles={[Role.Teacher]}>
+          <SectionButton
+            to="/schedule"
+            label="Agendamiento"
+            isExpanded={isExpanded}
+            expandedWidth="288px"
+            icon={<ScheduleIcon className="w-12 h-12" />}
+          />
+        </RoleGuard>
 
         <RoleGuard allowedRoles={[Role.Admin]}>
           <SectionButton

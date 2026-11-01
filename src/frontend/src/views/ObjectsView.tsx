@@ -237,11 +237,11 @@ export const ObjectsView = () => {
           </div>
         ) : (
           <>
-            <div className="flex-1 flex flex-wrap justify-center content-start gap-6">
+            <div className="flex-1 grid grid-cols-[repeat(auto-fill,minmax(min(100%,38rem),38rem))] justify-center content-start gap-6">
               {data.items.map((lostObject, index) => (
                 <ObjectReportCard
                   key={`${lostObject.title}-${index}`}
-                  className="!w-[38rem] max-w-full !h-60"
+                  className="!w-full max-w-[38rem] !h-60"
                   title={lostObject.title}
                   status={LOST_OBJECT_STATUS_LABELS[lostObject.status]}
                   statusColor={LOST_OBJECT_STATUS_COLORS[lostObject.status]}

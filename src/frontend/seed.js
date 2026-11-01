@@ -9,6 +9,58 @@ const SEED_USER = {
   password: 'Seed12345!',
 };
 
+const ADMIN_USER = {
+  email: 'admin@uct.cl',
+  password: 'Admin12345!',
+};
+
+const TEACHER_PASSWORD = 'Profesor12345!';
+
+const SEED_TEACHERS = [
+  {
+    name: 'Dr. Carlos Silva',
+    email: 'carlos.silva@uct.cl',
+    password: TEACHER_PASSWORD,
+    officeHours: [
+      { dayOfWeek: 1, startTime: '09:00:00', endTime: '11:00:00', structureIdx: 0 },
+      { dayOfWeek: 3, startTime: '14:30:00', endTime: '16:30:00', structureIdx: 0 },
+    ],
+  },
+  {
+    name: 'Dra. María González',
+    email: 'maria.gonzalez@uct.cl',
+    password: TEACHER_PASSWORD,
+    officeHours: [
+      { dayOfWeek: 2, startTime: '10:00:00', endTime: '12:00:00', structureIdx: 1 },
+      { dayOfWeek: 4, startTime: '15:00:00', endTime: '17:00:00', structureIdx: 1 },
+    ],
+  },
+  {
+    name: 'Mg. Juan Pérez',
+    email: 'juan.perez@uct.cl',
+    password: TEACHER_PASSWORD,
+    officeHours: [
+      { dayOfWeek: 1, startTime: '11:00:00', endTime: '13:00:00', structureIdx: 2 },
+      { dayOfWeek: 5, startTime: '09:30:00', endTime: '11:30:00', structureIdx: 2 },
+    ],
+  },
+  {
+    name: 'Dra. Ana Rojas',
+    email: 'ana.rojas@uct.cl',
+    password: TEACHER_PASSWORD,
+    officeHours: [
+      { dayOfWeek: 2, startTime: '08:30:00', endTime: '10:30:00', structureIdx: 0 },
+      { dayOfWeek: 4, startTime: '11:00:00', endTime: '13:00:00', structureIdx: 0 },
+    ],
+  },
+  {
+    name: 'Dr. Pedro Fernández',
+    email: 'pedro.fernandez@uct.cl',
+    password: TEACHER_PASSWORD,
+    officeHours: [],
+  },
+];
+
 async function request(method, endpoint, data, token) {
   const response = await fetch(`${API_URL}${endpoint}`, {
     method,
@@ -56,13 +108,138 @@ async function authenticate() {
     password: SEED_USER.password,
   });
 
-  return login.token;
+  return { token: login.token, userId: login.userId };
+}
+
+function nextWeekdayAtUtc(targetDayOfWeek, hour, minute) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + 1);
+  while (date.getUTCDay() !== targetDayOfWeek) {
+    date.setUTCDate(date.getUTCDate() + 1);
+  }
+  date.setUTCHours(hour, minute, 0, 0);
+  return date.toISOString().replace(/Z$/i, '');
+}
+
+async function seedTeachersAndSchedules(studentUserId, structureIds, fallbackToken) {
+  console.log('Registering and configuring sample teachers...');
+
+  let adminToken = null;
+  try {
+    const adminLogin = await request('POST', '/identity/login', ADMIN_USER);
+    adminToken = adminLogin.token;
+  } catch {
+    // Admin may not exist if identity container has not been rebuilt yet
+  }
+
+  for (const teacher of SEED_TEACHERS) {
+    let teacherId = null;
+
+    try {
+      const created = await request('POST', '/identity/register', {
+        name: teacher.name,
+        email: teacher.email,
+        password: teacher.password,
+        role: 'Teacher',
+      });
+      teacherId = created?.userId ?? null;
+      console.log(`Teacher created: ${teacher.name} (${teacher.email})`);
+    } catch {
+      try {
+        const createdAsStudent = await request('POST', '/identity/register', {
+          name: teacher.name,
+          email: teacher.email,
+          password: teacher.password,
+          role: 'Student',
+        });
+        teacherId = createdAsStudent?.userId ?? null;
+      } catch {
+        console.log(`Teacher already exists: ${teacher.email}`);
+      }
+    }
+
+    if (!teacherId) {
+      try {
+        const teacherLogin = await request('POST', '/identity/login', {
+          email: teacher.email,
+          password: teacher.password,
+        });
+        teacherId = teacherLogin?.userId ?? null;
+      } catch (err) {
+        console.error(`Could not login as ${teacher.email}: ${err.message}`);
+        continue;
+      }
+    }
+
+    if (adminToken && teacherId) {
+      try {
+        await request(
+          'PUT',
+          `/identity/${teacherId}/roles`,
+          { roles: ['Teacher'] },
+          adminToken,
+        );
+      } catch (err) {
+        console.warn(`Could not update role for ${teacher.email}: ${err.message}`);
+      }
+    }
+
+    const existingHours = await request(
+      'GET',
+      `/schedule/office-hours?teacherId=${teacherId}`,
+      null,
+      fallbackToken,
+    ).catch(() => []);
+
+    if (!existingHours || existingHours.length === 0) {
+      for (const block of teacher.officeHours) {
+        const structureRefId = structureIds[block.structureIdx % structureIds.length] ?? null;
+        await postData(
+          '/schedule/office-hours',
+          {
+            teacherRefId: teacherId,
+            structureRefId,
+            dayOfWeek: block.dayOfWeek,
+            startTime: block.startTime,
+            endTime: block.endTime,
+          },
+          fallbackToken,
+        );
+      }
+    }
+
+    if (studentUserId && teacher.officeHours.length > 0) {
+      const firstBlock = teacher.officeHours[0];
+      const [hourStr, minStr] = firstBlock.startTime.split(':');
+      const scheduledAt = nextWeekdayAtUtc(
+        firstBlock.dayOfWeek,
+        Number(hourStr),
+        Number(minStr),
+      );
+      const structureRefId =
+        structureIds[firstBlock.structureIdx % structureIds.length] ?? null;
+
+      await postData(
+        '/schedule/meetings',
+        {
+          teacherRefId: teacherId,
+          studentRefId: studentUserId,
+          structureRefId,
+          scheduledAt,
+          durationMinutes: 30,
+        },
+        fallbackToken,
+      );
+    }
+  }
 }
 
 async function runSeed() {
   console.log('Initializing test data injection...');
 
-  const token = await authenticate();
+  const auth = await authenticate();
+  const token = auth?.token;
+  const studentUserId = auth?.userId;
 
   if (!token) return console.error('Authentication failed.');
 
@@ -258,8 +435,14 @@ async function runSeed() {
     );
   }
 
+  await seedTeachersAndSchedules(studentUserId, structureIds, token);
+
   console.log('Data injection completed successfully.');
-  console.log(`Seed user: ${SEED_USER.email} / ${SEED_USER.password}`);
+  console.log(`Seed student: ${SEED_USER.email} / ${SEED_USER.password}`);
+  console.log(`Seed admin:   ${ADMIN_USER.email} / ${ADMIN_USER.password}`);
+  console.log(
+    `Seed teacher: ${SEED_TEACHERS[0].email} / ${TEACHER_PASSWORD}`,
+  );
   console.log('Reload the application to see the seeded data.');
 }
 

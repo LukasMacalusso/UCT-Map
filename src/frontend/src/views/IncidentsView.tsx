@@ -189,14 +189,14 @@ export const IncidentsView = () => {
           </div>
         ) : (
           <>
-            <div className="flex-1 flex flex-wrap justify-center content-start gap-6">
+            <div className="flex-1 grid grid-cols-[repeat(auto-fill,minmax(min(100%,24rem),24rem))] justify-center content-start gap-6">
               {data.items.map((report) => {
                 const reporter = usersById.get(report.userRefId);
 
                 return (
                   <IncidentCard
                     key={report.id}
-                    className="!w-96 max-w-full !h-[30rem]"
+                    className="!w-full max-w-[24rem] !h-[30rem]"
                     location={
                       (report.structureRefId && structureNames.get(report.structureRefId)) ||
                       'Sin ubicación'

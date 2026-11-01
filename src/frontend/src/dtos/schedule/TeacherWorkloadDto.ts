@@ -2,11 +2,12 @@ import type { MeetingDto } from "./MeetingDto";
 import type { OfficeHourDto } from "./OfficeHourDto";
 
 export interface TeacherWorkloadDto {
-  TeacherRefId: string;
-  From: string;
-  To: string;
-  WeeklyOfficeHourMinutes: number;
-  TotalMeetings: number;
-  OfficeHours: OfficeHourDto[];
-  Meetings: MeetingDto[];
+  teacherRefId: string;
+  from: string;
+  to: string;
+  weeklyOfficeHourMinutes: number;
+  totalMeetings: number;
+  meetingCount?: number;
+  officeHours: OfficeHourDto[];
+  meetings: MeetingDto[];
 }

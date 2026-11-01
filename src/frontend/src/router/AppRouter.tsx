@@ -5,6 +5,7 @@ import { IncidentsView } from '../views/IncidentsView';
 import { ObjectsView } from '../views/ObjectsView';
 import { ContactsView } from '../views/ContactsView';
 import { ShowcaseView } from '../views/ShowcaseView';
+import { ScheduleView } from '../views/TeacherView';
 import { LoginView } from '../views/LoginView';
 import { ProtectedRoute } from './ProtectedRoute';
 import { AdministrationView } from '../views/AdministrationView';
@@ -33,6 +34,9 @@ export const AppRouter = () => {
           <Route path="/administration" element={<AdministrationView />} />
         </Route>
 
+        <Route element={<ProtectedRoute allowedRoles={[Role.Teacher]} />}>
+          <Route path="/schedule" element={<ScheduleView />} />
+        </Route>
 
       </Route>
 
