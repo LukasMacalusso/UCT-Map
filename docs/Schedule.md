@@ -166,6 +166,35 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 ---
 
+### 2.4 Update Meeting Status
+- **Route**: `PATCH /api/schedule/meetings/{id}/status`
+- **Access**: Only the student or the teacher of the meeting, depending on the new status
+- **Description**: Changes the status of a meeting. The user is identified by the `sub` claim of the JWT, which is compared with the meeting's `studentRefId` and `teacherRefId`. A cancelled meeting no longer blocks its time slot.
+
+| New status | Who can set it | Current status required |
+| :--- | :--- | :--- |
+| `Confirmed` | Teacher | `Pending` |
+| `Cancelled` | Student or teacher | `Pending` or `Confirmed` |
+| `Completed` | Teacher | `Confirmed` |
+
+**Request Payload (`application/json`)**
+```json
+{
+  "status": "Confirmed"   // Required, Confirmed, Cancelled or Completed
+}
+```
+
+**Success Response (200 OK)**: the updated meeting (same object as in 2.1).
+
+**Error Responses**
+- **`400 Bad Request`**: If `status` is missing or is not `Confirmed`, `Cancelled` or `Completed`.
+- **`401 Unauthorized`**: If the `Authorization` header is missing or the token has no valid user id.
+- **`403 Forbidden`**: If the user is neither the student nor the teacher of the meeting, or if the student tries to confirm or complete it.
+- **`404 Not Found`**: If no meeting exists with that id.
+- **`409 Conflict`**: If the meeting's current status does not allow the change.
+
+---
+
 ## 3. Teachers
 *Read-only views that aggregate a teacher's office hours and meetings.*
 

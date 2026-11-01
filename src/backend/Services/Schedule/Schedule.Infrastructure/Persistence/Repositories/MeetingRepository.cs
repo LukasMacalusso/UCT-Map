@@ -71,4 +71,10 @@ public class MeetingRepository(ScheduleDbContext dbContext) : IMeetingRepository
         await dbContext.Meetings.AddAsync(meeting, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task UpdateAsync(Meeting meeting, CancellationToken cancellationToken = default)
+    {
+        dbContext.Meetings.Update(meeting);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

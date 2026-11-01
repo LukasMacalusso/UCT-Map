@@ -2,6 +2,7 @@ using ErrorOr;
 using Schedule.Application.DTOs;
 using Schedule.Application.Handlers;
 using Schedule.Domain.Entities;
+using Schedule.Domain.Enums;
 using Schedule.UnitTests.Fakes;
 
 namespace Schedule.UnitTests.Handlers;
@@ -184,5 +185,128 @@ public class MeetingHandlerTests
         Assert.True(result.IsError);
         Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
         Assert.Empty(_repository.Items);
+    }
+
+    [Theory]
+    [InlineData("Cancelled")]
+    [InlineData("cancelled")]
+    public async Task UpdateStatusAsync_WhenStudentCancels_CancelsAndSaves(string status)
+    {
+        var meeting = AddMeeting();
+
+        var result = await _handler.UpdateStatusAsync(meeting.Id, status, meeting.StudentRefId, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("Cancelled", result.Value.Status);
+        Assert.Equal(MeetingStatus.Cancelled, meeting.Status);
+        Assert.Contains(meeting.Id, _repository.UpdatedIds);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_WhenTeacherCancels_Cancels()
+    {
+        var meeting = AddMeeting();
+
+        var result = await _handler.UpdateStatusAsync(meeting.Id, "Cancelled", meeting.TeacherRefId, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("Cancelled", result.Value.Status);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_WhenTeacherConfirms_ConfirmsAndSaves()
+    {
+        var meeting = AddMeeting();
+
+        var result = await _handler.UpdateStatusAsync(meeting.Id, "Confirmed", meeting.TeacherRefId, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("Confirmed", result.Value.Status);
+        Assert.Contains(meeting.Id, _repository.UpdatedIds);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_WhenTeacherCompletesConfirmedMeeting_Completes()
+    {
+        var meeting = AddMeeting();
+        meeting.Confirm();
+
+        var result = await _handler.UpdateStatusAsync(meeting.Id, "Completed", meeting.TeacherRefId, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("Completed", result.Value.Status);
+    }
+
+    [Theory]
+    [InlineData("Confirmed")]
+    [InlineData("Completed")]
+    public async Task UpdateStatusAsync_WhenStudentConfirmsOrCompletes_ReturnsForbiddenAndDoesNotSave(string status)
+    {
+        var meeting = AddMeeting();
+
+        var result = await _handler.UpdateStatusAsync(meeting.Id, status, meeting.StudentRefId, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
+        Assert.Equal(MeetingStatus.Pending, meeting.Status);
+        Assert.Empty(_repository.UpdatedIds);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_WhenRequesterIsNotAParticipant_ReturnsForbiddenAndDoesNotSave()
+    {
+        var meeting = AddMeeting();
+
+        var result = await _handler.UpdateStatusAsync(meeting.Id, "Cancelled", Guid.NewGuid(), CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
+        Assert.Equal(MeetingStatus.Pending, meeting.Status);
+        Assert.Empty(_repository.UpdatedIds);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_WhenMeetingDoesNotExist_ReturnsNotFound()
+    {
+        var result = await _handler.UpdateStatusAsync(Guid.NewGuid(), "Cancelled", Guid.NewGuid(), CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
+    }
+
+    [Theory]
+    [InlineData("Pending")]
+    [InlineData("2")]
+    [InlineData("")]
+    [InlineData("Unknown")]
+    public async Task UpdateStatusAsync_WhenStatusIsNotAllowed_ReturnsValidationErrorAndDoesNotSave(string status)
+    {
+        var meeting = AddMeeting();
+
+        var result = await _handler.UpdateStatusAsync(meeting.Id, status, meeting.TeacherRefId, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Validation, result.FirstError.Type);
+        Assert.Empty(_repository.UpdatedIds);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_WhenTransitionIsNotAllowed_ReturnsConflictAndDoesNotSave()
+    {
+        var meeting = AddMeeting();
+        meeting.Cancel();
+
+        var result = await _handler.UpdateStatusAsync(meeting.Id, "Confirmed", meeting.TeacherRefId, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Empty(_repository.UpdatedIds);
+    }
+
+    private Meeting AddMeeting()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30);
+        _repository.Items.Add(meeting);
+        return meeting;
     }
 }
