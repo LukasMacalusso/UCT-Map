@@ -36,12 +36,12 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: SizedBox()));
       final BuildContext testContext = tester.element(find.byType(SizedBox));
 
-      // 1. Ruta / (MainNavigationScreen)
+      // 1. Ruta / espera la sesión antes de elegir el inicio
       final mainRoute = AppRoutes.onGenerateRoute(
         const RouteSettings(name: AppRoutes.initial),
       ) as MaterialPageRoute;
       expect(mainRoute.builder(testContext),
-          isA<MainNavigationScreen>());
+          isA<SessionLandingScreen>());
 
       // 2. Ruta / con argumentos de pestaña
       final mainTabRoute = AppRoutes.onGenerateRoute(

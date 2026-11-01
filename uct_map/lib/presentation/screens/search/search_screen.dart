@@ -30,6 +30,7 @@ class _SearchScreenState extends State<SearchScreen> {
   String? _error;
   bool _loading = true;
   int _request = 0;
+  int _campusRequest = 0;
   @override
   void initState() {
     super.initState();
@@ -43,6 +44,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void dispose() {
     _request++;
+    _campusRequest++;
     ApiClientProvider.session.removeListener(_sessionChanged);
     widget.selectedCampus?.removeListener(_campusChanged);
     super.dispose();
@@ -53,9 +55,17 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _loadCampuses() async {
+    final request = ++_campusRequest;
+    _request++;
+    setState(() {
+      _loading = true;
+      _error = null;
+      _buildings = [];
+      _structures = [];
+    });
     try {
       final campuses = await _source.getCampuses();
-      if (!mounted) return;
+      if (!mounted || request != _campusRequest) return;
       setState(() => _campuses = campuses);
       final selected =
           widget.selectedCampus?.value ??
@@ -74,7 +84,7 @@ class _SearchScreenState extends State<SearchScreen> {
         }
       }
     } catch (_) {
-      if (mounted)
+      if (mounted && request == _campusRequest)
         setState(() {
           _loading = false;
           _error =

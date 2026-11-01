@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/navigation/app_routes.dart';
+import '../../domain/entities/app_permission.dart';
+
 import '../screens/map/map_screen.dart';
 import '../screens/search/search_screen.dart';
 import '../screens/lost_objects/lost_objects_screen.dart';
@@ -35,6 +38,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   var _mapScreenKey = GlobalKey<MapScreenState>();
   bool? _lastAuthenticated;
   bool _didReadInitialArgs = false;
+  bool _restored = false;
   late final AuthenticatedClient _apiClient;
 
   final List<String> _titles = const [
@@ -54,7 +58,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _apiClient = ApiClientProvider.defaultClient;
     _session.addListener(_sessionChanged);
     _session.ready.then((_) {
-      if (mounted) setState(() {});
+      if (mounted)
+        setState(() {
+          _restored = true;
+          _lastAuthenticated = _session.isAuthenticated;
+        });
     });
   }
 
@@ -62,6 +70,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     if (mounted)
       setState(() {
         final authenticated = _session.isAuthenticated;
+        if (_restored &&
+            _lastAuthenticated == false &&
+            authenticated &&
+            _currentIndex == 4 &&
+            AppPermission.bookConsultation.allows(_session.currentUser?.role)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted &&
+                _session.isAuthenticated &&
+                ModalRoute.of(context)?.isCurrent == true) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.home,
+                (_) => false,
+              );
+            }
+          });
+        }
         if (_lastAuthenticated != authenticated) {
           _lastAuthenticated = authenticated;
           _mapScreenKey = GlobalKey<MapScreenState>();
@@ -133,20 +158,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           showAppBar: false,
         ),
       ),
-      ProfileScreen(
-        session: _session,
-        onNavigateToTab: _onTabTapped,
-        onLogout: () async {
-          var message = 'Sesión cerrada correctamente';
-          try {
-            await _session.signOut();
-          } catch (_) {
-            message = 'Sesión cerrada, pero no se pudo borrar el token local.';
-          }
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(message)));
-        },
+      _protected(
+        ProfileScreen(
+          session: _session,
+          onNavigateToTab: _onTabTapped,
+          onLogout: () async {
+            var message = 'Sesión cerrada correctamente';
+            try {
+              await _session.signOut();
+            } catch (_) {
+              message =
+                  'Sesión cerrada, pero no se pudo borrar el token local.';
+            }
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(message)));
+          },
+        ),
       ),
     ];
 
@@ -213,7 +241,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         currentIndex: _currentIndex,
         onSelectTab: _onTabTapped,
       ),
-      body: IndexedStack(index: _currentIndex, children: screens),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          for (var index = 0; index < screens.length; index++)
+            HeroMode(enabled: index == _currentIndex, child: screens[index]),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: _onTabTapped,

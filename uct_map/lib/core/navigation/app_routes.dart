@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../application/session/session_controller.dart';
+import '../network/api_client_provider.dart';
+
 import '../../domain/entities/lost_item.dart';
 import '../../domain/entities/app_permission.dart';
 import '../../presentation/screens/roles/admin_users_screen.dart';
@@ -152,7 +155,9 @@ class AppRoutes {
         }
         return MaterialPageRoute(
           settings: settings,
-          builder: (_) => MainNavigationScreen(initialIndex: initialIndex),
+          builder: (_) => settings.arguments == null
+              ? const SessionLandingScreen()
+              : MainNavigationScreen(initialIndex: initialIndex),
         );
 
       case home:
@@ -402,5 +407,29 @@ class AppRoutes {
           builder: (_) => const MainNavigationScreen(),
         );
     }
+  }
+}
+
+class SessionLandingScreen extends StatelessWidget {
+  const SessionLandingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final SessionController session = ApiClientProvider.session;
+    return FutureBuilder<void>(
+      future: session.ready,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (session.isAuthenticated &&
+            AppPermission.bookConsultation.allows(session.currentUser?.role)) {
+          return const HomeScreen();
+        }
+        return const MainNavigationScreen();
+      },
+    );
   }
 }

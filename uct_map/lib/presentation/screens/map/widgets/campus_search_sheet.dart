@@ -93,6 +93,7 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
         _error = null;
         _results = [];
         _searched = false;
+        _loading = false;
       });
       return;
     }
@@ -282,7 +283,7 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
                   ),
                 ),
               Expanded(
-                child: results.isEmpty && !_loading
+                child: results.isEmpty && !_loading && _error == null
                     ? Center(
                         child: Text(
                           _searched
@@ -518,7 +519,7 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
             'Resultados',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          if (results.isEmpty && !_loading)
+          if (results.isEmpty && !_loading && _error == null)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
               child: Text('No se encontraron resultados.'),
@@ -556,7 +557,7 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
           children: [
             const Expanded(
               child: Text(
-                'Profesores Destacados',
+                'Profesores',
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 18,

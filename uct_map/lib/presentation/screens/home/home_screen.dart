@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/network/api_client_provider.dart';
+import '../../../domain/entities/app_permission.dart';
+import '../login/session_required_view.dart';
+import 'student_home_screen.dart';
 import '../../../core/navigation/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../widgets/custom_drawer.dart';
@@ -27,6 +32,14 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (AppPermission.bookConsultation.allows(
+      ApiClientProvider.session.currentUser?.role,
+    )) {
+      return SessionRequiredView(
+        permission: AppPermission.bookConsultation,
+        builder: (_) => const StudentHomeScreen(),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -56,10 +69,7 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.all(20.0),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [
-                    AppColors.uctBlue,
-                    Color(0xFF025A9B),
-                  ],
+                  colors: [AppColors.uctBlue, Color(0xFF025A9B)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -79,10 +89,7 @@ class HomeScreen extends StatelessWidget {
                   SizedBox(height: 8),
                   Text(
                     'Encuentra tus salas, edificios, oficinas de profesores y más.',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ),
@@ -147,7 +154,9 @@ class HomeScreen extends StatelessWidget {
                   color: Colors.green,
                   onTap: () async {
                     final res = await Navigator.pushNamed(
-                        context, AppRoutes.professors);
+                      context,
+                      AppRoutes.professors,
+                    );
                     if (res == 0 && context.mounted) {
                       _goToTab(context, 0);
                     }
@@ -161,7 +170,9 @@ class HomeScreen extends StatelessWidget {
                   color: AppColors.uctGold,
                   onTap: () async {
                     final res = await Navigator.pushNamed(
-                        context, AppRoutes.savedPlaces);
+                      context,
+                      AppRoutes.savedPlaces,
+                    );
                     if (res == 0 && context.mounted) {
                       _goToTab(context, 0);
                     }
@@ -235,10 +246,7 @@ class HomeScreen extends StatelessWidget {
               Text(
                 subtitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.subtitle,
-                  fontSize: 11,
-                ),
+                style: const TextStyle(color: AppColors.subtitle, fontSize: 11),
               ),
             ],
           ),
