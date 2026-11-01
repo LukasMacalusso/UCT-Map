@@ -37,6 +37,26 @@ public class Meeting
         this.Status = MeetingStatus.Pending;
     }
 
+    public void Confirm()
+    {
+        if (this.Status != MeetingStatus.Pending)
+        {
+            throw new InvalidOperationException("Only a pending meeting can be confirmed.");
+        }
+
+        this.Status = MeetingStatus.Confirmed;
+    }
+
+    public void Complete()
+    {
+        if (this.Status != MeetingStatus.Confirmed)
+        {
+            throw new InvalidOperationException("Only a confirmed meeting can be completed.");
+        }
+
+        this.Status = MeetingStatus.Completed;
+    }
+
     public void Cancel()
     {
         if (this.Status is MeetingStatus.Cancelled or MeetingStatus.Completed)
