@@ -10,10 +10,24 @@ import type { PageColor } from '../../constants/colors';
 import MailIcon from '../../assets/svg/icons/icon_mail.svg?react';
 import StudyIcon from '../../assets/svg/icons/icon_study.svg?react';
 import CalendarIcon from '../../assets/svg/icons/icon_calendar.svg?react';
-import { ObjectReportCard } from '../objects/ObjectReportCard';
-import { IncidentCard } from '../incidents/IncidentCard';
+import ClockIcon from '../../assets/svg/icons/icon_clock.svg?react';
+import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
+import UserIcon from '../../assets/svg/icons/icon_user.svg?react';
+import { ObjectReportCard, type ObjectReportCardProps } from '../objects/ObjectReportCard';
+import { IncidentCard, type IncidentCardProps } from '../incidents/IncidentCard';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+
+export interface UserProfileMeetingItem {
+  id: string;
+  teacherName: string;
+  teacherEmail?: string;
+  location: string;
+  dateLabel: string;
+  timeLabel: string;
+  statusLabel: string;
+  statusColor?: PageColor;
+}
 
 export interface UserProfilePanelProps {
   name: string;
@@ -22,13 +36,22 @@ export interface UserProfilePanelProps {
   email: string;
   photoUrl?: string;
   role?: Role;
-  objectReports?: any[];
-  incidentReports?: any[];
+  objectReports?: ObjectReportCardProps[];
+  incidentReports?: IncidentCardProps[];
+  requestedMeetings?: UserProfileMeetingItem[];
   isLoading?: boolean;
   isOwnProfile?: boolean;
   onClose?: () => void;
   onLogout?: () => void;
 }
+
+type ProfileTab = 'objects' | 'incidents' | 'meetings';
+
+const TAB_INDEX: Record<ProfileTab, number> = {
+  objects: 0,
+  incidents: 1,
+  meetings: 2,
+};
 
 const getRoleConfig = (role?: Role): { label: string; color: PageColor } => {
   if (!role) return { label: 'ESTUDIANTE', color: 'blue' };
@@ -44,13 +67,14 @@ export const UserProfilePanel = ({
   role,
   objectReports = [],
   incidentReports = [],
+  requestedMeetings = [],
   isLoading = false,
   isOwnProfile = true,
   onClose,
   onLogout,
 }: UserProfilePanelProps) => {
-  const [activeTab, setActiveTab] = useState<'objects' | 'incidents'>('objects');
-  const [prevTab, setPrevTab] = useState<'objects' | 'incidents'>('objects');
+  const [activeTab, setActiveTab] = useState<ProfileTab>('objects');
+  const [prevTab, setPrevTab] = useState<ProfileTab>('objects');
 
   if (isLoading) {
     return <LoadingSpinner size="xl" text="Cargando perfil..." className="py-12" />;
@@ -58,21 +82,24 @@ export const UserProfilePanel = ({
 
   const roleConfig = getRoleConfig(role);
 
-  const handleTabChange = (tab: 'objects' | 'incidents') => {
+  const handleTabChange = (tab: ProfileTab) => {
     if (tab !== activeTab) {
       setPrevTab(activeTab);
       setActiveTab(tab);
     }
   };
 
+  const movingRight = TAB_INDEX[activeTab] > TAB_INDEX[prevTab];
+  const movingLeft = TAB_INDEX[activeTab] < TAB_INDEX[prevTab];
+
   return (
-    <Panel color="white" withUctBorder={true} size="lg" innerClassName="p-6 lg:p-8 flex flex-col relative max-h-[85vh] overflow-hidden">
+    <Panel color="white" withUctBorder={true} size="xl" outerClassName="!w-[64rem] max-w-[95vw] !h-[44rem] max-h-[90vh]" innerClassName="p-6 lg:p-8 flex flex-col relative h-full overflow-hidden">
       {/* Close button positioned top-right */}
-      <div className="absolute top-5 right-5">
+      <div className="absolute top-5 right-5 z-10">
         <CloseButton onClick={onClose} variant="ghost" size="md" />
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8 mt-4 lg:mt-0 flex-1 overflow-hidden">
+      <div className="flex flex-col lg:flex-row gap-8 mt-4 lg:mt-0 flex-1 min-h-0 overflow-hidden">
         
         {/* Left Section: Profile Info */}
         <div className="flex flex-col items-center w-full lg:w-1/3 flex-shrink-0 lg:pt-2 overflow-y-auto pb-2">
@@ -99,7 +126,7 @@ export const UserProfilePanel = ({
           </div>
 
           {onLogout && (
-            <Button variant="outline" color="red" size="md" className="w-max px-6 font-bold tracking-wide" onClick={onLogout}>
+            <Button variant="outline" color="red" size="md" className="w-max px-6 font-bold tracking-wide mt-auto" onClick={onLogout}>
               CERRAR SESIÓN
             </Button>
           )}
@@ -109,13 +136,14 @@ export const UserProfilePanel = ({
         <div className="hidden lg:block w-px bg-gray-200"></div>
         <hr className="block lg:hidden border-t-2 border-gray-200 w-full" />
 
-        {/* Right Section: Reports */}
-        <div className="flex flex-col flex-1 w-full min-w-0 lg:pt-2 h-full">
+        {/* Right Section: Reports & Meetings */}
+        <div className="flex flex-col flex-1 w-full min-w-0 lg:pt-2 h-full min-h-0">
           <h3 className="text-xl font-black text-gray-700 uppercase tracking-wider mb-2 px-1">{isOwnProfile ? 'Tus Contribuciones' : 'Contribuciones'}</h3>
           
           <div className="relative flex border-b-2 border-gray-200 mt-1 flex-shrink-0">
             <button 
-              className={`w-40 text-base font-bold py-2.5 transition-colors z-10
+              type="button"
+              className={`w-40 text-sm sm:text-base font-bold py-2.5 transition-colors z-10 cursor-pointer
                 ${activeTab === 'objects' ? 'text-page-blue' : 'text-gray-400 hover:text-gray-600'}
               `}
               onClick={() => handleTabChange('objects')}
@@ -123,25 +151,35 @@ export const UserProfilePanel = ({
               Objetos ({objectReports.length})
             </button>
             <button 
-              className={`w-40 text-base font-bold py-2.5 transition-colors z-10
+              type="button"
+              className={`w-40 text-sm sm:text-base font-bold py-2.5 transition-colors z-10 cursor-pointer
                 ${activeTab === 'incidents' ? 'text-page-blue' : 'text-gray-400 hover:text-gray-600'}
               `}
               onClick={() => handleTabChange('incidents')}
             >
               Incidencias ({incidentReports.length})
             </button>
+            <button 
+              type="button"
+              className={`w-40 text-sm sm:text-base font-bold py-2.5 transition-colors z-10 cursor-pointer
+                ${activeTab === 'meetings' ? 'text-page-blue' : 'text-gray-400 hover:text-gray-600'}
+              `}
+              onClick={() => handleTabChange('meetings')}
+            >
+              Reuniones ({requestedMeetings.length})
+            </button>
 
             {/* Animated Sliding Bar */}
             <div 
-              className={`absolute bottom-[-2px] left-0 h-[4px] w-40 bg-page-blue rounded-full origin-center
-                ${prevTab === 'objects' && activeTab === 'incidents' ? 'animate-slide-stretch-right' : ''}
-                ${prevTab === 'incidents' && activeTab === 'objects' ? 'animate-slide-stretch-left' : ''}
+              className={`absolute bottom-[-2px] left-0 h-[4px] w-40 bg-page-blue rounded-full origin-center transition-transform duration-300
+                ${movingRight ? 'animate-slide-stretch-right' : ''}
+                ${movingLeft ? 'animate-slide-stretch-left' : ''}
               `}
-              style={{ transform: activeTab === 'objects' ? 'translateX(0)' : 'translateX(100%)' }}
+              style={{ transform: `translateX(${TAB_INDEX[activeTab] * 100}%)` }}
             />
           </div>
 
-          <div className="bg-page-gray-light mt-4 p-4 rounded-2xl overflow-y-auto flex flex-col gap-3 flex-1 shadow-inner">
+          <div className="bg-page-gray-light mt-4 p-4 rounded-2xl overflow-y-auto flex flex-col gap-3 flex-1 min-h-0 shadow-inner">
             {activeTab === 'objects' && (
               objectReports.length > 0 ? objectReports.map((report, idx) => (
                 <ObjectReportCard key={idx} {...report} compact={true} className="!max-w-full shadow-sm hover:shadow-md transition-shadow" />
@@ -152,6 +190,52 @@ export const UserProfilePanel = ({
               incidentReports.length > 0 ? incidentReports.map((incident, idx) => (
                 <IncidentCard key={idx} {...incident} compact={true} className="!max-w-full shadow-sm hover:shadow-md transition-shadow" />
               )) : <EmptyState message="No hay incidencias reportadas" />
+            )}
+
+            {activeTab === 'meetings' && (
+              requestedMeetings.length > 0 ? requestedMeetings.map((meeting) => (
+                <Panel
+                  key={meeting.id}
+                  color="white"
+                  outerClassName="!w-full !max-w-full shadow-sm hover:shadow-md transition-shadow"
+                  innerClassName="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div className="flex flex-col gap-1.5 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-gray-800 text-sm sm:text-base">
+                        {meeting.dateLabel}
+                      </span>
+                      <span className="text-xs sm:text-sm font-semibold text-page-blue flex items-center gap-1">
+                        <ClockIcon className="w-3.5 h-3.5" />
+                        {meeting.timeLabel}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
+                      <IconText
+                        icon={<UserIcon className="w-4 h-4 text-gray-700" />}
+                        text={
+                          meeting.teacherEmail
+                            ? `Prof. ${meeting.teacherName} (${meeting.teacherEmail})`
+                            : `Prof. ${meeting.teacherName}`
+                        }
+                        className="!text-xs"
+                      />
+                      <IconText
+                        icon={<BuildingIcon className="w-4 h-4 text-gray-700" />}
+                        text={meeting.location}
+                        className="!text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <Tag
+                    label={meeting.statusLabel}
+                    color={meeting.statusColor ?? 'blue'}
+                    className="!text-xs !px-3 !py-1 font-semibold flex-shrink-0 self-start sm:self-center"
+                  />
+                </Panel>
+              )) : <EmptyState message="No hay reuniones solicitadas" />
             )}
           </div>
         </div>

@@ -9,6 +9,7 @@ import { ScheduleView } from '../views/TeacherView';
 import { LoginView } from '../views/LoginView';
 import { ProtectedRoute } from './ProtectedRoute';
 import { AdministrationView } from '../views/AdministrationView';
+import { MapEditorView } from '../views/MapEditorView';
 import { Role } from '../constants/role';
 
 export const AppRouter = () => {
@@ -32,6 +33,7 @@ export const AppRouter = () => {
         {/* Role-Restricted Routes */}
         <Route element={<ProtectedRoute allowedRoles={[Role.Admin]} />}>
           <Route path="/administration" element={<AdministrationView />} />
+          <Route path="/edition" element={<MapEditorView />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={[Role.Teacher]} />}>

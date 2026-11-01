@@ -1,16 +1,159 @@
+import { useMemo } from 'react';
 import { useUiState } from '../../states/uiState';
 import { useAuthState } from '../../states/authState';
 import { ModalOverlay } from './ModalOverlay';
 import { TimedActionCard } from '../ui/TimedActionCard';
-import { UserProfilePanel } from '../../modules/global/UserProfilePanel';
+import {
+  UserProfilePanel,
+  type UserProfileMeetingItem,
+} from '../../modules/global/UserProfilePanel';
 import { useNavigate } from 'react-router-dom';
+import { useReports } from '../../hooks/useReports';
+import { useLostObjects } from '../../hooks/useLostObjects';
+import { useAllMeetings } from '../../hooks/useSchedule';
+import { useStructures } from '../../hooks/useCampus';
+import { useUsers } from '../../hooks/useUsers';
+import {
+  LOST_OBJECT_STATUS_COLORS,
+  LOST_OBJECT_STATUS_LABELS,
+} from '../../constants/lostObjectsStatus';
+import {
+  TICKET_STATUS_COLORS,
+  TICKET_STATUS_LABELS,
+} from '../../constants/ticketStatus';
+import { formatRelativeTime } from '../../utils/date';
+import {
+  formatClock,
+  formatLongDate,
+  MEETING_STATUS_COLORS,
+  MEETING_STATUS_LABELS,
+  parseScheduleDate,
+} from '../../utils/schedule';
+import type { ObjectReportCardProps } from '../../modules/objects/ObjectReportCard';
+import type { IncidentCardProps } from '../../modules/incidents/IncidentCard';
 
 export const GlobalModals = () => {
-  const activePanel = useUiState(state => state.activePanel);
-  const closePanel = useUiState(state => state.closePanel);
-  const user = useAuthState(state => state.user);
-  const logout = useAuthState(state => state.logout);
+  const activePanel = useUiState((state) => state.activePanel);
+  const closePanel = useUiState((state) => state.closePanel);
+  const user = useAuthState((state) => state.user);
+  const logout = useAuthState((state) => state.logout);
   const navigate = useNavigate();
+
+  const isProfileOpen = activePanel === 'userProfile' && !!user;
+
+  const { data: structures = [] } = useStructures(undefined, isProfileOpen);
+  const { data: users = [] } = useUsers();
+
+  const reportParams = useMemo(
+    () => ({
+      userRefId: user?.id,
+      sortBy: 'ReportedAt' as const,
+      descending: true,
+      page: 1,
+      pageSize: 50,
+    }),
+    [user?.id],
+  );
+
+  const objectParams = useMemo(
+    () => ({
+      userRefId: user?.id,
+      sortBy: 'ReportedAt' as const,
+      descending: true,
+      page: 1,
+      pageSize: 50,
+    }),
+    [user?.id],
+  );
+
+  const { data: reportsPage } = useReports(reportParams, isProfileOpen);
+  const { data: lostObjectsPage } = useLostObjects(objectParams, isProfileOpen);
+  const { data: allMeetings = [] } = useAllMeetings(isProfileOpen);
+
+  const structureNames = useMemo(
+    () => new Map(structures.map((structure) => [structure.id, structure.name])),
+    [structures],
+  );
+
+  const usersById = useMemo(
+    () => new Map(users.map((item) => [item.id, item])),
+    [users],
+  );
+
+  const incidentReports = useMemo<IncidentCardProps[]>(() => {
+    if (!user || !reportsPage?.items) return [];
+    return reportsPage.items
+      .filter((report) => report.userRefId === user.id)
+      .map((report) => ({
+        location:
+          (report.structureRefId && structureNames.get(report.structureRefId)) ||
+          'Sin ubicación',
+        status: TICKET_STATUS_LABELS[report.ticketType] ?? 'SIN ESTADO',
+        statusColor: TICKET_STATUS_COLORS[report.ticketType] ?? 'gray',
+        title: report.complaintDetails?.title ?? 'Reporte sin título',
+        reporterName: user.name,
+        reportTime: formatRelativeTime(report.reportedAt),
+        reporterAvatar: user.avatar,
+        description: report.complaintDetails?.description ?? 'Sin descripción',
+      }));
+  }, [user, reportsPage, structureNames]);
+
+  const objectReports = useMemo<ObjectReportCardProps[]>(() => {
+    if (!user || !lostObjectsPage?.items) return [];
+    return lostObjectsPage.items
+      .filter((lostObject) => lostObject.userRefId === user.id)
+      .map((lostObject) => ({
+        title: lostObject.title,
+        status: LOST_OBJECT_STATUS_LABELS[lostObject.status],
+        statusColor: LOST_OBJECT_STATUS_COLORS[lostObject.status],
+        photoUrl: lostObject.photoUrl,
+        building: structureNames.get(lostObject.structureId) ?? 'Sin ubicación',
+        actions: [
+          {
+            title: `Reportado por ${user.name}`,
+            subtitle: formatRelativeTime(lostObject.reportedAt),
+            avatarSrc: user.avatar,
+          },
+        ],
+      }));
+  }, [user, lostObjectsPage, structureNames]);
+
+  const requestedMeetings = useMemo<UserProfileMeetingItem[]>(() => {
+    if (!user) return [];
+    return allMeetings
+      .filter((meeting) => meeting.studentRefId === user.id)
+      .sort(
+        (a, b) =>
+          parseScheduleDate(b.scheduledAt).getTime() -
+          parseScheduleDate(a.scheduledAt).getTime(),
+      )
+      .map((meeting) => {
+        const start = parseScheduleDate(meeting.scheduledAt);
+        const end = new Date(start.getTime() + meeting.durationMinutes * 60000);
+        const teacher = usersById.get(meeting.teacherRefId);
+        const location =
+          (meeting.structureRefId && structureNames.get(meeting.structureRefId)) ||
+          'Oficina docente';
+
+        return {
+          id: meeting.id,
+          teacherName: teacher?.name ?? 'Profesor',
+          teacherEmail: teacher?.email,
+          location,
+          dateLabel: formatLongDate(start),
+          timeLabel: `${formatClock(start)} - ${formatClock(end)} (${meeting.durationMinutes} min)`,
+          statusLabel:
+            MEETING_STATUS_LABELS[meeting.status] ?? meeting.status.toUpperCase(),
+          statusColor: MEETING_STATUS_COLORS[meeting.status] ?? 'blue',
+        };
+      });
+  }, [user, allMeetings, usersById, structureNames]);
+
+  const admissionYear = useMemo(() => {
+    if (!user?.registeredAt) return undefined;
+    const year = new Date(user.registeredAt).getFullYear();
+    return Number.isNaN(year) ? undefined : String(year);
+  }, [user?.registeredAt]);
 
   const handleLogout = () => {
     logout();
@@ -28,37 +171,14 @@ export const GlobalModals = () => {
           <UserProfilePanel
             name={user.name}
             role={user.role}
-            admissionYear="2022"
-            career="Ingeniería Civil en Informática"
+            admissionYear={admissionYear}
             email={user.email}
-            photoUrl={user.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'}
+            photoUrl={user.avatar}
             onClose={closePanel}
             onLogout={handleLogout}
-            objectReports={[
-              {
-                title: 'LENTES DE SOL',
-                status: 'En proceso',
-                statusColor: 'yellow',
-                building: 'EDIFICIO A',
-                code: 'OP-2026-0005',
-                actions: [
-                  { title: `Reportado por ${user.name}`, subtitle: 'Hace 2 días', avatarSrc: user.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80' }
-                ]
-              }
-            ]}
-            incidentReports={[
-              {
-                location: 'BIBLIOTECA CENTRAL',
-                status: 'RESUELTO',
-                statusColor: 'green',
-                title: 'Luz intermitente en sala de estudio',
-                reporterName: user.name,
-                reportTime: 'Hace 1 semana',
-                reporterAvatar: user.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-                description: 'El tubo fluorescente de la mesa 4 está parpadeando constantemente.',
-                photoUrl: 'https://images.unsplash.com/photo-1497215848943-4710166a9089?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-              }
-            ]}
+            objectReports={objectReports}
+            incidentReports={incidentReports}
+            requestedMeetings={requestedMeetings}
           />
         )}
       </ModalOverlay>

@@ -39,6 +39,14 @@ export const useTeacherMeetings = (teacherId?: string, from?: string, to?: strin
   });
 };
 
+export const useAllMeetings = (enabled = true) => {
+  return useQuery<MeetingDto[], Error>({
+    queryKey: queryKeys.teachers.meetings(),
+    queryFn: () => scheduleService.getMeetings(),
+    enabled,
+  });
+};
+
 export const useCreateMeeting = () => {
   const queryClient = useQueryClient();
 

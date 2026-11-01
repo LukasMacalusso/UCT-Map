@@ -6,11 +6,12 @@ import { incidentService } from "../services/incidentService";
 import type { CreateLostObjectRequestDto } from "../dtos/incident/objects/CreateLostObjectRequestDto";
 import type { LostObjectStatus } from "../constants/lostObjectsStatus";
 
-export const useLostObjects = (params: LostObjectSearchParams = {}) => {
+export const useLostObjects = (params: LostObjectSearchParams = {}, enabled = true) => {
   return useQuery<LostObjectPageDto, Error>({
     queryKey: queryKeys.lostObjects.list(params),
     queryFn: () => incidentService.searchLostObjects(params),
     placeholderData: keepPreviousData,
+    enabled,
   });
 };
 

@@ -15,6 +15,7 @@ import ObjectsIcon from '../../assets/svg/icons/icon_section_objects.svg?react';
 import ContactsIcon from '../../assets/svg/icons/icon_section_contacts.svg?react';
 import ScheduleIcon from '../../assets/svg/icons/icon_schedule.svg?react';
 import AdminIcon from '../../assets/svg/icons/icon_admin.svg?react';
+import PencilIcon from '../../assets/svg/icons/icon_pencil.svg?react';
 import UserIcon from '../../assets/svg/icons/icon_user.svg?react';
 import { RoleGuard } from '../../router/RoleGuard';
 import { GlobalModals } from './GlobalModals';
@@ -42,12 +43,13 @@ export const AppLayout = () => {
     return () => window.clearTimeout(timeout);
   }, [isHidden]);
 
-  const getRoleConfig = (role?: Role): { label: string; color: PageColor } => {
-    if (!role) return { label: 'INVITADO', color: 'gray' };
+  const getRoleConfig = (role?: Role) => {
+    if (!role) return { label: 'INVITADO', color: 'gray' as PageColor, icon: UserIcon };
     return ROLE_STYLES[role];
   };
 
   const roleConfig = getRoleConfig(user?.role);
+  const RoleBadgeIcon = roleConfig.icon;
 
   const getPageTitle = (path: string) => {
     if (path.includes('/map')) return 'Mapa';
@@ -57,6 +59,7 @@ export const AppLayout = () => {
     if (path.includes('/schedule')) return 'Agendamiento';
     if (path.includes('/showcase')) return 'Showcase';
     if (path.includes('/administration')) return 'Administración';
+    if (path.includes('/edition')) return 'Edición';
     return '';
   };
 
@@ -154,6 +157,31 @@ export const AppLayout = () => {
           icon={<ContactsIcon className="w-8 h-8" />}
         />
 
+        <RoleGuard allowedRoles={[Role.Teacher, Role.Admin]}>
+          <div
+            className={`relative flex items-center h-11 transition-all duration-300 ease-in-out overflow-hidden select-none ${
+              isExpanded ? 'w-[288px]' : 'w-14'
+            }`}
+          >
+            <div className="flex-shrink-0 flex items-center justify-center w-14 h-11 text-page-white/90">
+              <RoleBadgeIcon className="w-8 h-8" />
+            </div>
+
+            <div
+              className={`flex items-center gap-3 flex-1 pr-2 transition-all duration-300 ${
+                isExpanded
+                  ? 'opacity-100 translate-x-0 delay-[100ms]'
+                  : 'opacity-0 -translate-x-4 pointer-events-none'
+              }`}
+            >
+              <span className="text-lg font-extrabold uppercase tracking-wider text-page-white whitespace-nowrap">
+                {roleConfig.label}
+              </span>
+              <div className="h-0.5 flex-1 bg-page-white/35 rounded-full" />
+            </div>
+          </div>
+        </RoleGuard>
+
         <RoleGuard allowedRoles={[Role.Teacher]}>
           <SectionButton
             to="/schedule"
@@ -171,6 +199,13 @@ export const AppLayout = () => {
             isExpanded={isExpanded}
             expandedWidth="288px"
             icon={<AdminIcon className="w-8 h-8" />}
+          />
+          <SectionButton
+            to="/edition"
+            label="Edición"
+            isExpanded={isExpanded}
+            expandedWidth="288px"
+            icon={<PencilIcon className="w-8 h-8" />}
           />
         </RoleGuard>
 

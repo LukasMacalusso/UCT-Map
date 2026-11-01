@@ -12,9 +12,6 @@ const CREATE_MEETING_ERRORS: Record<number, string> = {
   500: "Error interno del servidor. Intenta más tarde",
 };
 
-const toUnspecifiedIso = (value?: string): string | undefined =>
-  value ? value.replace(/(Z|[+-]\d{2}:?\d{2})$/i, "") : undefined;
-
 export const scheduleService = {
   async getAvailability(teacherId: string): Promise<TeacherAvailabilityDto> {
     try {
@@ -35,17 +32,9 @@ export const scheduleService = {
     try {
       const { data } = await httpClient.get<TeacherWorkloadDto>(
         `/api/schedule/teachers/${teacherId}/workload`,
-        {
-          params: {
-            from: toUnspecifiedIso(from),
-            to: toUnspecifiedIso(to),
-          },
-        }
+        { params: { from, to } }
       );
-      return {
-        ...data,
-        totalMeetings: data.totalMeetings ?? data.meetingCount ?? data.meetings?.length ?? 0,
-      };
+      return data;
     } catch (error) {
       throw toApiError(error, "Error al cargar la carga de trabajo");
     }
@@ -69,11 +58,7 @@ export const scheduleService = {
   ): Promise<MeetingDto[]> {
     try {
       const { data } = await httpClient.get<MeetingDto[]>("/api/schedule/meetings", {
-        params: {
-          teacherId,
-          from: toUnspecifiedIso(from),
-          to: toUnspecifiedIso(to),
-        },
+        params: { teacherId, from, to },
       });
       return data;
     } catch (error) {
@@ -83,10 +68,7 @@ export const scheduleService = {
 
   async createMeeting(payload: CreateMeetingRequest): Promise<MeetingDto> {
     try {
-      const { data } = await httpClient.post<MeetingDto>("/api/schedule/meetings", {
-        ...payload,
-        scheduledAt: toUnspecifiedIso(payload.scheduledAt) ?? payload.scheduledAt,
-      });
+      const { data } = await httpClient.post<MeetingDto>("/api/schedule/meetings", payload);
       return data;
     } catch (error) {
       throw toApiError(error, "Error al agendar la reunión", CREATE_MEETING_ERRORS);

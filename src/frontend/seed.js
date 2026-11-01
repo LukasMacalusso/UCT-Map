@@ -10,6 +10,7 @@ const SEED_USER = {
 };
 
 const ADMIN_USER = {
+  name: 'Administrador UCT',
   email: 'admin@uct.cl',
   password: 'Admin12345!',
 };
@@ -126,10 +127,20 @@ async function seedTeachersAndSchedules(studentUserId, structureIds, fallbackTok
 
   let adminToken = null;
   try {
-    const adminLogin = await request('POST', '/identity/login', ADMIN_USER);
+    await request('POST', '/identity/register', { ...ADMIN_USER, role: 'Admin' });
+    console.log(`Admin user created: ${ADMIN_USER.email}`);
+  } catch {
+    // Admin already exists or backend restricts self-registration of Admin role
+  }
+
+  try {
+    const adminLogin = await request('POST', '/identity/login', {
+      email: ADMIN_USER.email,
+      password: ADMIN_USER.password,
+    });
     adminToken = adminLogin.token;
   } catch {
-    // Admin may not exist if identity container has not been rebuilt yet
+    // Admin may not exist if identity container has not been seeded yet
   }
 
   for (const teacher of SEED_TEACHERS) {
