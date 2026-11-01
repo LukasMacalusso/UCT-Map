@@ -16,5 +16,12 @@ public interface IOfficeHourRepository
         Guid teacherRefId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<OfficeHour>> GetInRoomsAsync(
+        IReadOnlyCollection<Guid> structureRefIds,
+        DayOfWeek dayOfWeek,
+        TimeOnly start,
+        TimeOnly end,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(OfficeHour officeHour, CancellationToken cancellationToken = default);
 }

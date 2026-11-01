@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ErrorOr;
 using Schedule.Application.DTOs;
 using Schedule.Domain.Entities;
+using Schedule.Domain.Enums;
 using Schedule.Domain.Exceptions;
 using Schedule.Domain.Interfaces;
 
@@ -69,6 +70,55 @@ public class MeetingHandler
         catch (ConcurrencyConflictException)
         {
             return Error.Conflict(description: "The time slot was just booked by another request. Please try again.");
+        }
+    }
+
+    public async Task<ErrorOr<MeetingDto>> UpdateStatusAsync(Guid id, string status, Guid requesterRefId, CancellationToken cancellationToken)
+    {
+        var target = ParseTargetStatus(status);
+        if (target is null) return Error.Validation(description: "The status must be Confirmed, Cancelled or Completed.");
+
+        var meeting = await _repository.GetByIdAsync(id, cancellationToken);
+        if (meeting is null) return Error.NotFound(description: $"Meeting '{id}' not found.");
+
+        var isTeacher = requesterRefId == meeting.TeacherRefId;
+        if (!isTeacher && requesterRefId != meeting.StudentRefId)
+            return Error.Forbidden(description: "Only the student or the teacher of the meeting can change its status.");
+
+        if (!isTeacher && target != MeetingStatus.Cancelled)
+            return Error.Forbidden(description: "Only the teacher of the meeting can confirm or complete it.");
+
+        try
+        {
+            ApplyStatus(meeting, target.Value);
+        }
+        catch (InvalidOperationException ex) { return Error.Conflict(description: ex.Message); }
+
+        await _repository.UpdateAsync(meeting, cancellationToken);
+        return MeetingDto.FromEntity(meeting);
+    }
+
+    private static MeetingStatus? ParseTargetStatus(string status) => status.ToLowerInvariant() switch
+    {
+        "confirmed" => MeetingStatus.Confirmed,
+        "cancelled" => MeetingStatus.Cancelled,
+        "completed" => MeetingStatus.Completed,
+        _ => null
+    };
+
+    private static void ApplyStatus(Meeting meeting, MeetingStatus target)
+    {
+        switch (target)
+        {
+            case MeetingStatus.Confirmed:
+                meeting.Confirm();
+                break;
+            case MeetingStatus.Completed:
+                meeting.Complete();
+                break;
+            default:
+                meeting.Cancel();
+                break;
         }
     }
 

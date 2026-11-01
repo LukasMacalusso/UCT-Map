@@ -12,5 +12,6 @@
 
   <ItemGroup>
     <PackageReference Include="ErrorOr" Version="2.1.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
   </ItemGroup>
 </Project>

@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<MeetingHandler>();
         services.AddScoped<TeacherHandler>();
         services.AddScoped<StudentHandler>();
+        services.AddScoped<RoomHandler>();
 
         return services;
     }

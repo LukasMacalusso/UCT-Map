@@ -57,4 +57,90 @@ public class MeetingTests
 
         Assert.Null(meeting.StructureRefId);
     }
+
+    [Fact]
+    public void Confirm_WhenPending_SetsConfirmedStatus()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, DateTime.Today, 45);
+
+        meeting.Confirm();
+
+        Assert.Equal(MeetingStatus.Confirmed, meeting.Status);
+    }
+
+    [Fact]
+    public void Confirm_WhenAlreadyConfirmed_ThrowsInvalidOperationException()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, DateTime.Today, 45);
+        meeting.Confirm();
+
+        var exception = Assert.Throws<InvalidOperationException>(meeting.Confirm);
+
+        Assert.Equal("Only a pending meeting can be confirmed.", exception.Message);
+    }
+
+    [Fact]
+    public void Complete_WhenConfirmed_SetsCompletedStatus()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, DateTime.Today, 45);
+        meeting.Confirm();
+
+        meeting.Complete();
+
+        Assert.Equal(MeetingStatus.Completed, meeting.Status);
+    }
+
+    [Fact]
+    public void Complete_WhenPending_ThrowsInvalidOperationException()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, DateTime.Today, 45);
+
+        var exception = Assert.Throws<InvalidOperationException>(meeting.Complete);
+
+        Assert.Equal("Only a confirmed meeting can be completed.", exception.Message);
+    }
+
+    [Fact]
+    public void Cancel_WhenConfirmed_SetsCancelledStatus()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, DateTime.Today, 45);
+        meeting.Confirm();
+
+        meeting.Cancel();
+
+        Assert.Equal(MeetingStatus.Cancelled, meeting.Status);
+    }
+
+    [Fact]
+    public void Cancel_WhenPending_SetsCancelledStatus()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, DateTime.Today, 45);
+
+        meeting.Cancel();
+
+        Assert.Equal(MeetingStatus.Cancelled, meeting.Status);
+    }
+
+    [Fact]
+    public void Cancel_WhenAlreadyCancelled_ThrowsInvalidOperationException()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, DateTime.Today, 45);
+        meeting.Cancel();
+
+        var exception = Assert.Throws<InvalidOperationException>(meeting.Cancel);
+
+        Assert.Equal("A cancelled meeting cannot be cancelled.", exception.Message);
+    }
+
+    [Fact]
+    public void Cancel_WhenCompleted_ThrowsInvalidOperationException()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, DateTime.Today, 45);
+        meeting.Confirm();
+        meeting.Complete();
+
+        var exception = Assert.Throws<InvalidOperationException>(meeting.Cancel);
+
+        Assert.Equal("A completed meeting cannot be cancelled.", exception.Message);
+    }
 }
