@@ -4,6 +4,7 @@ import '../../domain/entities/lost_item.dart';
 import '../../domain/entities/app_permission.dart';
 import '../../presentation/screens/roles/admin_users_screen.dart';
 import '../../presentation/screens/roles/teacher_schedule_screen.dart';
+import '../../presentation/screens/roles/student_meetings_screen.dart';
 import '../../domain/entities/report.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../presentation/navigation/main_navigation_screen.dart';
@@ -31,6 +32,7 @@ import '../../presentation/screens/reports/reports_screen.dart';
 class AppRoutes {
   AppRoutes._();
 
+  static const String myMeetings = '/my-meetings';
   static const String teacherSchedule = '/teacher-schedule';
   static const String manageUsers = '/manage-users';
   static const String manageObjects = '/manage-objects';
@@ -67,6 +69,7 @@ class AppRoutes {
     ) as MaterialPageRoute<dynamic>;
     final rolePermission = switch (settings.name) {
       teacherSchedule => AppPermission.teacherSchedule,
+      myMeetings => AppPermission.bookConsultation,
       manageUsers => AppPermission.manageUsers,
       manageObjects => AppPermission.manageObjects,
       manageReports => AppPermission.manageReports,
@@ -107,6 +110,11 @@ class AppRoutes {
     AuthRepository? authRepository,
   }) {
     switch (settings.name) {
+      case myMeetings:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const StudentMeetingsScreen(),
+        );
       case teacherSchedule:
         return MaterialPageRoute(
           settings: settings,

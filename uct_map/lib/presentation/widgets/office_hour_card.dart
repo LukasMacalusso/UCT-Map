@@ -10,60 +10,86 @@ class OfficeHourCard extends StatelessWidget {
   final String? location;
 
   @override
-  Widget build(BuildContext context) => Card(
-    elevation: 0,
-    margin: const EdgeInsets.only(bottom: 12),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-      side: const BorderSide(color: AppColors.fieldBorder),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 84,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.uctBlue.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final day = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE7EEF5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        hour.dayName,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: AppColors.uctBlue,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+    final details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${hour.startLabel} – ${hour.endLabel}',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.ink,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.place_outlined,
+              size: 20,
+              color: AppColors.subtitle,
             ),
-            child: Text(
-              hour.dayName,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.uctBlue,
-                fontWeight: FontWeight.bold,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                location ??
+                    (hour.structureRefId == null || hour.structureRefId!.isEmpty
+                        ? 'Ubicación no informada'
+                        : 'Estructura: ${hour.structureRefId}'),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.subtitle,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
+          ],
+        ),
+      ],
+    );
+    return Card(
+      color: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      elevation: 3,
+      shadowColor: const Color(0x26003865),
+      margin: const EdgeInsets.only(bottom: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 300 ||
+                MediaQuery.textScalerOf(context).scale(14) > 18) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [day, const SizedBox(height: 16), details],
+              );
+            }
+            return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${hour.startLabel} – ${hour.endLabel}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                const Icon(
-                  Icons.meeting_room_outlined,
-                  color: AppColors.uctBlue,
-                ),
-                Text(
-                  location ??
-                      (hour.structureRefId == null ||
-                              hour.structureRefId!.isEmpty
-                          ? 'Ubicación no informada'
-                          : 'Estructura: ${hour.structureRefId}'),
-                ),
+                SizedBox(width: 100, child: day),
+                const SizedBox(width: 16),
+                Expanded(child: details),
               ],
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

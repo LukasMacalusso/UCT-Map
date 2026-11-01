@@ -49,6 +49,7 @@ class CustomDrawer extends StatelessWidget {
             decoration: BoxDecoration(color: theme.colorScheme.primary),
           ),
           for (final entry in [
+            (AppPermission.bookConsultation, 'Mis citas', AppRoutes.myMeetings),
             (
               AppPermission.teacherSchedule,
               'Mis horarios y citas',

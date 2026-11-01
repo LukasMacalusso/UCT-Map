@@ -7,7 +7,6 @@ import '../../../domain/entities/app_permission.dart';
 import '../../../domain/entities/booking_interval.dart';
 import '../../../domain/entities/professor.dart';
 import '../../../domain/repositories/schedule_repository.dart';
-import '../../widgets/office_hour_card.dart';
 import '../login/session_required_view.dart';
 
 class ConsultationBookingScreen extends StatefulWidget {
@@ -247,6 +246,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
       return PopScope(
         canPop: !_sending,
         child: Scaffold(
+          backgroundColor: const Color(0xFFF3F5F8),
           appBar: AppBar(
             title: const Text('Agendar consulta'),
             backgroundColor: AppColors.uctBlue,
@@ -259,53 +259,79 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
-                  Text(
-                    widget.professor.name,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.uctBlue,
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.professor.email,
-                    style: theme.textTheme.bodyMedium,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.event_available_outlined,
+                              color: AppColors.uctYellow,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Elige cuándo consultar',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Las consultas duran 30 minutos. La reserva se confirma con el servicio al enviar la solicitud.',
+                          style: TextStyle(
+                            color: Color(0xFFE0EBF5),
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 20),
-                  ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    title: const Text('Horarios de atención'),
-                    subtitle: const Text(
-                      'Consulta los días y lugares del docente',
-                    ),
-                    children: [
-                      for (final hour in widget.professor.officeHours)
-                        OfficeHourCard(
-                          hour: hour,
-                          location: widget.locations[hour.structureRefId],
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Elige cuándo consultar',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Las consultas duran 30 minutos. La reserva se confirma con el servicio al enviar la solicitud.',
-                  ),
-                  const SizedBox(height: 16),
                   if (date == null)
                     const Text(
                       'No hay bloques de atención para reservar en los próximos 60 días.',
                     )
                   else ...[
+                    Text(
+                      'Fecha de la consulta',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.uctBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppColors.uctBlue,
+                        side: const BorderSide(color: Color(0xFFC1CEDB)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 2,
+                        ),
+                        textStyle: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       icon: const Icon(Icons.calendar_month),
                       label: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
                         child: Text(_dateLabel(date)),
                       ),
                       onPressed: _sending
@@ -326,7 +352,13 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                             },
                     ),
                     const SizedBox(height: 20),
-                    Text('Hora de inicio', style: theme.textTheme.titleMedium),
+                    Text(
+                      'Hora de inicio',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.uctBlue,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     if (_loadingAvailability)
                       const LinearProgressIndicator()
@@ -356,6 +388,31 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                         children: [
                           for (final slot in _slots(date))
                             ChoiceChip(
+                              backgroundColor: Colors.white,
+                              selectedColor: AppColors.uctBlue,
+                              disabledColor: slot == start
+                                  ? AppColors.uctBlue
+                                  : Colors.white,
+                              checkmarkColor: Colors.white,
+                              labelStyle: TextStyle(
+                                color: slot == start
+                                    ? Colors.white
+                                    : AppColors.uctBlue,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                              labelPadding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              side: BorderSide(
+                                color: slot == start
+                                    ? AppColors.uctBlue
+                                    : const Color(0xFFC1CEDB),
+                              ),
                               label: Text(
                                 localizations.formatTimeOfDay(
                                   TimeOfDay.fromDateTime(slot),
@@ -375,9 +432,6 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                     const SizedBox(height: 8),
                     if (!_loadingAvailability &&
                         _availabilityError == null) ...[
-                      const Text(
-                        'Se ocultan las horas ocupadas del docente y las que coinciden con tus citas.',
-                      ),
                       TextButton.icon(
                         onPressed: _sending
                             ? null
@@ -392,30 +446,92 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x14003865),
+                            offset: Offset(0, 4),
+                            blurRadius: 14,
+                          ),
+                        ],
                       ),
                       child: DefaultTextStyle(
                         style: theme.textTheme.bodyMedium!.copyWith(
-                          color: theme.colorScheme.onPrimaryContainer,
+                          color: AppColors.ink,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Tu consulta',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 12,
+                              runSpacing: 8,
+                              children: [
+                                const Text(
+                                  'Tu consulta',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                    color: AppColors.uctBlue,
+                                  ),
+                                ),
+                                Chip(
+                                  label: const Text('30 minutos'),
+                                  labelStyle: theme.textTheme.labelMedium
+                                      ?.copyWith(color: AppColors.uctBlue),
+                                  backgroundColor: const Color(0xFFE7EEF5),
+                                  side: BorderSide.none,
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(start), alwaysUse24HourFormat: true)} – ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(start.add(const Duration(minutes: 30))), alwaysUse24HourFormat: true)}',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.uctBlue,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _dateLabel(start),
+                              style: const TextStyle(color: AppColors.subtitle),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Divider(
+                                height: 1,
+                                color: AppColors.fieldBorder,
+                              ),
+                            ),
+                            Text(
+                              widget.professor.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
                                 fontSize: 16,
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Text(_dateLabel(start)),
-                            Text(
-                              '${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(start), alwaysUse24HourFormat: true)} – ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(start.add(const Duration(minutes: 30))), alwaysUse24HourFormat: true)} · 30 minutos',
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.place_outlined,
+                                  size: 20,
+                                  color: AppColors.subtitle,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    location,
+                                    style: const TextStyle(
+                                      color: AppColors.subtitle,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 4),
-                            Text(location),
                           ],
                         ),
                       ),
@@ -433,6 +549,13 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                   ],
                   const SizedBox(height: 24),
                   FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.uctBlue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                     onPressed:
                         _sending ||
                             _loadingAvailability ||

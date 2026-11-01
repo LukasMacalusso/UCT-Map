@@ -40,7 +40,10 @@ class ScheduleMeeting {
   final String id;
   final String teacherRefId;
   final String studentRefId;
-  final String structureRefId;
+  final String? structureRefId;
+  final int durationMinutes;
+
+  DateTime get endsAt => scheduledAt.add(Duration(minutes: durationMinutes));
   final DateTime scheduledAt;
   final MeetingStatus status;
   final String? teacherName;
@@ -56,6 +59,7 @@ class ScheduleMeeting {
     required this.structureRefId,
     required this.scheduledAt,
     required this.status,
+    this.durationMinutes = 30,
     this.teacherName,
     this.structureName,
   });
@@ -67,6 +71,10 @@ class ScheduleMeeting {
       throw const FormatException('Fecha de cita inválida');
     }
 
+    final duration = json['durationMinutes'] ?? json['DurationMinutes'];
+    if (duration is! int || duration <= 0) {
+      throw const FormatException('Duración de cita inválida');
+    }
     final statusRaw = json['status'] ?? json['Status'];
     return ScheduleMeeting(
       id: (json['id'] ?? json['Id'] ?? '').toString(),
@@ -74,8 +82,9 @@ class ScheduleMeeting {
           .toString(),
       studentRefId: (json['studentRefId'] ?? json['StudentRefId'] ?? '')
           .toString(),
-      structureRefId: (json['structureRefId'] ?? json['StructureRefId'] ?? '')
-          .toString(),
+      structureRefId:
+          (json['structureRefId'] ?? json['StructureRefId']) as String?,
+      durationMinutes: duration,
       scheduledAt: parsedDate,
       status: MeetingStatusExt.fromString(statusRaw?.toString()),
       teacherName:
@@ -93,5 +102,6 @@ class ScheduleMeeting {
     'structureRefId': structureRefId,
     'scheduledAt': scheduledAt.toIso8601String(),
     'status': status.name,
+    'durationMinutes': durationMinutes,
   };
 }

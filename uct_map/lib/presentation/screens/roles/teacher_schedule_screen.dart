@@ -268,7 +268,7 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
     final time = TimeOfDay.fromDateTime(date).format(context);
     final location =
         data.locations[meeting.structureRefId] ??
-        (meeting.structureRefId.isEmpty
+        (meeting.structureRefId == null || meeting.structureRefId!.isEmpty
             ? 'Ubicación no informada'
             : 'Estructura: ${meeting.structureRefId}');
     return Card(
