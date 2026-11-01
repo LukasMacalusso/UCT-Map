@@ -9,6 +9,7 @@ public record LostObjectResponse(
     string Date,
     string Status,
     string PhotoUrl,
+    string lostObjectId,
     Guid StructureId // -> FindName
 );
 
