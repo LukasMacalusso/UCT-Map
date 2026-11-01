@@ -66,6 +66,21 @@ public class MeetingRepository(ScheduleDbContext dbContext) : IMeetingRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Meeting>> GetActiveInRoomsAsync(
+        IReadOnlyCollection<Guid> structureRefIds,
+        DateTime start,
+        DateTime end,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Meetings
+            .AsNoTracking()
+            .Where(m => m.Status != MeetingStatus.Cancelled)
+            .Where(m => m.StructureRefId != null && structureRefIds.Contains(m.StructureRefId.Value))
+            .Where(m => m.ScheduledAt < end && m.ScheduledAt.AddMinutes(m.DurationMinutes) > start)
+            .OrderBy(m => m.ScheduledAt)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(Meeting meeting, CancellationToken cancellationToken = default)
     {
         await dbContext.Meetings.AddAsync(meeting, cancellationToken);

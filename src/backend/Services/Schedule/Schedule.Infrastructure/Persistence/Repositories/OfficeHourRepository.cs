@@ -41,6 +41,21 @@ public class OfficeHourRepository(ScheduleDbContext dbContext) : IOfficeHourRepo
             .ToList();
     }
 
+    public async Task<IReadOnlyList<OfficeHour>> GetInRoomsAsync(
+        IReadOnlyCollection<Guid> structureRefIds,
+        DayOfWeek dayOfWeek,
+        TimeOnly start,
+        TimeOnly end,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.OfficeHours
+            .AsNoTracking()
+            .Where(o => o.StructureRefId != null && structureRefIds.Contains(o.StructureRefId.Value))
+            .Where(o => o.DayOfWeek == dayOfWeek && o.StartTime < end && o.EndTime > start)
+            .OrderBy(o => o.StartTime)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(OfficeHour officeHour, CancellationToken cancellationToken = default)
     {
         await dbContext.OfficeHours.AddAsync(officeHour, cancellationToken);

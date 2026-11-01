@@ -24,7 +24,8 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 2. [Meetings](#2-meetings)
 3. [Teachers](#3-teachers)
 4. [Students](#4-students)
-5. [Health](#5-health)
+5. [Rooms](#5-rooms)
+6. [Health](#6-health)
 
 ---
 
@@ -274,13 +275,59 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 ---
 
-## 5. Health
+## 5. Rooms
+*Availability of rooms (structures), crossing meetings and office hours. The list of rooms belongs to the Campus service, so the caller sends the rooms it wants to check.*
+
+### 5.1 Get Room Availability
+- **Route**: `GET /api/schedule/rooms/availability`
+- **Access**: Any authenticated user
+- **Description**: Given a list of rooms and a time range within a single day, returns which rooms are free and why the others are occupied. A room is occupied if it has an active meeting, or an office hour on that weekday, overlapping the range. Cancelled meetings do not occupy a room, and a room is free if an occupation ends exactly when the range starts.
+
+**Query Parameters**
+| Parameter | Type | Required | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `roomIds` | `uuid` (repeatable) | Yes | — | Rooms to check. Repeat the parameter for each room: `roomIds=A&roomIds=B`. |
+| `from` | `datetime` | Yes | — | Range start (inclusive). |
+| `to` | `datetime` | Yes | — | Range end (exclusive). Must be later than `from` and on the same day. |
+
+**Example**: `GET /api/schedule/rooms/availability?from=2026-11-02T10:00:00&to=2026-11-02T11:00:00&roomIds=A&roomIds=B&roomIds=C`
+
+**Success Response (200 OK)**
+```json
+{
+  "from": "2026-11-02T10:00:00",
+  "to": "2026-11-02T11:00:00",
+  "freeRoomIds": [ "uuid" ],
+  "occupancies": [
+    {
+      "structureRefId": "uuid",
+      "reason": "OfficeHour",
+      "occupiedFrom": "2026-11-02T09:00:00",
+      "occupiedUntil": "2026-11-02T12:00:00"
+    },
+    {
+      "structureRefId": "uuid",
+      "reason": "Meeting",
+      "occupiedFrom": "2026-11-02T10:15:00",
+      "occupiedUntil": "2026-11-02T10:45:00"
+    }
+  ]
+}
+```
+`reason` is `Meeting` or `OfficeHour`. A room may appear more than once in `occupancies` if several things occupy it.
+
+**Error Responses**
+- **`400 Bad Request`**: If `from` or `to` are missing, `to` is not later than `from`, the range spans more than one day, no `roomIds` are sent, or a room id is empty or not a valid uuid.
+
+---
+
+## 6. Health
 *Internal endpoints for container health checks. They are not exposed through the API Gateway.*
 
-### 5.1 Service Health `[Public]`
+### 6.1 Service Health `[Public]`
 - **Route**: `GET /health`
 - **Description**: Returns `200 OK` with `{ "service": "schedule-service", "status": "healthy" }`.
 
-### 5.2 Database Health `[Public]`
+### 6.2 Database Health `[Public]`
 - **Route**: `GET /health/database`
 - **Description**: Returns `200 OK` with `{ "database": "schedule", "status": "connected" }`, or `503 Service Unavailable` when the database cannot be reached.
