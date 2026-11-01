@@ -20,6 +20,7 @@
     <ProjectReference Include="../Incident.API/Incident.API.csproj" />
     <ProjectReference Include="../Incident.Application/Incident.Application.csproj" />
     <ProjectReference Include="../Incident.Domain/Incident.Domain.csproj" />
+    <ProjectReference Include="../Incident.Infrastructure/Incident.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
