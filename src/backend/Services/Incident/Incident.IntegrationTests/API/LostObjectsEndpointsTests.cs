@@ -88,16 +88,17 @@ public class LostObjectsEndpointsTests : ApiTestBase
     }
 
     [DockerFact]
-    public async Task GetById_CuandoExiste_Retorna204SinContenido()
+    public async Task GetById_CuandoExiste_Retorna200ConElObjeto()
     {
-        // Comportamiento actual: el handler carga los datos pero el controller
-        // responde 204 y descarta el body.
         var id = await CreateLostObjectAsync();
 
         var response = await Http.GetAsync($"{Endpoint}/{id}");
 
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        Assert.Empty(await response.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var lostObject = await ReadJsonAsync<LostObjectResponse>(response);
+        Assert.NotNull(lostObject);
+        Assert.Equal("Mochila negra", lostObject!.Title);
+        Assert.Equal(id, lostObject.lostObjectId);
     }
 
     // ---------- GET (search) ----------

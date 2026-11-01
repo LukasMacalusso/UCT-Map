@@ -150,6 +150,7 @@ public class LostObjectHandlerTests
             reportedAt.ToString(),
             nameof(Objectenum.In_Process),
             "https://campus.uct.cl/audifonos.jpg",
+            entity.Id,
             structureId), result.Value);
     }
 

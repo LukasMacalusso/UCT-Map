@@ -67,17 +67,19 @@ public class LostObjectsControllerTests
     // ---------- GET by id ----------
 
     [Fact]
-    public async Task GetById_CuandoExiste_Retorna204SinContenido()
+    public async Task GetById_CuandoExiste_Retorna200ConElObjeto()
     {
-        // Comportamiento actual: el handler devuelve los datos pero el controller descarta el body.
+        // Comportamiento actual: el controller devuelve el objeto con un 200 OK.
+        var lostObject = new LostObjectResponse("Mochila", "Mochila", "2026-10-14T20:00:00Z",
+            nameof(Objectenum.Pending), "", "64b00000000000000000000a", Guid.NewGuid());
         _handler.GetByIdAsync("64b00000000000000000000a")
-            .Returns(Task.FromResult<ErrorOr<LostObjectResponse>>(
-                new LostObjectResponse("Mochila", "Mochila", "2026-10-14T20:00:00Z",
-                    nameof(Objectenum.Pending), "", Guid.NewGuid())));
+            .Returns(Task.FromResult<ErrorOr<LostObjectResponse>>(lostObject));
 
         var result = await _controller.GetById("64b00000000000000000000a");
 
-        Assert.IsType<NoContentResult>(result);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(StatusCodes.Status200OK, ok.StatusCode);
+        Assert.Same(lostObject, ok.Value);
     }
 
     [Fact]
@@ -151,7 +153,8 @@ public class LostObjectsControllerTests
             new List<LostObjectResponse>
             {
                 new("Mochila", "Mochila", "2026-10-14T20:00:00Z",
-                    nameof(Objectenum.Pending), "https://campus.uct.cl/mochila.png", Guid.NewGuid())
+                    nameof(Objectenum.Pending), "https://campus.uct.cl/mochila.png",
+                    "64b00000000000000000000a", Guid.NewGuid())
             },
             TotalCount: 1,
             Page: 1,
