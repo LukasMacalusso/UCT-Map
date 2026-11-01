@@ -37,7 +37,7 @@ public class LostObjectsController : ControllerBase
         var result = await _lostObjectHandler.GetByIdAsync(id);
 
         return result.Match(
-            success => (IActionResult)NoContent(),
+            success => Ok(result.Value),
             errors =>
             {
                 var firstError = errors.First();

@@ -82,6 +82,7 @@ public class LostObjectHandler : ILostObjectHandler
             Date: lostObject.ReportedAt.ToString(),
             Status: Enum.GetName(typeof(Objectenum), lostObject.Status)!,
             PhotoUrl: lostObject.PhotoUrl!,
+            lostObjectId: lostObject.Id!,
             StructureId: lostObject.StructureRefId
         );
     }
@@ -108,6 +109,7 @@ public class LostObjectHandler : ILostObjectHandler
                 Date: lo.ReportedAt.ToString(),
                 Status: lo.Status.ToString(),
                 PhotoUrl: lo.PhotoUrl!,
+                lostObjectId: lo.Id!,
                 StructureId: lo.StructureRefId))
             .ToList();
 
