@@ -508,7 +508,7 @@ void main() {
       // Card del objeto
       expect(find.text('Mochila Puma'), findsOneWidget);
       expect(find.text('Negra con zapatillas adentro'), findsOneWidget);
-      expect(find.text('Cambiar Estado'), findsOneWidget);
+      expect(find.text('Cambiar Estado'), findsNothing);
     });
   });
 }
