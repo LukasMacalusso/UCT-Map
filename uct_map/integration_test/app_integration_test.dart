@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:uct_map/application/session/session_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -22,7 +25,7 @@ class _MockAuthRepo implements AuthRepository {
     return AuthLoginResult(
       userId: 'u-integration-test',
       email: email,
-      token: generateJwt(email),
+      token: generateJwt(email, userId: 'u-integration-test'),
     );
   }
 
@@ -43,6 +46,30 @@ void main() {
 
   setUpAll(() {
     setupMockMapboxPlatform();
+  });
+
+  late SessionController session;
+  setUp(() async {
+    ApiClientProvider.reset();
+    session = SessionController();
+    await session.ready;
+    ApiClientProvider.initialize(session, innerClient: MockClient((request) async {
+      if (request.method == 'GET' && request.url.path == '/api/campus/campuses') {
+        return http.Response('[]', 200);
+      }
+      if (request.method == 'GET' && const {
+        '/api/incident/reports', '/api/incident/lost-objects',
+      }.contains(request.url.path)) {
+        return http.Response(jsonEncode({
+          'items': [], 'totalCount': 0, 'page': 1, 'pageSize': 10, 'totalPages': 0,
+        }), 200);
+      }
+      return http.Response('', 404);
+    }));
+  });
+  tearDown(() {
+    ApiClientProvider.reset();
+    session.dispose();
   });
 
   group('UCT Map Mobile Integration Tests', () {
@@ -78,11 +105,19 @@ void main() {
       expect(find.text('Reportes de Incidencias'), findsOneWidget);
       expect(find.byType(SessionRequiredView), findsOneWidget);
 
-      // Navegar a Perfil
+      // Perfil invitado conserva la protección y permite abrir el login.
       await tester.tap(find.text('Perfil'));
       await tester.pumpAndSettle();
       expect(find.text('Mi Perfil'), findsOneWidget);
-      expect(find.byType(ProfileScreen), findsOneWidget);
+      expect(find.byType(ProfileScreen), findsNothing);
+      final profileLogin = find.byKey(const ValueKey('authGateLoginButton'));
+      expect(profileLogin, findsOneWidget);
+      await tester.tap(profileLogin);
+      await tester.pumpAndSettle();
+      expect(find.byType(LoginPage), findsOneWidget);
+      await tester.tap(find.byTooltip('Volver'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AuthRequiredView), findsOneWidget);
 
       // Retornar a Mapa
       await tester.tap(find.text('Mapa'));
