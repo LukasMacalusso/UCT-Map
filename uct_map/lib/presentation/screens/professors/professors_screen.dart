@@ -129,9 +129,10 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
   List<Professor> get _filteredProfessors {
     final base = _professors;
     if (_searchQuery.trim().isEmpty) return base;
-    final q = _searchQuery.toLowerCase();
+    final q = _searchQuery.trim().toLowerCase();
     return base.where((p) {
       return p.name.toLowerCase().contains(q) ||
+          p.email.toLowerCase().contains(q) ||
           p.department.toLowerCase().contains(q) ||
           p.office.toLowerCase().contains(q);
     }).toList();
@@ -199,6 +200,13 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
         backgroundColor: AppColors.uctBlue,
         foregroundColor: Colors.white,
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Actualizar directorio',
+            onPressed: _loading ? null : _loadProfessors,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -209,6 +217,7 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
                 ListTile(
                   title: Text(_error!),
                   trailing: IconButton(
+                    tooltip: 'Reintentar carga',
                     onPressed: _loadProfessors,
                     icon: const Icon(Icons.refresh),
                   ),

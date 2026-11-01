@@ -97,7 +97,7 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
     try {
       final users = await _identity.getUsers();
       _checkSession();
-      final ids = {id, ...meetings.map((m) => m.studentRefId)};
+      final ids = meetings.map((m) => m.studentRefId).toSet();
       for (final user in users) {
         if (ids.contains(user.id) && user.name.trim().isNotEmpty) {
           names[user.id] = user.name;
@@ -143,9 +143,11 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF9F9F9),
+    backgroundColor: const Color(0xFFF3F5F8),
     appBar: AppBar(
       title: const Text('Mis horarios y citas'),
+      backgroundColor: AppColors.uctBlue,
+      foregroundColor: Colors.white,
       actions: [
         IconButton(
           tooltip: 'Actualizar agenda',
@@ -170,77 +172,109 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
           );
         }
         final data = snapshot.data!;
-        final user = _session.currentUser!;
         final upcoming = data.meetings.where(
           (m) => m.isActive && !m.scheduledAt.isBefore(DateTime.now()),
         );
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: AppColors.fieldBorder),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        final theme = Theme.of(context);
+        final next = upcoming.firstOrNull;
+        final days = <DateTime, List<ScheduleMeeting>>{};
+        for (final meeting in data.meetings.where(
+          (meeting) => meeting != next,
+        )) {
+          final date = meeting.scheduledAt.toLocal();
+          (days[DateUtils.dateOnly(date)] ??= []).add(meeting);
+        }
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                if (data.incompleteLabels)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 16),
+                    child: Text(
+                      'No se pudieron cargar algunos nombres o lugares. Tus horarios y citas siguen disponibles.',
+                    ),
+                  ),
+                _heading(context, 'Próxima cita', Icons.event_available),
+                if (next == null)
+                  const Text('No hay citas próximas activas.')
+                else ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      _dayLabel(next.scheduledAt.toLocal()),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.uctBlue,
+                      ),
+                    ),
+                  ),
+                  _meetingCard(context, next, data),
+                ],
+                _heading(
+                  context,
+                  'Otras citas de los próximos 60 días',
+                  Icons.event_note,
+                ),
+                if (days.isEmpty)
+                  Text(
+                    data.meetings.isEmpty
+                        ? 'Sin citas registradas.'
+                        : 'No hay más citas en este período.',
+                  ),
+                for (final day in days.entries) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, bottom: 12),
+                    child: Text(
+                      _dayLabel(day.key),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.uctBlue,
+                      ),
+                    ),
+                  ),
+                  for (final meeting in day.value)
+                    _meetingCard(context, meeting, data),
+                  const SizedBox(height: 8),
+                ],
+                const SizedBox(height: 16),
+                ExpansionTile(
+                  key: const PageStorageKey('teacher-office-hours'),
+                  initiallyExpanded: data.meetings.isEmpty,
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: const EdgeInsets.only(top: 12),
+                  leading: const Icon(Icons.schedule, color: AppColors.uctBlue),
+                  title: Text(
+                    'Horario de atención',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.uctBlue,
+                    ),
+                  ),
+                  subtitle: const Text('Bloques semanales de atención'),
                   children: [
-                    const Chip(
-                      avatar: Icon(Icons.school_outlined),
-                      label: Text('Docente'),
-                    ),
-                    Text(
-                      data.names[user.id] ?? user.name ?? user.email,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    Text(user.email),
-                    const SizedBox(height: 8),
-                    const Text('Tu atención semanal y tus citas'),
+                    if (data.hours.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('Sin horarios registrados.'),
+                      ),
+                    for (final hour in data.hours)
+                      OfficeHourCard(
+                        hour: hour,
+                        location:
+                            data.locations[hour.structureRefId] ??
+                            (hour.structureRefId == null ||
+                                    hour.structureRefId!.isEmpty
+                                ? 'Ubicación no informada'
+                                : 'Ubicación no disponible'),
+                      ),
                   ],
                 ),
-              ),
+              ],
             ),
-            if (data.incompleteLabels)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  'No se pudieron cargar algunos nombres. Se muestran las referencias disponibles.',
-                ),
-              ),
-            _heading(context, 'Próxima cita', Icons.event_available),
-            if (upcoming.isEmpty)
-              const Text('No hay citas próximas activas.')
-            else
-              _meetingCard(context, upcoming.first, data),
-            _heading(context, 'Horario de atención', Icons.schedule),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Text('Bloques semanales de atención, sin fecha fija.'),
-            ),
-            if (data.hours.isEmpty) const Text('Sin horarios registrados.'),
-            ...data.hours.map(
-              (h) => OfficeHourCard(
-                hour: h,
-                location: data.locations[h.structureRefId],
-              ),
-            ),
-            _heading(
-              context,
-              'Citas de los próximos 60 días',
-              Icons.event_note,
-            ),
-            if (data.meetings.isEmpty) const Text('Sin citas registradas.'),
-            ...data.meetings.map((m) => _meetingCard(context, m, data)),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Text(
-                'Este apartado permite consultar la agenda. Los cambios de estado de citas no están habilitados aquí.',
-              ),
-            ),
-          ],
+          ),
         );
       },
     ),
@@ -253,7 +287,13 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
         Icon(icon, color: AppColors.uctBlue),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.uctBlue,
+            ),
+          ),
         ),
       ],
     ),
@@ -265,36 +305,130 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
     _Agenda data,
   ) {
     final date = meeting.scheduledAt.toLocal();
-    final time = TimeOfDay.fromDateTime(date).format(context);
-    final location =
-        data.locations[meeting.structureRefId] ??
-        (meeting.structureRefId == null || meeting.structureRefId!.isEmpty
-            ? 'Ubicación no informada'
-            : 'Estructura: ${meeting.structureRefId}');
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.fieldBorder),
+    final theme = Theme.of(context);
+    final (color, icon) = switch (meeting.status) {
+      MeetingStatus.pending => (const Color(0xFF745500), Icons.schedule),
+      MeetingStatus.confirmed => (
+        const Color(0xFF166445),
+        Icons.check_circle_outline,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+      MeetingStatus.cancelled => (
+        const Color(0xFF9D3030),
+        Icons.cancel_outlined,
+      ),
+      MeetingStatus.completed => (AppColors.subtitle, Icons.task_alt),
+    };
+    final time = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${_time(context, date)} – ${_time(context, meeting.endsAt.toLocal())}',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.uctBlue,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${meeting.durationMinutes} minutos',
+          style: theme.textTheme.bodySmall?.copyWith(color: AppColors.subtitle),
+        ),
+      ],
+    );
+    final details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Estudiante: ${data.names[meeting.studentRefId] ?? "Nombre no disponible"}',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.ink,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '${date.day}/${date.month}/${date.year} · $time',
-              style: Theme.of(context).textTheme.titleMedium,
+            const Icon(
+              Icons.place_outlined,
+              size: 18,
+              color: AppColors.subtitle,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Estudiante: ${data.names[meeting.studentRefId] ?? meeting.studentRefId}',
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                data.locations[meeting.structureRefId] ??
+                    (meeting.structureRefId == null ||
+                            meeting.structureRefId!.isEmpty
+                        ? 'Ubicación no informada'
+                        : 'Ubicación no disponible'),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.subtitle,
+                ),
+              ),
             ),
-            Text(location),
-            Chip(label: Text(meeting.status.label)),
           ],
+        ),
+        const SizedBox(height: 8),
+        Chip(
+          avatar: Icon(icon, size: 16, color: color),
+          label: Text(meeting.status.label),
+          labelStyle: theme.textTheme.labelMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+          backgroundColor: color.withValues(alpha: 0.08),
+          side: BorderSide.none,
+          visualDensity: VisualDensity.compact,
+        ),
+      ],
+    );
+    return Card(
+      color: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      elevation: 3,
+      shadowColor: const Color(0x26003865),
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 300 ||
+                MediaQuery.textScalerOf(context).scale(14) > 18) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [time, const SizedBox(height: 12), details],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(width: 128, child: time),
+                const SizedBox(width: 16),
+                Expanded(child: details),
+              ],
+            );
+          },
         ),
       ),
     );
+  }
+
+  String _time(BuildContext context, DateTime date) => MaterialLocalizations.of(
+    context,
+  ).formatTimeOfDay(TimeOfDay.fromDateTime(date), alwaysUse24HourFormat: true);
+
+  String _dayLabel(DateTime date) {
+    const days = [
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+      'Domingo',
+    ];
+    return '${days[date.weekday - 1]} ${date.day}/${date.month}/${date.year}';
   }
 }

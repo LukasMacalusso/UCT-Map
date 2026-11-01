@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:uct_map/data/datasources/schedule_remote_ds.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uct_map/core/navigation/app_routes.dart';
@@ -18,6 +22,10 @@ import 'package:uct_map/presentation/screens/lost_found/lost_item_detail_screen.
 import 'package:uct_map/presentation/screens/professors/professors_screen.dart';
 import 'package:uct_map/presentation/screens/reports/report_detail_screen.dart';
 import 'helpers/mock_mapbox_platform.dart';
+import 'package:uct_map/application/session/session_controller.dart';
+import 'package:uct_map/core/network/api_client_provider.dart';
+import 'package:uct_map/data/storage/token_storage.dart';
+import 'package:uct_map/domain/repositories/auth_repository.dart';
 
 void main() {
   setUpAll(setupMockMapboxPlatform);
@@ -156,10 +164,8 @@ void main() {
       await tester.tap(find.text('Directorio de Profesores'));
       await tester.pumpAndSettle();
 
-      expect(
-        find.byType(ProfessorsScreen),
-        findsOneWidget,
-      );
+      expect(find.byType(ProfessorsScreen), findsNothing);
+      expect(find.text('Iniciar Sesión'), findsOneWidget);
 
       // Volver atrás
       await tester.pageBack();
@@ -212,19 +218,36 @@ void main() {
 
     testWidgets('ProfessorsScreen botón Ver en Mapa retorna tab 0',
         (tester) async {
+      final session = SessionController(storage: _MemoryStorage());
+      await _signInStudent(session);
+      ApiClientProvider.initialize(session);
       int targetTab = -1;
       await tester.pumpWidget(MaterialApp(
         onGenerateRoute: AppRoutes.onGenerateRoute,
         home: Scaffold(
           body: ProfessorsScreen(
             onNavigateToTab: (tab) => targetTab = tab,
+            scheduleRepository: ScheduleRemoteDataSource(
+              client: MockClient((request) async {
+                if (request.url.path == '/api/identity') {
+                  return http.Response(jsonEncode([{
+                    'userId': 'teacher-fixture',
+                    'name': 'Docente de prueba',
+                    'email': 'teacher.fixture@uct.cl',
+                    'role': 'Teacher',
+                  }]), 200);
+                }
+                expect(request.url.path, '/api/schedule/office-hours');
+                return http.Response('[]', 200);
+              }),
+            ),
           ),
         ),
       ));
       await tester.pumpAndSettle();
 
       // Expandir el primer profesor
-      await tester.tap(find.text('Dr. Roberto González'));
+      await tester.tap(find.text('Docente de prueba'));
       await tester.pumpAndSettle();
 
       // Tocar 'Ver en Mapa'
@@ -233,6 +256,9 @@ void main() {
 
       expect(targetTab, 0);
       expect(find.textContaining('Ubicando oficina'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      session.dispose();
+      ApiClientProvider.reset();
     });
 
     testWidgets('ReportDetailScreen botón Ver en Mapa retorna tab 0',
@@ -307,4 +333,42 @@ void main() {
       expect(find.byType(LoginPage), findsNothing);
     });
   });
+}
+
+class _MemoryStorage implements TokenStorage {
+  String? _token;
+  @override
+  Future<String?> read() async => _token;
+  @override
+  Future<void> save(String token) async {
+    _token = token;
+  }
+
+  @override
+  Future<void> clear() async {
+    _token = null;
+  }
+}
+
+Future<void> _signInStudent(SessionController session) async {
+  await session.ready;
+  final payload = {
+    'sub': 'student-fixture',
+    'email': 'student-fixture@uct.cl',
+    'role': 'Student',
+    'exp':
+        DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+        1000,
+    'iss': 'https://identity-api',
+    'aud': 'api-gateway',
+  };
+  final header = base64Url.encode(utf8.encode('{"alg":"HS256"}'));
+  final claims = base64Url.encode(utf8.encode(jsonEncode(payload)));
+  await session.signInReal(
+    AuthLoginResult(
+      userId: 'student-fixture',
+      email: 'student-fixture@uct.cl',
+      token: '$header.$claims.signature',
+    ),
+  );
 }
