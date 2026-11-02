@@ -125,7 +125,7 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
     LostObject item,
     LostObjectStatus newStatus,
   ) async {
-    if (!mounted || !_canManage) return;
+    if (!mounted || !_canManage || item.id.isEmpty) return;
     if (item.status == newStatus) return;
 
     // Mostrar feedback inmediato
@@ -176,7 +176,7 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
   }
 
   void _showStatusDialog(LostObject item) {
-    if (!_canManage) return;
+    if (!_canManage || item.id.isEmpty) return;
     final actionToken = ApiClientProvider.session.token;
     showModalBottomSheet(
       context: context,
