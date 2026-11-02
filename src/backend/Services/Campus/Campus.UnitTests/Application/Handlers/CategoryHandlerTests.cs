@@ -183,4 +183,50 @@ public class CategoryHandlerTests
         _repository.DidNotReceive().Delete(Arg.Any<Category>());
         await _repository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task ReorderAsync_WhenAllCategoriesExist_ShouldUpdateOrdersAndReturnTrue()
+    {
+        var groupId = Guid.NewGuid();
+        var cat1 = new Category("Cat 1", "icon1", "desc1", groupId, 0);
+        var cat2 = new Category("Cat 2", "icon2", "desc2", groupId, 1);
+
+        _repository.GetAllAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Category> { cat1, cat2 });
+
+        var items = new List<ReorderItemDto>
+        {
+            new(cat1.Id, 5),
+            new(cat2.Id, 10)
+        };
+
+        var result = await _handler.ReorderAsync(items, CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal(5, cat1.Order);
+        Assert.Equal(10, cat2.Order);
+        _repository.Received(1).Update(cat1);
+        _repository.Received(1).Update(cat2);
+        await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ReorderAsync_WhenSomeCategoryNotFound_ShouldReturnFalse()
+    {
+        var cat1 = new Category("Cat 1", "icon1", "desc1", Guid.NewGuid(), 0);
+
+        _repository.GetAllAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Category> { cat1 });
+
+        var items = new List<ReorderItemDto>
+        {
+            new(cat1.Id, 5),
+            new(Guid.NewGuid(), 10)
+        };
+
+        var result = await _handler.ReorderAsync(items, CancellationToken.None);
+
+        Assert.False(result);
+        await _repository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
 }

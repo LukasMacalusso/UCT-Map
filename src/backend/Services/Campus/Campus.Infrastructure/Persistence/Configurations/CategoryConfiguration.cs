@@ -20,10 +20,14 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
                .IsRequired(false)
                .HasMaxLength(250);
 
+        builder.Property(c => c.Order)
+               .IsRequired()
+               .HasDefaultValue(0);
+
         builder.HasMany(c => c.Structures)
                .WithOne(s => s.Category)
                .HasForeignKey(s => s.CategoryId)
-               .OnDelete(DeleteBehavior.Restrict);
+               .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasMany(c => c.Rooms)
                .WithOne(r => r.Category)

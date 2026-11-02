@@ -51,7 +51,8 @@ public class StructureController : ControllerBase
     public async Task<ActionResult<StructureDto>> Create([FromBody] CreateStructureDto request, CancellationToken cancellationToken)
     {
         if (request.CampusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' parameter cannot be empty." });
-        if (request.CategoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
+        if (request.CategoryId.HasValue && request.CategoryId.Value == Guid.Empty)
+            return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is Required." });
         if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
         if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
@@ -67,7 +68,8 @@ public class StructureController : ControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateStructureDto request, CancellationToken cancellationToken)
     {
         if (request.CampusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' parameter cannot be empty." });
-        if (request.CategoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
+        if (request.CategoryId.HasValue && request.CategoryId.Value == Guid.Empty)
+            return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is Required." });
         if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
         if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)

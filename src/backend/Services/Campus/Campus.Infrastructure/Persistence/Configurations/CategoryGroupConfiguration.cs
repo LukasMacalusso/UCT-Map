@@ -12,6 +12,10 @@ public class CategoryGroupConfiguration : IEntityTypeConfiguration<CategoryGroup
                .IsRequired()
                .HasMaxLength(100);
 
+        builder.Property(cg => cg.Order)
+               .IsRequired()
+               .HasDefaultValue(0);
+
         builder.HasMany(cg => cg.Categories)
                .WithOne(c => c.CategoryGroup)
                .HasForeignKey(c => c.CategoryGroupId)
