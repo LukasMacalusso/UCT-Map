@@ -9,6 +9,7 @@ using Campus.Application.DTOs;
 using Campus.Application.Handlers;
 using Campus.Domain.Entities;
 using Campus.Domain.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Xunit;
@@ -154,6 +155,20 @@ public class CategoryControllerTests
         var result = await _controller.Delete(category.Id, CancellationToken.None);
 
         Assert.IsType<NoContentResult>(result);
+    }
+
+    [Fact]
+    public async Task Delete_WhenDbConstraintViolated_ShouldReturnConflict409()
+    {
+        var category = new Category("Para borrar", "icon", "desc", Guid.NewGuid());
+        _repository.GetByIdAsync(category.Id, Arg.Any<CancellationToken>()).Returns(category);
+        _repository.When(r => r.SaveChangesAsync(Arg.Any<CancellationToken>()))
+            .Do(_ => throw new Microsoft.EntityFrameworkCore.DbUpdateException("FK violation"));
+
+        var result = await _controller.Delete(category.Id, CancellationToken.None);
+
+        var objResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status409Conflict, objResult.StatusCode);
     }
 
     [Fact]

@@ -19,6 +19,6 @@ public class CategoryGroupConfiguration : IEntityTypeConfiguration<CategoryGroup
         builder.HasMany(cg => cg.Categories)
                .WithOne(c => c.CategoryGroup)
                .HasForeignKey(c => c.CategoryGroupId)
-               .OnDelete(DeleteBehavior.Restrict);
+               .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -129,6 +129,9 @@ public class EntityTests
 
         category.UpdateOrder(1);
         Assert.Equal(1, category.Order);
+
+        category.AssignCategoryGroup(newGroupId);
+        Assert.Equal(newGroupId, category.CategoryGroupId);
     }
 
     [Fact]
@@ -164,6 +167,20 @@ public class EntityTests
         Assert.Equal(3, room2.Floor);
         Assert.Equal(newBuildingId, room2.BuildingId);
         Assert.Equal(newCatId, room2.CategoryId);
+
+        // Nullable category support
+        var roomWithoutCategory = new Room("S-SinCat", 1, building);
+        Assert.Null(roomWithoutCategory.CategoryId);
+        Assert.Null(roomWithoutCategory.Category);
+
+        roomWithoutCategory.AssignCategory(newCatId);
+        Assert.Equal(newCatId, roomWithoutCategory.CategoryId);
+
+        roomWithoutCategory.AssignCategory(null);
+        Assert.Null(roomWithoutCategory.CategoryId);
+
+        room2.Update("S-SinCat2", 2, newBuildingId, null);
+        Assert.Null(room2.CategoryId);
     }
 
     [Fact]

@@ -163,9 +163,11 @@ public class CategoryHandlerTests
         _repository.GetByIdAsync(id, Arg.Any<CancellationToken>())
             .Returns(category);
 
-        var result = await _handler.DeleteAsync(id, CancellationToken.None);
+        var (success, error, notFound) = await _handler.DeleteAsync(id, CancellationToken.None);
 
-        Assert.True(result);
+        Assert.True(success);
+        Assert.False(notFound);
+        Assert.Null(error);
         _repository.Received(1).Delete(category);
         await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -177,11 +179,29 @@ public class CategoryHandlerTests
         _repository.GetByIdAsync(id, Arg.Any<CancellationToken>())
             .Returns((Category?)null);
 
-        var result = await _handler.DeleteAsync(id, CancellationToken.None);
+        var (success, error, notFound) = await _handler.DeleteAsync(id, CancellationToken.None);
 
-        Assert.False(result);
+        Assert.False(success);
+        Assert.True(notFound);
         _repository.DidNotReceive().Delete(Arg.Any<Category>());
         await _repository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenDbUpdateExceptionOccurs_ShouldReturnConflictError()
+    {
+        var id = Guid.NewGuid();
+        var category = new Category("Por borrar", "icon", "desc", Guid.NewGuid());
+        _repository.GetByIdAsync(id, Arg.Any<CancellationToken>())
+            .Returns(category);
+        _repository.When(r => r.SaveChangesAsync(Arg.Any<CancellationToken>()))
+            .Do(_ => throw new Microsoft.EntityFrameworkCore.DbUpdateException("FK conflict"));
+
+        var (success, error, notFound) = await _handler.DeleteAsync(id, CancellationToken.None);
+
+        Assert.False(success);
+        Assert.False(notFound);
+        Assert.NotNull(error);
     }
 
     [Fact]
