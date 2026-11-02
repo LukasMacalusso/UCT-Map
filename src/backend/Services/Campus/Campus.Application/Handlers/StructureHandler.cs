@@ -42,8 +42,11 @@ public class StructureHandler
         if (!await _campusRepository.ExistsAsync(c => c.Id == request.CampusId, cancellationToken))
             return (null, $"El campus con ID '{request.CampusId}' no existe.");
 
-        if (!await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId, cancellationToken))
-            return (null, $"La categoría con ID '{request.CategoryId}' no existe.");
+        if (request.CategoryId.HasValue)
+        {
+            if (request.CategoryId.Value == Guid.Empty || !await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId.Value, cancellationToken))
+                return (null, $"La categoría con ID '{request.CategoryId.Value}' no existe.");
+        }
 
         var coordinates = new Coordinate(request.Latitude, request.Longitude);
         var structure = new Structure(request.Name, coordinates, request.CampusId, request.CategoryId);
@@ -62,8 +65,11 @@ public class StructureHandler
         if (!await _campusRepository.ExistsAsync(c => c.Id == request.CampusId, cancellationToken))
             return (false, $"El campus con ID '{request.CampusId}' no existe.");
 
-        if (!await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId, cancellationToken))
-            return (false, $"La categoría con ID '{request.CategoryId}' no existe.");
+        if (request.CategoryId.HasValue)
+        {
+            if (request.CategoryId.Value == Guid.Empty || !await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId.Value, cancellationToken))
+                return (false, $"La categoría con ID '{request.CategoryId.Value}' no existe.");
+        }
 
         var coordinates = new Coordinate(request.Latitude, request.Longitude);
         structure.Update(request.Name, coordinates, request.CampusId, request.CategoryId);
@@ -79,11 +85,17 @@ public class StructureHandler
         if (structures.Count == 0)
             return Array.Empty<StructureLocationDto>();
 
-        var categoryIds = structures.Select(s => s.CategoryId).Distinct().ToHashSet();
-        var categories = (await _categoryRepository.GetAllAsync(c => categoryIds.Contains(c.Id), cancellationToken))
-            .ToDictionary(c => c.Id);
+        var categoryIds = structures
+            .Where(s => s.CategoryId.HasValue && s.CategoryId.Value != Guid.Empty)
+            .Select(s => s.CategoryId!.Value)
+            .Distinct()
+            .ToHashSet();
 
-        return structures.Select(s => categories.TryGetValue(s.CategoryId, out var category)
+        var categories = categoryIds.Count > 0
+            ? (await _categoryRepository.GetAllAsync(c => categoryIds.Contains(c.Id), cancellationToken)).ToDictionary(c => c.Id)
+            : new Dictionary<Guid, Category>();
+
+        return structures.Select(s => (s.CategoryId.HasValue && categories.TryGetValue(s.CategoryId.Value, out var category))
             ? s.ToLocationDto(category.Name, category.Icon)
             : s.ToLocationDto(string.Empty, string.Empty));
     }

@@ -4,6 +4,7 @@ using Campus.Application.Handlers;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 using System;
 
 namespace Campus.API.Controllers;
@@ -65,6 +66,17 @@ public class CategoryController : ControllerBase
         var (success, error) = await _handler.UpdateAsync(id, request, cancellationToken);
         if (error is not null) return BadRequest(new { message = error });
         if (!success) return NotFound(new { message = $"Category with ID '{id}' was not found." });
+
+        return NoContent();
+    }
+
+    [HttpPut("reorder")]
+    public async Task<IActionResult> Reorder([FromBody] IEnumerable<ReorderItemDto> items, CancellationToken cancellationToken)
+    {
+        if (items is null || !items.Any()) return BadRequest(new { message = "The items list cannot be empty." });
+
+        var success = await _handler.ReorderAsync(items, cancellationToken);
+        if (!success) return BadRequest(new { message = "Failed to reorder categories. Some items may not exist." });
 
         return NoContent();
     }

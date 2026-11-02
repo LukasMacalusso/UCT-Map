@@ -61,7 +61,7 @@ public static class GeoLocationMapper
             )
         );
 
-    public static StructureLocationDto ToLocationDto(this Structure structure, string categoryName, string categoryIcon) =>
+    public static StructureLocationDto ToLocationDto(this Structure structure, string? categoryName, string? categoryIcon) =>
         new(
             structure.Id,
             structure.Name,
@@ -69,8 +69,8 @@ public static class GeoLocationMapper
             new StructureMetadataDto(
                 structure.CampusId,
                 structure.CategoryId,
-                categoryName,
-                categoryIcon
+                categoryName ?? string.Empty,
+                categoryIcon ?? string.Empty
             )
         );
 

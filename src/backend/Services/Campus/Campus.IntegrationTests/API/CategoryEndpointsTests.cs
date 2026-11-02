@@ -89,4 +89,56 @@ public class CategoryEndpointsTests : ApiTestBase
         var getRes = await Http.GetAsync($"{Endpoint}/{created.Id}");
         Assert.Equal(HttpStatusCode.NotFound, getRes.StatusCode);
     }
+
+    [DockerFact]
+    public async Task Put_Reorder_WhenValid_UpdatesCategoriesOrderAndReturnsNoContent()
+    {
+        var groupId = await CreateGroupAsync();
+        var cat1Res = await Http.PostAsync(Endpoint, JsonBody(new CreateCategoryDto(groupId, "Cat Reorder 1", "icon1", "desc", 0)));
+        var cat1 = await ReadJsonAsync<CategoryDto>(cat1Res);
+        var cat2Res = await Http.PostAsync(Endpoint, JsonBody(new CreateCategoryDto(groupId, "Cat Reorder 2", "icon2", "desc", 1)));
+        var cat2 = await ReadJsonAsync<CategoryDto>(cat2Res);
+
+        var reorderItems = new List<ReorderItemDto>
+        {
+            new(cat1!.Id, 10),
+            new(cat2!.Id, 5)
+        };
+
+        var reorderRes = await Http.PutAsync($"{Endpoint}/reorder", JsonBody(reorderItems));
+        Assert.Equal(HttpStatusCode.NoContent, reorderRes.StatusCode);
+
+        var getCat1 = await Http.GetAsync($"{Endpoint}/{cat1.Id}");
+        var cat1Fetched = await ReadJsonAsync<CategoryDto>(getCat1);
+        Assert.Equal(10, cat1Fetched!.Order);
+
+        var getCat2 = await Http.GetAsync($"{Endpoint}/{cat2.Id}");
+        var cat2Fetched = await ReadJsonAsync<CategoryDto>(getCat2);
+        Assert.Equal(5, cat2Fetched!.Order);
+    }
+
+    [DockerFact]
+    public async Task Delete_WhenCategoryHasStructures_DeletesCategoryAndSetsStructureCategoryToNull()
+    {
+        var campusRes = await Http.PostAsync("/api/campus/campuses", JsonBody(new CreateCampusDto("Campus For Null FK", "Dir", 0, 0)));
+        var campus = await ReadJsonAsync<CampusDto>(campusRes);
+
+        var groupId = await CreateGroupAsync();
+        var catRes = await Http.PostAsync(Endpoint, JsonBody(new CreateCategoryDto(groupId, "Cat Con Estructuras", "icon", "desc")));
+        var cat = await ReadJsonAsync<CategoryDto>(catRes);
+
+        var structRes = await Http.PostAsync("/api/campus/structures", JsonBody(new CreateStructureDto(campus!.Id, cat!.Id, "Estructura En Categoria", -38.7, -72.5)));
+        var structure = await ReadJsonAsync<StructureDto>(structRes);
+        Assert.NotNull(structure);
+        Assert.Equal(cat.Id, structure.CategoryId);
+
+        var deleteRes = await Http.DeleteAsync($"{Endpoint}/{cat.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, deleteRes.StatusCode);
+
+        var getStructRes = await Http.GetAsync($"/api/campus/structures/{structure.Id}");
+        Assert.Equal(HttpStatusCode.OK, getStructRes.StatusCode);
+        var structureAfterDelete = await ReadJsonAsync<StructureDto>(getStructRes);
+        Assert.NotNull(structureAfterDelete);
+        Assert.Null(structureAfterDelete.CategoryId);
+    }
 }

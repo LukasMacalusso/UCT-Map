@@ -205,4 +205,50 @@ public class CategoryControllerTests
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
     }
+
+    [Fact]
+    public async Task Reorder_WhenItemsEmpty_ShouldReturnBadRequest()
+    {
+        var result = await _controller.Reorder(new List<ReorderItemDto>(), CancellationToken.None);
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Reorder_WhenValid_ShouldReturnNoContent()
+    {
+        var cat1 = new Category("C1", "i1", "d1", Guid.NewGuid(), 0);
+        var cat2 = new Category("C2", "i2", "d2", Guid.NewGuid(), 1);
+        _repository.GetAllAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Category> { cat1, cat2 });
+
+        var items = new List<ReorderItemDto>
+        {
+            new(cat1.Id, 5),
+            new(cat2.Id, 10)
+        };
+
+        var result = await _controller.Reorder(items, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Equal(5, cat1.Order);
+        Assert.Equal(10, cat2.Order);
+    }
+
+    [Fact]
+    public async Task Reorder_WhenSomeNotFound_ShouldReturnBadRequest()
+    {
+        var cat1 = new Category("C1", "i1", "d1", Guid.NewGuid(), 0);
+        _repository.GetAllAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Category> { cat1 });
+
+        var items = new List<ReorderItemDto>
+        {
+            new(cat1.Id, 5),
+            new(Guid.NewGuid(), 10)
+        };
+
+        var result = await _controller.Reorder(items, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
 }
