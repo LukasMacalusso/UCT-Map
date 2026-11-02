@@ -14,10 +14,10 @@ class CreateComplaintDto {
   });
 
   Map<String, dynamic> toJson() => {
-        'title': title.trim(),
-        'description': description.trim(),
-        'status': status.value,
-      };
+    'title': title.trim(),
+    'description': description.trim(),
+    'status': status.value,
+  };
 }
 
 /// DTO para crear un nuevo Ticket/Reporte (POST /api/incident/reports).
@@ -53,26 +53,30 @@ class CreateReportDto {
         throw ArgumentError('El título de la queja es obligatorio.');
       }
       if (complaint!.title.trim().length < 3) {
-        throw ArgumentError('El título de la queja debe tener al menos 3 caracteres.');
+        throw ArgumentError(
+          'El título de la queja debe tener al menos 3 caracteres.',
+        );
       }
       if (complaint!.description.trim().isEmpty) {
         throw ArgumentError('La descripción de la queja es obligatoria.');
       }
       if (complaint!.description.trim().length < 5) {
-        throw ArgumentError('La descripción de la queja debe tener al menos 5 caracteres.');
+        throw ArgumentError(
+          'La descripción de la queja debe tener al menos 5 caracteres.',
+        );
       }
     }
   }
 
   Map<String, dynamic> toJson() => {
-        'structureRefId': structureRefId.trim(),
-        'ticketType': ticketType.value,
-        'isActive': isActive,
-        'reportedAt': (reportedAt ?? DateTime.now()).toUtc().toIso8601String(),
-        if (lostObjectId != null && lostObjectId!.trim().isNotEmpty)
-          'lostObjectId': lostObjectId!.trim(),
-        if (complaint != null) 'complaint': complaint!.toJson(),
-      };
+    'structureRefId': structureRefId.trim(),
+    'ticketType': ticketType.value,
+    'isActive': isActive,
+    'reportedAt': (reportedAt ?? DateTime.now()).toUtc().toIso8601String(),
+    if (lostObjectId != null && lostObjectId!.trim().isNotEmpty)
+      'lostObjectId': lostObjectId!.trim(),
+    if (complaint != null) 'complaint': complaint!.toJson(),
+  };
 }
 
 /// DTO de respuesta para la creación de reporte (201 Created).
@@ -146,7 +150,8 @@ class ReportFilterParams {
     if (complaintTitle != null && complaintTitle!.trim().isNotEmpty) {
       params['complaintDetails.title'] = complaintTitle!.trim();
     }
-    if (complaintDescription != null && complaintDescription!.trim().isNotEmpty) {
+    if (complaintDescription != null &&
+        complaintDescription!.trim().isNotEmpty) {
       params['complaintDetails.description'] = complaintDescription!.trim();
     }
     if (complaintStatus != null) {
@@ -196,6 +201,7 @@ class ReportFilterParams {
 class PaginatedReportsResponse {
   final List<Ticket> items;
   final int totalCount;
+  final bool hasTotalCount;
   final int page;
   final int pageSize;
   final int totalPages;
@@ -203,6 +209,7 @@ class PaginatedReportsResponse {
   const PaginatedReportsResponse({
     required this.items,
     required this.totalCount,
+    this.hasTotalCount = true,
     required this.page,
     required this.pageSize,
     required this.totalPages,
@@ -225,6 +232,7 @@ class PaginatedReportsResponse {
 
     return PaginatedReportsResponse(
       items: itemsList,
+      hasTotalCount: json['totalCount'] is num,
       totalCount: (json['totalCount'] as num?)?.toInt() ?? itemsList.length,
       page: (json['page'] as num?)?.toInt() ?? 1,
       pageSize: (json['pageSize'] as num?)?.toInt() ?? 10,
@@ -233,12 +241,12 @@ class PaginatedReportsResponse {
   }
 
   Map<String, dynamic> toJson() => {
-        'items': items.map((e) => e.toJson()).toList(),
-        'totalCount': totalCount,
-        'page': page,
-        'pageSize': pageSize,
-        'totalPages': totalPages,
-      };
+    'items': items.map((e) => e.toJson()).toList(),
+    'totalCount': totalCount,
+    'page': page,
+    'pageSize': pageSize,
+    'totalPages': totalPages,
+  };
 
   @override
   String toString() =>

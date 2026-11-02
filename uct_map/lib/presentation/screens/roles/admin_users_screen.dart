@@ -7,17 +7,31 @@ import '../../../domain/entities/managed_user.dart';
 import '../../../domain/repositories/identity_repository.dart';
 import '../login/session_required_view.dart';
 
-class AdminUsersScreen extends StatefulWidget {
+class AdminUsersScreen extends StatelessWidget {
   const AdminUsersScreen({super.key, this.repository});
   final IdentityRepository? repository;
   @override
-  State<AdminUsersScreen> createState() => _AdminUsersScreenState();
+  Widget build(BuildContext context) => SessionRequiredView(
+    permission: AppPermission.manageUsers,
+    builder: (_) => _AdminUsers(
+      key: ValueKey(ApiClientProvider.session.token),
+      repository: repository,
+    ),
+  );
 }
 
-class _AdminUsersScreenState extends State<AdminUsersScreen> {
+class _AdminUsers extends StatefulWidget {
+  const _AdminUsers({super.key, this.repository});
+  final IdentityRepository? repository;
+  @override
+  State<_AdminUsers> createState() => _AdminUsersScreenState();
+}
+
+class _AdminUsersScreenState extends State<_AdminUsers> {
   late final IdentityRepository _repository =
       widget.repository ?? IdentityRepositoryImpl();
   late Future<List<ManagedUser>> _users;
+  late final _token = ApiClientProvider.session.token;
   bool _busy = false;
   static const _roles = [
     'Student',
@@ -39,11 +53,19 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         !AppPermission.manageUsers.allows(session.currentUser?.role)) {
       throw StateError('Acceso denegado');
     }
-    return _repository.getUsers();
+    final users = await _repository.getUsers();
+    if (session.token != _token ||
+        !session.isAuthenticated ||
+        !AppPermission.manageUsers.allows(session.currentUser?.role)) {
+      throw StateError('La sesión cambió.');
+    }
+    return users;
   }
 
   void _reload() {
-    setState(() => _users = _load());
+    setState(() {
+      _users = _load();
+    });
   }
 
   Future<void> _change(ManagedUser user, {String? role}) async {
@@ -106,98 +128,95 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => SessionRequiredView(
-    permission: AppPermission.manageUsers,
-    builder: (_) => Scaffold(
-      appBar: AppBar(
-        title: const Text('Administración de usuarios'),
-        actions: [
-          IconButton(
-            onPressed: _busy ? null : _reload,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
-      body: FutureBuilder<List<ManagedUser>>(
-        future: _users,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: TextButton(
-                onPressed: _reload,
-                child: const Text('No se pudieron cargar usuarios. Reintentar'),
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('Administración de usuarios'),
+      actions: [
+        IconButton(
+          onPressed: _busy ? null : _reload,
+          icon: const Icon(Icons.refresh),
+        ),
+      ],
+    ),
+    body: FutureBuilder<List<ManagedUser>>(
+      future: _users,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(
+            child: TextButton(
+              onPressed: _reload,
+              child: const Text('No se pudieron cargar usuarios. Reintentar'),
+            ),
+          );
+        }
+        final users = snapshot.data!;
+        if (users.isEmpty) {
+          return const Center(child: Text('No hay usuarios.'));
+        }
+        return ListView.builder(
+          itemCount: users.length,
+          itemBuilder: (context, index) {
+            final user = users[index];
+            final own = user.id == ApiClientProvider.session.currentUser?.id;
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.name,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    Text(user.email),
+                    Text(
+                      '${user.role} · ${user.isSuspended ? 'Suspendido' : 'Activo'}',
+                    ),
+                    if (own)
+                      const Text('Tu cuenta actual')
+                    else
+                      Wrap(
+                        spacing: 12,
+                        children: [
+                          DropdownButton<String>(
+                            value: _roles.contains(user.role)
+                                ? user.role
+                                : null,
+                            hint: const Text('Asignar rol'),
+                            items: _roles
+                                .map(
+                                  (r) => DropdownMenuItem(
+                                    value: r,
+                                    child: Text(r),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: _busy
+                                ? null
+                                : (role) {
+                                    if (role != null && role != user.role) {
+                                      _change(user, role: role);
+                                    }
+                                  },
+                          ),
+                          TextButton(
+                            onPressed: _busy ? null : () => _change(user),
+                            child: Text(
+                              user.isSuspended ? 'Reactivar' : 'Suspender',
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
               ),
             );
-          }
-          final users = snapshot.data!;
-          if (users.isEmpty) {
-            return const Center(child: Text('No hay usuarios.'));
-          }
-          return ListView.builder(
-            itemCount: users.length,
-            itemBuilder: (context, index) {
-              final user = users[index];
-              final own = user.id == ApiClientProvider.session.currentUser?.id;
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user.name,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      Text(user.email),
-                      Text(
-                        '${user.role} · ${user.isSuspended ? 'Suspendido' : 'Activo'}',
-                      ),
-                      if (own)
-                        const Text('Tu cuenta actual')
-                      else
-                        Wrap(
-                          spacing: 12,
-                          children: [
-                            DropdownButton<String>(
-                              value: _roles.contains(user.role)
-                                  ? user.role
-                                  : null,
-                              hint: const Text('Asignar rol'),
-                              items: _roles
-                                  .map(
-                                    (r) => DropdownMenuItem(
-                                      value: r,
-                                      child: Text(r),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: _busy
-                                  ? null
-                                  : (role) {
-                                      if (role != null && role != user.role) {
-                                        _change(user, role: role);
-                                      }
-                                    },
-                            ),
-                            TextButton(
-                              onPressed: _busy ? null : () => _change(user),
-                              child: Text(
-                                user.isSuspended ? 'Reactivar' : 'Suspender',
-                              ),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
+          },
+        );
+      },
     ),
   );
 }

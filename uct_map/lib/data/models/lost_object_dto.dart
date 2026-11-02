@@ -67,12 +67,12 @@ class CreateLostObjectDto {
   /// Serializa a JSON según el contrato del backend:
   /// status como entero (0, 1, 2, 3).
   Map<String, dynamic> toJson() => {
-        'title': title.trim(),
-        'description': description.trim(),
-        'status': status.value,
-        'photoUrl': photoUrl.trim(),
-        'structureId': structureId.trim(),
-      };
+    'title': title.trim(),
+    'description': description.trim(),
+    'status': status.value,
+    'photoUrl': photoUrl.trim(),
+    'structureId': structureId.trim(),
+  };
 }
 
 /// DTO de respuesta para la creación exitosa (201 Created).
@@ -160,12 +160,14 @@ class LostObjectFilterParams {
 class PaginatedLostObjectsResponse {
   final List<LostObject> items;
   final int totalCount;
+  final bool hasTotalCount;
   final int page;
   final int pageSize;
   final int totalPages;
 
   const PaginatedLostObjectsResponse({
     required this.items,
+    this.hasTotalCount = true,
     required this.totalCount,
     required this.page,
     required this.pageSize,
@@ -189,6 +191,7 @@ class PaginatedLostObjectsResponse {
 
     return PaginatedLostObjectsResponse(
       items: itemsList,
+      hasTotalCount: json['totalCount'] is num,
       totalCount: (json['totalCount'] as num?)?.toInt() ?? itemsList.length,
       page: (json['page'] as num?)?.toInt() ?? 1,
       pageSize: (json['pageSize'] as num?)?.toInt() ?? 10,
@@ -197,12 +200,12 @@ class PaginatedLostObjectsResponse {
   }
 
   Map<String, dynamic> toJson() => {
-        'items': items.map((e) => e.toJson()).toList(),
-        'totalCount': totalCount,
-        'page': page,
-        'pageSize': pageSize,
-        'totalPages': totalPages,
-      };
+    'items': items.map((e) => e.toJson()).toList(),
+    'totalCount': totalCount,
+    'page': page,
+    'pageSize': pageSize,
+    'totalPages': totalPages,
+  };
 
   @override
   String toString() =>
