@@ -7,17 +7,11 @@ import '../../../data/models/campus_location_dto.dart';
 import '../../../domain/entities/building.dart';
 import '../../../domain/entities/campus.dart';
 import '../map/widgets/campus_search_sheet.dart';
+import '../map/widgets/campus_result_detail.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({
-    super.key,
-    required this.onExploreMap,
-    this.selectedCampus,
-    this.onResult,
-  });
-  final VoidCallback onExploreMap;
+  const SearchScreen({super.key, this.selectedCampus});
   final ValueNotifier<Campus?>? selectedCampus;
-  final ValueChanged<CampusSearchResult>? onResult;
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
@@ -186,13 +180,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             onProfessors: () =>
                 Navigator.pushNamed(context, AppRoutes.professors),
-            onSelected: (result) {
-              if (widget.onResult != null) {
-                widget.onResult!(result);
-              } else {
-                widget.onExploreMap();
-              }
-            },
+            onSelected: (result) => showCampusResultDetail(context, result),
           ),
         ),
       ],

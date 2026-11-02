@@ -15,6 +15,7 @@ class CampusSearchResult {
   const CampusSearchResult({
     this.building,
     this.roomCode,
+    this.roomId,
     this.roomFloor,
     this.categoryId,
     this.structure,
@@ -22,6 +23,7 @@ class CampusSearchResult {
 
   final Building? building;
   final String? roomCode;
+  final String? roomId;
   final int? roomFloor;
   final String? categoryId;
   final StructureLocationDto? structure;
@@ -345,6 +347,7 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
             CampusSearchResult(
               building: building,
               roomCode: roomCode,
+              roomId: (room['id'] ?? room['Id'])?.toString(),
               roomFloor: (room['floor'] as num?)?.toInt(),
               categoryId: (room['categoryId'] ?? '').toString(),
             ),
@@ -821,6 +824,7 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
                 CampusSearchResult(
                   building: building,
                   roomCode: (item['name'] ?? '').toString(),
+                  roomId: item['id']?.toString(),
                   roomFloor: (item['floor'] as num?)?.toInt(),
                   categoryId: (item['categoryId'] ?? '').toString(),
                 ),

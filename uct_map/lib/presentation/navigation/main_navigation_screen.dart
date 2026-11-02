@@ -1,3 +1,5 @@
+import '../../domain/entities/user_role.dart';
+
 import 'package:flutter/material.dart';
 
 import '../widgets/app_navigation_bar.dart';
@@ -20,7 +22,6 @@ import '../../core/network/authenticated_client.dart';
 import '../widgets/uct_logo.dart';
 import '../widgets/custom_drawer.dart';
 import '../../domain/entities/campus.dart';
-import '../screens/map/widgets/campus_search_sheet.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   final int initialIndex;
@@ -79,12 +80,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             _lastAuthenticated == false &&
             authenticated &&
             _currentIndex == 4 &&
-            (AppPermission.bookConsultation.allows(
-                  _session.currentUser?.role,
-                ) ||
-                AppPermission.teacherSchedule.allows(
-                  _session.currentUser?.role,
-                ))) {
+            AppPermission.common.allows(_session.currentUser?.role)) {
           _currentIndex = 5;
           _homeVisited = true;
         }
@@ -115,13 +111,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
-  void _showSearchResult(CampusSearchResult result) {
-    _onTabTapped(0);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _mapScreenKey.currentState?.showSearchResult(result);
-    });
-  }
-
   @override
   void dispose() {
     // El cliente y la sesión son compartidos: no se cierran aquí.
@@ -139,11 +128,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     final List<Widget> screens = [
       MapScreen(key: _mapScreenKey, selectedCampus: _selectedCampus),
-      SearchScreen(
-        onExploreMap: () => _onTabTapped(0),
-        selectedCampus: _selectedCampus,
-        onResult: _showSearchResult,
-      ),
+      SearchScreen(selectedCampus: _selectedCampus),
       _protected(
         LostObjectsScreen(
           repository: LostObjectsRepositoryImpl(),
@@ -208,11 +193,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           },
         ),
         title: Text(
-          _currentIndex == 5 &&
-                  AppPermission.teacherSchedule.allows(
-                    _session.currentUser?.role,
-                  )
-              ? 'Inicio docente'
+          _currentIndex == 5
+              ? switch (_session.currentUser?.role) {
+                  UserRole.profesor => 'Inicio docente',
+                  UserRole.administrador => 'Inicio administración',
+                  UserRole.funcionarioObjetos => 'Inicio objetos',
+                  UserRole.funcionarioQuejas => 'Inicio incidencias',
+                  _ => 'Inicio',
+                }
               : _titles[_currentIndex],
           style: const TextStyle(
             fontSize: 18,

@@ -5,9 +5,10 @@ import '../../../../domain/entities/building.dart';
 
 void showBuildingDetailSheet(
   BuildContext context,
-  int number,
+  int? number,
   Building building, {
-  required VoidCallback onDirections,
+  VoidCallback? onDirections,
+  void Function(Map<String, dynamic>? room)? onShowMap,
 }) {
   Future<List<dynamic>> loadRooms() => ApiClientProvider.apiClient
       .getJson<List<dynamic>>('/api/campus/buildings/${building.id}/rooms');
@@ -95,7 +96,9 @@ void showBuildingDetailSheet(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Edificio $number',
+                                      number == null
+                                          ? 'Edificio'
+                                          : 'Edificio $number',
                                       style: const TextStyle(
                                         fontSize: 22,
                                         fontWeight: FontWeight.w800,
@@ -289,9 +292,9 @@ void showBuildingDetailSheet(
                                     style: TextStyle(color: Colors.red),
                                   ),
                                   TextButton(
-                                    onPressed: () => setSheetState(
-                                      () => roomsFuture = loadRooms(),
-                                    ),
+                                    onPressed: () => setSheetState(() {
+                                      roomsFuture = loadRooms();
+                                    }),
                                     child: const Text('Reintentar'),
                                   ),
                                 ],
@@ -314,58 +317,66 @@ void showBuildingDetailSheet(
                                   color: surface,
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                child: Theme(
-                                  data: Theme.of(
-                                    context,
-                                  ).copyWith(dividerColor: Colors.transparent),
-                                  child: ExpansionTile(
-                                    initiallyExpanded:
-                                        floor == floorNumbers.first,
-                                    leading: const Icon(
-                                      Icons.layers_outlined,
-                                      color: blue,
+                                child: Material(
+                                  color: surface,
+                                  borderRadius: BorderRadius.circular(14),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: Theme(
+                                    data: Theme.of(context).copyWith(
+                                      dividerColor: Colors.transparent,
                                     ),
-                                    title: Text(
-                                      'Piso $floor',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
+                                    child: ExpansionTile(
+                                      initiallyExpanded:
+                                          floor == floorNumbers.first,
+                                      leading: const Icon(
+                                        Icons.layers_outlined,
                                         color: blue,
                                       ),
-                                    ),
-                                    subtitle: Text(
-                                      '${floorRooms.length} salas',
-                                    ),
-                                    iconColor: blue,
-                                    collapsedIconColor: blue,
-                                    children: floorRooms.map((room) {
-                                      return ListTile(
-                                        onTap: () => showRoomDetail(
-                                          sheetContext,
-                                          building,
-                                          room,
-                                          onDirections,
-                                          closeBuildingSheet: true,
-                                        ),
-                                        leading: const Icon(
-                                          Icons.meeting_room_outlined,
+                                      title: Text(
+                                        'Piso $floor',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
                                           color: blue,
                                         ),
-                                        title: Text(
-                                          '${room['name']}',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
+                                      ),
+                                      subtitle: Text(
+                                        '${floorRooms.length} salas',
+                                      ),
+                                      iconColor: blue,
+                                      collapsedIconColor: blue,
+                                      children: floorRooms.map((room) {
+                                        return ListTile(
+                                          onTap: () => showRoomDetail(
+                                            sheetContext,
+                                            building,
+                                            room,
+                                            onDirections,
+                                            closeBuildingSheet: true,
+                                            onShowMap: onShowMap == null
+                                                ? null
+                                                : () => onShowMap(room),
                                           ),
-                                        ),
-                                        subtitle: Text(
-                                          'Sala ${room['number'] ?? ''}',
-                                        ),
-                                        trailing: const Icon(
-                                          Icons.chevron_right,
-                                          color: yellow,
-                                        ),
-                                      );
-                                    }).toList(),
+                                          leading: const Icon(
+                                            Icons.meeting_room_outlined,
+                                            color: blue,
+                                          ),
+                                          title: Text(
+                                            '${room['name']}',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          subtitle: Text(
+                                            'Sala ${room['number'] ?? ''}',
+                                          ),
+                                          trailing: const Icon(
+                                            Icons.chevron_right,
+                                            color: yellow,
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
                                   ),
                                 ),
                               );
@@ -386,24 +397,35 @@ void showBuildingDetailSheet(
                         ],
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: blue,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                    if (onDirections != null || onShowMap != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: blue,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            onPressed: () {
+                              if (onShowMap != null) {
+                                onShowMap(null);
+                              } else {
+                                Navigator.pop(sheetContext);
+                                onDirections?.call();
+                              }
+                            },
+                            icon: Icon(
+                              onShowMap != null
+                                  ? Icons.map_outlined
+                                  : Icons.directions_walk,
+                            ),
+                            label: Text(
+                              onShowMap != null ? 'Ver en mapa' : 'CÓMO LLEGAR',
+                            ),
                           ),
-                          onPressed: () {
-                            Navigator.pop(sheetContext);
-                            onDirections();
-                          },
-                          icon: const Icon(Icons.directions_walk),
-                          label: const Text('CÓMO LLEGAR'),
                         ),
                       ),
-                    ),
                   ],
                 );
               },
@@ -419,7 +441,8 @@ void showRoomDetail(
   BuildContext buildingContext,
   Building building,
   Map<String, dynamic> room,
-  VoidCallback onDirections, {
+  VoidCallback? onDirections, {
+  VoidCallback? onShowMap,
   bool closeBuildingSheet = false,
 }) {
   const blue = Color(0xFF003865);
@@ -471,23 +494,34 @@ void showRoomDetail(
             ),
             const SizedBox(height: 12),
             const Text(
-              'La ruta termina en el edificio donde se encuentra esta sala.',
+              'La ubicación de esta sala corresponde a su edificio.',
               style: TextStyle(color: Colors.black54),
             ),
             const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(backgroundColor: blue),
-                onPressed: () {
-                  Navigator.pop(roomContext);
-                  if (closeBuildingSheet) Navigator.pop(buildingContext);
-                  onDirections();
-                },
-                icon: const Icon(Icons.directions_walk),
-                label: const Text('Cómo llegar'),
+            if (onDirections != null || onShowMap != null)
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(backgroundColor: blue),
+                  onPressed: () {
+                    if (onShowMap != null) {
+                      onShowMap();
+                    } else {
+                      Navigator.pop(roomContext);
+                      if (closeBuildingSheet) Navigator.pop(buildingContext);
+                      onDirections?.call();
+                    }
+                  },
+                  icon: Icon(
+                    onShowMap != null
+                        ? Icons.map_outlined
+                        : Icons.directions_walk,
+                  ),
+                  label: Text(
+                    onShowMap != null ? 'Ver en mapa' : 'Cómo llegar',
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),

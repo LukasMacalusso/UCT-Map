@@ -12,6 +12,7 @@ import '../../../domain/entities/building.dart';
 import '../../../domain/entities/campus.dart';
 import 'widgets/building_detail_sheet.dart';
 import 'widgets/campus_search_sheet.dart';
+import 'widgets/campus_result_detail.dart';
 import 'widgets/campus_map_view.dart';
 
 /// Coordina la selección de campus, las consultas y los paneles.
@@ -270,40 +271,16 @@ class MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _openCampusSearch() async {
-    final result = await showModalBottomSheet<CampusSearchResult>(
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) =>
-          CampusSearchSheet(buildings: _buildings, structures: _structures),
+      builder: (_) => CampusSearchSheet(
+        buildings: _buildings,
+        structures: _structures,
+        onSelected: (result) => showCampusResultDetail(context, result),
+      ),
     );
-    if (!mounted || result == null) return;
-    showSearchResult(result);
-  }
-
-  void showSearchResult(CampusSearchResult result) {
-    if (result.structure != null) {
-      _mapKey.currentState?.focusOnStructure(result.structure!);
-      _showStructureDetail(result.structure!);
-      return;
-    }
-    final building = result.building;
-    if (building == null) return;
-    _mapKey.currentState?.focusOnBuilding(building);
-    if (result.roomCode != null) {
-      showRoomDetail(context, building, {
-        'name': result.roomCode,
-        if (result.roomFloor != null) 'floor': result.roomFloor,
-      }, () => _routeFromLocation(building));
-    } else {
-      final index = _buildings.indexWhere((item) => item.id == building.id);
-      showBuildingDetailSheet(
-        context,
-        index < 0 ? 1 : index + 1,
-        building,
-        onDirections: () => _routeFromLocation(building),
-      );
-    }
   }
 
   Future<List<Campus>> _fetchCampuses() async {
