@@ -71,8 +71,9 @@ public class CategoryGroupController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var success = await _handler.DeleteAsync(id, cancellationToken);
-        if (!success) return NotFound(new { message = $"CategoryGroup with ID '{id}' was not found." });
+        var (success, error, notFound) = await _handler.DeleteAsync(id, cancellationToken);
+        if (notFound) return NotFound(new { message = $"CategoryGroup with ID '{id}' was not found." });
+        if (!success) return StatusCode(StatusCodes.Status409Conflict, new { message = error });
 
         return NoContent();
     }

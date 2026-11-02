@@ -141,4 +141,74 @@ public class CategoryEndpointsTests : ApiTestBase
         Assert.NotNull(structureAfterDelete);
         Assert.Null(structureAfterDelete.CategoryId);
     }
+
+    [DockerFact]
+    public async Task Delete_WhenCategoryHasRooms_DeletesCategoryAndSetsRoomCategoryToNull()
+    {
+        var campusRes = await Http.PostAsync("/api/campus/campuses", JsonBody(new CreateCampusDto("Campus For Null Room FK", "Dir", 0, 0)));
+        var campus = await ReadJsonAsync<CampusDto>(campusRes);
+
+        var bldRes = await Http.PostAsync("/api/campus/buildings", JsonBody(new CreateBuildingDto(campus!.Id, "Edificio For Null Room", 3, 0, 0)));
+        var bld = await ReadJsonAsync<BuildingDto>(bldRes);
+
+        var groupId = await CreateGroupAsync();
+        var catRes = await Http.PostAsync(Endpoint, JsonBody(new CreateCategoryDto(groupId, "Cat Con Rooms", "icon", "desc")));
+        var cat = await ReadJsonAsync<CategoryDto>(catRes);
+
+        var roomRes = await Http.PostAsync("/api/campus/rooms", JsonBody(new CreateRoomDto(bld!.Id, cat!.Id, "Sala En Categoria", 1)));
+        var room = await ReadJsonAsync<RoomDto>(roomRes);
+        Assert.NotNull(room);
+        Assert.Equal(cat.Id, room.CategoryId);
+
+        var deleteRes = await Http.DeleteAsync($"{Endpoint}/{cat.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, deleteRes.StatusCode);
+
+        var getRoomRes = await Http.GetAsync($"/api/campus/rooms/{room.Id}");
+        Assert.Equal(HttpStatusCode.OK, getRoomRes.StatusCode);
+        var roomAfterDelete = await ReadJsonAsync<RoomDto>(getRoomRes);
+        Assert.NotNull(roomAfterDelete);
+        Assert.Null(roomAfterDelete.CategoryId);
+    }
+
+    [DockerFact]
+    public async Task Delete_WhenCategoryGroupHasCategories_CascadesCategoryDeletionAndSetsRoomCategoryToNull()
+    {
+        var campusRes = await Http.PostAsync("/api/campus/campuses", JsonBody(new CreateCampusDto("Campus For Group Cascade", "Dir", 0, 0)));
+        var campus = await ReadJsonAsync<CampusDto>(campusRes);
+
+        var bldRes = await Http.PostAsync("/api/campus/buildings", JsonBody(new CreateBuildingDto(campus!.Id, "Edificio For Group Cascade", 3, 0, 0)));
+        var bld = await ReadJsonAsync<BuildingDto>(bldRes);
+
+        var groupRes = await Http.PostAsync(GroupEndpoint, JsonBody(new CreateCategoryGroupDto("Grupo Para Cascada")));
+        var group = await ReadJsonAsync<CategoryGroupDto>(groupRes);
+        Assert.NotNull(group);
+
+        var catRes = await Http.PostAsync(Endpoint, JsonBody(new CreateCategoryDto(group.Id, "Cat Dentro De Grupo", "icon", "desc")));
+        var cat = await ReadJsonAsync<CategoryDto>(catRes);
+        Assert.NotNull(cat);
+        Assert.Equal(group.Id, cat.CategoryGroupId);
+
+        var roomRes = await Http.PostAsync("/api/campus/rooms", JsonBody(new CreateRoomDto(bld!.Id, cat.Id, "Sala De Grupo", 1)));
+        var room = await ReadJsonAsync<RoomDto>(roomRes);
+        Assert.NotNull(room);
+        Assert.Equal(cat.Id, room.CategoryId);
+
+        var deleteGroupRes = await Http.DeleteAsync($"{GroupEndpoint}/{group.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, deleteGroupRes.StatusCode);
+
+        // Group is deleted
+        var getGroupRes = await Http.GetAsync($"{GroupEndpoint}/{group.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, getGroupRes.StatusCode);
+
+        // Category is cascade-deleted
+        var getCatRes = await Http.GetAsync($"{Endpoint}/{cat.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, getCatRes.StatusCode);
+
+        // Room has CategoryId set to null via SetNull cascade
+        var getRoomRes = await Http.GetAsync($"/api/campus/rooms/{room.Id}");
+        Assert.Equal(HttpStatusCode.OK, getRoomRes.StatusCode);
+        var roomAfterCascade = await ReadJsonAsync<RoomDto>(getRoomRes);
+        Assert.NotNull(roomAfterCascade);
+        Assert.Null(roomAfterCascade.CategoryId);
+    }
 }

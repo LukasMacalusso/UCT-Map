@@ -14,5 +14,8 @@ public class RoomConfiguration : IEntityTypeConfiguration<Room>
 
         builder.Property(r => r.Floor)
                .IsRequired();
+
+        builder.Property(r => r.CategoryId)
+               .IsRequired(false);
     }
 }

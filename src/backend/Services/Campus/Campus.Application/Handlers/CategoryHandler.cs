@@ -58,14 +58,21 @@ public class CategoryHandler
         return (true, null);
     }
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<(bool success, string? error, bool notFound)> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var category = await _repository.GetByIdAsync(id, cancellationToken);
-        if (category == null) return false;
+        if (category == null) return (false, null, true);
 
-        _repository.Delete(category);
-        await _repository.SaveChangesAsync(cancellationToken);
-        return true;
+        try
+        {
+            _repository.Delete(category);
+            await _repository.SaveChangesAsync(cancellationToken);
+            return (true, null, false);
+        }
+        catch (Exception ex) when (ex.GetType().Name == "DbUpdateException")
+        {
+            return (false, "Cannot delete category due to existing database constraints.", false);
+        }
     }
 
     public async Task<bool> ReorderAsync(IEnumerable<ReorderItemDto> items, CancellationToken cancellationToken)
