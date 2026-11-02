@@ -27,6 +27,7 @@ The token includes the user's role in the explicit `role` claim. For example:
 
 1. [Identity](#1-identity)
 2. [Health](#2-health)
+3. [Testing](#3-testing)
 
 ---
 
@@ -244,3 +245,21 @@ database connection.
 
 - **`503 Service Unavailable`**: The database is unavailable or the connection
   check fails.
+
+---
+
+## 3. Testing
+
+Run from `src/backend/Services/Identity`:
+
+```bash
+dotnet test Identity.slnx --collect:"XPlat Code Coverage"
+```
+
+- `Identity.UnitTests`: handlers, controllers, domain entities, role seeding,
+  dependency injection and Identity services with an in-memory database.
+- `Identity.IntegrationTests`: HTTP tests through `WebApplicationFactory`
+  (`IdentityApiFactory`) using an in-memory database and a test JWT
+  configuration. They cover `200`, `201`, `204`, `400`, `401`, `403`, `404`
+  and `409` responses.
+- `coverage.runsettings` excludes generated EF Core migrations from coverage.
