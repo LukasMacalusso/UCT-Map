@@ -31,6 +31,10 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _loading = true;
   int _request = 0;
   int _campusRequest = 0;
+  String? _dataCampusId;
+  Campus? _localSelectedCampus;
+  Campus? get _selectedCampus =>
+      widget.selectedCampus?.value ?? _localSelectedCampus;
   @override
   void initState() {
     super.initState();
@@ -60,16 +64,14 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {
       _loading = true;
       _error = null;
-      _buildings = [];
-      _structures = [];
     });
     try {
       final campuses = await _source.getCampuses();
       if (!mounted || request != _campusRequest) return;
       setState(() => _campuses = campuses);
       final selected =
-          widget.selectedCampus?.value ??
-          (campuses.isEmpty ? null : campuses.first);
+          campuses.where((c) => c.id == _selectedCampus?.id).firstOrNull ??
+          campuses.firstOrNull;
       if (selected == null) {
         setState(() {
           _loading = false;
@@ -77,9 +79,10 @@ class _SearchScreenState extends State<SearchScreen> {
         });
       } else {
         if (widget.selectedCampus != null &&
-            widget.selectedCampus!.value == null) {
+            widget.selectedCampus!.value?.id != selected.id) {
           widget.selectedCampus!.value = selected;
         } else {
+          _localSelectedCampus = selected;
           _load(selected);
         }
       }
@@ -103,8 +106,11 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {
       _loading = true;
       _error = null;
-      _buildings = [];
-      _structures = [];
+      if (_dataCampusId != campus.id) {
+        _buildings = [];
+        _structures = [];
+      }
+      _dataCampusId = campus.id;
     });
     var failed = false;
     final results = await Future.wait([
@@ -131,7 +137,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selected = widget.selectedCampus?.value;
+    final selected = _selectedCampus;
     return Column(
       children: [
         if (_loading) const LinearProgressIndicator(),
@@ -151,23 +157,29 @@ class _SearchScreenState extends State<SearchScreen> {
             buildings: _buildings,
             structures: _structures,
             embedded: true,
-            campusSelector: DropdownButton<Campus>(
-              isExpanded: true,
-              hint: const Text('Selecciona un campus'),
-              value: _campuses.where((c) => c.id == selected?.id).firstOrNull,
-              items: _campuses
-                  .map(
-                    (c) => DropdownMenuItem(
-                      value: c,
-                      child: Text(c.name, overflow: TextOverflow.ellipsis),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (campus) {
-                if (campus == null) return;
+            campusSelector: PopupMenuButton<Campus>(
+              tooltip: selected == null
+                  ? 'Seleccionar campus'
+                  : 'Cambiar campus: ${selected.name}',
+              icon: const Icon(
+                Icons.location_city_outlined,
+                color: Color(0xFF003865),
+              ),
+              enabled: _campuses.isNotEmpty,
+              initialValue: selected,
+              itemBuilder: (_) => [
+                for (final campus in _campuses)
+                  CheckedPopupMenuItem(
+                    value: campus,
+                    checked: campus.id == selected?.id,
+                    child: Text(campus.name),
+                  ),
+              ],
+              onSelected: (campus) {
                 if (widget.selectedCampus != null) {
                   widget.selectedCampus!.value = campus;
                 } else {
+                  setState(() => _localSelectedCampus = campus);
                   _load(campus);
                 }
               },
