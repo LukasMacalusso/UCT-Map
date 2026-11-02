@@ -8,11 +8,12 @@ import type { CreateReportRequestDto } from "../dtos/incident/reports/CreateRepo
 import type { TicketStatus } from "../constants/ticketStatus";
 import type { ComplaintStatus } from "../constants/complaintStatus";
 
-export const useReports = (params: ReportSearchParams = {}) => {
+export const useReports = (params: ReportSearchParams = {}, enabled = true) => {
   return useQuery<ReportPageDto, Error>({
     queryKey: queryKeys.reports.list(params),
     queryFn: () => incidentService.searchReports(params),
     placeholderData: keepPreviousData,
+    enabled,
   });
 };
 

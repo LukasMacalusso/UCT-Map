@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Select } from '../components/ui/Select';
 import { SearchInput } from '../components/ui/SearchInput';
 import { Button } from '../components/ui/Button';
@@ -6,18 +6,44 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Pagination } from '../components/ui/Pagination';
 import { ModalOverlay } from '../components/layout/ModalOverlay';
-import { UserProfilePanel } from '../modules/global/UserProfilePanel';
+import {
+  UserProfilePanel,
+  type UserProfileMeetingItem,
+} from '../modules/global/UserProfilePanel';
 import { UserManagementCard } from '../modules/admin/UserManagementCard';
 import { useToggleUserSuspension, useUpdateUserRole, useUsers } from '../hooks/useUsers';
+import { useReports } from '../hooks/useReports';
+import { useLostObjectsByIds } from '../hooks/useLostObjects';
+import { useAllMeetings } from '../hooks/useSchedule';
+import { useStructures } from '../hooks/useCampus';
 import { useAuthState } from '../states/authState';
 import { Role } from '../constants/role';
+import {
+  LOST_OBJECT_STATUS_COLORS,
+  LOST_OBJECT_STATUS_LABELS,
+} from '../constants/lostObjectsStatus';
+import {
+  TICKET_STATUS_COLORS,
+  TICKET_STATUS_LABELS,
+} from '../constants/ticketStatus';
+import { formatRelativeTime } from '../utils/date';
+import {
+  formatClock,
+  formatLongDate,
+  MEETING_STATUS_COLORS,
+  MEETING_STATUS_LABELS,
+  parseScheduleDate,
+} from '../utils/schedule';
 import type { UserIdentity } from '../interfaces/identities/UserIdentity';
+import type { ObjectReportCardProps } from '../modules/objects/ObjectReportCard';
+import type { IncidentCardProps } from '../modules/incidents/IncidentCard';
 
 import SearchIcon from '../assets/svg/icons/icon_search.svg?react';
 import CategoryIcon from '../assets/svg/icons/icon_category_cube.svg?react';
 import RefreshIcon from '../assets/svg/icons/icon_repeat.svg?react';
 
 const PAGE_SIZE = 20;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const labelOf = (user: UserIdentity) => `${user.name} (${user.email})`;
 
@@ -101,6 +127,111 @@ export const AdministrationView = () => {
     setProfileUser(users.find((u) => u.id === userId) ?? null);
   };
 
+  const shouldFetchProfileData = Boolean(profileUser && UUID_REGEX.test(profileUser.id));
+
+  const { data: structures = [] } = useStructures(undefined, shouldFetchProfileData);
+  const { data: reportsPage } = useReports(
+    {
+      userRefId: profileUser?.id,
+      sortBy: 'ReportedAt',
+      descending: true,
+      page: 1,
+      pageSize: 10,
+    },
+    shouldFetchProfileData,
+  );
+
+  const profileLostObjectIds = useMemo(
+    () =>
+      (reportsPage?.items ?? [])
+        .filter((report) => report.userRefId === profileUser?.id && Boolean(report.lostObjectId))
+        .map((report) => report.lostObjectId!),
+    [reportsPage?.items, profileUser?.id],
+  );
+
+  const { data: profileLostObjects = [] } = useLostObjectsByIds(
+    profileLostObjectIds,
+    shouldFetchProfileData,
+  );
+  const { data: allMeetings = [] } = useAllMeetings(shouldFetchProfileData);
+
+  const structureNames = useMemo(
+    () => new Map(structures.map((structure) => [structure.id, structure.name])),
+    [structures],
+  );
+
+  const usersById = useMemo(
+    () => new Map(users.map((item) => [item.id, item])),
+    [users],
+  );
+
+  const profileIncidents = useMemo<IncidentCardProps[]>(() => {
+    if (!profileUser || !reportsPage?.items) return [];
+    return reportsPage.items
+      .filter((report) => report.userRefId === profileUser.id && report.complaintDetails != null)
+      .map((report) => ({
+        location:
+          (report.structureRefId && structureNames.get(report.structureRefId)) ||
+          'Sin ubicación',
+        status: TICKET_STATUS_LABELS[report.ticketType] ?? 'SIN ESTADO',
+        statusColor: TICKET_STATUS_COLORS[report.ticketType] ?? 'gray',
+        title: report.complaintDetails?.title ?? 'Reporte sin título',
+        reporterName: profileUser.name,
+        reportTime: formatRelativeTime(report.reportedAt),
+        reporterAvatar: profileUser.avatar,
+        description: report.complaintDetails?.description ?? 'Sin descripción',
+      }));
+  }, [profileUser, reportsPage, structureNames]);
+
+  const profileObjects = useMemo<ObjectReportCardProps[]>(() => {
+    if (!profileUser) return [];
+    return profileLostObjects.map((lostObject) => ({
+      title: lostObject.title,
+      status: LOST_OBJECT_STATUS_LABELS[lostObject.status],
+      statusColor: LOST_OBJECT_STATUS_COLORS[lostObject.status],
+      photoUrl: lostObject.photoUrl,
+      building: structureNames.get(lostObject.structureId) ?? 'Sin ubicación',
+      actions: [
+        {
+          title: `Reportado por ${profileUser.name}`,
+          subtitle: formatRelativeTime(lostObject.reportedAt),
+          avatarSrc: profileUser.avatar,
+        },
+      ],
+    }));
+  }, [profileUser, profileLostObjects, structureNames]);
+
+  const profileMeetings = useMemo<UserProfileMeetingItem[]>(() => {
+    if (!profileUser) return [];
+    return allMeetings
+      .filter((meeting) => meeting.studentRefId === profileUser.id)
+      .sort(
+        (a, b) =>
+          parseScheduleDate(b.scheduledAt).getTime() -
+          parseScheduleDate(a.scheduledAt).getTime(),
+      )
+      .map((meeting) => {
+        const start = parseScheduleDate(meeting.scheduledAt);
+        const end = new Date(start.getTime() + meeting.durationMinutes * 60000);
+        const teacher = usersById.get(meeting.teacherRefId);
+        const location =
+          (meeting.structureRefId && structureNames.get(meeting.structureRefId)) ||
+          'Oficina docente';
+
+        return {
+          id: meeting.id,
+          teacherName: teacher?.name ?? 'Profesor',
+          teacherEmail: teacher?.email,
+          location,
+          dateLabel: formatLongDate(start),
+          timeLabel: `${formatClock(start)} - ${formatClock(end)} (${meeting.durationMinutes} min)`,
+          statusLabel:
+            MEETING_STATUS_LABELS[meeting.status] ?? meeting.status.toUpperCase(),
+          statusColor: MEETING_STATUS_COLORS[meeting.status] ?? 'blue',
+        };
+      });
+  }, [profileUser, allMeetings, usersById, structureNames]);
+
   return (
     <div className="p-6 min-h-screen bg-page-dark flex flex-col gap-6">
 
@@ -111,7 +242,7 @@ export const AdministrationView = () => {
           {/* User Search */}
           <div className="w-80">
             <SearchInput
-              label="Buscar Usuario"
+              label="Búsqueda"
               placeholder="Buscar por nombre o correo..."
               value={searchQuery}
               onChange={handleSearchChange}
@@ -123,7 +254,7 @@ export const AdministrationView = () => {
           {/* Role Filter */}
           <div className="w-72">
             <Select
-              label="Filtrar"
+              label="Rol"
               options={roleOptions}
               value={selectedRole}
               onChange={handleRoleFilterChange}
@@ -134,13 +265,13 @@ export const AdministrationView = () => {
           <Button
             variant="solid"
             color="blue"
-            size="lg"
-            className="!w-auto flex items-center gap-2"
+            size="md"
+            className="font-bold tracking-wide shadow-md hover:scale-105 transition-transform whitespace-nowrap !w-auto px-6 h-[50px] flex items-center justify-center gap-2"
             onClick={handleRefresh}
             disabled={isRefreshing || isLoading}
           >
-            <RefreshIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Actualizar
+            <RefreshIcon className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            ACTUALIZAR
           </Button>
 
         </div>
@@ -198,6 +329,9 @@ export const AdministrationView = () => {
             role={profileUser.role}
             photoUrl={profileUser.avatar}
             isOwnProfile={profileUser.id === currentUserId}
+            objectReports={profileObjects}
+            incidentReports={profileIncidents}
+            requestedMeetings={profileMeetings}
             onClose={() => setProfileUser(null)}
           />
         )}
