@@ -86,7 +86,9 @@ void main() {
       expect(find.text('Buscar'), findsOneWidget);
       expect(find.text('Objetos'), findsOneWidget);
       expect(find.text('Reportes'), findsOneWidget);
-      expect(find.text('Perfil'), findsOneWidget);
+      expect(find.text('Inicio'), findsOneWidget);
+      expect(find.text('Perfil'), findsNothing);
+      expect(find.byTooltip('Ver perfil'), findsOneWidget);
 
       // Navegar a Buscar
       await tester.tap(find.text('Buscar'));
@@ -106,7 +108,7 @@ void main() {
       expect(find.byType(SessionRequiredView), findsOneWidget);
 
       // Perfil invitado conserva la protección y permite abrir el login.
-      await tester.tap(find.text('Perfil'));
+      await tester.tap(find.byTooltip('Ver perfil'));
       await tester.pumpAndSettle();
       expect(find.text('Mi Perfil'), findsOneWidget);
       expect(find.byType(ProfileScreen), findsNothing);

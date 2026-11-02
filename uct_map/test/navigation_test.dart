@@ -56,8 +56,7 @@ void main() {
       final homeRoute = AppRoutes.onGenerateRoute(
         const RouteSettings(name: AppRoutes.home),
       ) as MaterialPageRoute;
-      expect(homeRoute.builder(testContext),
-          isA<HomeScreen>());
+      expect((homeRoute.builder(testContext) as MainNavigationScreen).initialIndex, 5);
 
       // 4. Ruta /professors: exige sesión
       final profRoute = AppRoutes.onGenerateRoute(
@@ -185,21 +184,21 @@ void main() {
         ),
       ));
 
-      // Tocar 'Ver Mapa'
-      await tester.ensureVisible(find.text('Ver Mapa'));
-      await tester.tap(find.text('Ver Mapa'));
+      // Tocar 'Mapa'
+      await tester.ensureVisible(find.text('Mapa'));
+      await tester.tap(find.text('Mapa'));
       await tester.pumpAndSettle();
       expect(navigatedTab, 0);
 
-      // Tocar 'Buscar Salas'
-      await tester.ensureVisible(find.text('Buscar Salas'));
-      await tester.tap(find.text('Buscar Salas'));
+      // Tocar 'Buscar'
+      await tester.ensureVisible(find.text('Buscar'));
+      await tester.tap(find.text('Buscar'));
       await tester.pumpAndSettle();
       expect(navigatedTab, 1);
 
       // Tocar 'Objetos Perdidos'
-      await tester.ensureVisible(find.text('Objetos Perdidos'));
-      await tester.tap(find.text('Objetos Perdidos'));
+      await tester.ensureVisible(find.text('Objetos'));
+      await tester.tap(find.text('Objetos'));
       await tester.pumpAndSettle();
       expect(navigatedTab, 2);
 
@@ -210,8 +209,8 @@ void main() {
       expect(navigatedTab, 3);
 
       // Tocar 'Mi Perfil'
-      await tester.ensureVisible(find.text('Mi Perfil'));
-      await tester.tap(find.text('Mi Perfil'));
+      await tester.ensureVisible(find.byTooltip('Mi perfil'));
+      await tester.tap(find.byTooltip('Mi perfil'));
       await tester.pumpAndSettle();
       expect(navigatedTab, 4);
     });

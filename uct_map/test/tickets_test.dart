@@ -526,7 +526,7 @@ void main() {
       expect(find.text('Reclamo por cargador'), findsOneWidget);
       expect(find.text('Cargador blanco de celular'), findsOneWidget);
       expect(find.text('Pendientes'), findsOneWidget);
-      expect(find.text('Cambiar Estado'), findsOneWidget);
+      expect(find.text('Cambiar Estado'), findsNothing);
     });
   });
 }

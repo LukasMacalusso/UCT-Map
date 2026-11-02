@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../core/navigation/app_routes.dart';
+import '../widgets/app_navigation_bar.dart';
+import '../screens/home/home_screen.dart';
+
 import '../../domain/entities/app_permission.dart';
 
 import '../screens/map/map_screen.dart';
@@ -39,6 +41,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   bool? _lastAuthenticated;
   bool _didReadInitialArgs = false;
   bool _restored = false;
+  bool _homeVisited = false;
   late final AuthenticatedClient _apiClient;
 
   final List<String> _titles = const [
@@ -47,12 +50,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     'Objetos Perdidos',
     'Reportes de Incidencias',
     'Mi Perfil',
+    'Inicio',
   ];
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _homeVisited = _currentIndex == 5;
     _session = ApiClientProvider.session;
     ApiClientProvider.initialize(_session);
     _apiClient = ApiClientProvider.defaultClient;
@@ -74,18 +79,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             _lastAuthenticated == false &&
             authenticated &&
             _currentIndex == 4 &&
-            AppPermission.bookConsultation.allows(_session.currentUser?.role)) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted &&
-                _session.isAuthenticated &&
-                ModalRoute.of(context)?.isCurrent == true) {
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                AppRoutes.home,
-                (_) => false,
-              );
-            }
-          });
+            (AppPermission.bookConsultation.allows(
+                  _session.currentUser?.role,
+                ) ||
+                AppPermission.teacherSchedule.allows(
+                  _session.currentUser?.role,
+                ))) {
+          _currentIndex = 5;
+          _homeVisited = true;
         }
         if (_lastAuthenticated != authenticated) {
           _lastAuthenticated = authenticated;
@@ -102,6 +103,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is int && args >= 0 && args < _titles.length) {
         _currentIndex = args;
+        _homeVisited = args == 5;
       }
     }
   }
@@ -109,6 +111,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void _onTabTapped(int index) {
     setState(() {
       _currentIndex = index;
+      if (index == 5) _homeVisited = true;
     });
   }
 
@@ -176,6 +179,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           },
         ),
       ),
+      if (_homeVisited)
+        HomeScreen(
+          embedded: true,
+          active: _currentIndex == 5,
+          onNavigateToTab: _onTabTapped,
+        )
+      else
+        const SizedBox.shrink(),
     ];
 
     return Scaffold(
@@ -197,7 +208,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           },
         ),
         title: Text(
-          _titles[_currentIndex],
+          _currentIndex == 5 &&
+                  AppPermission.teacherSchedule.allows(
+                    _session.currentUser?.role,
+                  )
+              ? 'Inicio docente'
+              : _titles[_currentIndex],
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -248,36 +264,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             HeroMode(enabled: index == _currentIndex, child: screens[index]),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: _onTabTapped,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Mapa',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.search_outlined),
-            selectedIcon: Icon(Icons.search),
-            label: 'Buscar',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.inventory_2_outlined),
-            selectedIcon: Icon(Icons.inventory_2),
-            label: 'Objetos',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.report_problem_outlined),
-            selectedIcon: Icon(Icons.report_problem),
-            label: 'Reportes',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Perfil',
-          ),
-        ],
+      bottomNavigationBar: AppNavigationBar(
+        currentTab: _currentIndex,
+        onSelectTab: _onTabTapped,
       ),
     );
   }

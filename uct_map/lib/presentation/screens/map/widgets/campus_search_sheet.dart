@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import '../../../../data/datasources/campus_remote_ds.dart';
+import '../../../../domain/entities/campus_search_filter.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/network/api_client_provider.dart';
@@ -35,6 +38,7 @@ class CampusSearchSheet extends StatefulWidget {
     this.embedded = false,
     this.searchRooms,
     this.loadCategories,
+    this.loadRooms,
     this.campusSelector,
     this.onProfessors,
   });
@@ -45,6 +49,7 @@ class CampusSearchSheet extends StatefulWidget {
   final bool embedded;
   final Future<List<dynamic>> Function(String)? searchRooms;
   final Future<List<Category>> Function()? loadCategories;
+  final Future<List<dynamic>> Function()? loadRooms;
   final Widget? campusSelector;
   final VoidCallback? onProfessors;
 
@@ -64,16 +69,198 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
   String _type = 'Todos';
   bool _searched = false;
   Timer? _debounce;
+  String? _buildingId;
+  String? _categoryId;
+  List<Category> _categories = [];
+  bool _categoriesLoading = false;
+  bool _categoriesRequested = false;
+  bool _categoriesError = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  Future<void> _loadFilterCategories() async {
+    setState(() {
+      _categoriesRequested = true;
+      _categoriesLoading = true;
+      _categoriesError = false;
+    });
+    try {
+      final categories =
+          await (widget.loadCategories?.call() ??
+              CampusRemoteDataSource().getCategories());
+      if (!mounted) return;
+      setState(() {
+        _categories = categories;
+        if (!categories.any((c) => c.id == _categoryId)) _categoryId = null;
+        _categoriesLoading = false;
+      });
+    } catch (_) {
+      if (mounted)
+        setState(() {
+          _categoriesLoading = false;
+          _categoriesError = true;
+        });
+    }
+  }
+
+  void _applyFilters() {
+    _debounce?.cancel();
+    if (_controller.text.trim().isEmpty) {
+      _searchAll();
+    } else {
+      _search();
+    }
+  }
+
+  Widget _filters() => Card(
+    color: const Color(0xFFE8F0FA),
+    elevation: 2,
+    shadowColor: _blue.withValues(alpha: 0.18),
+    clipBehavior: Clip.antiAlias,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    child: ExpansionTile(
+      shape: const Border(),
+      collapsedShape: const Border(),
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+      leading: const Icon(Icons.tune, color: _blue),
+      iconColor: _blue,
+      textColor: _blue,
+      title: const Text(
+        'Filtrar',
+        style: TextStyle(fontWeight: FontWeight.w700, color: _blue),
+      ),
+      subtitle: _buildingId != null || _categoryId != null
+          ? const Text('Filtros aplicados')
+          : null,
+      onExpansionChanged: (expanded) {
+        if (expanded && !_categoriesRequested) _loadFilterCategories();
+      },
+      children: [_filterFields()],
+    ),
+  );
+
+  InputDecoration _filterDecoration(String label, IconData icon) =>
+      InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Colors.white,
+        prefixIcon: Icon(icon, color: _blue),
+        labelStyle: const TextStyle(color: _blue),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFB7CDE5)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFB7CDE5)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _blue, width: 2),
+        ),
+      );
+
+  Widget _filterFields() => Column(
+    children: [
+      DropdownButtonFormField<String>(
+        key: ValueKey('building-$_buildingId'),
+        initialValue: _buildingId ?? '',
+        isExpanded: true,
+        decoration: _filterDecoration('Edificio', Icons.apartment_outlined),
+        items: [
+          const DropdownMenuItem(value: '', child: Text('Todos los edificios')),
+          for (final building in widget.buildings)
+            DropdownMenuItem(
+              value: building.id,
+              child: Text(building.name, overflow: TextOverflow.ellipsis),
+            ),
+        ],
+        onChanged: (value) {
+          setState(() => _buildingId = value == '' ? null : value);
+          _applyFilters();
+        },
+      ),
+      const SizedBox(height: 12),
+      DropdownButtonFormField<String>(
+        key: ValueKey('category-$_categoryId-$_categoriesLoading'),
+        initialValue: _categoryId ?? '',
+        isExpanded: true,
+        decoration: _filterDecoration('Categoría', Icons.category_outlined)
+            .copyWith(
+              helperText: _categoriesLoading ? 'Cargando categorías…' : null,
+            ),
+        items: [
+          const DropdownMenuItem(
+            value: '',
+            child: Text('Todas las categorías'),
+          ),
+          for (final category in _categories)
+            DropdownMenuItem(
+              value: category.id,
+              child: Text(category.name, overflow: TextOverflow.ellipsis),
+            ),
+        ],
+        onChanged: _categoriesLoading || _categoriesError
+            ? null
+            : (value) {
+                setState(() => _categoryId = value == '' ? null : value);
+                _applyFilters();
+              },
+      ),
+      if (_categoriesError)
+        Row(
+          children: [
+            const Expanded(
+              child: Text('No se pudieron cargar las categorías.'),
+            ),
+            TextButton(
+              onPressed: _loadFilterCategories,
+              child: const Text('Reintentar categorías'),
+            ),
+          ],
+        ),
+      if (_buildingId != null || _categoryId != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              style: TextButton.styleFrom(
+                elevation: 0,
+                shadowColor: Colors.transparent,
+              ),
+              onPressed: () {
+                setState(() {
+                  _buildingId = null;
+                  _categoryId = null;
+                });
+                _applyFilters();
+              },
+              child: const Text('Limpiar filtros'),
+            ),
+          ),
+        ),
+    ],
+  );
 
   @override
   void didUpdateWidget(covariant CampusSearchSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.buildings != widget.buildings ||
         oldWidget.structures != widget.structures) {
+      if (!widget.buildings.any((b) => b.id == _buildingId)) _buildingId = null;
       _requestId++;
       _results = [];
       _loading = false;
-      if (_controller.text.trim().isNotEmpty) _search();
+      if (_controller.text.trim().isNotEmpty) {
+        _search();
+      } else if (_searched) {
+        _searchAll();
+      }
     }
   }
 
@@ -89,6 +276,10 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
     final term = _controller.text.trim();
     final request = ++_requestId;
     if (term.isEmpty) {
+      if (_buildingId != null || _categoryId != null) {
+        _searchAll();
+        return;
+      }
       setState(() {
         _error = null;
         _results = [];
@@ -179,7 +370,16 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final filter = CampusSearchFilter(
+      buildingId: _buildingId,
+      categoryId: _categoryId,
+    );
     final results = _results.where((r) {
+      if (!filter.matches(
+        building: r.building?.id,
+        category: r.structure?.categoryId ?? r.categoryId,
+      ))
+        return false;
       if (_type == 'Edificios' && (r.structure != null || r.roomCode != null))
         return false;
       if (_type == 'Salas' && r.roomCode == null) return false;
@@ -261,6 +461,13 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
                         ),
                       ),
                   ],
+                ),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 160),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _filters(),
                 ),
               ),
               if (_loading) const LinearProgressIndicator(color: _yellow),
@@ -357,11 +564,7 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             child: Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.menu, color: _blue),
-                  tooltip: 'Categorías',
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                ),
+                if (widget.campusSelector != null) widget.campusSelector!,
                 Expanded(
                   child: TextField(
                     controller: _controller,
@@ -400,10 +603,11 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
             ),
           ),
         ),
-        if (widget.campusSelector != null) widget.campusSelector!,
+        const SizedBox(height: 12),
+        _filters(),
         const SizedBox(height: 18),
-        const Text(
-          'Categorías',
+        Text(
+          'Espacios',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -595,13 +799,16 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
       _searched = true;
       _loading = true;
       _error = null;
+      _results = [];
     });
     final matches = <CampusSearchResult>[
       for (final b in widget.buildings) CampusSearchResult(building: b),
       for (final s in widget.structures) CampusSearchResult(structure: s),
     ];
-    ApiClientProvider.apiClient
-        .getJson<List<dynamic>>('/api/campus/rooms')
+    (widget.loadRooms?.call() ??
+            ApiClientProvider.apiClient.getJson<List<dynamic>>(
+              '/api/campus/rooms',
+            ))
         .then((rooms) {
           final buildings = {
             for (final b in widget.buildings) b.id.toLowerCase(): b,

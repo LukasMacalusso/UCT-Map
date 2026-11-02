@@ -12,10 +12,15 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Biblioteca');
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pump();
+    await tester.ensureVisible(find.text('Edificios'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Edificios'));
     await tester.pump();
     await tester.pump();
+    await tester.scrollUntilVisible(find.widgetWithText(ListTile, 'Biblioteca'), 120, scrollable: find.byType(Scrollable).first);
     expect(find.widgetWithText(ListTile, 'Biblioteca'), findsOneWidget);
+    await tester.ensureVisible(find.text('Edificios'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Edificios'));
     await tester.pump();
     expect(find.widgetWithText(ListTile, 'Biblioteca'), findsNothing);
@@ -71,6 +76,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Servicio');
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pump();
+    await tester.scrollUntilVisible(find.text('Servicio de prueba'), 120, scrollable: find.byType(Scrollable).first);
     expect(find.text('Servicio de prueba'), findsOneWidget);
     final second = tester.widget<TextField>(find.byType(TextField).last);
     expect(second.controller!.text, isEmpty);
@@ -103,10 +109,14 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Biblioteca');
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pump();
+    await tester.scrollUntilVisible(find.widgetWithText(ListTile, 'Biblioteca'), 120, scrollable: find.byType(Scrollable).first);
     expect(find.widgetWithText(ListTile, 'Biblioteca'), findsOneWidget);
+    await tester.scrollUntilVisible(find.byType(TextField), -120, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'inexistente');
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pump();
+    await tester.scrollUntilVisible(find.text('No se encontraron resultados.'), 120, scrollable: find.byType(Scrollable).first);
     expect(find.text('No se encontraron resultados.'), findsOneWidget);
   });
 }
