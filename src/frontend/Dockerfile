@@ -8,9 +8,10 @@ ENV VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN
 RUN npm run build
 
 FROM nginx:alpine
-ENV API_GATEWAY_URL=http://api-gateway:8080
-ENV NGINX_ENVSUBST_FILTER=API_GATEWAY_URL
-COPY nginx.conf /etc/nginx/templates/default.conf.template
+ARG API_GATEWAY_URL=http://api-gateway:8080
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+RUN sed -i "s|\${API_GATEWAY_URL}|${API_GATEWAY_URL}|g" /etc/nginx/conf.d/default.conf && \
+    sed -i "s|/var/run/nginx.pid|/tmp/nginx.pid|g; s|/run/nginx.pid|/tmp/nginx.pid|g" /etc/nginx/nginx.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

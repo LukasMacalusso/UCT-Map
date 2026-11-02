@@ -73,4 +73,6 @@ jobs:
           context: ./src/frontend
           file: ./src/frontend/Dockerfile
           push: true
+          build-args: |
+            API_GATEWAY_URL=http://api-gateway-kuberoapp:8080
           tags: ghcr.io/${{ steps.owner.outputs.lc }}/uct-frontend:latest
