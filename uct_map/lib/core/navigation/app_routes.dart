@@ -1,3 +1,6 @@
+import '../../domain/entities/campus_map_target.dart';
+import '../../presentation/screens/map/campus_location_screen.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../application/session/session_controller.dart';
@@ -43,6 +46,7 @@ class AppRoutes {
   static const String initial = '/';
   static const String main = '/main';
   static const String home = '/home';
+  static const String mapLocation = '/map-location';
   static const String professors = '/professors';
   static const String reports = '/reports';
   static const String reportDetail = '/reports/detail';
@@ -159,6 +163,19 @@ class AppRoutes {
               : MainNavigationScreen(initialIndex: initialIndex),
         );
 
+      case mapLocation:
+        final target = settings.arguments;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => target is CampusMapTarget
+              ? CampusLocationScreen(target: target)
+              : Scaffold(
+                  appBar: AppBar(title: const Text('Ubicación')),
+                  body: const Center(
+                    child: Text('No se recibió un destino válido.'),
+                  ),
+                ),
+        );
       case home:
         return MaterialPageRoute(
           settings: settings,
@@ -412,10 +429,7 @@ class SessionLandingScreen extends StatelessWidget {
           );
         }
         if (session.isAuthenticated &&
-            (AppPermission.bookConsultation.allows(session.currentUser?.role) ||
-                AppPermission.teacherSchedule.allows(
-                  session.currentUser?.role,
-                ))) {
+            AppPermission.common.allows(session.currentUser?.role)) {
           return const MainNavigationScreen(initialIndex: 5);
         }
         return const MainNavigationScreen();

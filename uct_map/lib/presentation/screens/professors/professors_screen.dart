@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../application/session/session_controller.dart';
 import '../../../core/network/api_client_provider.dart';
-import '../../../core/navigation/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/datasources/schedule_remote_ds.dart';
 import '../../../data/datasources/campus_remote_ds.dart';
@@ -140,7 +139,7 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
 
   Future<void> _showProfessor(Professor professor) async {
     final token = _session.token;
-    final result = await Navigator.push<int>(
+    await Navigator.push<int>(
       context,
       MaterialPageRoute(
         builder: (_) => ProfessorDetailScreen(
@@ -152,28 +151,6 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
       ),
     );
     if (!mounted || token != _session.token) return;
-    if (result == 0) _goToMap(context, professor.name);
-  }
-
-  void _goToMap(BuildContext context, String profName) {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Ubicando oficina de $profName en el mapa...'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    if (widget.onNavigateToTab != null) {
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context, 0);
-      }
-      widget.onNavigateToTab!(0);
-    } else if (Navigator.canPop(context)) {
-      Navigator.pop(context, 0);
-    } else {
-      Navigator.pushReplacementNamed(context, AppRoutes.initial, arguments: 0);
-    }
   }
 
   @override

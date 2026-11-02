@@ -215,7 +215,7 @@ void main() {
       expect(navigatedTab, 4);
     });
 
-    testWidgets('ProfessorsScreen botón Ver en Mapa retorna tab 0',
+    testWidgets('ProfessorsScreen sin ubicación no simula localizar al docente',
         (tester) async {
       final session = SessionController(storage: _MemoryStorage());
       await _signInStudent(session);
@@ -253,8 +253,9 @@ void main() {
       await tester.tap(find.text('Ver en Mapa'));
       await tester.pumpAndSettle();
 
-      expect(targetTab, 0);
-      expect(find.textContaining('Ubicando oficina'), findsOneWidget);
+      expect(targetTab, -1);
+      expect(find.text('Este docente no tiene un lugar de atención registrado.'), findsOneWidget);
+      expect(find.textContaining('Ubicando oficina'), findsNothing);
       await tester.pumpWidget(const SizedBox());
       session.dispose();
       ApiClientProvider.reset();

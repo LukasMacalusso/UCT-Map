@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import '../../../core/network/api_client_provider.dart';
 import '../../../domain/entities/app_permission.dart';
 import 'student_home_screen.dart';
+import 'admin_home_screen.dart';
+import 'objects_officer_home_screen.dart';
+import 'complaints_officer_home_screen.dart';
 import 'guest_home_content.dart';
 import 'teacher_home_screen.dart';
 import '../../../core/navigation/app_routes.dart';
@@ -62,7 +65,20 @@ class HomeScreen extends StatelessWidget {
         onNavigateToTab: onNavigateToTab,
       );
     }
-    final body = !ApiClientProvider.session.isAuthenticated
+    final body =
+        AppPermission.manageUsers.allows(
+          ApiClientProvider.session.currentUser?.role,
+        )
+        ? AdminHomeScreen(active: active)
+        : AppPermission.manageObjects.allows(
+            ApiClientProvider.session.currentUser?.role,
+          )
+        ? ObjectsOfficerHomeScreen(active: active)
+        : AppPermission.manageReports.allows(
+            ApiClientProvider.session.currentUser?.role,
+          )
+        ? ComplaintsOfficerHomeScreen(active: active)
+        : !ApiClientProvider.session.isAuthenticated
         ? const GuestHomeContent()
         : const Padding(
             padding: EdgeInsets.all(24),

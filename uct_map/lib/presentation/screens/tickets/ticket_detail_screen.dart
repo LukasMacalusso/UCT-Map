@@ -7,6 +7,8 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/network/problem_details.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/ticket.dart';
+import '../../../domain/entities/campus_map_target.dart';
+import '../../../core/navigation/app_routes.dart';
 import '../../../domain/repositories/reports_repository.dart';
 import 'widgets/ticket_status_badge.dart';
 
@@ -325,10 +327,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Estados (Badges)
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               TicketStatusBadge(status: ticket.ticketType),
-              const SizedBox(width: 8),
               if (complaint != null)
                 ComplaintStatusBadge(status: complaint.status),
             ],
@@ -370,6 +373,18 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             const SizedBox(height: 20),
           ],
 
+          if (ticket.structureRefId.isNotEmpty) ...[
+            OutlinedButton.icon(
+              onPressed: () => Navigator.pushNamed(
+                context,
+                AppRoutes.mapLocation,
+                arguments: CampusMapTarget.structure(ticket.structureRefId),
+              ),
+              icon: const Icon(Icons.location_on_outlined),
+              label: const Text('Ver ubicación'),
+            ),
+            const SizedBox(height: 20),
+          ],
           const Text(
             'Información Técnica',
             style: TextStyle(

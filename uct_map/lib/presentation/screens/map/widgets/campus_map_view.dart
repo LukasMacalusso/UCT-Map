@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -21,8 +22,12 @@ class CampusMapView extends StatefulWidget {
     required this.structures,
     required this.onStructureTap,
     this.routeCoordinates,
+    this.onReady,
+    this.focusLocation,
   });
 
+  final void Function(CampusMapViewState)? onReady;
+  final CampusCoordinateDto? focusLocation;
   final Campus? campus;
   final List<Building> buildings;
   final List<StructureLocationDto> structures;
@@ -292,14 +297,19 @@ class CampusMapViewState extends State<CampusMapView> {
 
   CoordinateBounds _boundsForCampus(Campus campus) {
     final area = areaForCampus(campus);
+    final target = widget.focusLocation;
+    final west = campus.longitude - area.longitudeSpan / 2;
+    final east = campus.longitude + area.longitudeSpan / 2;
+    final south = campus.latitude - area.latitudeSpan / 2;
+    final north = campus.latitude + area.latitudeSpan / 2;
     return CoordinateBounds(
       southwest: _position(
-        campus.longitude - area.longitudeSpan / 2,
-        campus.latitude - area.latitudeSpan / 2,
+        target == null ? west : math.min(west, target.longitude - 0.0002),
+        target == null ? south : math.min(south, target.latitude - 0.0002),
       ),
       northeast: _position(
-        campus.longitude + area.longitudeSpan / 2,
-        campus.latitude + area.latitudeSpan / 2,
+        target == null ? east : math.max(east, target.longitude + 0.0002),
+        target == null ? north : math.max(north, target.latitude + 0.0002),
       ),
       infiniteBounds: false,
     );
@@ -345,10 +355,11 @@ class CampusMapViewState extends State<CampusMapView> {
     _applyBoundsAndMove(campus);
   }
 
-  void _onMapCreated(MapboxMap map) {
+  Future<void> _onMapCreated(MapboxMap map) async {
     _map = map;
     final campus = widget.campus;
-    if (campus != null) _applyBoundsAndMove(campus);
+    if (campus != null) await _applyBoundsAndMove(campus);
+    if (mounted) widget.onReady?.call(this);
   }
 
   Future<void> _onStyleLoaded() async {

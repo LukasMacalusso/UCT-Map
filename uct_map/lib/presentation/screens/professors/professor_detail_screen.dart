@@ -1,3 +1,6 @@
+import '../../../domain/entities/campus_map_target.dart';
+import '../../../core/navigation/app_routes.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client_provider.dart';
@@ -30,6 +33,44 @@ class ProfessorDetailScreen extends StatefulWidget {
 class _ProfessorDetailScreenState extends State<ProfessorDetailScreen> {
   final _session = ApiClientProvider.session;
   late final _token = _session.token;
+
+  Set<String> get _locationIds => {
+    widget.professor.structureRefId,
+    ...widget.professor.officeHours.map((hour) => hour.structureRefId),
+  }.whereType<String>().where((id) => id.trim().isNotEmpty).toSet();
+
+  Future<void> _openMap() async {
+    if (!_session.isAuthenticated || _session.token != _token) return;
+    final ids = _locationIds;
+    if (ids.isEmpty) return;
+    final id = ids.length == 1
+        ? ids.first
+        : await showModalBottomSheet<String>(
+            context: context,
+            showDragHandle: true,
+            builder: (context) => SafeArea(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  const ListTile(title: Text('Elige un lugar de atención')),
+                  for (final id in ids)
+                    ListTile(
+                      title: Text(
+                        widget.locations[id] ?? 'Lugar sin nombre disponible',
+                      ),
+                      onTap: () => Navigator.pop(context, id),
+                    ),
+                ],
+              ),
+            ),
+          );
+    if (!mounted || id == null || _session.token != _token) return;
+    await Navigator.pushNamed(
+      context,
+      AppRoutes.mapLocation,
+      arguments: CampusMapTarget.structure(id),
+    );
+  }
 
   Future<void> _book() async {
     if (!_session.isAuthenticated ||
@@ -196,8 +237,12 @@ class _ProfessorDetailScreenState extends State<ProfessorDetailScreen> {
                     'No se pudieron cargar algunos lugares de atención. Vuelve al directorio y reintenta.',
                   ),
                 const SizedBox(height: 12),
+                if (_locationIds.isEmpty)
+                  const Text(
+                    'Este docente no tiene un lugar de atención registrado.',
+                  ),
                 OutlinedButton.icon(
-                  onPressed: () => Navigator.pop(context, 0),
+                  onPressed: _locationIds.isEmpty ? null : _openMap,
                   icon: const Icon(Icons.map_outlined),
                   label: const Text('Ver en Mapa'),
                 ),
