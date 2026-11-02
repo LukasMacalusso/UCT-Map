@@ -131,6 +131,22 @@ public class StructureControllerTests
     }
 
     [Fact]
+    public async Task Create_WhenCategoryIdIsNull_ShouldReturnCreatedAtAction()
+    {
+        var campusId = Guid.NewGuid();
+        var request = new CreateStructureDto(campusId, null, "Pérgola Sin Categoria", 0, 0);
+
+        _campusRepository.ExistsAsync(Arg.Any<Expression<Func<CampusEntity, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await _controller.Create(request, CancellationToken.None);
+
+        var created = Assert.IsType<CreatedAtActionResult>(result.Result);
+        var dto = Assert.IsType<StructureDto>(created.Value);
+        Assert.Equal("Pérgola Sin Categoria", dto.Name);
+        Assert.Null(dto.CategoryId);
+    }
+
+    [Fact]
     public async Task Update_WhenNameIsEmpty_ShouldReturnBadRequest()
     {
         var request = new UpdateStructureDto(Guid.NewGuid(), Guid.NewGuid(), "", 0, 0);

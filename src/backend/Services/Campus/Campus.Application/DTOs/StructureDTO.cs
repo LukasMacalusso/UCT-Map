@@ -6,7 +6,7 @@ namespace Campus.Application.DTOs;
 public record StructureDto(
     Guid Id,
     Guid CampusId,
-    Guid CategoryId,
+    Guid? CategoryId,
     string Name,
     double Latitude,
     double Longitude
@@ -16,8 +16,7 @@ public record CreateStructureDto(
     [Required(ErrorMessage = "CampusId is required.")]
     Guid CampusId,
 
-    [Required(ErrorMessage = "CategoryId is required.")]
-    Guid CategoryId,
+    Guid? CategoryId,
 
     [Required(ErrorMessage = "Name is Required.")]
     [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters.")]
@@ -34,8 +33,7 @@ public record UpdateStructureDto(
     [Required(ErrorMessage = "CampusId is required.")]
     Guid CampusId,
 
-    [Required(ErrorMessage = "CategoryId is required.")]
-    Guid CategoryId,
+    Guid? CategoryId,
 
     [Required(ErrorMessage = "Name is Required.")]
     [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters.")]
@@ -50,7 +48,7 @@ public record UpdateStructureDto(
 
 public record StructureMetadataDto(
     Guid CampusId,
-    Guid CategoryId,
+    Guid? CategoryId,
     string CategoryName,
     string CategoryIcon
 );

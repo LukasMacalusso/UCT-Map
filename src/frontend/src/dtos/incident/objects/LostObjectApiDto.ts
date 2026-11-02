@@ -1,4 +1,7 @@
 export interface LostObjectApiDto {
+  lostObjectId?: string;
+  id?: string;
+  userRefId?: string;
   title: string;
   description: string;
   date: string;

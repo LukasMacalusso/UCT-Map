@@ -131,6 +131,28 @@ public class StructureHandlerTests
     }
 
     [Fact]
+    public async Task CreateAsync_WhenCategoryIdIsNull_ShouldPersistAndReturnDto()
+    {
+        var campusId = Guid.NewGuid();
+        var request = new CreateStructureDto(campusId, null, "Banca Solitaria", -38.7, -72.5);
+
+        _campusRepository.ExistsAsync(Arg.Any<Expression<Func<CampusEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        var (dto, error) = await _handler.CreateAsync(request, CancellationToken.None);
+
+        Assert.NotNull(dto);
+        Assert.Null(error);
+        Assert.Equal("Banca Solitaria", dto.Name);
+        Assert.Equal(campusId, dto.CampusId);
+        Assert.Null(dto.CategoryId);
+
+        await _repository.Received(1).AddAsync(Arg.Is<Structure>(s => s.Name == "Banca Solitaria" && s.CategoryId == null), Arg.Any<CancellationToken>());
+        await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _categoryRepository.DidNotReceive().ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task UpdateAsync_WhenStructureNotFound_ShouldReturnFalseWithNullError()
     {
         var id = Guid.NewGuid();
@@ -208,6 +230,30 @@ public class StructureHandlerTests
         Assert.Equal("Actualizado", structure.Name);
         _repository.Received(1).Update(structure);
         await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenCategoryIdIsNull_ShouldUpdateAndReturnTrue()
+    {
+        var campusId = Guid.NewGuid();
+        var structure = new Structure("Viejo", new Coordinate(0, 0), campusId, Guid.NewGuid());
+        _repository.GetByIdAsync(structure.Id, Arg.Any<CancellationToken>())
+            .Returns(structure);
+
+        _campusRepository.ExistsAsync(Arg.Any<Expression<Func<CampusEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        var request = new UpdateStructureDto(campusId, null, "Sin Categoria", 10, 20);
+
+        var (success, error) = await _handler.UpdateAsync(structure.Id, request, CancellationToken.None);
+
+        Assert.True(success);
+        Assert.Null(error);
+        Assert.Equal("Sin Categoria", structure.Name);
+        Assert.Null(structure.CategoryId);
+        _repository.Received(1).Update(structure);
+        await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _categoryRepository.DidNotReceive().ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -12,6 +12,9 @@ public class StructureConfiguration : IEntityTypeConfiguration<Structure>
                .IsRequired()
                .HasMaxLength(100);
 
+        builder.Property(s => s.CategoryId)
+               .IsRequired(false);
+
         builder.OwnsOne(s => s.Coordinates);
     }
 }

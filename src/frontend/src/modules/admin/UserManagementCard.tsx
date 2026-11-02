@@ -5,8 +5,10 @@ import { Avatar } from '../../components/media/Avatar';
 import { Tag } from '../../components/ui/Tag';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
+import { IconText } from '../../components/ui/IconText';
 import { ModalOverlay } from '../../components/layout/ModalOverlay';
 import { TimedActionCard } from '../../components/ui/TimedActionCard';
+import MailIcon from '../../assets/svg/icons/icon_mail.svg?react';
 
 export interface UserManagementCardProps {
   id: string;
@@ -107,18 +109,24 @@ export const UserManagementCard = ({
         <Avatar src={avatarSrc || null} alt={`Avatar de ${name}`} className={`w-16 h-16 ${suspendedDim}`} />
 
         {/* User Data */}
-        <div className={`flex-1 text-center md:text-left ${suspendedDim}`}>
-          <h3 className="font-bold text-gray-800 text-lg flex flex-wrap items-center justify-center md:justify-start gap-2">
+        <div className={`flex-1 min-w-0 text-center md:text-left ${suspendedDim}`}>
+          <h3 className="text-xl font-bold text-gray-800 uppercase tracking-wide leading-tight flex flex-wrap items-center justify-center md:justify-start gap-2">
             {name}
             {isSuspended && (
               <Tag
-                label="Suspendido"
+                label="SUSPENDIDO"
                 color="red"
-                className="!text-[10px] px-2 py-0.5"
+                className="!text-xs !px-3 !py-1 font-semibold uppercase"
               />
             )}
           </h3>
-          <p className="text-xs text-gray-400">{email}</p>
+          <div className="mt-1 flex justify-center md:justify-start">
+            <IconText
+              icon={<MailIcon className="w-5 h-5 flex-shrink-0" />}
+              text={email}
+              className="!text-sm font-medium"
+            />
+          </div>
         </div>
 
         {/* Actions (Role Select & Suspension Button) */}
@@ -129,7 +137,7 @@ export const UserManagementCard = ({
             <Select
               key={`role-select-${selectNonce}`}
               label="Rol del Sistema"
-              labelColor="text-gray-400"
+              labelColor="text-gray-700"
               options={roleOptions}
               value={role}
               onChange={requestRoleChange}
@@ -141,20 +149,20 @@ export const UserManagementCard = ({
             <Button
               variant="outline"
               color="blue"
-              className="!w-auto whitespace-nowrap !px-4"
+              className="!w-auto whitespace-nowrap !px-4 font-bold tracking-wide uppercase"
               onClick={() => onViewProfile?.(id)}
             >
-              Ver perfil
+              VER PERFIL
             </Button>
             <Button
               color={isSuspended ? 'green' : 'red'}
               variant="outline"
-              className="!w-auto whitespace-nowrap !px-4"
+              className="!w-auto whitespace-nowrap !px-4 font-bold tracking-wide uppercase"
               onClick={requestToggleSuspension}
               disabled={!canToggleSuspension}
               title={canToggleSuspension ? undefined : 'No puedes suspender tu propia cuenta'}
             >
-              {isSuspended ? 'Reactivar' : 'Suspender'}
+              {isSuspended ? 'REACTIVAR' : 'SUSPENDER'}
             </Button>
           </div>
 

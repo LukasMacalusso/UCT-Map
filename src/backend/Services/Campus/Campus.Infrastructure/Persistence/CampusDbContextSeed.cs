@@ -15,15 +15,15 @@ public static class CampusDbContextSeed
             return;
         }
 
-        var grupoAcademico = new CategoryGroup("Espacios Académicos");
-        var grupoComun = new CategoryGroup("Espacios Comunes");
-        var grupoServicios = new CategoryGroup("Servicios");
+        var grupoAcademico = new CategoryGroup("Espacios Académicos", 1);
+        var grupoComun = new CategoryGroup("Espacios Comunes", 2);
+        var grupoServicios = new CategoryGroup("Servicios", 3);
 
         await context.CategoryGroups.AddRangeAsync(grupoAcademico, grupoComun, grupoServicios);
 
-        var catSalaClases = new Category("Sala de Clases", "book", "Sala de uso general para clases teóricas", grupoAcademico);
-        var catLaboratorio = new Category("Laboratorio", "computer", "Laboratorio de computación o ciencias", grupoAcademico);
-        var catEstudio = new Category("Sala de Estudio", "users", "Espacio para estudio grupal o individual", grupoComun);
+        var catSalaClases = new Category("Sala de Clases", "book", "Sala de uso general para clases teóricas", grupoAcademico, 1);
+        var catLaboratorio = new Category("Laboratorio", "computer", "Laboratorio de computación o ciencias", grupoAcademico, 2);
+        var catEstudio = new Category("Sala de Estudio", "users", "Espacio para estudio grupal o individual", grupoComun, 1);
 
         await context.Categories.AddRangeAsync(catSalaClases, catLaboratorio, catEstudio);
 

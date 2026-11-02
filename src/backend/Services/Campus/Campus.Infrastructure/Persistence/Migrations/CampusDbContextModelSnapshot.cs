@@ -112,6 +112,11 @@ namespace Campus.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<int>("Order")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryGroupId");
@@ -129,6 +134,11 @@ namespace Campus.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Order")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.HasKey("Id");
 
@@ -173,7 +183,7 @@ namespace Campus.Infrastructure.Migrations
                     b.Property<Guid>("CampusId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CategoryId")
+                    b.Property<Guid?>("CategoryId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Name")
@@ -289,8 +299,7 @@ namespace Campus.Infrastructure.Migrations
                     b.HasOne("Campus.Domain.Entities.Category", "Category")
                         .WithMany("Structures")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.OwnsOne("Campus.Domain.ValueObjects.Coordinate", "Coordinates", b1 =>
                         {

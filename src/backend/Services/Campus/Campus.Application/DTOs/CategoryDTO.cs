@@ -8,7 +8,8 @@ public record CategoryDto(
     Guid CategoryGroupId,
     string Name,
     string Icon,
-    string? Description
+    string? Description,
+    int Order
 );
 
 public record CreateCategoryDto(
@@ -24,7 +25,9 @@ public record CreateCategoryDto(
     string Icon,
 
     [MaxLength(250, ErrorMessage = "Description cannot exceed 250 characters.")]
-    string? Description = null
+    string? Description = null,
+
+    int Order = 0
 );
 
 public record UpdateCategoryDto(
@@ -40,5 +43,7 @@ public record UpdateCategoryDto(
     string Icon,
 
     [MaxLength(250, ErrorMessage = "Description cannot exceed 250 characters.")]
-    string? Description = null
+    string? Description = null,
+
+    int Order = 0
 );

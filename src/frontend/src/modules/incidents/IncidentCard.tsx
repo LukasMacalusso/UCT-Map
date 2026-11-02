@@ -45,7 +45,7 @@ export const IncidentCard = ({
       <PhotoFrame src={photoUrl} className={`w-full ${compact ? 'h-28 rounded-xl' : 'h-52 rounded-2xl'} object-cover mb-1 shadow-sm`} />
 
       {/* Incident name */}
-      <h2 className={`${compact ? 'text-lg' : 'text-xl'} font-bold text-gray-800 leading-tight line-clamp-2`}>
+      <h2 className={`${compact ? 'text-base' : 'text-xl'} font-bold text-gray-800 uppercase tracking-wide leading-tight line-clamp-2`}>
         {title}
       </h2>
 

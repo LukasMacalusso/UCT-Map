@@ -89,36 +89,46 @@ public class EntityTests
     [Fact]
     public void CategoryGroup_ShouldCreateAndInitializeProperly()
     {
-        var group = new CategoryGroup("Académico");
+        var group = new CategoryGroup("Académico", 2);
         Assert.NotEqual(Guid.Empty, group.Id);
         Assert.Equal("Académico", group.Name);
+        Assert.Equal(2, group.Order);
         Assert.Empty(group.Categories);
 
-        group.Update("Servicios");
+        group.Update("Servicios", 5);
         Assert.Equal("Servicios", group.Name);
+        Assert.Equal(5, group.Order);
+
+        group.UpdateOrder(10);
+        Assert.Equal(10, group.Order);
     }
 
     [Fact]
     public void Category_ShouldCreateAndInitializeProperly()
     {
         var group = new CategoryGroup("Académico");
-        var category = new Category("Salas", "room-icon", "Salas de clases regulares", group);
+        var category = new Category("Salas", "room-icon", "Salas de clases regulares", group, 3);
 
         Assert.NotEqual(Guid.Empty, category.Id);
         Assert.Equal("Salas", category.Name);
         Assert.Equal("room-icon", category.Icon);
         Assert.Equal("Salas de clases regulares", category.Description);
+        Assert.Equal(3, category.Order);
         Assert.Equal(group.Id, category.CategoryGroupId);
         Assert.Equal(group, category.CategoryGroup);
         Assert.Empty(category.Rooms);
         Assert.Empty(category.Structures);
 
         var newGroupId = Guid.NewGuid();
-        category.Update("Laboratorios", "lab-icon", "Laboratorios de computación", newGroupId);
+        category.Update("Laboratorios", "lab-icon", "Laboratorios de computación", newGroupId, 7);
         Assert.Equal("Laboratorios", category.Name);
         Assert.Equal("lab-icon", category.Icon);
         Assert.Equal("Laboratorios de computación", category.Description);
         Assert.Equal(newGroupId, category.CategoryGroupId);
+        Assert.Equal(7, category.Order);
+
+        category.UpdateOrder(1);
+        Assert.Equal(1, category.Order);
     }
 
     [Fact]
@@ -188,5 +198,19 @@ public class EntityTests
         Assert.Equal(newCoords, structure2.Coordinates);
         Assert.Equal(newCampusId, structure2.CampusId);
         Assert.Equal(newCatId, structure2.CategoryId);
+
+        // Nullable category support
+        var structureWithoutCategory = new Structure("Estructura Sin Categoria", coords, campus);
+        Assert.Null(structureWithoutCategory.CategoryId);
+        Assert.Null(structureWithoutCategory.Category);
+
+        structureWithoutCategory.AssignCategory(newCatId);
+        Assert.Equal(newCatId, structureWithoutCategory.CategoryId);
+
+        structureWithoutCategory.AssignCategory(null);
+        Assert.Null(structureWithoutCategory.CategoryId);
+
+        structure2.Update("Estacionamiento Sin Categoria", newCoords, newCampusId, null);
+        Assert.Null(structure2.CategoryId);
     }
 }

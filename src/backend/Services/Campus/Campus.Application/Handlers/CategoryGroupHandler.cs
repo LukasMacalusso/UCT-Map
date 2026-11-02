@@ -21,22 +21,22 @@ public class CategoryGroupHandler
     public async Task<IEnumerable<CategoryGroupDto>> GetAllAsync(CancellationToken cancellationToken)
     {
         var groups = await _repository.GetAllAsync(null, cancellationToken);
-        return groups.Select(g => new CategoryGroupDto(g.Id, g.Name));
+        return groups.OrderBy(g => g.Order).Select(g => new CategoryGroupDto(g.Id, g.Name, g.Order));
     }
 
     public async Task<CategoryGroupDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var group = await _repository.GetByIdAsync(id, cancellationToken);
         if (group == null) return null;
-        return new CategoryGroupDto(group.Id, group.Name);
+        return new CategoryGroupDto(group.Id, group.Name, group.Order);
     }
 
     public async Task<CategoryGroupDto> CreateAsync(CreateCategoryGroupDto request, CancellationToken cancellationToken)
     {
-        var group = new CategoryGroup(request.Name);
+        var group = new CategoryGroup(request.Name, request.Order);
         await _repository.AddAsync(group, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
-        return new CategoryGroupDto(group.Id, group.Name);
+        return new CategoryGroupDto(group.Id, group.Name, group.Order);
     }
 
     public async Task<bool> UpdateAsync(Guid id, UpdateCategoryGroupDto request, CancellationToken cancellationToken)
@@ -44,7 +44,7 @@ public class CategoryGroupHandler
         var group = await _repository.GetByIdAsync(id, cancellationToken);
         if (group == null) return false;
 
-        group.Update(request.Name);
+        group.Update(request.Name, request.Order);
         _repository.Update(group);
         await _repository.SaveChangesAsync(cancellationToken);
         return true;
@@ -56,6 +56,32 @@ public class CategoryGroupHandler
         if (group == null) return false;
 
         _repository.Delete(group);
+        await _repository.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> ReorderAsync(IEnumerable<ReorderItemDto> items, CancellationToken cancellationToken)
+    {
+        var itemsList = items?.ToList() ?? new List<ReorderItemDto>();
+        if (itemsList.Count == 0) return true;
+
+        var ids = itemsList.Select(i => i.Id).Distinct().ToHashSet();
+        var groups = (await _repository.GetAllAsync(g => ids.Contains(g.Id), cancellationToken)).ToDictionary(g => g.Id);
+
+        if (groups.Count != ids.Count)
+        {
+            return false;
+        }
+
+        foreach (var item in itemsList)
+        {
+            if (groups.TryGetValue(item.Id, out var group))
+            {
+                group.UpdateOrder(item.Order);
+                _repository.Update(group);
+            }
+        }
+
         await _repository.SaveChangesAsync(cancellationToken);
         return true;
     }

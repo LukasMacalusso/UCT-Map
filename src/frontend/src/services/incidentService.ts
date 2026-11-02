@@ -2,8 +2,10 @@ import { toApiError } from "../api/apiError";
 import httpClient from "../api/httpClient";
 import type { ComplaintStatus } from "../constants/complaintStatus";
 import type { LostObjectStatus } from "../constants/lostObjectsStatus";
-import type { TicketStatus } from "../constants/ticketStatus";
+import { TicketStatus } from "../constants/ticketStatus";
 import type { CreateLostObjectRequestDto } from "../dtos/incident/objects/CreateLostObjectRequestDto";
+import type { LostObjectApiDto } from "../dtos/incident/objects/LostObjectApiDto";
+import type { LostObjectDto } from "../dtos/incident/objects/LostObjectDto";
 import type { LostObjectPageApiDto } from "../dtos/incident/objects/LostObjectPageApiDto";
 import type { LostObjectPageDto } from "../dtos/incident/objects/LostObjectPageDto";
 import type { LostObjectSearchParams } from "../dtos/incident/objects/LostObjectSearchParams";
@@ -71,15 +73,45 @@ export const incidentService = {
       const { data } = await httpClient.get<LostObjectPageApiDto>('/api/incident/lost-objects', {
         params,
       });
-      return { ...data, items: data.items.map(mapLostObject) };
+      const mappedItems = data.items.map(mapLostObject);
+
+      const enrichedItems = await Promise.all(
+        mappedItems.map(async (item) => {
+          if (item.userRefId || !item.id) return item;
+          try {
+            const { data: ticketPage } = await httpClient.get<ReportPageDto>(
+              '/api/incident/reports',
+              { params: { lostObjectId: item.id, page: 1, pageSize: 1 } },
+            );
+            const authorId = ticketPage.items?.[0]?.userRefId;
+            return authorId ? { ...item, userRefId: authorId } : item;
+          } catch {
+            return item;
+          }
+        }),
+      );
+
+      return { ...data, items: enrichedItems };
     } catch (error) {
       throw toApiError(error, 'Error al cargar los objetos perdidos');
     }
   },
 
-  getLostObject: async (id: string): Promise<void> => {
+  getLostObject: async (id: string): Promise<LostObjectDto> => {
     try {
-      await httpClient.get(`/api/incident/lost-objects/${id}`);
+      const { data } = await httpClient.get<LostObjectApiDto>(`/api/incident/lost-objects/${id}`);
+      const mapped = mapLostObject(data);
+      const objectId = mapped.id || id;
+      try {
+        const { data: ticketPage } = await httpClient.get<ReportPageDto>(
+          '/api/incident/reports',
+          { params: { lostObjectId: objectId, page: 1, pageSize: 1 } },
+        );
+        const authorId = ticketPage.items?.[0]?.userRefId;
+        return { ...mapped, id: objectId, lostObjectId: objectId, userRefId: authorId ?? mapped.userRefId };
+      } catch {
+        return { ...mapped, id: objectId, lostObjectId: objectId };
+      }
     } catch (error) {
       throw toApiError(error, 'Error al cargar el objeto perdido');
     }
@@ -91,6 +123,16 @@ export const incidentService = {
         '/api/incident/lost-objects',
         { ...payload, photoUrl: payload.photoUrl ?? '' },
       );
+
+      // Link the created LostObject to a base Ticket so the author (userRefId from JWT) is stored
+      await httpClient.post<{ id: string }>('/api/incident/reports', {
+        structureRefId: payload.structureId,
+        ticketType: TicketStatus.Pending,
+        isActive: true,
+        reportedAt: new Date().toISOString(),
+        lostObjectId: data.id,
+      });
+
       return data.id;
     } catch (error) {
       throw toApiError(error, 'Error al registrar el objeto perdido');
