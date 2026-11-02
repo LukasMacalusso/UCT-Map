@@ -13,7 +13,7 @@ import {
 import { UserManagementCard } from '../modules/admin/UserManagementCard';
 import { useToggleUserSuspension, useUpdateUserRole, useUsers } from '../hooks/useUsers';
 import { useReports } from '../hooks/useReports';
-import { useLostObjects } from '../hooks/useLostObjects';
+import { useLostObjectsByIds } from '../hooks/useLostObjects';
 import { useAllMeetings } from '../hooks/useSchedule';
 import { useStructures } from '../hooks/useCampus';
 import { useAuthState } from '../states/authState';
@@ -136,18 +136,21 @@ export const AdministrationView = () => {
       sortBy: 'ReportedAt',
       descending: true,
       page: 1,
-      pageSize: 50,
+      pageSize: 10,
     },
     shouldFetchProfileData,
   );
-  const { data: lostObjectsPage } = useLostObjects(
-    {
-      userRefId: profileUser?.id,
-      sortBy: 'ReportedAt',
-      descending: true,
-      page: 1,
-      pageSize: 50,
-    },
+
+  const profileLostObjectIds = useMemo(
+    () =>
+      (reportsPage?.items ?? [])
+        .filter((report) => report.userRefId === profileUser?.id && Boolean(report.lostObjectId))
+        .map((report) => report.lostObjectId!),
+    [reportsPage?.items, profileUser?.id],
+  );
+
+  const { data: profileLostObjects = [] } = useLostObjectsByIds(
+    profileLostObjectIds,
     shouldFetchProfileData,
   );
   const { data: allMeetings = [] } = useAllMeetings(shouldFetchProfileData);
@@ -165,7 +168,7 @@ export const AdministrationView = () => {
   const profileIncidents = useMemo<IncidentCardProps[]>(() => {
     if (!profileUser || !reportsPage?.items) return [];
     return reportsPage.items
-      .filter((report) => report.userRefId === profileUser.id)
+      .filter((report) => report.userRefId === profileUser.id && report.complaintDetails != null)
       .map((report) => ({
         location:
           (report.structureRefId && structureNames.get(report.structureRefId)) ||
@@ -181,24 +184,22 @@ export const AdministrationView = () => {
   }, [profileUser, reportsPage, structureNames]);
 
   const profileObjects = useMemo<ObjectReportCardProps[]>(() => {
-    if (!profileUser || !lostObjectsPage?.items) return [];
-    return lostObjectsPage.items
-      .filter((lostObject) => lostObject.userRefId === profileUser.id)
-      .map((lostObject) => ({
-        title: lostObject.title,
-        status: LOST_OBJECT_STATUS_LABELS[lostObject.status],
-        statusColor: LOST_OBJECT_STATUS_COLORS[lostObject.status],
-        photoUrl: lostObject.photoUrl,
-        building: structureNames.get(lostObject.structureId) ?? 'Sin ubicación',
-        actions: [
-          {
-            title: `Reportado por ${profileUser.name}`,
-            subtitle: formatRelativeTime(lostObject.reportedAt),
-            avatarSrc: profileUser.avatar,
-          },
-        ],
-      }));
-  }, [profileUser, lostObjectsPage, structureNames]);
+    if (!profileUser) return [];
+    return profileLostObjects.map((lostObject) => ({
+      title: lostObject.title,
+      status: LOST_OBJECT_STATUS_LABELS[lostObject.status],
+      statusColor: LOST_OBJECT_STATUS_COLORS[lostObject.status],
+      photoUrl: lostObject.photoUrl,
+      building: structureNames.get(lostObject.structureId) ?? 'Sin ubicación',
+      actions: [
+        {
+          title: `Reportado por ${profileUser.name}`,
+          subtitle: formatRelativeTime(lostObject.reportedAt),
+          avatarSrc: profileUser.avatar,
+        },
+      ],
+    }));
+  }, [profileUser, profileLostObjects, structureNames]);
 
   const profileMeetings = useMemo<UserProfileMeetingItem[]>(() => {
     if (!profileUser) return [];
@@ -241,7 +242,7 @@ export const AdministrationView = () => {
           {/* User Search */}
           <div className="w-80">
             <SearchInput
-              label="Buscar Usuario"
+              label="Búsqueda"
               placeholder="Buscar por nombre o correo..."
               value={searchQuery}
               onChange={handleSearchChange}
@@ -253,7 +254,7 @@ export const AdministrationView = () => {
           {/* Role Filter */}
           <div className="w-72">
             <Select
-              label="Filtrar"
+              label="Rol"
               options={roleOptions}
               value={selectedRole}
               onChange={handleRoleFilterChange}
@@ -264,13 +265,13 @@ export const AdministrationView = () => {
           <Button
             variant="solid"
             color="blue"
-            size="lg"
-            className="!w-auto flex items-center gap-2"
+            size="md"
+            className="font-bold tracking-wide shadow-md hover:scale-105 transition-transform whitespace-nowrap !w-auto px-6 h-[50px] flex items-center justify-center gap-2"
             onClick={handleRefresh}
             disabled={isRefreshing || isLoading}
           >
-            <RefreshIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Actualizar
+            <RefreshIcon className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            ACTUALIZAR
           </Button>
 
         </div>

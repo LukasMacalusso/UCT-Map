@@ -6,7 +6,7 @@ export interface TeacherWorkloadDto {
   from: string;
   to: string;
   weeklyOfficeHourMinutes: number;
-  totalMeetings: number;
+  meetingCount: number;
   officeHours: OfficeHourDto[];
   meetings: MeetingDto[];
 }

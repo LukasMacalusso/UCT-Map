@@ -10,6 +10,10 @@ import { LoginView } from '../views/LoginView';
 import { ProtectedRoute } from './ProtectedRoute';
 import { AdministrationView } from '../views/AdministrationView';
 import { MapEditorView } from '../views/MapEditorView';
+import { EditorMapSubView } from '../views/editor/EditorMapSubView';
+import { EditorCampusSubView } from '../views/editor/EditorCampusSubView';
+import { EditorBuildingsSubView } from '../views/editor/EditorBuildingsSubView';
+import { EditorFiltersSubView } from '../views/editor/EditorFiltersSubView';
 import { Role } from '../constants/role';
 
 export const AppRouter = () => {
@@ -33,7 +37,13 @@ export const AppRouter = () => {
         {/* Role-Restricted Routes */}
         <Route element={<ProtectedRoute allowedRoles={[Role.Admin]} />}>
           <Route path="/administration" element={<AdministrationView />} />
-          <Route path="/edition" element={<MapEditorView />} />
+          <Route path="/edition" element={<MapEditorView />}>
+            <Route index element={<Navigate to="/edition/map" replace />} />
+            <Route path="map" element={<EditorMapSubView />} />
+            <Route path="campus" element={<EditorCampusSubView />} />
+            <Route path="buildings" element={<EditorBuildingsSubView />} />
+            <Route path="filters" element={<EditorFiltersSubView />} />
+          </Route>
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={[Role.Teacher]} />}>

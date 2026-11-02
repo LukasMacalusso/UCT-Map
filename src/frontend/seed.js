@@ -392,6 +392,7 @@ async function runSeed() {
   const lostObjectIds = [];
 
   for (const [index, lostObject] of lostObjects.entries()) {
+    const structureRefId = structureIds[index % structureIds.length];
     const lostObjectId = await postData(
       '/incident/lost-objects',
       {
@@ -399,12 +400,25 @@ async function runSeed() {
         description: lostObject.description,
         status: lostObject.status,
         photoUrl: `https://picsum.photos/seed/uct-${index + 1}/600/400`,
-        structureId: structureIds[index % structureIds.length],
+        structureId: structureRefId,
       },
       token,
     );
 
-    if (lostObjectId) lostObjectIds.push(lostObjectId);
+    if (lostObjectId) {
+      lostObjectIds.push(lostObjectId);
+      await postData(
+        '/incident/reports',
+        {
+          structureRefId,
+          ticketType: 0,
+          isActive: true,
+          reportedAt: daysAgo(index + 1),
+          lostObjectId,
+        },
+        token,
+      );
+    }
   }
 
   console.log('Creating reports...');
@@ -424,8 +438,6 @@ async function runSeed() {
   ];
 
   for (const [index, report] of reports.entries()) {
-    const referencesLostObject = index % 4 === 0 && lostObjectIds.length > 0;
-
     await postData(
       '/incident/reports',
       {
@@ -433,9 +445,6 @@ async function runSeed() {
         ticketType: report.ticketType,
         isActive: true,
         reportedAt: daysAgo(report.days),
-        ...(referencesLostObject
-          ? { lostObjectId: lostObjectIds[Math.floor(index / 4) % lostObjectIds.length] }
-          : {}),
         complaint: {
           title: report.title,
           description: report.description,

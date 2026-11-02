@@ -45,11 +45,11 @@ export const ContactCard = ({
       {/* Details */}
       <div className="flex flex-col flex-1 min-w-0 justify-between gap-3">
         <div className="flex flex-col min-w-0 gap-1">
-          <h3 className="text-2xl font-bold text-gray-800 uppercase tracking-wide leading-tight break-words">
+          <h3 className="text-xl font-bold text-gray-800 uppercase tracking-wide leading-tight break-words">
             {name}
           </h3>
 
-          <p className="text-base font-semibold text-page-blue leading-snug line-clamp-1">
+          <p className="text-sm font-bold text-page-blue uppercase tracking-wide leading-snug line-clamp-1">
             {role}
           </p>
           {department && (
@@ -62,23 +62,23 @@ export const ContactCard = ({
             <div className="flex flex-col gap-1.5 mt-1.5 min-w-0">
               {email && (
                 <IconText
-                  icon={<MailIcon className="w-4 h-4 flex-shrink-0" />}
+                  icon={<MailIcon className="w-5 h-5 flex-shrink-0" />}
                   text={email}
-                  className="!text-xs sm:!text-sm truncate"
+                  className="!text-sm font-medium"
                 />
               )}
               {office && (
                 <IconText
-                  icon={<BuildingIcon className="w-4 h-4 flex-shrink-0" />}
+                  icon={<BuildingIcon className="w-5 h-5 flex-shrink-0" />}
                   text={office}
-                  className="!text-xs sm:!text-sm truncate"
+                  className="!text-sm font-medium"
                 />
               )}
               {scheduleSummary && (
                 <IconText
-                  icon={<ClockIcon className="w-4 h-4 flex-shrink-0" />}
+                  icon={<ClockIcon className="w-5 h-5 flex-shrink-0" />}
                   text={scheduleSummary}
-                  className="!text-xs sm:!text-sm truncate"
+                  className="!text-sm font-medium"
                 />
               )}
             </div>

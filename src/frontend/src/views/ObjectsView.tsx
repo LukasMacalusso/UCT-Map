@@ -15,6 +15,7 @@ import {
 import { useLostObjects, useCreateLostObject } from '../hooks/useLostObjects';
 import { useAuthState } from '../states/authState';
 import { useCampuses, useStructures } from '../hooks/useCampus';
+import { useUsers } from '../hooks/useUsers';
 import {
   LostObjectStatus,
   LOST_OBJECT_STATUS_COLORS,
@@ -43,6 +44,7 @@ export const ObjectsView = () => {
 
   const { data: campuses = [] } = useCampuses();
   const { data: structures = [] } = useStructures();
+  const { data: users = [] } = useUsers();
   const createLostObject = useCreateLostObject();
 
   useEffect(() => {
@@ -72,6 +74,11 @@ export const ObjectsView = () => {
   const structureNames = useMemo(
     () => new Map(structures.map((structure) => [structure.id, structure.name])),
     [structures],
+  );
+
+  const usersById = useMemo(
+    () => new Map(users.map((user) => [user.id, user])),
+    [users],
   );
 
   const sortOptions = [
@@ -238,23 +245,30 @@ export const ObjectsView = () => {
         ) : (
           <>
             <div className="flex-1 grid grid-cols-[repeat(auto-fill,minmax(min(100%,38rem),38rem))] justify-center content-start gap-6">
-              {data.items.map((lostObject, index) => (
-                <ObjectReportCard
-                  key={`${lostObject.title}-${index}`}
-                  className="!w-full max-w-[38rem] !h-60"
-                  title={lostObject.title}
-                  status={LOST_OBJECT_STATUS_LABELS[lostObject.status]}
-                  statusColor={LOST_OBJECT_STATUS_COLORS[lostObject.status]}
-                  photoUrl={lostObject.photoUrl}
-                  building={structureNames.get(lostObject.structureId) ?? 'Sin ubicación'}
-                  actions={[
-                    {
-                      title: 'Reportado',
-                      subtitle: formatRelativeTime(lostObject.reportedAt),
-                    },
-                  ]}
-                />
-              ))}
+              {data.items.map((lostObject, index) => {
+                const reporter = lostObject.userRefId
+                  ? usersById.get(lostObject.userRefId)
+                  : undefined;
+
+                return (
+                  <ObjectReportCard
+                    key={lostObject.id ?? `${lostObject.title}-${index}`}
+                    className="!w-full max-w-[38rem] !h-60"
+                    title={lostObject.title}
+                    status={LOST_OBJECT_STATUS_LABELS[lostObject.status]}
+                    statusColor={LOST_OBJECT_STATUS_COLORS[lostObject.status]}
+                    photoUrl={lostObject.photoUrl}
+                    building={structureNames.get(lostObject.structureId) ?? 'Sin ubicación'}
+                    actions={[
+                      {
+                        title: reporter ? `Reportado por ${reporter.name}` : 'Reportado por Usuario',
+                        subtitle: formatRelativeTime(lostObject.reportedAt),
+                        avatarSrc: reporter?.avatar,
+                      },
+                    ]}
+                  />
+                );
+              })}
             </div>
 
             <Pagination

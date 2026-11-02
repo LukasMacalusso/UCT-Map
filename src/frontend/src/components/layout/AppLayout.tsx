@@ -52,6 +52,7 @@ export const AppLayout = () => {
   const RoleBadgeIcon = roleConfig.icon;
 
   const getPageTitle = (path: string) => {
+    if (path.includes('/edition')) return 'Edición';
     if (path.includes('/map')) return 'Mapa';
     if (path.includes('/reports')) return 'Reportes';
     if (path.includes('/objects')) return 'Objetos';
@@ -59,7 +60,6 @@ export const AppLayout = () => {
     if (path.includes('/schedule')) return 'Agendamiento';
     if (path.includes('/showcase')) return 'Showcase';
     if (path.includes('/administration')) return 'Administración';
-    if (path.includes('/edition')) return 'Edición';
     return '';
   };
 

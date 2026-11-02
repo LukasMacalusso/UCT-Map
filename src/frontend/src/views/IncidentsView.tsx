@@ -52,6 +52,11 @@ export const IncidentsView = () => {
 
   const { data, isLoading, isError, error } = useReports(params);
 
+  const visibleReports = useMemo(
+    () => (data?.items ?? []).filter((report) => report.complaintDetails != null),
+    [data?.items],
+  );
+
   const structureNames = useMemo(
     () => new Map(structures.map((structure) => [structure.id, structure.name])),
     [structures],
@@ -183,14 +188,14 @@ export const IncidentsView = () => {
           <div className="flex-1 flex items-center justify-center p-12">
             <EmptyState message={error?.message ?? 'No se pudieron cargar los reportes.'} />
           </div>
-        ) : !data || data.items.length === 0 ? (
+        ) : !data || visibleReports.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-12">
             <EmptyState message="No hay reportes que coincidan con los filtros." />
           </div>
         ) : (
           <>
             <div className="flex-1 grid grid-cols-[repeat(auto-fill,minmax(min(100%,24rem),24rem))] justify-center content-start gap-6">
-              {data.items.map((report) => {
+              {visibleReports.map((report) => {
                 const reporter = usersById.get(report.userRefId);
 
                 return (

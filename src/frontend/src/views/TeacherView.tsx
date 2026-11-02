@@ -10,13 +10,12 @@ import { useTeacherWorkload } from '../hooks/useSchedule';
 import { useStructures } from '../hooks/useCampus';
 import { useUsers } from '../hooks/useUsers';
 import { useAuthState } from '../states/authState';
+import { MeetingStatusSelect } from '../modules/schedule/MeetingStatusSelect';
 import {
   addDays,
   formatClock,
   formatLongDate,
   formatOfficeHour,
-  MEETING_STATUS_COLORS,
-  MEETING_STATUS_LABELS,
   parseScheduleDate,
   sortOfficeHours,
   startOfDay,
@@ -189,7 +188,7 @@ export const ScheduleView = () => {
                 Reuniones en el Período
               </span>
               <span className="text-3xl font-black text-black">
-                {workload?.totalMeetings ?? 0}
+                {workload?.meetingCount ?? 0}
               </span>
               <span className="text-sm text-black">Próximos {daysAhead} días</span>
             </Panel>
@@ -291,9 +290,6 @@ export const ScheduleView = () => {
                     const locationName =
                       (meeting.structureRefId && structureNames.get(meeting.structureRefId)) ||
                       'Oficina docente';
-                    const statusLabel =
-                      MEETING_STATUS_LABELS[meeting.status] ?? meeting.status.toUpperCase();
-                    const statusColor = MEETING_STATUS_COLORS[meeting.status] ?? 'blue';
 
                     return (
                       <div
@@ -328,11 +324,13 @@ export const ScheduleView = () => {
                           </div>
                         </div>
 
-                        <Tag
-                          label={statusLabel}
-                          color={statusColor}
-                          className="!text-xs !px-3 !py-1 font-semibold flex-shrink-0 self-start sm:self-center"
-                        />
+                        <div className="flex items-center gap-2 flex-wrap flex-shrink-0 self-start sm:self-center">
+                          <MeetingStatusSelect
+                            meeting={meeting}
+                            isTeacher={user?.id === meeting.teacherRefId}
+                            isStudent={user?.id === meeting.studentRefId}
+                          />
+                        </div>
                       </div>
                     );
                   })

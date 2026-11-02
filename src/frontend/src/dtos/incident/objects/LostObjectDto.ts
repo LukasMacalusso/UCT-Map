@@ -2,6 +2,7 @@ import type { LostObjectStatus } from "../../../constants/lostObjectsStatus";
 
 export interface LostObjectDto {
   id?: string;
+  lostObjectId?: string;
   userRefId?: string;
   title: string;
   description: string;

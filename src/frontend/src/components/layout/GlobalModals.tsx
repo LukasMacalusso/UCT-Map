@@ -9,8 +9,8 @@ import {
 } from '../../modules/global/UserProfilePanel';
 import { useNavigate } from 'react-router-dom';
 import { useReports } from '../../hooks/useReports';
-import { useLostObjects } from '../../hooks/useLostObjects';
-import { useAllMeetings } from '../../hooks/useSchedule';
+import { useLostObjectsByIds } from '../../hooks/useLostObjects';
+import { useAllMeetings, useUpdateMeetingStatus } from '../../hooks/useSchedule';
 import { useStructures } from '../../hooks/useCampus';
 import { useUsers } from '../../hooks/useUsers';
 import {
@@ -38,6 +38,7 @@ export const GlobalModals = () => {
   const user = useAuthState((state) => state.user);
   const logout = useAuthState((state) => state.logout);
   const navigate = useNavigate();
+  const updateMeetingStatus = useUpdateMeetingStatus();
 
   const isProfileOpen = activePanel === 'userProfile' && !!user;
 
@@ -50,24 +51,22 @@ export const GlobalModals = () => {
       sortBy: 'ReportedAt' as const,
       descending: true,
       page: 1,
-      pageSize: 50,
-    }),
-    [user?.id],
-  );
-
-  const objectParams = useMemo(
-    () => ({
-      userRefId: user?.id,
-      sortBy: 'ReportedAt' as const,
-      descending: true,
-      page: 1,
-      pageSize: 50,
+      pageSize: 10,
     }),
     [user?.id],
   );
 
   const { data: reportsPage } = useReports(reportParams, isProfileOpen);
-  const { data: lostObjectsPage } = useLostObjects(objectParams, isProfileOpen);
+
+  const userLostObjectIds = useMemo(
+    () =>
+      (reportsPage?.items ?? [])
+        .filter((report) => report.userRefId === user?.id && Boolean(report.lostObjectId))
+        .map((report) => report.lostObjectId!),
+    [reportsPage?.items, user?.id],
+  );
+
+  const { data: userLostObjects = [] } = useLostObjectsByIds(userLostObjectIds, isProfileOpen);
   const { data: allMeetings = [] } = useAllMeetings(isProfileOpen);
 
   const structureNames = useMemo(
@@ -83,7 +82,7 @@ export const GlobalModals = () => {
   const incidentReports = useMemo<IncidentCardProps[]>(() => {
     if (!user || !reportsPage?.items) return [];
     return reportsPage.items
-      .filter((report) => report.userRefId === user.id)
+      .filter((report) => report.userRefId === user.id && report.complaintDetails != null)
       .map((report) => ({
         location:
           (report.structureRefId && structureNames.get(report.structureRefId)) ||
@@ -99,24 +98,22 @@ export const GlobalModals = () => {
   }, [user, reportsPage, structureNames]);
 
   const objectReports = useMemo<ObjectReportCardProps[]>(() => {
-    if (!user || !lostObjectsPage?.items) return [];
-    return lostObjectsPage.items
-      .filter((lostObject) => lostObject.userRefId === user.id)
-      .map((lostObject) => ({
-        title: lostObject.title,
-        status: LOST_OBJECT_STATUS_LABELS[lostObject.status],
-        statusColor: LOST_OBJECT_STATUS_COLORS[lostObject.status],
-        photoUrl: lostObject.photoUrl,
-        building: structureNames.get(lostObject.structureId) ?? 'Sin ubicación',
-        actions: [
-          {
-            title: `Reportado por ${user.name}`,
-            subtitle: formatRelativeTime(lostObject.reportedAt),
-            avatarSrc: user.avatar,
-          },
-        ],
-      }));
-  }, [user, lostObjectsPage, structureNames]);
+    if (!user) return [];
+    return userLostObjects.map((lostObject) => ({
+      title: lostObject.title,
+      status: LOST_OBJECT_STATUS_LABELS[lostObject.status],
+      statusColor: LOST_OBJECT_STATUS_COLORS[lostObject.status],
+      photoUrl: lostObject.photoUrl,
+      building: structureNames.get(lostObject.structureId) ?? 'Sin ubicación',
+      actions: [
+        {
+          title: `Reportado por ${user.name}`,
+          subtitle: formatRelativeTime(lostObject.reportedAt),
+          avatarSrc: user.avatar,
+        },
+      ],
+    }));
+  }, [user, userLostObjects, structureNames]);
 
   const requestedMeetings = useMemo<UserProfileMeetingItem[]>(() => {
     if (!user) return [];
@@ -145,6 +142,7 @@ export const GlobalModals = () => {
           statusLabel:
             MEETING_STATUS_LABELS[meeting.status] ?? meeting.status.toUpperCase(),
           statusColor: MEETING_STATUS_COLORS[meeting.status] ?? 'blue',
+          canCancel: meeting.status === 'Pending' || meeting.status === 'Confirmed',
         };
       });
   }, [user, allMeetings, usersById, structureNames]);
@@ -179,6 +177,10 @@ export const GlobalModals = () => {
             objectReports={objectReports}
             incidentReports={incidentReports}
             requestedMeetings={requestedMeetings}
+            onCancelMeeting={(meetingId) =>
+              updateMeetingStatus.mutate({ id: meetingId, status: 'Cancelled' })
+            }
+            isCancellingMeeting={updateMeetingStatus.isPending}
           />
         )}
       </ModalOverlay>

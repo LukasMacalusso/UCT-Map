@@ -27,6 +27,7 @@ export interface UserProfileMeetingItem {
   timeLabel: string;
   statusLabel: string;
   statusColor?: PageColor;
+  canCancel?: boolean;
 }
 
 export interface UserProfilePanelProps {
@@ -41,6 +42,8 @@ export interface UserProfilePanelProps {
   requestedMeetings?: UserProfileMeetingItem[];
   isLoading?: boolean;
   isOwnProfile?: boolean;
+  onCancelMeeting?: (meetingId: string) => void;
+  isCancellingMeeting?: boolean;
   onClose?: () => void;
   onLogout?: () => void;
 }
@@ -70,6 +73,8 @@ export const UserProfilePanel = ({
   requestedMeetings = [],
   isLoading = false,
   isOwnProfile = true,
+  onCancelMeeting,
+  isCancellingMeeting = false,
   onClose,
   onLogout,
 }: UserProfilePanelProps) => {
@@ -229,11 +234,25 @@ export const UserProfilePanel = ({
                     </div>
                   </div>
 
-                  <Tag
-                    label={meeting.statusLabel}
-                    color={meeting.statusColor ?? 'blue'}
-                    className="!text-xs !px-3 !py-1 font-semibold flex-shrink-0 self-start sm:self-center"
-                  />
+                    <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-center">
+                      {meeting.canCancel && onCancelMeeting && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          color="red"
+                          className="!w-auto !py-1 !px-3 !text-xs uppercase font-bold"
+                          onClick={() => onCancelMeeting(meeting.id)}
+                          disabled={isCancellingMeeting}
+                        >
+                          Cancelar
+                        </Button>
+                      )}
+                      <Tag
+                        label={meeting.statusLabel}
+                        color={meeting.statusColor ?? 'blue'}
+                        className="!text-xs !px-3 !py-1 font-semibold flex-shrink-0"
+                      />
+                    </div>
                 </Panel>
               )) : <EmptyState message="No hay reuniones solicitadas" />
             )}
