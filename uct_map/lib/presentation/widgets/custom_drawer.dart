@@ -84,22 +84,8 @@ class CustomDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.dashboard_outlined),
             title: const Text('Inicio y Accesos Rápidos'),
-            onTap: () async {
-              Navigator.pop(context);
-              final result = await Navigator.pushNamed(context, AppRoutes.home);
-              if (result is int && context.mounted) {
-                if (onSelectTab != null) {
-                  onSelectTab!(result);
-                } else {
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    AppRoutes.initial,
-                    (route) => false,
-                    arguments: result,
-                  );
-                }
-              }
-            },
+            selected: currentIndex == 5,
+            onTap: () => _navigateToTab(context, 5),
           ),
           ListTile(
             leading: const Icon(Icons.map_outlined),

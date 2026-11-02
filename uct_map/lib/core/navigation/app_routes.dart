@@ -11,7 +11,6 @@ import '../../presentation/screens/roles/student_meetings_screen.dart';
 import '../../domain/entities/report.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../presentation/navigation/main_navigation_screen.dart';
-import '../../presentation/screens/home/home_screen.dart';
 import '../../presentation/screens/login/login_page.dart';
 import '../../presentation/screens/login/session_required_view.dart';
 import '../../presentation/screens/lost_found/lost_found_screen.dart';
@@ -163,19 +162,7 @@ class AppRoutes {
       case home:
         return MaterialPageRoute(
           settings: settings,
-          builder: (context) => HomeScreen(
-            onNavigateToTab: (tabIndex) {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context, tabIndex);
-              } else {
-                Navigator.pushReplacementNamed(
-                  context,
-                  initial,
-                  arguments: tabIndex,
-                );
-              }
-            },
-          ),
+          builder: (_) => const MainNavigationScreen(initialIndex: 5),
         );
 
       case professors:
@@ -425,8 +412,11 @@ class SessionLandingScreen extends StatelessWidget {
           );
         }
         if (session.isAuthenticated &&
-            AppPermission.bookConsultation.allows(session.currentUser?.role)) {
-          return const HomeScreen();
+            (AppPermission.bookConsultation.allows(session.currentUser?.role) ||
+                AppPermission.teacherSchedule.allows(
+                  session.currentUser?.role,
+                ))) {
+          return const MainNavigationScreen(initialIndex: 5);
         }
         return const MainNavigationScreen();
       },

@@ -37,7 +37,9 @@ void main() {
     expect(find.text('Buscar'), findsOneWidget);
     expect(find.text('Objetos'), findsOneWidget);
     expect(find.text('Reportes'), findsOneWidget);
-    expect(find.text('Perfil'), findsOneWidget);
+    expect(find.text('Inicio'), findsOneWidget);
+    expect(find.text('Perfil'), findsNothing);
+    expect(find.byTooltip('Ver perfil'), findsOneWidget);
 
     // Con sesión, el mapa interactivo se muestra.
     await ApiClientProvider.session.signInReal(
