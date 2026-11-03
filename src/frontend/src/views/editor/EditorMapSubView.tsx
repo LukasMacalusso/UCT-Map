@@ -19,6 +19,7 @@ import {
 } from '../../hooks/useCampus';
 import type { BuildingLocationDto } from '../../dtos/campus/BuildingLocationDto';
 import type { StructureDto } from '../../dtos/campus/StructureDto';
+import type { MapMarkerItem } from '../../interfaces/MapMarkerItem';
 
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
 import CubeIcon from '../../assets/svg/icons/icon_category_cube.svg?react';
@@ -29,8 +30,7 @@ export const EditorMapSubView = () => {
 
   // Active Tool & Selected Marker
   const [activeTool, setActiveTool] = useState<EditorMapTool>('none');
-  const [selectedBuilding, setSelectedBuilding] = useState<BuildingLocationDto | null>(null);
-  const [selectedStructure, setSelectedStructure] = useState<StructureDto | null>(null);
+  const [selectedMarker, setSelectedMarker] = useState<MapMarkerItem | null>(null);
   const [activeCampusId, setActiveCampusId] = useState('');
 
   // Creation modal state
@@ -43,8 +43,7 @@ export const EditorMapSubView = () => {
   const [createCampusId, setCreateCampusId] = useState('');
 
   // Deletion modal state
-  const [deletingBuilding, setDeletingBuilding] = useState<BuildingLocationDto | null>(null);
-  const [deletingStructure, setDeletingStructure] = useState<StructureDto | null>(null);
+  const [deletingMarker, setDeletingMarker] = useState<MapMarkerItem | null>(null);
 
   // Queries & Mutations
   const { data: campuses } = useCampuses();
@@ -65,10 +64,8 @@ export const EditorMapSubView = () => {
       if (e.key === 'Escape') {
         setActiveTool('none');
         setIsCreateOpen(false);
-        setDeletingBuilding(null);
-        setDeletingStructure(null);
-        setSelectedBuilding(null);
-        setSelectedStructure(null);
+        setDeletingMarker(null);
+        setSelectedMarker(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -88,9 +85,7 @@ export const EditorMapSubView = () => {
         setCreateCampusId(effectiveCampusId);
         setIsCreateOpen(true);
       } else {
-        // Deselect if clicking on empty map space
-        setSelectedBuilding(null);
-        setSelectedStructure(null);
+        setSelectedMarker(null);
       }
     },
     [activeTool, categories, effectiveCampusId],
@@ -98,35 +93,19 @@ export const EditorMapSubView = () => {
 
   const handleCampusChange = useCallback((campusId: string) => {
     setActiveCampusId(campusId);
-    setSelectedBuilding(null);
-    setSelectedStructure(null);
+    setSelectedMarker(null);
     setActiveTool('none');
   }, []);
 
   // Marker Click
-  const handleBuildingClick = useCallback(
-    (building: BuildingLocationDto) => {
-      setSelectedBuilding(building);
-      setSelectedStructure(null);
+  const handleMarkerClick = useCallback(
+    (marker: MapMarkerItem) => {
+      setSelectedMarker(marker);
 
       if (activeTool === 'inspect') {
-        navigate(`/edition/buildings?id=${building.id}&type=building`);
+        navigate(`/edition/buildings?id=${marker.id}&type=${marker.type}`);
       } else if (activeTool === 'delete') {
-        setDeletingBuilding(building);
-      }
-    },
-    [activeTool, navigate],
-  );
-
-  const handleStructureClick = useCallback(
-    (structure: StructureDto) => {
-      setSelectedStructure(structure);
-      setSelectedBuilding(null);
-
-      if (activeTool === 'inspect') {
-        navigate(`/edition/buildings?id=${structure.id}&type=structure`);
-      } else if (activeTool === 'delete') {
-        setDeletingStructure(structure);
+        setDeletingMarker(marker);
       }
     },
     [activeTool, navigate],
@@ -135,84 +114,68 @@ export const EditorMapSubView = () => {
   // Handle Tool selection from Panel
   const handleSelectTool = useCallback(
     (tool: EditorMapTool) => {
-      if (tool === 'inspect') {
-        if (selectedBuilding) {
-          navigate(`/edition/buildings?id=${selectedBuilding.id}&type=building`);
-          return;
-        }
-        if (selectedStructure) {
-          navigate(`/edition/buildings?id=${selectedStructure.id}&type=structure`);
-          return;
-        }
+      if (tool === 'inspect' && selectedMarker) {
+        navigate(`/edition/buildings?id=${selectedMarker.id}&type=${selectedMarker.type}`);
+        return;
       }
-      if (tool === 'delete') {
-        if (selectedBuilding) {
-          setDeletingBuilding(selectedBuilding);
-          return;
-        }
-        if (selectedStructure) {
-          setDeletingStructure(selectedStructure);
-          return;
-        }
+      if (tool === 'delete' && selectedMarker) {
+        setDeletingMarker(selectedMarker);
+        return;
       }
       setActiveTool(tool);
     },
-    [navigate, selectedBuilding, selectedStructure],
+    [navigate, selectedMarker],
   );
 
   // Marker Drag End (triggered in 'move' mode)
   const handleMarkerDragEnd = useCallback(
-    (building: BuildingLocationDto, coords: [number, number]) => {
+    (marker: MapMarkerItem, coords: [number, number]) => {
       const [lng, lat] = coords;
-      setSelectedBuilding(building);
-      setSelectedStructure(null);
-      updateBuilding.mutate(
-        {
-          id: building.id,
-          payload: {
-            campusId: building.metadata.campusId,
-            name: building.name,
-            floorsCount: building.metadata.floorsCount || 1,
-            latitude: lat,
-            longitude: lng,
-            services: building.metadata.services?.join(', ') || undefined,
-            openTime: building.metadata.schedule ? undefined : undefined,
-          },
-        },
-        {
-          onSuccess: () => {
-            notifyEditor(`Ubicación de "${building.name}" actualizada con éxito.`);
-          },
-        },
-      );
-    },
-    [updateBuilding, notifyEditor],
-  );
+      setSelectedMarker(marker);
 
-  const handleStructureMarkerDragEnd = useCallback(
-    (structure: StructureDto, coords: [number, number]) => {
-      const [lng, lat] = coords;
-      setSelectedStructure(structure);
-      setSelectedBuilding(null);
-      updateStructure.mutate(
-        {
-          id: structure.id,
-          payload: {
-            campusId: structure.campusId,
-            categoryId: structure.categoryId,
-            name: structure.name,
-            latitude: lat,
-            longitude: lng,
+      if (marker.type === 'building') {
+        const building = marker.data as BuildingLocationDto;
+        updateBuilding.mutate(
+          {
+            id: building.id,
+            payload: {
+              campusId: building.metadata?.campusId ?? effectiveCampusId,
+              name: building.name,
+              floorsCount: building.metadata?.floorsCount || 1,
+              latitude: lat,
+              longitude: lng,
+              services: building.metadata?.services?.join(', ') || undefined,
+              openTime: building.metadata?.schedule ? undefined : undefined,
+            },
           },
-        },
-        {
-          onSuccess: () => {
-            notifyEditor(`Ubicación de "${structure.name}" actualizada con éxito.`);
+          {
+            onSuccess: () => {
+              notifyEditor(`Ubicación de "${building.name}" actualizada con éxito.`);
+            },
           },
-        },
-      );
+        );
+      } else {
+        const structure = marker.data as StructureDto;
+        updateStructure.mutate(
+          {
+            id: structure.id,
+            payload: {
+              campusId: structure.campusId,
+              categoryId: structure.categoryId,
+              name: structure.name,
+              latitude: lat,
+              longitude: lng,
+            },
+          },
+          {
+            onSuccess: () => {
+              notifyEditor(`Ubicación de "${structure.name}" actualizada con éxito.`);
+            },
+          },
+        );
+      }
     },
-    [updateStructure, notifyEditor],
+    [updateBuilding, updateStructure, effectiveCampusId, notifyEditor],
   );
 
   // Submit creation
@@ -259,25 +222,27 @@ export const EditorMapSubView = () => {
 
   // Confirm delete
   const handleConfirmDelete = () => {
-    if (deletingBuilding) {
-      deleteBuilding.mutate(deletingBuilding.id, {
+    if (!deletingMarker) return;
+
+    if (deletingMarker.type === 'building') {
+      deleteBuilding.mutate(deletingMarker.id, {
         onSuccess: () => {
-          notifyEditor(`Edificio "${deletingBuilding.name}" eliminado.`);
-          if (selectedBuilding?.id === deletingBuilding.id) {
-            setSelectedBuilding(null);
+          notifyEditor(`Edificio "${deletingMarker.name}" eliminado.`);
+          if (selectedMarker?.id === deletingMarker.id) {
+            setSelectedMarker(null);
           }
-          setDeletingBuilding(null);
+          setDeletingMarker(null);
           setActiveTool('none');
         },
       });
-    } else if (deletingStructure) {
-      deleteStructure.mutate(deletingStructure.id, {
+    } else {
+      deleteStructure.mutate(deletingMarker.id, {
         onSuccess: () => {
-          notifyEditor(`Estructura "${deletingStructure.name}" eliminada.`);
-          if (selectedStructure?.id === deletingStructure.id) {
-            setSelectedStructure(null);
+          notifyEditor(`Estructura "${deletingMarker.name}" eliminada.`);
+          if (selectedMarker?.id === deletingMarker.id) {
+            setSelectedMarker(null);
           }
-          setDeletingStructure(null);
+          setDeletingMarker(null);
           setActiveTool('none');
         },
       });
@@ -327,14 +292,11 @@ export const EditorMapSubView = () => {
     <div className="w-full h-full relative overflow-hidden">
       <EditorMapCanvas
         topMessage={topBanner}
-        selectedBuildingId={selectedBuilding?.id ?? null}
-        onBuildingClick={handleBuildingClick}
-        selectedStructureId={selectedStructure?.id ?? null}
-        onStructureClick={handleStructureClick}
+        selectedMarkerId={selectedMarker?.id ?? null}
+        onMarkerClick={handleMarkerClick}
         onMapClick={handleMapClick}
         markersDraggable={activeTool === 'move'}
         onMarkerDragEnd={handleMarkerDragEnd}
-        onStructureMarkerDragEnd={handleStructureMarkerDragEnd}
         cursorMode={cursorMode}
         onCampusChange={handleCampusChange}
       >
@@ -343,11 +305,9 @@ export const EditorMapSubView = () => {
           <MapEditorPanel
             activeTool={activeTool}
             onSelectTool={handleSelectTool}
-            selectedBuilding={selectedBuilding}
-            selectedStructure={selectedStructure}
-            onDeselectBuilding={() => {
-              setSelectedBuilding(null);
-              setSelectedStructure(null);
+            selectedMarker={selectedMarker}
+            onDeselect={() => {
+              setSelectedMarker(null);
               setActiveTool('none');
             }}
           />
@@ -486,7 +446,8 @@ export const EditorMapSubView = () => {
           <div className="flex gap-2 pt-2 border-t border-gray-100">
             <Button
               color="blue"
-              className="flex-1 !w-auto"
+              variant="solid"
+              className="flex-1"
               onClick={handleSaveCreate}
               disabled={
                 !newEntityName.trim() ||
@@ -511,38 +472,19 @@ export const EditorMapSubView = () => {
         </div>
       </ModalOverlay>
 
-      {/* Modal: Delete Building Confirmation */}
-      <ModalOverlay isOpen={!!deletingBuilding} onClose={() => setDeletingBuilding(null)}>
+      {/* Modal: Delete Marker Confirmation */}
+      <ModalOverlay isOpen={!!deletingMarker} onClose={() => setDeletingMarker(null)}>
         <TimedActionCard
-          title="Eliminar edificio"
-          description={`¿Estás seguro de que deseas eliminar "${deletingBuilding?.name}"? Esta acción no se puede deshacer.`}
+          title={deletingMarker?.type === 'building' ? 'Eliminar edificio' : 'Eliminar estructura'}
+          description={`¿Estás seguro de que deseas eliminar ${
+            deletingMarker?.type === 'building' ? 'el edificio' : 'la estructura'
+          } "${deletingMarker?.name}"? Esta acción no se puede deshacer.`}
           initialDurationMs={1500}
           options={[
             {
               label: 'Cancelar',
               color: 'gray',
-              onClick: () => setDeletingBuilding(null),
-            },
-            {
-              label: 'Sí, eliminar',
-              color: 'red',
-              onClick: handleConfirmDelete,
-            },
-          ]}
-        />
-      </ModalOverlay>
-
-      {/* Modal: Delete Structure Confirmation */}
-      <ModalOverlay isOpen={!!deletingStructure} onClose={() => setDeletingStructure(null)}>
-        <TimedActionCard
-          title="Eliminar estructura"
-          description={`¿Estás seguro de que deseas eliminar la estructura "${deletingStructure?.name}"? Esta acción no se puede deshacer.`}
-          initialDurationMs={1500}
-          options={[
-            {
-              label: 'Cancelar',
-              color: 'gray',
-              onClick: () => setDeletingStructure(null),
+              onClick: () => setDeletingMarker(null),
             },
             {
               label: 'Sí, eliminar',

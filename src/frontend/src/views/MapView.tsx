@@ -11,21 +11,20 @@ import { RoleGuard } from '../router/RoleGuard';
 import { MapSidePanel } from '../modules/map/MapSidePanel';
 import { MapHeatmapPanel } from '../modules/map/MapHeatmapPanel';
 import { useBuildingLocations, useCampuses, useStructures } from '../hooks/useCampus';
-import { ActiveBuildingCard } from '../modules/map/ActiveBuildingCard';
-import { ActiveStructureCard } from '../modules/map/ActiveStructureCard';
+import { ActiveEntityCard } from '../modules/map/ActiveEntityCard';
 import { CampusMapCanvas, type CampusMapHandle } from '../modules/map/CampusMapCanvas';
+import { toBuildingMarker, toStructureMarker } from '../modules/map/mapAdapters';
 import type { BuildingLocationDto } from '../dtos/campus/BuildingLocationDto';
 import type { StructureDto } from '../dtos/campus/StructureDto';
+import type { MapMarkerItem } from '../interfaces/MapMarkerItem';
 import { textPageColors } from '../constants/colors';
 import { OFFICIAL_ROLES } from '../constants/role';
 
 export const MapView = () => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isSidePanelOpen, setIsSidePanelOpen] = React.useState(false);
-  const [selectedBuilding, setSelectedBuilding] = React.useState<BuildingLocationDto | null>(null);
-  const [selectedStructure, setSelectedStructure] = React.useState<StructureDto | null>(null);
-  const [isBuildingCardOpen, setIsBuildingCardOpen] = React.useState(false);
-  const [isStructureCardOpen, setIsStructureCardOpen] = React.useState(false);
+  const [selectedMarker, setSelectedMarker] = React.useState<MapMarkerItem | null>(null);
+  const [isDetailCardOpen, setIsDetailCardOpen] = React.useState(false);
   const [selectedCampus, setSelectedCampus] = React.useState('');
 
   const { data: campuses, isLoading: areCampusesLoading } = useCampuses();
@@ -39,67 +38,41 @@ export const MapView = () => {
     !areCampusesLoading
   );
 
+  const markers: MapMarkerItem[] = React.useMemo(() => [
+    ...(buildings ?? []).map(toBuildingMarker),
+    ...(structures ?? []).map(toStructureMarker),
+  ], [buildings, structures]);
+
   const mapRef = React.useRef<CampusMapHandle | null>(null);
   const cardCloseTimeoutRef = React.useRef<number | null>(null);
   const navigate = useNavigate();
 
-  const mapSearchOptions = [
-    ...(buildings ?? []).map((building) => ({
-      value: `building:${building.id}`,
-      label: `${building.name} (Edificio)`,
-    })),
-    ...(structures ?? []).map((structure) => ({
-      value: `structure:${structure.id}`,
-      label: `${structure.name} (Estructura)`,
-    })),
-  ];
+  const mapSearchOptions = markers.map((m) => ({
+    value: m.id,
+    label: `${m.name} (${m.type === 'building' ? 'Edificio' : 'Estructura'})`,
+  }));
 
-  const handleBuildingClick = React.useCallback((building: BuildingLocationDto) => {
+  const handleMarkerClick = React.useCallback((marker: MapMarkerItem) => {
     if (cardCloseTimeoutRef.current) {
       window.clearTimeout(cardCloseTimeoutRef.current);
       cardCloseTimeoutRef.current = null;
     }
-    setIsStructureCardOpen(false);
-    setSelectedStructure(null);
-
-    setSelectedBuilding(building);
-    setIsBuildingCardOpen(true);
-    mapRef.current?.flyToBuilding(building);
+    setSelectedMarker(marker);
+    setIsDetailCardOpen(true);
+    mapRef.current?.flyToMarker(marker);
   }, []);
 
-  const handleStructureClick = React.useCallback((structure: StructureDto) => {
-    if (cardCloseTimeoutRef.current) {
-      window.clearTimeout(cardCloseTimeoutRef.current);
-      cardCloseTimeoutRef.current = null;
-    }
-    setIsBuildingCardOpen(false);
-    setSelectedBuilding(null);
-
-    setSelectedStructure(structure);
-    setIsStructureCardOpen(true);
-    mapRef.current?.flyToStructure(structure);
-  }, []);
-
-  const handleCloseBuildingCard = React.useCallback(() => {
-    setIsBuildingCardOpen(false);
+  const handleCloseDetailCard = React.useCallback(() => {
+    setIsDetailCardOpen(false);
     cardCloseTimeoutRef.current = window.setTimeout(() => {
-      setSelectedBuilding(null);
-      cardCloseTimeoutRef.current = null;
-    }, 500);
-  }, []);
-
-  const handleCloseStructureCard = React.useCallback(() => {
-    setIsStructureCardOpen(false);
-    cardCloseTimeoutRef.current = window.setTimeout(() => {
-      setSelectedStructure(null);
+      setSelectedMarker(null);
       cardCloseTimeoutRef.current = null;
     }, 500);
   }, []);
 
   const handleCampusChange = (value: string) => {
     setSelectedCampus(value);
-    handleCloseBuildingCard();
-    handleCloseStructureCard();
+    handleCloseDetailCard();
     const campus = campuses?.find((item) => item.id === value);
     if (!campus) return;
     mapRef.current?.flyToCampus(campus);
@@ -108,14 +81,10 @@ export const MapView = () => {
   return (
     <CampusMapCanvas
       ref={mapRef}
-      buildings={buildings}
-      areBuildingsLoading={areBuildingsLoading}
-      selectedBuildingId={selectedBuilding?.id ?? null}
-      onBuildingClick={handleBuildingClick}
-      structures={structures}
-      areStructuresLoading={areStructuresLoading}
-      selectedStructureId={selectedStructure?.id ?? null}
-      onStructureClick={handleStructureClick}
+      markers={markers}
+      areMarkersLoading={areBuildingsLoading || areStructuresLoading}
+      selectedMarkerId={selectedMarker?.id ?? null}
+      onMarkerClick={handleMarkerClick}
     >
       <div className="absolute top-6 right-6 left-6 sm:left-auto z-10 flex flex-row gap-3 items-end">
         <div className="w-full min-w-0 sm:w-72 lg:w-80">
@@ -128,14 +97,8 @@ export const MapView = () => {
             icon={<SearchIcon className="w-6 h-6 text-gray-500" />}
             options={mapSearchOptions}
             onSelectOption={(option) => {
-              const [type, id] = option.value.split(':');
-              if (type === 'building') {
-                const b = buildings?.find((item) => item.id === id);
-                if (b) handleBuildingClick(b);
-              } else if (type === 'structure') {
-                const s = structures?.find((item) => item.id === id);
-                if (s) handleStructureClick(s);
-              }
+              const marker = markers.find((m) => m.id === option.value);
+              if (marker) handleMarkerClick(marker);
             }}
           />
         </div>
@@ -176,66 +139,50 @@ export const MapView = () => {
         </RoleGuard>
       </div>
 
-      {/* Details Slide-in Panel (Building or Structure) */}
+      {/* Details Slide-in Panel */}
       <div
         className={`absolute top-28 bottom-6 left-6 z-40 w-[28.25rem] transition-transform duration-500 ${
-          isBuildingCardOpen || isStructureCardOpen ? 'translate-x-0' : '-translate-x-[150%]'
+          isDetailCardOpen ? 'translate-x-0' : '-translate-x-[150%]'
         }`}
       >
-        {selectedBuilding && isBuildingCardOpen && (
-          <ActiveBuildingCard
-            building={selectedBuilding}
-            onClose={handleCloseBuildingCard}
-            onReportProblem={() => {
-              if (!selectedBuilding) return;
-              navigate('/reports', {
-                state: {
-                  campusId: selectedBuilding.metadata?.campusId ?? activeCampusId,
-                  structureName: selectedBuilding.name,
-                },
-              });
-            }}
-            onReportLostObject={() => {
-              if (!selectedBuilding) return;
-              navigate('/objects', {
-                state: {
-                  campusId: selectedBuilding.metadata?.campusId ?? activeCampusId,
-                  structureName: selectedBuilding.name,
-                },
-              });
-            }}
-          />
-        )}
-
-        {selectedStructure && isStructureCardOpen && (
-          <ActiveStructureCard
-            structure={selectedStructure}
-            onClose={handleCloseStructureCard}
-            onNavigate={() => {
-              if (selectedStructure) {
-                mapRef.current?.flyToStructure(selectedStructure);
-              }
-            }}
-            onReportProblem={() => {
-              if (!selectedStructure) return;
-              navigate('/reports', {
-                state: {
-                  campusId: selectedStructure.campusId,
-                  structureName: selectedStructure.name,
-                },
-              });
-            }}
-            onReportLostObject={() => {
-              if (!selectedStructure) return;
-              navigate('/objects', {
-                state: {
-                  campusId: selectedStructure.campusId,
-                  structureName: selectedStructure.name,
-                },
-              });
-            }}
-          />
-        )}
+        <ActiveEntityCard
+          marker={selectedMarker}
+          onClose={handleCloseDetailCard}
+          onNavigate={() => {
+            if (selectedMarker) {
+              mapRef.current?.flyToMarker(selectedMarker);
+            }
+          }}
+          onView360={() => {
+            // View 360 trigger
+          }}
+          onReportProblem={() => {
+            if (!selectedMarker) return;
+            const campusId =
+              selectedMarker.type === 'building'
+                ? (selectedMarker.data as BuildingLocationDto).metadata?.campusId ?? activeCampusId
+                : (selectedMarker.data as StructureDto).campusId;
+            navigate('/reports', {
+              state: {
+                campusId,
+                structureName: selectedMarker.name,
+              },
+            });
+          }}
+          onReportLostObject={() => {
+            if (!selectedMarker) return;
+            const campusId =
+              selectedMarker.type === 'building'
+                ? (selectedMarker.data as BuildingLocationDto).metadata?.campusId ?? activeCampusId
+                : (selectedMarker.data as StructureDto).campusId;
+            navigate('/objects', {
+              state: {
+                campusId,
+                structureName: selectedMarker.name,
+              },
+            });
+          }}
+        />
       </div>
     </CampusMapCanvas>
   );

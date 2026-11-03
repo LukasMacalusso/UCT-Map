@@ -9,10 +9,9 @@ import { MapMarker } from '../../components/ui/MapMarker';
 import type { BuildingLocationDto } from '../../dtos/campus/BuildingLocationDto';
 import type { StructureDto } from '../../dtos/campus/StructureDto';
 import type { CampusDto } from '../../dtos/campus/CampusDto';
+import type { MapMarkerItem } from '../../interfaces/MapMarkerItem';
 import { UCT_LOADING_PHRASES } from '../../constants/loadingPhrases';
 
-import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
-import CubeIcon from '../../assets/svg/icons/icon_category_cube.svg?react';
 import PlusIcon from '../../assets/svg/icons/icon_plus.svg?react';
 import MinusIcon from '../../assets/svg/icons/icon_minus.svg?react';
 import TargetIcon from '../../assets/svg/icons/icon_target.svg?react';
@@ -262,6 +261,7 @@ export const applySharedMapCamera = (camera: CampusCamera, smooth = false) => {
 };
 
 export interface CampusMapHandle {
+  flyToMarker: (marker: MapMarkerItem | { coordinates: [number, number] }) => void;
   flyToBuilding: (building: BuildingLocationDto) => void;
   flyToStructure: (structure: StructureDto) => void;
   flyToCampus: (campus: CampusDto) => void;
@@ -269,18 +269,13 @@ export interface CampusMapHandle {
 }
 
 interface CampusMapCanvasProps {
-  buildings?: BuildingLocationDto[];
-  areBuildingsLoading?: boolean;
-  selectedBuildingId?: string | null;
-  onBuildingClick?: (building: BuildingLocationDto) => void;
-  structures?: StructureDto[];
-  areStructuresLoading?: boolean;
-  selectedStructureId?: string | null;
-  onStructureClick?: (structure: StructureDto) => void;
+  markers?: MapMarkerItem[];
+  areMarkersLoading?: boolean;
+  selectedMarkerId?: string | null;
+  onMarkerClick?: (marker: MapMarkerItem) => void;
   onMapClick?: (coords: [number, number]) => void;
   markersDraggable?: boolean;
-  onMarkerDragEnd?: (building: BuildingLocationDto, coords: [number, number]) => void;
-  onStructureMarkerDragEnd?: (structure: StructureDto, coords: [number, number]) => void;
+  onMarkerDragEnd?: (marker: MapMarkerItem, coords: [number, number]) => void;
   cursorMode?: 'default' | 'crosshair' | 'grab' | 'pointer';
   children?: React.ReactNode;
 }
@@ -288,18 +283,13 @@ interface CampusMapCanvasProps {
 export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvasProps>(
   (
     {
-      buildings,
-      areBuildingsLoading = false,
-      selectedBuildingId = null,
-      onBuildingClick,
-      structures,
-      areStructuresLoading = false,
-      selectedStructureId = null,
-      onStructureClick,
+      markers,
+      areMarkersLoading = false,
+      selectedMarkerId = null,
+      onMarkerClick,
       onMapClick,
       markersDraggable = false,
       onMarkerDragEnd,
-      onStructureMarkerDragEnd,
       cursorMode = 'default',
       children,
     },
@@ -315,6 +305,12 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
     React.useImperativeHandle(
       ref,
       () => ({
+        flyToMarker: (marker: MapMarkerItem | { coordinates: [number, number] }) => {
+          if (!sharedMapInstance) return;
+          flyToCoordinate(sharedMapInstance, marker.coordinates, {
+            zoom: Math.max(sharedMapInstance.getZoom(), 17),
+          });
+        },
         flyToBuilding: (building: BuildingLocationDto) => {
           if (!sharedMapInstance) return;
           flyToCoordinate(sharedMapInstance, resolveBuildingCoordinate(building), {
@@ -424,34 +420,23 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
     }, [onMapClick, isMapLoaded]);
 
     const callbacksRef = React.useRef({
-      onBuildingClick,
+      onMarkerClick,
       onMarkerDragEnd,
-      buildings,
-      onStructureClick,
-      onStructureMarkerDragEnd,
-      structures,
+      markers,
     });
     callbacksRef.current = {
-      onBuildingClick,
+      onMarkerClick,
       onMarkerDragEnd,
-      buildings,
-      onStructureClick,
-      onStructureMarkerDragEnd,
-      structures,
+      markers,
     };
 
-    // Sync building & structure markers with active view
+    // Unified sync for any MapMarkerItem
     React.useEffect(() => {
       const map = sharedMapInstance;
       if (!map || !isMapLoaded) return;
 
-      const activeBuildings = buildings ?? [];
-      const activeStructures = structures ?? [];
-
-      const currentIds = new Set([
-        ...activeBuildings.map((building) => building.id),
-        ...activeStructures.map((structure) => structure.id),
-      ]);
+      const activeMarkers = markers ?? [];
+      const currentIds = new Set(activeMarkers.map((m) => m.id));
 
       sharedMarkers.forEach((entry, id) => {
         if (!currentIds.has(id)) {
@@ -461,23 +446,24 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
         }
       });
 
-      // Buildings
-      activeBuildings.forEach((building) => {
-        const isActive = selectedBuildingId === building.id;
-        const [lng, lat] = resolveBuildingCoordinate(building);
+      activeMarkers.forEach((markerItem) => {
+        const isActive = selectedMarkerId === markerItem.id;
+        const [lng, lat] = markerItem.coordinates;
+        const color = isActive ? 'green' : (markerItem.color ?? 'blue');
+
         const content = (
           <MapMarker
-            icon={<BuildingIcon className="w-5 h-5" />}
-            color={isActive ? 'green' : 'blue'}
+            icon={markerItem.icon}
+            color={color}
             isActive={isActive}
             onClick={(e) => {
               e.stopPropagation();
-              callbacksRef.current.onBuildingClick?.(building);
+              callbacksRef.current.onMarkerClick?.(markerItem);
             }}
           />
         );
 
-        let entry = sharedMarkers.get(building.id);
+        let entry = sharedMarkers.get(markerItem.id);
         if (!entry) {
           const element = document.createElement('div');
           const root = createRoot(element);
@@ -493,8 +479,8 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
             isDraggingMarker = true;
             lastDragEndTimestamp = Date.now();
             const current =
-              callbacksRef.current.buildings?.find((b) => b.id === building.id) || building;
-            callbacksRef.current.onBuildingClick?.(current);
+              callbacksRef.current.markers?.find((m) => m.id === markerItem.id) || markerItem;
+            callbacksRef.current.onMarkerClick?.(current);
           });
 
           marker.on('drag', () => {
@@ -507,13 +493,13 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
             lastDragEndTimestamp = Date.now();
             const lngLat = marker.getLngLat();
             const current =
-              callbacksRef.current.buildings?.find((b) => b.id === building.id) || building;
-            callbacksRef.current.onBuildingClick?.(current);
+              callbacksRef.current.markers?.find((m) => m.id === markerItem.id) || markerItem;
+            callbacksRef.current.onMarkerClick?.(current);
             callbacksRef.current.onMarkerDragEnd?.(current, [lngLat.lng, lngLat.lat]);
           });
 
           entry = { marker, root, lng, lat };
-          sharedMarkers.set(building.id, entry);
+          sharedMarkers.set(markerItem.id, entry);
         } else {
           entry.marker.setDraggable(!!markersDraggable);
           if (entry.lng !== lng || entry.lat !== lat) {
@@ -525,79 +511,7 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
 
         entry.root.render(content);
       });
-
-      // Structures
-      activeStructures.forEach((structure) => {
-        const isActive = selectedStructureId === structure.id;
-        const [lng, lat] = resolveStructureCoordinate(structure);
-        const content = (
-          <MapMarker
-            icon={<CubeIcon className="w-5 h-5 text-gray-800" />}
-            color={isActive ? 'green' : 'yellow'}
-            isActive={isActive}
-            onClick={(e) => {
-              e.stopPropagation();
-              callbacksRef.current.onStructureClick?.(structure);
-            }}
-          />
-        );
-
-        let entry = sharedMarkers.get(structure.id);
-        if (!entry) {
-          const element = document.createElement('div');
-          const root = createRoot(element);
-          const marker = new mapboxgl.Marker({
-            element,
-            anchor: 'bottom',
-            draggable: !!markersDraggable,
-          })
-            .setLngLat([lng, lat])
-            .addTo(map);
-
-          marker.on('dragstart', () => {
-            isDraggingMarker = true;
-            lastDragEndTimestamp = Date.now();
-            const current =
-              callbacksRef.current.structures?.find((s) => s.id === structure.id) || structure;
-            callbacksRef.current.onStructureClick?.(current);
-          });
-
-          marker.on('drag', () => {
-            isDraggingMarker = true;
-            lastDragEndTimestamp = Date.now();
-          });
-
-          marker.on('dragend', () => {
-            isDraggingMarker = false;
-            lastDragEndTimestamp = Date.now();
-            const lngLat = marker.getLngLat();
-            const current =
-              callbacksRef.current.structures?.find((s) => s.id === structure.id) || structure;
-            callbacksRef.current.onStructureClick?.(current);
-            callbacksRef.current.onStructureMarkerDragEnd?.(current, [lngLat.lng, lngLat.lat]);
-          });
-
-          entry = { marker, root, lng, lat };
-          sharedMarkers.set(structure.id, entry);
-        } else {
-          entry.marker.setDraggable(!!markersDraggable);
-          if (entry.lng !== lng || entry.lat !== lat) {
-            entry.marker.setLngLat([lng, lat]);
-            entry.lng = lng;
-            entry.lat = lat;
-          }
-        }
-
-        entry.root.render(content);
-      });
-    }, [
-      buildings,
-      structures,
-      isMapLoaded,
-      selectedBuildingId,
-      selectedStructureId,
-      markersDraggable,
-    ]);
+    }, [markers, isMapLoaded, selectedMarkerId, markersDraggable]);
 
     const handleZoomIn = () => sharedMapInstance?.zoomIn({ duration: 300 });
     const handleZoomOut = () => sharedMapInstance?.zoomOut({ duration: 300 });
@@ -625,7 +539,7 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
       });
     };
 
-    const isDataLoading = !isMapLoaded || areBuildingsLoading || areStructuresLoading;
+    const isDataLoading = !isMapLoaded || areMarkersLoading;
 
     return (
       <div className="w-full h-full absolute inset-0 overflow-hidden">

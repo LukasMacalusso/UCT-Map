@@ -2,8 +2,8 @@ import React from 'react';
 import { Select } from '../../components/ui/Select';
 import { CampusMapCanvas, type CampusMapHandle } from '../../modules/map/CampusMapCanvas';
 import { useBuildingLocations, useCampuses, useStructures } from '../../hooks/useCampus';
-import type { BuildingLocationDto } from '../../dtos/campus/BuildingLocationDto';
-import type { StructureDto } from '../../dtos/campus/StructureDto';
+import { toBuildingMarker, toStructureMarker } from '../../modules/map/mapAdapters';
+import type { MapMarkerItem } from '../../interfaces/MapMarkerItem';
 import { textPageColors } from '../../constants/colors';
 
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
@@ -13,14 +13,11 @@ interface EditorMapCanvasProps {
   campusId?: string;
   showCampusSelector?: boolean;
   topMessage?: React.ReactNode;
-  selectedBuildingId?: string | null;
-  selectedStructureId?: string | null;
+  selectedMarkerId?: string | null;
   onMapClick?: (coords: [number, number]) => void;
-  onBuildingClick?: (building: BuildingLocationDto) => void;
-  onStructureClick?: (structure: StructureDto) => void;
+  onMarkerClick?: (marker: MapMarkerItem) => void;
   markersDraggable?: boolean;
-  onMarkerDragEnd?: (building: BuildingLocationDto, coords: [number, number]) => void;
-  onStructureMarkerDragEnd?: (structure: StructureDto, coords: [number, number]) => void;
+  onMarkerDragEnd?: (marker: MapMarkerItem, coords: [number, number]) => void;
   cursorMode?: 'default' | 'crosshair' | 'grab' | 'pointer';
   onCampusChange?: (campusId: string) => void;
 }
@@ -30,30 +27,19 @@ export const EditorMapCanvas = ({
   campusId,
   showCampusSelector = true,
   topMessage,
-  selectedBuildingId,
-  selectedStructureId,
+  selectedMarkerId,
   onMapClick,
-  onBuildingClick,
-  onStructureClick,
+  onMarkerClick,
   markersDraggable = false,
   onMarkerDragEnd,
-  onStructureMarkerDragEnd,
   cursorMode = 'default',
   onCampusChange,
 }: EditorMapCanvasProps) => {
   const [selectedCampus, setSelectedCampus] = React.useState('');
-  const [selectedBuilding, setSelectedBuilding] = React.useState<BuildingLocationDto | null>(null);
-  const [selectedStructure, setSelectedStructure] = React.useState<StructureDto | null>(null);
+  const [internalSelectedMarker, setInternalSelectedMarker] = React.useState<MapMarkerItem | null>(null);
 
-  const isBuildingControlled = selectedBuildingId !== undefined;
-  const activeBuildingId = isBuildingControlled
-    ? selectedBuildingId
-    : selectedBuilding?.id ?? null;
-
-  const isStructureControlled = selectedStructureId !== undefined;
-  const activeStructureId = isStructureControlled
-    ? selectedStructureId
-    : selectedStructure?.id ?? null;
+  const isControlled = selectedMarkerId !== undefined;
+  const activeMarkerId = isControlled ? selectedMarkerId : internalSelectedMarker?.id ?? null;
 
   const mapRef = React.useRef<CampusMapHandle | null>(null);
 
@@ -68,6 +54,11 @@ export const EditorMapCanvas = ({
     !areCampusesLoading,
   );
 
+  const markers: MapMarkerItem[] = React.useMemo(() => [
+    ...(buildings ?? []).map(toBuildingMarker),
+    ...(structures ?? []).map(toStructureMarker),
+  ], [buildings, structures]);
+
   const handleCampusChange = (value: string) => {
     setSelectedCampus(value);
     onCampusChange?.(value);
@@ -76,64 +67,40 @@ export const EditorMapCanvas = ({
     mapRef.current?.flyToCampus(campus);
   };
 
-  const handleBuildingClick = React.useCallback(
-    (building: BuildingLocationDto) => {
-      if (!isBuildingControlled) {
-        setSelectedBuilding(building);
-        setSelectedStructure(null);
+  const handleMarkerClick = React.useCallback(
+    (marker: MapMarkerItem) => {
+      if (!isControlled) {
+        setInternalSelectedMarker(marker);
       }
-      if (onBuildingClick) {
-        onBuildingClick(building);
+      if (onMarkerClick) {
+        onMarkerClick(marker);
       } else {
-        mapRef.current?.flyToBuilding(building);
+        mapRef.current?.flyToMarker(marker);
       }
     },
-    [isBuildingControlled, onBuildingClick],
-  );
-
-  const handleStructureClick = React.useCallback(
-    (structure: StructureDto) => {
-      if (!isStructureControlled) {
-        setSelectedStructure(structure);
-        setSelectedBuilding(null);
-      }
-      if (onStructureClick) {
-        onStructureClick(structure);
-      } else {
-        mapRef.current?.flyToStructure(structure);
-      }
-    },
-    [isStructureControlled, onStructureClick],
+    [isControlled, onMarkerClick],
   );
 
   const handleMapClick = React.useCallback(
     (coords: [number, number]) => {
-      if (!isBuildingControlled) {
-        setSelectedBuilding(null);
-      }
-      if (!isStructureControlled) {
-        setSelectedStructure(null);
+      if (!isControlled) {
+        setInternalSelectedMarker(null);
       }
       onMapClick?.(coords);
     },
-    [isBuildingControlled, isStructureControlled, onMapClick],
+    [isControlled, onMapClick],
   );
 
   return (
     <CampusMapCanvas
       ref={mapRef}
-      buildings={buildings}
-      areBuildingsLoading={areBuildingsLoading}
-      selectedBuildingId={activeBuildingId}
-      onBuildingClick={handleBuildingClick}
-      structures={structures}
-      areStructuresLoading={areStructuresLoading}
-      selectedStructureId={activeStructureId}
-      onStructureClick={handleStructureClick}
+      markers={markers}
+      areMarkersLoading={areBuildingsLoading || areStructuresLoading}
+      selectedMarkerId={activeMarkerId}
+      onMarkerClick={handleMarkerClick}
       onMapClick={handleMapClick}
       markersDraggable={markersDraggable}
       onMarkerDragEnd={onMarkerDragEnd}
-      onStructureMarkerDragEnd={onStructureMarkerDragEnd}
       cursorMode={cursorMode}
     >
       {/* Centered Top Action Message (vertically aligned with Campus Select button) */}

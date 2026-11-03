@@ -1,6 +1,7 @@
 import { SquareButton } from '../../components/ui/SquareButton';
 import type { BuildingLocationDto } from '../../dtos/campus/BuildingLocationDto';
 import type { StructureDto } from '../../dtos/campus/StructureDto';
+import type { MapMarkerItem } from '../../interfaces/MapMarkerItem';
 
 import PencilIcon from '../../assets/svg/icons/icon_pencil.svg?react';
 import MapPinIcon from '../../assets/svg/icons/icon_location.svg?react';
@@ -15,16 +16,20 @@ export type EditorMapTool = 'none' | 'create' | 'inspect' | 'move' | 'delete';
 interface MapEditorPanelProps {
   activeTool?: EditorMapTool;
   onSelectTool?: (tool: EditorMapTool) => void;
+  selectedMarker?: MapMarkerItem | null;
   selectedBuilding?: BuildingLocationDto | null;
   selectedStructure?: StructureDto | null;
+  onDeselect?: () => void;
   onDeselectBuilding?: () => void;
 }
 
 export const MapEditorPanel = ({
   activeTool = 'none',
   onSelectTool,
+  selectedMarker,
   selectedBuilding = null,
   selectedStructure = null,
+  onDeselect,
   onDeselectBuilding,
 }: MapEditorPanelProps) => {
   const handleToggle = (tool: EditorMapTool) => {
@@ -32,7 +37,19 @@ export const MapEditorPanel = ({
     onSelectTool(activeTool === tool ? 'none' : tool);
   };
 
-  const hasSelection = !!selectedBuilding || !!selectedStructure;
+  const handleClose = onDeselect ?? onDeselectBuilding;
+
+  const currentMarker = selectedMarker ?? (
+    selectedBuilding
+      ? { type: 'building' as const, name: selectedBuilding.name, data: selectedBuilding }
+      : selectedStructure
+      ? { type: 'structure' as const, name: selectedStructure.name, data: selectedStructure }
+      : null
+  );
+
+  const hasSelection = !!currentMarker;
+  const isBuilding = currentMarker?.type === 'building';
+  const buildingData = isBuilding ? (currentMarker.data as BuildingLocationDto) : null;
 
   return (
     <div className="flex flex-row items-center gap-2">
@@ -96,10 +113,10 @@ export const MapEditorPanel = ({
             <div className="flex items-center gap-2.5 min-w-0">
               <div
                 className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                  selectedBuilding ? 'bg-blue-50 text-page-blue' : 'bg-amber-50 text-amber-600'
+                  isBuilding ? 'bg-blue-50 text-page-blue' : 'bg-amber-50 text-amber-600'
                 }`}
               >
-                {selectedBuilding ? (
+                {isBuilding ? (
                   <BuildingIcon className="w-5 h-5" />
                 ) : (
                   <CubeIcon className="w-5 h-5" />
@@ -108,14 +125,14 @@ export const MapEditorPanel = ({
               <div className="flex flex-col text-left min-w-0">
                 <span
                   className="text-sm font-bold text-gray-800 truncate"
-                  title={selectedBuilding?.name ?? selectedStructure?.name}
+                  title={currentMarker.name}
                 >
-                  {selectedBuilding?.name ?? selectedStructure?.name}
+                  {currentMarker.name}
                 </span>
                 <span className="text-[11px] font-semibold text-gray-400 truncate">
-                  {selectedBuilding
-                    ? `${selectedBuilding.metadata.floorsCount || 1} ${
-                        (selectedBuilding.metadata.floorsCount || 1) === 1 ? 'piso' : 'pisos'
+                  {buildingData
+                    ? `${buildingData.metadata?.floorsCount || 1} ${
+                        (buildingData.metadata?.floorsCount || 1) === 1 ? 'piso' : 'pisos'
                       }`
                     : 'Estructura'}
                 </span>
@@ -124,7 +141,7 @@ export const MapEditorPanel = ({
 
             <button
               type="button"
-              onClick={onDeselectBuilding}
+              onClick={handleClose}
               title="Deseleccionar marcador"
               className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
             >
