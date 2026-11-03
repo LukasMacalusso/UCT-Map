@@ -77,4 +77,24 @@ describe('IncidentsView', () => {
 
     expect(screen.getByText('PUBLICAR REPORTE')).toBeInTheDocument();
   });
+
+  it('filters reports by campus when campus is selected', () => {
+    renderWithQueryClient(
+      <MemoryRouter>
+        <IncidentsView />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Proyector dañado')).toBeInTheDocument();
+
+    // The Select component renders a trigger button and a list of options
+    const triggers = screen.getAllByRole('button', { name: /todos los campus/i });
+    fireEvent.click(triggers[0]);
+
+    const campusOption = screen.getByRole('button', { name: 'Campus San Juan' });
+    fireEvent.click(campusOption);
+
+    // Matches the structure 's1' which has campusId 'c1'
+    expect(screen.getByText('Proyector dañado')).toBeInTheDocument();
+  });
 });
