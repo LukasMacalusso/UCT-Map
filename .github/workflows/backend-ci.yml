@@ -1,11 +1,9 @@
 name: Backend CI
 
 on:
-  push:
-    branches: [ "main", "taller-2" ]
   pull_request:
     branches: [ "main", "taller-2" ]
-
+  workflow_call:
   workflow_dispatch:
 
 jobs:
@@ -105,4 +103,3 @@ jobs:
       - name: Stop and Clean Containers
         if: always()
         run: docker compose down -v
-
