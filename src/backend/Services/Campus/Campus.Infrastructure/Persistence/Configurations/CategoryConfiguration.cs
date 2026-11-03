@@ -29,6 +29,11 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
                .HasForeignKey(s => s.CategoryId)
                .OnDelete(DeleteBehavior.SetNull);
 
+        builder.HasMany(c => c.Buildings)
+               .WithOne(b => b.Category)
+               .HasForeignKey(b => b.CategoryId)
+               .OnDelete(DeleteBehavior.SetNull);
+
         builder.HasMany(c => c.Rooms)
                .WithOne(r => r.Category)
                .HasForeignKey(r => r.CategoryId)

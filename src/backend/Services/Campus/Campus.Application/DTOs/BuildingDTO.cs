@@ -11,6 +11,7 @@ public record BuildingDto(
     int FloorsCount,
     double Latitude,
     double Longitude,
+    Guid? CategoryId = null,
     TimeOnly? OpenTime = null,
     TimeOnly? CloseTime = null,
     string? Services = null
@@ -37,7 +38,9 @@ public record CreateBuildingDto(
     TimeOnly? CloseTime = null,
 
     [MaxLength(150, ErrorMessage = "Services cannot exceed 150 characters.")]
-    string? Services = null
+    string? Services = null,
+
+    Guid? CategoryId = null
 );
 
 public record UpdateBuildingDto(
@@ -61,19 +64,23 @@ public record UpdateBuildingDto(
     TimeOnly? CloseTime = null,
 
     [MaxLength(150, ErrorMessage = "Services cannot exceed 150 characters.")]
-    string? Services = null
+    string? Services = null,
+
+    Guid? CategoryId = null
 );
 
 public record BuildingMetadataDto(
     Guid CampusId,
     int FloorsCount,
     string? Schedule,
-    IReadOnlyList<string> Services
+    IReadOnlyList<string> Services,
+    Guid? CategoryId = null
 );
 
 public record BuildingLocationDto(
     Guid Id,
     string Name,
     LocationDto Location,
-    BuildingMetadataDto Metadata
+    BuildingMetadataDto Metadata,
+    Guid? CategoryId = null
 );

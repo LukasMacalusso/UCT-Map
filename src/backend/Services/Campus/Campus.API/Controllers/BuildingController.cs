@@ -23,22 +23,32 @@ public class BuildingController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<BuildingDto>>> GetAll([FromQuery] Guid? campusId, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<BuildingDto>>> GetAll([FromQuery] Guid? campusId, [FromQuery] Guid? categoryId = null, CancellationToken cancellationToken = default)
     {
         if (campusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' query parameter cannot be empty." });
+        if (categoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' query parameter cannot be empty." });
 
-        var buildings = await _handler.GetAllAsync(campusId, cancellationToken);
+        var buildings = await _handler.GetAllAsync(campusId, categoryId, cancellationToken);
         return Ok(buildings);
     }
+
+    [NonAction]
+    public Task<ActionResult<IEnumerable<BuildingDto>>> GetAll(Guid? campusId, CancellationToken cancellationToken) =>
+        GetAll(campusId, null, cancellationToken);
 
     [HttpGet("locations")]
-    public async Task<ActionResult<IEnumerable<BuildingLocationDto>>> GetLocations([FromQuery] Guid? campusId, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<BuildingLocationDto>>> GetLocations([FromQuery] Guid? campusId, [FromQuery] Guid? categoryId = null, CancellationToken cancellationToken = default)
     {
         if (campusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' query parameter cannot be empty." });
+        if (categoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' query parameter cannot be empty." });
 
-        var buildings = await _handler.GetAllLocationsAsync(campusId, cancellationToken);
+        var buildings = await _handler.GetAllLocationsAsync(campusId, categoryId, cancellationToken);
         return Ok(buildings);
     }
+
+    [NonAction]
+    public Task<ActionResult<IEnumerable<BuildingLocationDto>>> GetLocations(Guid? campusId, CancellationToken cancellationToken) =>
+        GetLocations(campusId, null, cancellationToken);
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
@@ -54,6 +64,7 @@ public class BuildingController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateBuildingDto request, CancellationToken cancellationToken)
     {
         if (request.CampusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' parameter cannot be empty." });
+        if (request.CategoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is required." });
         if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
         if (request.FloorsCount < 1) return BadRequest(new { message = "FloorsCount must be at least 1." });
@@ -81,6 +92,7 @@ public class BuildingController : ControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBuildingDto request, CancellationToken cancellationToken)
     {
         if (request.CampusId == Guid.Empty) return BadRequest(new { message = "The 'campusId' parameter cannot be empty." });
+        if (request.CategoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is required." });
         if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
         if (request.FloorsCount < 1) return BadRequest(new { message = "FloorsCount must be at least 1." });
