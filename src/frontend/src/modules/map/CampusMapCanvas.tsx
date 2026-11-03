@@ -277,6 +277,7 @@ interface CampusMapCanvasProps {
   markersDraggable?: boolean;
   onMarkerDragEnd?: (marker: MapMarkerItem, coords: [number, number]) => void;
   cursorMode?: 'default' | 'crosshair' | 'grab' | 'pointer';
+  showControls?: boolean;
   children?: React.ReactNode;
 }
 
@@ -291,6 +292,7 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
       markersDraggable = false,
       onMarkerDragEnd,
       cursorMode = 'default',
+      showControls = true,
       children,
     },
     ref
@@ -566,38 +568,40 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
         )}
 
         {/* Map camera controls */}
-        <div className="absolute bottom-6 right-6 z-20 flex items-end gap-6">
-          <div className="flex flex-row items-center gap-2">
-            <SquareButton
-              onClick={handleToggleDimension}
-              title={is3D ? 'Cambiar a vista 2D' : 'Cambiar a vista 3D'}
-              className={is3D ? '!bg-page-blue !text-white' : ''}
-            >
-              <span className="text-base font-extrabold leading-none">{is3D ? '3D' : '2D'}</span>
-            </SquareButton>
-
-            <SquareButton onClick={handleResetView} title="Centrar mapa">
-              <TargetIcon className="w-7 h-7" />
-            </SquareButton>
-
-            <div className="flex flex-row rounded-2xl bg-page-white shadow-sm">
+        {showControls && (
+          <div className="absolute bottom-6 right-6 z-20 flex items-end gap-6">
+            <div className="flex flex-row items-center gap-2">
               <SquareButton
-                onClick={handleZoomIn}
-                title="Acercar mapa"
-                className="!rounded-r-none !shadow-none active:!scale-100"
+                onClick={handleToggleDimension}
+                title={is3D ? 'Cambiar a vista 2D' : 'Cambiar a vista 3D'}
+                className={is3D ? '!bg-page-blue !text-white' : ''}
               >
-                <PlusIcon className="w-8 h-8" />
+                <span className="text-base font-extrabold leading-none">{is3D ? '3D' : '2D'}</span>
               </SquareButton>
-              <SquareButton
-                onClick={handleZoomOut}
-                title="Alejar mapa"
-                className="!rounded-l-none !shadow-none active:!scale-100"
-              >
-                <MinusIcon className="w-8 h-8" />
+
+              <SquareButton onClick={handleResetView} title="Centrar mapa">
+                <TargetIcon className="w-7 h-7" />
               </SquareButton>
+
+              <div className="flex flex-row rounded-2xl bg-page-white shadow-sm">
+                <SquareButton
+                  onClick={handleZoomIn}
+                  title="Acercar mapa"
+                  className="!rounded-r-none !shadow-none active:!scale-100"
+                >
+                  <PlusIcon className="w-8 h-8" />
+                </SquareButton>
+                <SquareButton
+                  onClick={handleZoomOut}
+                  title="Alejar mapa"
+                  className="!rounded-l-none !shadow-none active:!scale-100"
+                >
+                  <MinusIcon className="w-8 h-8" />
+                </SquareButton>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {children}
       </div>

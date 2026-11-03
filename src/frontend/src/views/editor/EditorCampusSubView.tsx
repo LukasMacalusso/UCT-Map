@@ -203,7 +203,11 @@ export const EditorCampusSubView = () => {
   };
 
   return (
-    <EditorMapCanvas campusId={selectedCampusId ?? undefined} showCampusSelector={false}>
+    <EditorMapCanvas
+      campusId={selectedCampusId ?? undefined}
+      showCampusSelector={false}
+      showControls={false}
+    >
       <div className="absolute top-6 right-6 bottom-6 z-40 flex w-[28.25rem] flex-col">
         <Panel
           withUctBorder={false}

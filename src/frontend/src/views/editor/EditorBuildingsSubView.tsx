@@ -18,9 +18,11 @@ import {
   useUpdateRoom,
   useDeleteRoom,
   useUpdateBuilding,
+  useDeleteBuilding,
+  useUpdateStructure,
+  useDeleteStructure,
 } from '../../hooks/useCampus';
 import type { RoomDto } from '../../dtos/campus/RoomDto';
-import { bgPageColors } from '../../constants/colors';
 import { useUiState } from '../../states/uiState';
 
 import SearchIcon from '../../assets/svg/icons/icon_search.svg?react';
@@ -92,6 +94,9 @@ export const EditorBuildingsSubView = () => {
   const updateRoom = useUpdateRoom();
   const deleteRoom = useDeleteRoom(selectedId ?? undefined);
   const updateBuilding = useUpdateBuilding();
+  const deleteBuilding = useDeleteBuilding();
+  const updateStructure = useUpdateStructure();
+  const deleteStructure = useDeleteStructure();
 
   const notifyEditor = useUiState((state) => state.notifyEditor);
 
@@ -128,6 +133,13 @@ export const EditorBuildingsSubView = () => {
     return map;
   }, [categories]);
 
+  // Campus map for quick lookup
+  const campusMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (campuses ?? []).forEach((c) => map.set(c.id, c.name));
+    return map;
+  }, [campuses]);
+
   // Unified items list
   const filteredItems = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -137,6 +149,7 @@ export const EditorBuildingsSubView = () => {
       type: 'building' | 'structure';
       campusId: string;
       floorsCount?: number;
+      categoryId?: string | null;
     }> = [];
 
     if (entityFilter === 'all' || entityFilter === 'buildings') {
@@ -161,6 +174,7 @@ export const EditorBuildingsSubView = () => {
             name: s.name,
             type: 'structure',
             campusId: s.campusId,
+            categoryId: s.categoryId,
           });
         }
       });
@@ -287,6 +301,29 @@ export const EditorBuildingsSubView = () => {
     setIsEditStructureOpen(true);
   };
 
+  const handleSaveEditStructure = () => {
+    if (!selectedStructure || !editStructureName.trim()) return;
+    const sName = editStructureName.trim();
+    updateStructure.mutate(
+      {
+        id: selectedStructure.id,
+        payload: {
+          campusId: selectedStructure.campusId,
+          categoryId: editStructureCategoryId || null,
+          name: sName,
+          latitude: selectedStructure.latitude,
+          longitude: selectedStructure.longitude,
+        },
+      },
+      {
+        onSuccess: () => {
+          setIsEditStructureOpen(false);
+          notifyEditor(`Estructura "${sName}" actualizada con éxito.`);
+        },
+      },
+    );
+  };
+
   // Rooms filtered by floor
   const displayedRooms = useMemo(() => {
     if (!rooms) return [];
@@ -375,32 +412,36 @@ export const EditorBuildingsSubView = () => {
                     key={item.id}
                     type="button"
                     onClick={() => handleSelectItem(item.id, item.type)}
-                    className={`flex w-full items-start justify-between gap-3 rounded-2xl border p-4 text-left transition-all cursor-pointer ${
+                    className={`flex w-full items-center gap-3.5 rounded-2xl border p-3.5 text-left transition-all cursor-pointer ${
                       isSelected
                         ? 'border-page-blue bg-blue-50/60 shadow-sm'
                         : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/60'
                     }`}
                   >
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        isBuilding ? 'bg-blue-100 text-page-blue' : 'bg-amber-100 text-amber-600'
+                      }`}
+                    >
+                      {isBuilding ? (
+                        <BuildingIcon className="w-5 h-5" />
+                      ) : (
+                        <CubeIcon className="w-5 h-5" />
+                      )}
+                    </div>
+
                     <div className="flex flex-col min-w-0 flex-1">
-                      <span className="truncate text-base md:text-lg font-bold text-gray-800">
+                      <span className="truncate text-base font-bold text-gray-800">
                         {item.name}
                       </span>
-                      <div className="flex items-center gap-2 mt-2">
-                        {isBuilding ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 border border-blue-100 px-2.5 py-1 text-xs font-bold text-page-blue leading-none">
-                            <BuildingIcon className="w-4 h-4 shrink-0" />
-                            <span>
-                              {item.floorsCount} {item.floorsCount === 1 ? 'piso' : 'pisos'}
-                            </span>
-                          </span>
-                        ) : (
-                          <span
-                            className={`inline-flex items-center gap-1.5 rounded-lg ${bgPageColors.yellow} border border-amber-300 px-2.5 py-1 text-xs font-bold text-page-dark leading-none`}
-                          >
-                            <CubeIcon className="w-4 h-4 text-page-dark shrink-0" />
-                            <span>Estructura</span>
-                          </span>
-                        )}
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 truncate mt-0.5">
+                        <span className="truncate">{campusMap.get(item.campusId) ?? 'Campus'}</span>
+                        <span className="text-gray-300">•</span>
+                        <span className="shrink-0">
+                          {isBuilding
+                            ? `${item.floorsCount || 1} ${(item.floorsCount || 1) === 1 ? 'piso' : 'pisos'}`
+                            : (categoryMap.get(item.categoryId ?? '') || 'Sin categoría')}
+                        </span>
                       </div>
                     </div>
                   </button>
@@ -429,7 +470,7 @@ export const EditorBuildingsSubView = () => {
                 <div className="flex items-start justify-between pb-3 border-b border-gray-100">
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-amber-600 uppercase">Estructura</span>
+                      <CubeIcon className="w-4 h-4 text-amber-600 shrink-0" />
                       <span className="text-xs text-gray-400">•</span>
                       <span className="text-xs font-semibold text-gray-500">{campusName}</span>
                     </div>
@@ -442,23 +483,23 @@ export const EditorBuildingsSubView = () => {
                     <Button
                       size="md"
                       variant="outline"
-                      color="yellow"
-                      className="!w-auto flex items-center gap-2 text-sm font-bold text-page-dark"
-                      onClick={handleOpenEditStructure}
-                    >
-                      <PencilIcon className="w-4 h-4" />
-                      Editar estructura
-                    </Button>
-
-                    <Button
-                      size="md"
-                      variant="outline"
                       color="red"
                       className="!w-auto flex items-center gap-2 text-sm font-bold"
                       onClick={() => setIsDeleteStructureModalOpen(true)}
                     >
                       <TrashIcon className="w-4 h-4" />
                       Eliminar estructura
+                    </Button>
+
+                    <Button
+                      size="md"
+                      variant="outline"
+                      color="yellow"
+                      className="!w-auto flex items-center gap-2 text-sm font-bold text-page-dark"
+                      onClick={handleOpenEditStructure}
+                    >
+                      <PencilIcon className="w-4 h-4" />
+                      Editar estructura
                     </Button>
                   </div>
                 </div>
@@ -476,18 +517,22 @@ export const EditorBuildingsSubView = () => {
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Latitud</span>
-                    <span className="text-sm font-semibold text-gray-700">{selectedStructure.latitude}</span>
+                    <span className="text-sm font-semibold text-gray-700">
+                      {Number(selectedStructure.latitude).toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Longitud</span>
-                    <span className="text-sm font-semibold text-gray-700">{selectedStructure.longitude}</span>
+                    <span className="text-sm font-semibold text-gray-700">
+                      {Number(selectedStructure.longitude).toFixed(2)}
+                    </span>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-xs font-medium text-amber-900 flex items-start gap-2.5">
                   <CubeIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <span>
-                    Las estructuras son elementos singulares al aire libre o independientes (estacionamientos, pérgolas, etc.) y no contienen salas internas ni pisos.
+                    Las estructuras no contienen salas.
                   </span>
                 </div>
               </div>
@@ -500,7 +545,7 @@ export const EditorBuildingsSubView = () => {
                 <div className="flex items-start justify-between pb-3 border-b border-gray-100">
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-page-blue uppercase">Edificio</span>
+                      <BuildingIcon className="w-4 h-4 text-page-blue shrink-0" />
                       <span className="text-xs text-gray-400">•</span>
                       <span className="text-xs font-semibold text-gray-500">{campusName}</span>
                     </div>
@@ -513,23 +558,23 @@ export const EditorBuildingsSubView = () => {
                     <Button
                       size="md"
                       variant="outline"
-                      color="blue"
-                      className="!w-auto flex items-center gap-2 text-sm font-bold"
-                      onClick={handleOpenEditBuilding}
-                    >
-                      <PencilIcon className="w-4 h-4" />
-                      Editar edificio
-                    </Button>
-
-                    <Button
-                      size="md"
-                      variant="outline"
                       color="red"
                       className="!w-auto flex items-center gap-2 text-sm font-bold"
                       onClick={() => setIsDeleteBuildingModalOpen(true)}
                     >
                       <TrashIcon className="w-4 h-4" />
                       Eliminar edificio
+                    </Button>
+
+                    <Button
+                      size="md"
+                      variant="outline"
+                      color="blue"
+                      className="!w-auto flex items-center gap-2 text-sm font-bold"
+                      onClick={handleOpenEditBuilding}
+                    >
+                      <PencilIcon className="w-4 h-4" />
+                      Editar edificio
                     </Button>
                   </div>
                 </div>
@@ -551,21 +596,6 @@ export const EditorBuildingsSubView = () => {
                     </div>
                   </div>
 
-                  {/* Horario */}
-                  <div className="flex items-center gap-3.5">
-                    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-blue-50 text-page-blue flex-shrink-0">
-                      <ScheduleIcon className="w-5 h-5" />
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
-                        Horario
-                      </span>
-                      <span className="text-base font-bold text-gray-700 truncate">
-                        {selectedBuilding.metadata.schedule || 'Sin horario'}
-                      </span>
-                    </div>
-                  </div>
-
                   {/* Total salas */}
                   <div className="flex items-center gap-3.5">
                     <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-blue-50 text-page-blue flex-shrink-0">
@@ -577,6 +607,21 @@ export const EditorBuildingsSubView = () => {
                       </span>
                       <span className="text-lg font-extrabold text-gray-800">
                         {rooms?.length ?? 0}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Horario */}
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-blue-50 text-page-blue flex-shrink-0">
+                      <ScheduleIcon className="w-5 h-5" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
+                        Horario
+                      </span>
+                      <span className="text-base font-bold text-gray-700 truncate">
+                        {selectedBuilding.metadata.schedule || 'Sin horario'}
                       </span>
                     </div>
                   </div>
@@ -908,37 +953,14 @@ export const EditorBuildingsSubView = () => {
               onChange={(e) => setEditBuildingName(e.target.value)}
             />
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-gray-700 uppercase">Cantidad de pisos</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={1}
-                  max={50}
-                  className="flex-1 rounded-2xl border border-gray-200 p-3 text-sm font-semibold text-gray-800 focus:outline-none focus:border-page-blue"
-                  value={editBuildingFloorsCount}
-                  onChange={(e) => setEditBuildingFloorsCount(Math.max(1, Number(e.target.value)))}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  color="red"
-                  size="sm"
-                  className="!w-auto px-3.5 py-3 text-xs flex items-center gap-1.5 whitespace-nowrap"
-                  onClick={() => {
-                    if (editBuildingFloorsCount > 1) {
-                      setEditBuildingFloorsCount((prev) => Math.max(1, prev - 1));
-                    } else {
-                      setIsDeleteFloorModalOpen(true);
-                    }
-                  }}
-                  title="Eliminar piso"
-                >
-                  <TrashIcon className="w-3.5 h-3.5" />
-                  Eliminar piso
-                </Button>
-              </div>
-            </div>
+            <Input
+              label="Cantidad de pisos"
+              type="number"
+              min={1}
+              max={50}
+              value={editBuildingFloorsCount}
+              onChange={(e) => setEditBuildingFloorsCount(Math.max(1, Number(e.target.value)))}
+            />
 
             <Input
               label="Horario (opcional)"
@@ -959,39 +981,23 @@ export const EditorBuildingsSubView = () => {
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
             <Button
-              type="button"
-              variant="ghost"
-              color="red"
-              className="!w-auto px-3 text-xs flex items-center gap-1.5"
-              onClick={() => {
-                setIsEditBuildingOpen(false);
-                setIsDeleteBuildingModalOpen(true);
-              }}
+              variant="outline"
+              color="gray"
+              className="!w-auto px-4"
+              onClick={() => setIsEditBuildingOpen(false)}
             >
-              <TrashIcon className="w-3.5 h-3.5" />
-              Eliminar edificio
+              Cancelar
             </Button>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                color="gray"
-                className="!w-auto px-4"
-                onClick={() => setIsEditBuildingOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                color="blue"
-                className="!w-auto px-5"
-                onClick={handleSaveEditBuilding}
-                disabled={!editBuildingName.trim() || updateBuilding.isPending}
-              >
-                {updateBuilding.isPending ? 'Guardando...' : 'Guardar edificio'}
-              </Button>
-            </div>
+            <Button
+              color="blue"
+              className="!w-auto px-5"
+              onClick={handleSaveEditBuilding}
+              disabled={!editBuildingName.trim() || updateBuilding.isPending}
+            >
+              {updateBuilding.isPending ? 'Guardando...' : 'Guardar edificio'}
+            </Button>
           </div>
         </div>
       </ModalOverlay>
@@ -1030,47 +1036,28 @@ export const EditorBuildingsSubView = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
             <Button
-              type="button"
-              variant="ghost"
-              color="red"
-              className="!w-auto px-3 text-xs flex items-center gap-1.5"
-              onClick={() => {
-                setIsEditStructureOpen(false);
-                setIsDeleteStructureModalOpen(true);
-              }}
+              variant="outline"
+              color="gray"
+              className="!w-auto px-4"
+              onClick={() => setIsEditStructureOpen(false)}
             >
-              <TrashIcon className="w-3.5 h-3.5" />
-              Eliminar estructura
+              Cancelar
             </Button>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                color="gray"
-                className="!w-auto px-4"
-                onClick={() => setIsEditStructureOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                color="blue"
-                className="!w-auto px-5"
-                onClick={() => {
-                  setIsEditStructureOpen(false);
-                  notifyEditor(`Estructura "${editStructureName.trim()}" actualizada con éxito.`);
-                }}
-                disabled={!editStructureName.trim()}
-              >
-                Guardar estructura
-              </Button>
-            </div>
+            <Button
+              color="blue"
+              className="!w-auto px-5"
+              onClick={handleSaveEditStructure}
+              disabled={!editStructureName.trim() || updateStructure.isPending}
+            >
+              {updateStructure.isPending ? 'Guardando...' : 'Guardar estructura'}
+            </Button>
           </div>
         </div>
       </ModalOverlay>
 
-      {/* Modal: Delete Building Confirmation (Visual) */}
+      {/* Modal: Delete Building Confirmation */}
       <ModalOverlay
         isOpen={isDeleteBuildingModalOpen}
         onClose={() => setIsDeleteBuildingModalOpen(false)}
@@ -1089,16 +1076,22 @@ export const EditorBuildingsSubView = () => {
               label: 'Sí, eliminar',
               color: 'red',
               onClick: () => {
-                const bName = selectedBuilding?.name || 'Edificio';
-                setIsDeleteBuildingModalOpen(false);
-                notifyEditor(`Edificio "${bName}" eliminado.`);
+                if (!selectedBuilding) return;
+                const bName = selectedBuilding.name || 'Edificio';
+                deleteBuilding.mutate(selectedBuilding.id, {
+                  onSuccess: () => {
+                    setIsDeleteBuildingModalOpen(false);
+                    setSelectedId(null);
+                    notifyEditor(`Edificio "${bName}" eliminado.`);
+                  },
+                });
               },
             },
           ]}
         />
       </ModalOverlay>
 
-      {/* Modal: Delete Structure Confirmation (Visual) */}
+      {/* Modal: Delete Structure Confirmation */}
       <ModalOverlay
         isOpen={isDeleteStructureModalOpen}
         onClose={() => setIsDeleteStructureModalOpen(false)}
@@ -1117,9 +1110,15 @@ export const EditorBuildingsSubView = () => {
               label: 'Sí, eliminar',
               color: 'red',
               onClick: () => {
-                const sName = selectedStructure?.name || 'Estructura';
-                setIsDeleteStructureModalOpen(false);
-                notifyEditor(`Estructura "${sName}" eliminada.`);
+                if (!selectedStructure) return;
+                const sName = selectedStructure.name || 'Estructura';
+                deleteStructure.mutate(selectedStructure.id, {
+                  onSuccess: () => {
+                    setIsDeleteStructureModalOpen(false);
+                    setSelectedId(null);
+                    notifyEditor(`Estructura "${sName}" eliminada.`);
+                  },
+                });
               },
             },
           ]}

@@ -12,6 +12,7 @@ interface EditorMapCanvasProps {
   children?: React.ReactNode;
   campusId?: string;
   showCampusSelector?: boolean;
+  showControls?: boolean;
   topMessage?: React.ReactNode;
   selectedMarkerId?: string | null;
   onMapClick?: (coords: [number, number]) => void;
@@ -26,6 +27,7 @@ export const EditorMapCanvas = ({
   children,
   campusId,
   showCampusSelector = true,
+  showControls = true,
   topMessage,
   selectedMarkerId,
   onMapClick,
@@ -102,6 +104,7 @@ export const EditorMapCanvas = ({
       markersDraggable={markersDraggable}
       onMarkerDragEnd={onMarkerDragEnd}
       cursorMode={cursorMode}
+      showControls={showControls}
     >
       {/* Centered Top Action Message (vertically aligned with Campus Select button) */}
       {topMessage && (
