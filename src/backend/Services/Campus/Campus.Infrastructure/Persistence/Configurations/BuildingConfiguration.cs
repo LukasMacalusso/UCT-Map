@@ -32,6 +32,11 @@ public class BuildingConfiguration : IEntityTypeConfiguration<Building>
                .HasForeignKey(r => r.BuildingId)
                .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(b => b.Category)
+               .WithMany(c => c.Buildings)
+               .HasForeignKey(b => b.CategoryId)
+               .OnDelete(DeleteBehavior.SetNull);
+
         builder.OwnsOne(b => b.Coordinates);
     }
 }

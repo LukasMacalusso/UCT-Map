@@ -8,6 +8,7 @@ using Campus.Application.DTOs;
 using Campus.Application.Handlers;
 using Campus.Domain.Entities;
 using Campus.Domain.Interfaces;
+using ErrorOr;
 using NSubstitute;
 using Xunit;
 
@@ -16,24 +17,21 @@ namespace Campus.UnitTests.Application.Handlers;
 public class CategoryHandlerTests
 {
     private readonly IGenericRepository<Category> _repository;
-    private readonly IGenericRepository<CategoryGroup> _groupRepository;
     private readonly CategoryHandler _handler;
 
     public CategoryHandlerTests()
     {
         _repository = Substitute.For<IGenericRepository<Category>>();
-        _groupRepository = Substitute.For<IGenericRepository<CategoryGroup>>();
-        _handler = new CategoryHandler(_repository, _groupRepository);
+        _handler = new CategoryHandler(_repository);
     }
 
     [Fact]
-    public async Task GetAllAsync_ShouldReturnMappedCategories()
+    public async Task GetAllAsync_ShouldReturnMappedAndOrderedCategories()
     {
-        var groupId = Guid.NewGuid();
         var categories = new List<Category>
         {
-            new("Salas", "room-icon", "Salas de clases", groupId),
-            new("Laboratorios", "lab-icon", "Laboratorios", groupId)
+            new("Laboratorios", "lab-icon", "Laboratorios", 2),
+            new("Salas", "room-icon", "Salas de clases", 1)
         };
 
         _repository.GetAllAsync(null, Arg.Any<CancellationToken>())
@@ -45,28 +43,27 @@ public class CategoryHandlerTests
         Assert.Equal(2, list.Count);
         Assert.Equal("Salas", list[0].Name);
         Assert.Equal("room-icon", list[0].Icon);
-        Assert.Equal(groupId, list[0].CategoryGroupId);
+        Assert.Equal(1, list[0].Order);
+        Assert.Equal("Laboratorios", list[1].Name);
     }
 
     [Fact]
     public async Task GetByIdAsync_WhenExists_ShouldReturnDto()
     {
         var id = Guid.NewGuid();
-        var groupId = Guid.NewGuid();
-        var category = new Category("Auditorios", "aud-icon", "Auditorios", groupId);
+        var category = new Category("Auditorios", "aud-icon", "Auditorios", 1);
         _repository.GetByIdAsync(id, Arg.Any<CancellationToken>())
             .Returns(category);
 
         var result = await _handler.GetByIdAsync(id, CancellationToken.None);
 
-        Assert.NotNull(result);
-        Assert.Equal("Auditorios", result.Name);
-        Assert.Equal("aud-icon", result.Icon);
-        Assert.Equal(groupId, result.CategoryGroupId);
+        Assert.False(result.IsError);
+        Assert.Equal("Auditorios", result.Value.Name);
+        Assert.Equal("aud-icon", result.Value.Icon);
     }
 
     [Fact]
-    public async Task GetByIdAsync_WhenNotFound_ShouldReturnNull()
+    public async Task GetByIdAsync_WhenNotFound_ShouldReturnNotFoundError()
     {
         var id = Guid.NewGuid();
         _repository.GetByIdAsync(id, Arg.Any<CancellationToken>())
@@ -74,115 +71,93 @@ public class CategoryHandlerTests
 
         var result = await _handler.GetByIdAsync(id, CancellationToken.None);
 
-        Assert.Null(result);
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
+        Assert.Equal("Category.NotFound", result.FirstError.Code);
     }
 
     [Fact]
     public async Task CreateAsync_ShouldPersistAndReturnDto()
     {
-        var groupId = Guid.NewGuid();
-        _groupRepository.ExistsAsync(Arg.Any<Expression<Func<CategoryGroup, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+        var request = new CreateCategoryDto("Cafeterías", "cafe-icon", "Puntos de comida", 3);
 
-        var request = new CreateCategoryDto(groupId, "Cafeterías", "cafe-icon", "Puntos de comida");
+        var result = await _handler.CreateAsync(request, CancellationToken.None);
 
-        var (result, error) = await _handler.CreateAsync(request, CancellationToken.None);
-
-        Assert.Null(error);
-        Assert.NotNull(result);
-        Assert.NotEqual(Guid.Empty, result.Id);
-        Assert.Equal("Cafeterías", result.Name);
-        Assert.Equal("cafe-icon", result.Icon);
-        Assert.Equal("Puntos de comida", result.Description);
-        Assert.Equal(groupId, result.CategoryGroupId);
+        Assert.False(result.IsError);
+        Assert.NotEqual(Guid.Empty, result.Value.Id);
+        Assert.Equal("Cafeterías", result.Value.Name);
+        Assert.Equal("cafe-icon", result.Value.Icon);
+        Assert.Equal("Puntos de comida", result.Value.Description);
+        Assert.Equal(3, result.Value.Order);
 
         await _repository.Received(1).AddAsync(Arg.Is<Category>(c => c.Name == request.Name), Arg.Any<CancellationToken>());
         await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task CreateAsync_WhenGroupDoesNotExist_ShouldReturnError()
-    {
-        var groupId = Guid.NewGuid();
-        _groupRepository.ExistsAsync(Arg.Any<Expression<Func<CategoryGroup, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(false);
-
-        var request = new CreateCategoryDto(groupId, "Cafeterías", "cafe-icon", "Puntos de comida");
-
-        var (result, error) = await _handler.CreateAsync(request, CancellationToken.None);
-
-        Assert.Null(result);
-        Assert.NotNull(error);
-    }
-
-    [Fact]
-    public async Task UpdateAsync_WhenExists_ShouldUpdateAndReturnTrue()
+    public async Task UpdateAsync_WhenExists_ShouldUpdateAndReturnSuccess()
     {
         var id = Guid.NewGuid();
-        var groupId = Guid.NewGuid();
-        var category = new Category("Antiguo", "old-icon", "Desc", groupId);
+        var category = new Category("Antiguo", "old-icon", "Desc", 1);
         _repository.GetByIdAsync(id, Arg.Any<CancellationToken>())
             .Returns(category);
-        _groupRepository.ExistsAsync(Arg.Any<Expression<Func<CategoryGroup, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
 
-        var request = new UpdateCategoryDto(groupId, "Nuevo", "new-icon", "Nueva Desc");
+        var request = new UpdateCategoryDto("Nuevo", "new-icon", "Nueva Desc", 4);
 
-        var (success, error) = await _handler.UpdateAsync(id, request, CancellationToken.None);
+        var result = await _handler.UpdateAsync(id, request, CancellationToken.None);
 
-        Assert.True(success);
-        Assert.Null(error);
+        Assert.False(result.IsError);
         Assert.Equal("Nuevo", category.Name);
         Assert.Equal("new-icon", category.Icon);
+        Assert.Equal("Nueva Desc", category.Description);
+        Assert.Equal(4, category.Order);
         _repository.Received(1).Update(category);
         await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task UpdateAsync_WhenNotFound_ShouldReturnFalse()
+    public async Task UpdateAsync_WhenNotFound_ShouldReturnNotFoundError()
     {
         var id = Guid.NewGuid();
         _repository.GetByIdAsync(id, Arg.Any<CancellationToken>())
             .Returns((Category?)null);
 
-        var request = new UpdateCategoryDto(Guid.NewGuid(), "Nuevo", "new-icon", "Nueva Desc");
+        var request = new UpdateCategoryDto("Nuevo", "new-icon", "Nueva Desc");
 
-        var (success, error) = await _handler.UpdateAsync(id, request, CancellationToken.None);
+        var result = await _handler.UpdateAsync(id, request, CancellationToken.None);
 
-        Assert.False(success);
-        Assert.Null(error);
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
         _repository.DidNotReceive().Update(Arg.Any<Category>());
         await _repository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteAsync_WhenExists_ShouldDeleteAndReturnTrue()
+    public async Task DeleteAsync_WhenExists_ShouldDeleteAndReturnSuccess()
     {
         var id = Guid.NewGuid();
-        var category = new Category("Por borrar", "icon", "desc", Guid.NewGuid());
+        var category = new Category("Por borrar", "icon", "desc");
         _repository.GetByIdAsync(id, Arg.Any<CancellationToken>())
             .Returns(category);
 
-        var (success, error, notFound) = await _handler.DeleteAsync(id, CancellationToken.None);
+        var result = await _handler.DeleteAsync(id, CancellationToken.None);
 
-        Assert.True(success);
-        Assert.False(notFound);
-        Assert.Null(error);
+        Assert.False(result.IsError);
         _repository.Received(1).Delete(category);
         await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteAsync_WhenNotFound_ShouldReturnFalse()
+    public async Task DeleteAsync_WhenNotFound_ShouldReturnNotFoundError()
     {
         var id = Guid.NewGuid();
         _repository.GetByIdAsync(id, Arg.Any<CancellationToken>())
             .Returns((Category?)null);
 
-        var (success, error, notFound) = await _handler.DeleteAsync(id, CancellationToken.None);
+        var result = await _handler.DeleteAsync(id, CancellationToken.None);
 
-        Assert.False(success);
-        Assert.True(notFound);
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
         _repository.DidNotReceive().Delete(Arg.Any<Category>());
         await _repository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -191,25 +166,33 @@ public class CategoryHandlerTests
     public async Task DeleteAsync_WhenDbUpdateExceptionOccurs_ShouldReturnConflictError()
     {
         var id = Guid.NewGuid();
-        var category = new Category("Por borrar", "icon", "desc", Guid.NewGuid());
+        var category = new Category("Por borrar", "icon", "desc");
         _repository.GetByIdAsync(id, Arg.Any<CancellationToken>())
             .Returns(category);
         _repository.When(r => r.SaveChangesAsync(Arg.Any<CancellationToken>()))
             .Do(_ => throw new Microsoft.EntityFrameworkCore.DbUpdateException("FK conflict"));
 
-        var (success, error, notFound) = await _handler.DeleteAsync(id, CancellationToken.None);
+        var result = await _handler.DeleteAsync(id, CancellationToken.None);
 
-        Assert.False(success);
-        Assert.False(notFound);
-        Assert.NotNull(error);
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Equal("Category.Conflict", result.FirstError.Code);
     }
 
     [Fact]
-    public async Task ReorderAsync_WhenAllCategoriesExist_ShouldUpdateOrdersAndReturnTrue()
+    public async Task ReorderAsync_WhenListIsEmpty_ShouldReturnSuccessWithoutSaving()
     {
-        var groupId = Guid.NewGuid();
-        var cat1 = new Category("Cat 1", "icon1", "desc1", groupId, 0);
-        var cat2 = new Category("Cat 2", "icon2", "desc2", groupId, 1);
+        var result = await _handler.ReorderAsync(Array.Empty<ReorderItemDto>(), CancellationToken.None);
+
+        Assert.False(result.IsError);
+        await _repository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ReorderAsync_WhenAllCategoriesExist_ShouldUpdateOrdersAndReturnSuccess()
+    {
+        var cat1 = new Category("Cat 1", "icon1", "desc1", 0);
+        var cat2 = new Category("Cat 2", "icon2", "desc2", 1);
 
         _repository.GetAllAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(new List<Category> { cat1, cat2 });
@@ -222,7 +205,7 @@ public class CategoryHandlerTests
 
         var result = await _handler.ReorderAsync(items, CancellationToken.None);
 
-        Assert.True(result);
+        Assert.False(result.IsError);
         Assert.Equal(5, cat1.Order);
         Assert.Equal(10, cat2.Order);
         _repository.Received(1).Update(cat1);
@@ -231,9 +214,9 @@ public class CategoryHandlerTests
     }
 
     [Fact]
-    public async Task ReorderAsync_WhenSomeCategoryNotFound_ShouldReturnFalse()
+    public async Task ReorderAsync_WhenSomeCategoryNotFound_ShouldReturnValidationError()
     {
-        var cat1 = new Category("Cat 1", "icon1", "desc1", Guid.NewGuid(), 0);
+        var cat1 = new Category("Cat 1", "icon1", "desc1", 0);
 
         _repository.GetAllAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(new List<Category> { cat1 });
@@ -246,7 +229,8 @@ public class CategoryHandlerTests
 
         var result = await _handler.ReorderAsync(items, CancellationToken.None);
 
-        Assert.False(result);
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Validation, result.FirstError.Type);
         await _repository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

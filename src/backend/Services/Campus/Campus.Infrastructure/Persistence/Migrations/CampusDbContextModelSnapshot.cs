@@ -31,6 +31,9 @@ namespace Campus.Infrastructure.Migrations
                     b.Property<Guid>("CampusId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid");
+
                     b.Property<TimeOnly?>("CloseTime")
                         .HasColumnType("time");
 
@@ -52,6 +55,8 @@ namespace Campus.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CampusId");
+
+                    b.HasIndex("CategoryId");
 
                     b.ToTable("Buildings");
                 });
@@ -95,9 +100,6 @@ namespace Campus.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CategoryGroupId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Description")
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)");
@@ -119,30 +121,7 @@ namespace Campus.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryGroupId");
-
                     b.ToTable("Categories");
-                });
-
-            modelBuilder.Entity("Campus.Domain.Entities.CategoryGroup", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("Order")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
-
-                    b.HasKey("Id");
-
-                    b.ToTable("CategoryGroups");
                 });
 
             modelBuilder.Entity("Campus.Domain.Entities.Room", b =>
@@ -208,6 +187,11 @@ namespace Campus.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Campus.Domain.Entities.Category", "Category")
+                        .WithMany("Buildings")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.OwnsOne("Campus.Domain.ValueObjects.Coordinate", "Coordinates", b1 =>
                         {
                             b1.Property<Guid>("BuildingId")
@@ -228,6 +212,8 @@ namespace Campus.Infrastructure.Migrations
                         });
 
                     b.Navigation("Campus");
+
+                    b.Navigation("Category");
 
                     b.Navigation("Coordinates")
                         .IsRequired();
@@ -256,17 +242,6 @@ namespace Campus.Infrastructure.Migrations
 
                     b.Navigation("Coordinates")
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("Campus.Domain.Entities.Category", b =>
-                {
-                    b.HasOne("Campus.Domain.Entities.CategoryGroup", "CategoryGroup")
-                        .WithMany("Categories")
-                        .HasForeignKey("CategoryGroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CategoryGroup");
                 });
 
             modelBuilder.Entity("Campus.Domain.Entities.Room", b =>
@@ -341,14 +316,11 @@ namespace Campus.Infrastructure.Migrations
 
             modelBuilder.Entity("Campus.Domain.Entities.Category", b =>
                 {
+                    b.Navigation("Buildings");
+
                     b.Navigation("Rooms");
 
                     b.Navigation("Structures");
-                });
-
-            modelBuilder.Entity("Campus.Domain.Entities.CategoryGroup", b =>
-                {
-                    b.Navigation("Categories");
                 });
 #pragma warning restore 612, 618
         }

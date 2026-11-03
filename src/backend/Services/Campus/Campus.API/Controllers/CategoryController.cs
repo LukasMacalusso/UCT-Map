@@ -1,11 +1,13 @@
-using Microsoft.AspNetCore.Mvc;
-using Campus.Application.DTOs;
-using Campus.Application.Handlers;
-using System.Threading;
-using System.Threading.Tasks;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Campus.Application.DTOs;
+using Campus.Application.Handlers;
+using ErrorOr;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Campus.API.Controllers;
 
@@ -28,46 +30,50 @@ public class CategoryController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<CategoryDto>> GetById(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
-        var dto = await _handler.GetByIdAsync(id, cancellationToken);
-        if (dto is null) return NotFound(new { message = $"Category with ID '{id}' was not found." });
-        return Ok(dto);
+        var result = await _handler.GetByIdAsync(id, cancellationToken);
+        return result.Match(
+            dto => Ok(dto),
+            errors => Problem(statusCode: StatusCodes.Status404NotFound, title: errors.First().Description)
+        );
     }
 
     [HttpPost]
-    public async Task<ActionResult<CategoryDto>> Create([FromBody] CreateCategoryDto request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateCategoryDto request, CancellationToken cancellationToken)
     {
-        if (request.CategoryGroupId == Guid.Empty) return BadRequest(new { message = "The 'categoryGroupId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is mandatory." });
         if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
         if (string.IsNullOrWhiteSpace(request.Icon)) return BadRequest(new { message = "Icon is mandatory." });
         if (request.Icon.Length > 100) return BadRequest(new { message = "Icon cannot exceed 100 characters." });
-        if (request.Description != null && request.Description.Length > 250)
-            return BadRequest(new { message = "Description cannot exceed 250 characters." });
+        if (request.Description != null && request.Description.Length > 250) return BadRequest(new { message = "Description cannot exceed 250 characters." });
 
-        var (dto, error) = await _handler.CreateAsync(request, cancellationToken);
-        if (error is not null) return BadRequest(new { message = error });
-
-        return CreatedAtAction(nameof(GetById), new { id = dto!.Id }, dto);
+        var result = await _handler.CreateAsync(request, cancellationToken);
+        return result.Match(
+            dto => CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto),
+            errors => Problem(statusCode: StatusCodes.Status400BadRequest, title: errors.First().Description)
+        );
     }
 
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCategoryDto request, CancellationToken cancellationToken)
     {
-        if (request.CategoryGroupId == Guid.Empty) return BadRequest(new { message = "The 'categoryGroupId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is mandatory." });
         if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
         if (string.IsNullOrWhiteSpace(request.Icon)) return BadRequest(new { message = "Icon is mandatory." });
         if (request.Icon.Length > 100) return BadRequest(new { message = "Icon cannot exceed 100 characters." });
-        if (request.Description != null && request.Description.Length > 250)
-            return BadRequest(new { message = "Description cannot exceed 250 characters." });
+        if (request.Description != null && request.Description.Length > 250) return BadRequest(new { message = "Description cannot exceed 250 characters." });
 
-        var (success, error) = await _handler.UpdateAsync(id, request, cancellationToken);
-        if (error is not null) return BadRequest(new { message = error });
-        if (!success) return NotFound(new { message = $"Category with ID '{id}' was not found." });
-
-        return NoContent();
+        var result = await _handler.UpdateAsync(id, request, cancellationToken);
+        return result.Match(
+            _ => (IActionResult)NoContent(),
+            errors =>
+            {
+                var firstError = errors.First();
+                var statusCode = firstError.Type == ErrorType.NotFound ? StatusCodes.Status404NotFound : StatusCodes.Status400BadRequest;
+                return Problem(statusCode: statusCode, title: firstError.Description);
+            }
+        );
     }
 
     [HttpPut("reorder")]
@@ -75,19 +81,25 @@ public class CategoryController : ControllerBase
     {
         if (items is null || !items.Any()) return BadRequest(new { message = "The items list cannot be empty." });
 
-        var success = await _handler.ReorderAsync(items, cancellationToken);
-        if (!success) return BadRequest(new { message = "Failed to reorder categories. Some items may not exist." });
-
-        return NoContent();
+        var result = await _handler.ReorderAsync(items, cancellationToken);
+        return result.Match(
+            _ => (IActionResult)NoContent(),
+            errors => Problem(statusCode: StatusCodes.Status400BadRequest, title: errors.First().Description)
+        );
     }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var (success, error, notFound) = await _handler.DeleteAsync(id, cancellationToken);
-        if (notFound) return NotFound(new { message = $"Category with ID '{id}' was not found." });
-        if (!success) return StatusCode(StatusCodes.Status409Conflict, new { message = error });
-
-        return NoContent();
+        var result = await _handler.DeleteAsync(id, cancellationToken);
+        return result.Match(
+            _ => (IActionResult)NoContent(),
+            errors =>
+            {
+                var firstError = errors.First();
+                var statusCode = firstError.Type == ErrorType.Conflict ? StatusCodes.Status409Conflict : StatusCodes.Status404NotFound;
+                return Problem(statusCode: statusCode, title: firstError.Description);
+            }
+        );
     }
 }

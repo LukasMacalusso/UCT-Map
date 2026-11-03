@@ -23,6 +23,5 @@ namespace Campus.Infrastructure.Persistence
         public DbSet<Room> Rooms { get; set; }
         public DbSet<Structure> Structures { get; set; }
         public DbSet<Category> Categories { get; set; }
-        public DbSet<CategoryGroup> CategoryGroups { get; set; }
     }
 }
