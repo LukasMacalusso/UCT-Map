@@ -1,11 +1,13 @@
 import { SquareButton } from '../../components/ui/SquareButton';
 import type { BuildingLocationDto } from '../../dtos/campus/BuildingLocationDto';
+import type { StructureDto } from '../../dtos/campus/StructureDto';
 
 import PencilIcon from '../../assets/svg/icons/icon_pencil.svg?react';
 import MapPinIcon from '../../assets/svg/icons/icon_location.svg?react';
 import TrashIcon from '../../assets/svg/icons/icon_trash.svg?react';
 import MoveIcon from '../../assets/svg/icons/icon_move.svg?react';
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
+import CubeIcon from '../../assets/svg/icons/icon_category_cube.svg?react';
 import CrossIcon from '../../assets/svg/icons/icon_cross.svg?react';
 
 export type EditorMapTool = 'none' | 'create' | 'inspect' | 'move' | 'delete';
@@ -14,6 +16,7 @@ interface MapEditorPanelProps {
   activeTool?: EditorMapTool;
   onSelectTool?: (tool: EditorMapTool) => void;
   selectedBuilding?: BuildingLocationDto | null;
+  selectedStructure?: StructureDto | null;
   onDeselectBuilding?: () => void;
 }
 
@@ -21,12 +24,15 @@ export const MapEditorPanel = ({
   activeTool = 'none',
   onSelectTool,
   selectedBuilding = null,
+  selectedStructure = null,
   onDeselectBuilding,
 }: MapEditorPanelProps) => {
   const handleToggle = (tool: EditorMapTool) => {
     if (!onSelectTool) return;
     onSelectTool(activeTool === tool ? 'none' : tool);
   };
+
+  const hasSelection = !!selectedBuilding || !!selectedStructure;
 
   return (
     <div className="flex flex-row items-center gap-2">
@@ -57,11 +63,11 @@ export const MapEditorPanel = ({
       </SquareButton>
 
       {/* 3. Actions & Info Card for Selected Marker (only when a marker is selected) */}
-      {selectedBuilding && (
+      {hasSelection && (
         <>
           {/* Edit Marker Button */}
           <SquareButton
-            title={activeTool === 'inspect' ? 'Cancelar edición' : 'Editar detalles del edificio'}
+            title={activeTool === 'inspect' ? 'Cancelar edición' : 'Editar detalles del elemento'}
             onClick={() => handleToggle('inspect')}
             className={`transition-all ${
               activeTool === 'inspect'
@@ -88,19 +94,30 @@ export const MapEditorPanel = ({
           {/* Basic Marker Info Panel */}
           <div className="h-14 px-4 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-3.5 min-w-[260px] max-w-sm animate-in fade-in slide-in-from-left-2">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 text-page-blue flex items-center justify-center shrink-0">
-                <BuildingIcon className="w-5 h-5" />
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  selectedBuilding ? 'bg-blue-50 text-page-blue' : 'bg-amber-50 text-amber-600'
+                }`}
+              >
+                {selectedBuilding ? (
+                  <BuildingIcon className="w-5 h-5" />
+                ) : (
+                  <CubeIcon className="w-5 h-5" />
+                )}
               </div>
               <div className="flex flex-col text-left min-w-0">
                 <span
                   className="text-sm font-bold text-gray-800 truncate"
-                  title={selectedBuilding.name}
+                  title={selectedBuilding?.name ?? selectedStructure?.name}
                 >
-                  {selectedBuilding.name}
+                  {selectedBuilding?.name ?? selectedStructure?.name}
                 </span>
                 <span className="text-[11px] font-semibold text-gray-400 truncate">
-                  {selectedBuilding.metadata.floorsCount || 1}{' '}
-                  {(selectedBuilding.metadata.floorsCount || 1) === 1 ? 'piso' : 'pisos'}
+                  {selectedBuilding
+                    ? `${selectedBuilding.metadata.floorsCount || 1} ${
+                        (selectedBuilding.metadata.floorsCount || 1) === 1 ? 'piso' : 'pisos'
+                      }`
+                    : 'Estructura'}
                 </span>
               </div>
             </div>

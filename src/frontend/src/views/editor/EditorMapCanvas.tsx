@@ -1,8 +1,9 @@
 import React from 'react';
 import { Select } from '../../components/ui/Select';
 import { CampusMapCanvas, type CampusMapHandle } from '../../modules/map/CampusMapCanvas';
-import { useBuildingLocations, useCampuses } from '../../hooks/useCampus';
+import { useBuildingLocations, useCampuses, useStructures } from '../../hooks/useCampus';
 import type { BuildingLocationDto } from '../../dtos/campus/BuildingLocationDto';
+import type { StructureDto } from '../../dtos/campus/StructureDto';
 import { textPageColors } from '../../constants/colors';
 
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
@@ -13,10 +14,13 @@ interface EditorMapCanvasProps {
   showCampusSelector?: boolean;
   topMessage?: React.ReactNode;
   selectedBuildingId?: string | null;
+  selectedStructureId?: string | null;
   onMapClick?: (coords: [number, number]) => void;
   onBuildingClick?: (building: BuildingLocationDto) => void;
+  onStructureClick?: (structure: StructureDto) => void;
   markersDraggable?: boolean;
   onMarkerDragEnd?: (building: BuildingLocationDto, coords: [number, number]) => void;
+  onStructureMarkerDragEnd?: (structure: StructureDto, coords: [number, number]) => void;
   cursorMode?: 'default' | 'crosshair' | 'grab' | 'pointer';
   onCampusChange?: (campusId: string) => void;
 }
@@ -27,26 +31,39 @@ export const EditorMapCanvas = ({
   showCampusSelector = true,
   topMessage,
   selectedBuildingId,
+  selectedStructureId,
   onMapClick,
   onBuildingClick,
+  onStructureClick,
   markersDraggable = false,
   onMarkerDragEnd,
+  onStructureMarkerDragEnd,
   cursorMode = 'default',
   onCampusChange,
 }: EditorMapCanvasProps) => {
   const [selectedCampus, setSelectedCampus] = React.useState('');
   const [selectedBuilding, setSelectedBuilding] = React.useState<BuildingLocationDto | null>(null);
+  const [selectedStructure, setSelectedStructure] = React.useState<StructureDto | null>(null);
 
-  const isControlled = selectedBuildingId !== undefined;
-  const activeBuildingId = isControlled
+  const isBuildingControlled = selectedBuildingId !== undefined;
+  const activeBuildingId = isBuildingControlled
     ? selectedBuildingId
     : selectedBuilding?.id ?? null;
+
+  const isStructureControlled = selectedStructureId !== undefined;
+  const activeStructureId = isStructureControlled
+    ? selectedStructureId
+    : selectedStructure?.id ?? null;
 
   const mapRef = React.useRef<CampusMapHandle | null>(null);
 
   const { data: campuses, isLoading: areCampusesLoading } = useCampuses();
   const activeCampusId = campusId || selectedCampus || campuses?.[0]?.id || '';
   const { data: buildings, isLoading: areBuildingsLoading } = useBuildingLocations(
+    activeCampusId || undefined,
+    !areCampusesLoading,
+  );
+  const { data: structures, isLoading: areStructuresLoading } = useStructures(
     activeCampusId || undefined,
     !areCampusesLoading,
   );
@@ -61,8 +78,9 @@ export const EditorMapCanvas = ({
 
   const handleBuildingClick = React.useCallback(
     (building: BuildingLocationDto) => {
-      if (!isControlled) {
+      if (!isBuildingControlled) {
         setSelectedBuilding(building);
+        setSelectedStructure(null);
       }
       if (onBuildingClick) {
         onBuildingClick(building);
@@ -70,17 +88,35 @@ export const EditorMapCanvas = ({
         mapRef.current?.flyToBuilding(building);
       }
     },
-    [isControlled, onBuildingClick],
+    [isBuildingControlled, onBuildingClick],
+  );
+
+  const handleStructureClick = React.useCallback(
+    (structure: StructureDto) => {
+      if (!isStructureControlled) {
+        setSelectedStructure(structure);
+        setSelectedBuilding(null);
+      }
+      if (onStructureClick) {
+        onStructureClick(structure);
+      } else {
+        mapRef.current?.flyToStructure(structure);
+      }
+    },
+    [isStructureControlled, onStructureClick],
   );
 
   const handleMapClick = React.useCallback(
     (coords: [number, number]) => {
-      if (!isControlled) {
+      if (!isBuildingControlled) {
         setSelectedBuilding(null);
+      }
+      if (!isStructureControlled) {
+        setSelectedStructure(null);
       }
       onMapClick?.(coords);
     },
-    [isControlled, onMapClick],
+    [isBuildingControlled, isStructureControlled, onMapClick],
   );
 
   return (
@@ -90,9 +126,14 @@ export const EditorMapCanvas = ({
       areBuildingsLoading={areBuildingsLoading}
       selectedBuildingId={activeBuildingId}
       onBuildingClick={handleBuildingClick}
+      structures={structures}
+      areStructuresLoading={areStructuresLoading}
+      selectedStructureId={activeStructureId}
+      onStructureClick={handleStructureClick}
       onMapClick={handleMapClick}
       markersDraggable={markersDraggable}
       onMarkerDragEnd={onMarkerDragEnd}
+      onStructureMarkerDragEnd={onStructureMarkerDragEnd}
       cursorMode={cursorMode}
     >
       {/* Centered Top Action Message (vertically aligned with Campus Select button) */}

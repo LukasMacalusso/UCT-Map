@@ -7,10 +7,12 @@ import { SquareButton } from '../../components/ui/SquareButton';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { MapMarker } from '../../components/ui/MapMarker';
 import type { BuildingLocationDto } from '../../dtos/campus/BuildingLocationDto';
+import type { StructureDto } from '../../dtos/campus/StructureDto';
 import type { CampusDto } from '../../dtos/campus/CampusDto';
 import { UCT_LOADING_PHRASES } from '../../constants/loadingPhrases';
 
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
+import CubeIcon from '../../assets/svg/icons/icon_category_cube.svg?react';
 import PlusIcon from '../../assets/svg/icons/icon_plus.svg?react';
 import MinusIcon from '../../assets/svg/icons/icon_minus.svg?react';
 import TargetIcon from '../../assets/svg/icons/icon_target.svg?react';
@@ -51,8 +53,20 @@ export const isWithinCampus = ([lng, lat]: [number, number]) =>
 
 export const resolveBuildingCoordinate = (building: BuildingLocationDto): [number, number] => {
   const coordinate: [number, number] = [building.location.longitude, building.location.latitude];
-  if (isWithinCampus(coordinate)) return coordinate;
+  if (coordinate[0] !== 0 || coordinate[1] !== 0) return coordinate;
   const seed = hashString(building.id);
+  const angle = ((seed % 360) * Math.PI) / 180;
+  const radius = MOCK_SPREAD * (0.45 + ((seed % 50) / 50) * 0.55);
+  return [
+    CAMPUS_CENTER[0] + Math.cos(angle) * radius,
+    CAMPUS_CENTER[1] + Math.sin(angle) * radius,
+  ];
+};
+
+export const resolveStructureCoordinate = (structure: StructureDto): [number, number] => {
+  const coordinate: [number, number] = [structure.longitude, structure.latitude];
+  if (coordinate[0] !== 0 || coordinate[1] !== 0) return coordinate;
+  const seed = hashString(structure.id);
   const angle = ((seed % 360) * Math.PI) / 180;
   const radius = MOCK_SPREAD * (0.45 + ((seed % 50) / 50) * 0.55);
   return [
@@ -249,6 +263,7 @@ export const applySharedMapCamera = (camera: CampusCamera, smooth = false) => {
 
 export interface CampusMapHandle {
   flyToBuilding: (building: BuildingLocationDto) => void;
+  flyToStructure: (structure: StructureDto) => void;
   flyToCampus: (campus: CampusDto) => void;
   getMap: () => MapboxMap | null;
 }
@@ -258,9 +273,14 @@ interface CampusMapCanvasProps {
   areBuildingsLoading?: boolean;
   selectedBuildingId?: string | null;
   onBuildingClick?: (building: BuildingLocationDto) => void;
+  structures?: StructureDto[];
+  areStructuresLoading?: boolean;
+  selectedStructureId?: string | null;
+  onStructureClick?: (structure: StructureDto) => void;
   onMapClick?: (coords: [number, number]) => void;
   markersDraggable?: boolean;
   onMarkerDragEnd?: (building: BuildingLocationDto, coords: [number, number]) => void;
+  onStructureMarkerDragEnd?: (structure: StructureDto, coords: [number, number]) => void;
   cursorMode?: 'default' | 'crosshair' | 'grab' | 'pointer';
   children?: React.ReactNode;
 }
@@ -272,9 +292,14 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
       areBuildingsLoading = false,
       selectedBuildingId = null,
       onBuildingClick,
+      structures,
+      areStructuresLoading = false,
+      selectedStructureId = null,
+      onStructureClick,
       onMapClick,
       markersDraggable = false,
       onMarkerDragEnd,
+      onStructureMarkerDragEnd,
       cursorMode = 'default',
       children,
     },
@@ -293,6 +318,12 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
         flyToBuilding: (building: BuildingLocationDto) => {
           if (!sharedMapInstance) return;
           flyToCoordinate(sharedMapInstance, resolveBuildingCoordinate(building), {
+            zoom: Math.max(sharedMapInstance.getZoom(), 17),
+          });
+        },
+        flyToStructure: (structure: StructureDto) => {
+          if (!sharedMapInstance) return;
+          flyToCoordinate(sharedMapInstance, resolveStructureCoordinate(structure), {
             zoom: Math.max(sharedMapInstance.getZoom(), 17),
           });
         },
@@ -392,15 +423,35 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
       };
     }, [onMapClick, isMapLoaded]);
 
-    const callbacksRef = React.useRef({ onBuildingClick, onMarkerDragEnd, buildings });
-    callbacksRef.current = { onBuildingClick, onMarkerDragEnd, buildings };
+    const callbacksRef = React.useRef({
+      onBuildingClick,
+      onMarkerDragEnd,
+      buildings,
+      onStructureClick,
+      onStructureMarkerDragEnd,
+      structures,
+    });
+    callbacksRef.current = {
+      onBuildingClick,
+      onMarkerDragEnd,
+      buildings,
+      onStructureClick,
+      onStructureMarkerDragEnd,
+      structures,
+    };
 
-    // Sync building markers with active view's buildings & click handler
+    // Sync building & structure markers with active view
     React.useEffect(() => {
       const map = sharedMapInstance;
-      if (!map || !isMapLoaded || !buildings) return;
+      if (!map || !isMapLoaded) return;
 
-      const currentIds = new Set(buildings.map((building) => building.id));
+      const activeBuildings = buildings ?? [];
+      const activeStructures = structures ?? [];
+
+      const currentIds = new Set([
+        ...activeBuildings.map((building) => building.id),
+        ...activeStructures.map((structure) => structure.id),
+      ]);
 
       sharedMarkers.forEach((entry, id) => {
         if (!currentIds.has(id)) {
@@ -410,7 +461,8 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
         }
       });
 
-      buildings.forEach((building) => {
+      // Buildings
+      activeBuildings.forEach((building) => {
         const isActive = selectedBuildingId === building.id;
         const [lng, lat] = resolveBuildingCoordinate(building);
         const content = (
@@ -420,7 +472,7 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
             isActive={isActive}
             onClick={(e) => {
               e.stopPropagation();
-              onBuildingClick?.(building);
+              callbacksRef.current.onBuildingClick?.(building);
             }}
           />
         );
@@ -473,7 +525,79 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
 
         entry.root.render(content);
       });
-    }, [buildings, isMapLoaded, selectedBuildingId, onBuildingClick, markersDraggable, onMarkerDragEnd]);
+
+      // Structures
+      activeStructures.forEach((structure) => {
+        const isActive = selectedStructureId === structure.id;
+        const [lng, lat] = resolveStructureCoordinate(structure);
+        const content = (
+          <MapMarker
+            icon={<CubeIcon className="w-5 h-5 text-gray-800" />}
+            color={isActive ? 'green' : 'yellow'}
+            isActive={isActive}
+            onClick={(e) => {
+              e.stopPropagation();
+              callbacksRef.current.onStructureClick?.(structure);
+            }}
+          />
+        );
+
+        let entry = sharedMarkers.get(structure.id);
+        if (!entry) {
+          const element = document.createElement('div');
+          const root = createRoot(element);
+          const marker = new mapboxgl.Marker({
+            element,
+            anchor: 'bottom',
+            draggable: !!markersDraggable,
+          })
+            .setLngLat([lng, lat])
+            .addTo(map);
+
+          marker.on('dragstart', () => {
+            isDraggingMarker = true;
+            lastDragEndTimestamp = Date.now();
+            const current =
+              callbacksRef.current.structures?.find((s) => s.id === structure.id) || structure;
+            callbacksRef.current.onStructureClick?.(current);
+          });
+
+          marker.on('drag', () => {
+            isDraggingMarker = true;
+            lastDragEndTimestamp = Date.now();
+          });
+
+          marker.on('dragend', () => {
+            isDraggingMarker = false;
+            lastDragEndTimestamp = Date.now();
+            const lngLat = marker.getLngLat();
+            const current =
+              callbacksRef.current.structures?.find((s) => s.id === structure.id) || structure;
+            callbacksRef.current.onStructureClick?.(current);
+            callbacksRef.current.onStructureMarkerDragEnd?.(current, [lngLat.lng, lngLat.lat]);
+          });
+
+          entry = { marker, root, lng, lat };
+          sharedMarkers.set(structure.id, entry);
+        } else {
+          entry.marker.setDraggable(!!markersDraggable);
+          if (entry.lng !== lng || entry.lat !== lat) {
+            entry.marker.setLngLat([lng, lat]);
+            entry.lng = lng;
+            entry.lat = lat;
+          }
+        }
+
+        entry.root.render(content);
+      });
+    }, [
+      buildings,
+      structures,
+      isMapLoaded,
+      selectedBuildingId,
+      selectedStructureId,
+      markersDraggable,
+    ]);
 
     const handleZoomIn = () => sharedMapInstance?.zoomIn({ duration: 300 });
     const handleZoomOut = () => sharedMapInstance?.zoomOut({ duration: 300 });
@@ -501,7 +625,7 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
       });
     };
 
-    const isDataLoading = !isMapLoaded || areBuildingsLoading;
+    const isDataLoading = !isMapLoaded || areBuildingsLoading || areStructuresLoading;
 
     return (
       <div className="w-full h-full absolute inset-0 overflow-hidden">

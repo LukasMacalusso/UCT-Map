@@ -10,7 +10,7 @@ type InputProps = {
 } & React.InputHTMLAttributes<HTMLInputElement> & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
 export const Input = React.forwardRef<any, InputProps>(
-  ({ label, labelColor = 'text-white', error, className = '', multiline, icon, rightElement, placeholder, ...props }, ref) => {
+  ({ label, labelColor = 'text-gray-700', error, className = '', multiline, icon, rightElement, placeholder, ...props }, ref) => {
     const inputPlaceholder = placeholder !== undefined ? placeholder : (props as any).placeholder;
     const paddingClass = `${icon ? 'pl-12' : 'pl-4'} ${rightElement ? 'pr-12' : 'pr-4'}`;
 

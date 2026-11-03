@@ -24,7 +24,6 @@ export const useCampuses = () => {
   return useQuery<CampusDto[], Error>({
     queryKey: queryKeys.campuses,
     queryFn: () => campusService.getCampuses(),
-    staleTime: 1000 * 60 * 5,
   });
 };
 
@@ -60,7 +59,6 @@ export const useBuildingLocations = (campusId?: string, enabled = true) => {
     queryKey: queryKeys.buildingLocations(campusId),
     queryFn: () => campusService.getBuildingLocations(campusId),
     enabled,
-    staleTime: 1000 * 60 * 5,
   });
 };
 
@@ -69,7 +67,6 @@ export const useSearchRooms = (term: string) => {
     queryKey: queryKeys.roomSearch(term),
     queryFn: () => campusService.searchRooms(term),
     enabled: term.trim().length > 2,
-    staleTime: 1000 * 60,
   });
 };
 
@@ -78,7 +75,6 @@ export const useStructures = (campusId?: string, enabled = true) => {
     queryKey: queryKeys.structures(campusId),
     queryFn: () => campusService.getStructures(campusId),
     enabled,
-    staleTime: 1000 * 60 * 5,
   });
 };
 
@@ -87,7 +83,6 @@ export const useBuildingRooms = (buildingId?: string) => {
     queryKey: queryKeys.buildingRooms(buildingId),
     queryFn: () => campusService.getBuildingRooms(buildingId!),
     enabled: !!buildingId,
-    staleTime: 1000 * 60 * 5,
   });
 };
 
@@ -171,7 +166,7 @@ export const useCreateStructure = () => {
   return useMutation<StructureDto, Error, CreateStructureDto>({
     mutationFn: (payload) => campusService.createStructure(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.structures() });
+      queryClient.invalidateQueries({ queryKey: ['structures'] });
     },
   });
 };
@@ -182,7 +177,7 @@ export const useUpdateStructure = () => {
   return useMutation<void, Error, { id: string; payload: UpdateStructureDto }>({
     mutationFn: ({ id, payload }) => campusService.updateStructure(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.structures() });
+      queryClient.invalidateQueries({ queryKey: ['structures'] });
     },
   });
 };
@@ -193,7 +188,7 @@ export const useDeleteStructure = () => {
   return useMutation<void, Error, string>({
     mutationFn: (id) => campusService.deleteStructure(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.structures() });
+      queryClient.invalidateQueries({ queryKey: ['structures'] });
     },
   });
 };
@@ -203,7 +198,6 @@ export const useCategoryGroups = () => {
   return useQuery<CategoryGroupDto[], Error>({
     queryKey: queryKeys.categoryGroups,
     queryFn: () => campusService.getCategoryGroups(),
-    staleTime: 1000 * 60 * 5,
   });
 };
 
@@ -251,7 +245,6 @@ export const useCategories = () => {
   return useQuery<CategoryDto[], Error>({
     queryKey: queryKeys.categories,
     queryFn: () => campusService.getCategories(),
-    staleTime: 1000 * 60 * 5,
   });
 };
 
