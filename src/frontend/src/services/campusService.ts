@@ -8,15 +8,10 @@ import type { RoomDto, CreateRoomDto, UpdateRoomDto } from '../dtos/campus/RoomD
 import type { StructureDto, CreateStructureDto, UpdateStructureDto } from '../dtos/campus/StructureDto';
 import type { BuildingDto, CreateBuildingDto, UpdateBuildingDto } from '../dtos/campus/BuildingDto';
 import type {
-  CategoryGroupDto,
-  CreateCategoryGroupDto,
-  UpdateCategoryGroupDto,
-  ReorderItemDto,
-} from '../dtos/campus/CategoryGroupDto';
-import type {
   CategoryDto,
   CreateCategoryDto,
   UpdateCategoryDto,
+  ReorderItemDto,
 } from '../dtos/campus/CategoryDto';
 
 export const campusService = {
@@ -170,49 +165,6 @@ export const campusService = {
       await httpClient.delete(`/api/campus/buildings/${id}`);
     } catch (error) {
       throw toApiError(error, 'Error al eliminar el edificio');
-    }
-  },
-
-  // Category Groups (Filter Groups)
-  getCategoryGroups: async (): Promise<CategoryGroupDto[]> => {
-    try {
-      const { data } = await httpClient.get<CategoryGroupDto[]>('/api/campus/category-groups');
-      return data;
-    } catch (error) {
-      throw toApiError(error, 'Error al cargar los grupos de filtros');
-    }
-  },
-
-  createCategoryGroup: async (payload: CreateCategoryGroupDto): Promise<CategoryGroupDto> => {
-    try {
-      const { data } = await httpClient.post<CategoryGroupDto>('/api/campus/category-groups', payload);
-      return data;
-    } catch (error) {
-      throw toApiError(error, 'Error al crear el grupo de filtros');
-    }
-  },
-
-  updateCategoryGroup: async (id: string, payload: UpdateCategoryGroupDto): Promise<void> => {
-    try {
-      await httpClient.put(`/api/campus/category-groups/${id}`, payload);
-    } catch (error) {
-      throw toApiError(error, 'Error al actualizar el grupo de filtros');
-    }
-  },
-
-  reorderCategoryGroups: async (items: ReorderItemDto[]): Promise<void> => {
-    try {
-      await httpClient.put('/api/campus/category-groups/reorder', items);
-    } catch (error) {
-      throw toApiError(error, 'Error al reordenar los grupos de filtros');
-    }
-  },
-
-  deleteCategoryGroup: async (id: string): Promise<void> => {
-    try {
-      await httpClient.delete(`/api/campus/category-groups/${id}`);
-    } catch (error) {
-      throw toApiError(error, 'Error al eliminar el grupo de filtros');
     }
   },
 

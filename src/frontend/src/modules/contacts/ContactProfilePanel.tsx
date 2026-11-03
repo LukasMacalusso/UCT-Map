@@ -7,6 +7,7 @@ import { CloseButton } from '../../components/ui/ExitButton';
 import { Tag } from '../../components/ui/Tag';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
+import MapPinIcon from '../../assets/svg/icons/icon_location.svg?react';
 import PhoneIcon from '../../assets/svg/icons/icon_phone.svg?react';
 import MailIcon from '../../assets/svg/icons/icon_mail.svg?react';
 import ClockIcon from '../../assets/svg/icons/icon_clock.svg?react';
@@ -30,6 +31,8 @@ export interface ContactProfilePanelProps {
   degree?: string;
   role: string;
   department?: string;
+  campus?: string;
+  building?: string;
   office?: string;
   email: string;
   phone?: string;
@@ -57,6 +60,8 @@ export const ContactProfilePanel = ({
   degree,
   role,
   department,
+  campus,
+  building,
   office,
   email,
   phone,
@@ -74,7 +79,6 @@ export const ContactProfilePanel = ({
   bookingSuccess = null,
   onBookSlot,
   onClose,
-  onViewOffice,
 }: ContactProfilePanelProps) => {
   const [durationMinutes, setDurationMinutes] = useState<number>(30);
   const [selectedDayKey, setSelectedDayKey] = useState<string>('');
@@ -160,38 +164,34 @@ export const ContactProfilePanel = ({
             </div>
 
             <div className="flex flex-col gap-2 mb-3 w-full">
-              {office && (
+              {campus && (
                 <IconText
-                  icon={<BuildingIcon className="w-4 h-4 flex-shrink-0" />}
-                  text={office}
+                  icon={<MapPinIcon className="w-4 h-4 flex-shrink-0 text-gray-500" />}
+                  text={campus}
+                  className="!text-sm font-medium"
+                />
+              )}
+              {(building || office) && (
+                <IconText
+                  icon={<BuildingIcon className="w-4 h-4 flex-shrink-0 text-gray-500" />}
+                  text={building ?? office ?? ''}
                   className="!text-sm font-medium"
                 />
               )}
               <IconText
-                icon={<MailIcon className="w-4 h-4 flex-shrink-0" />}
+                icon={<MailIcon className="w-4 h-4 flex-shrink-0 text-gray-500" />}
                 text={email}
                 className="!text-sm font-medium break-all"
               />
               {phone && (
                 <IconText
-                  icon={<PhoneIcon className="w-4 h-4 flex-shrink-0" />}
+                  icon={<PhoneIcon className="w-4 h-4 flex-shrink-0 text-gray-500" />}
                   text={phone}
                   className="!text-sm font-medium"
                 />
               )}
             </div>
           </div>
-
-          {onViewOffice && (
-            <Button
-              variant="solid"
-              size="md"
-              onClick={onViewOffice}
-              className="!w-auto px-6 font-bold tracking-wide mt-auto"
-            >
-              VER OFICINA
-            </Button>
-          )}
         </div>
       </div>
 

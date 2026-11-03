@@ -7,7 +7,6 @@ import {
   TICKET_STATUS_LABELS,
   TICKET_STATUS_COLORS,
 } from '../../constants/ticketStatus';
-import { ComplaintStatus } from '../../constants/complaintStatus';
 import { useUpdateReportStatus } from '../../hooks/useReports';
 import { useUiState } from '../../states/uiState';
 import type { ReportDto } from '../../dtos/incident/reports/ReportDto';
@@ -43,13 +42,6 @@ const TICKET_STATUS_OPTIONS: {
   },
 ];
 
-const COMPLAINT_STATUS_LABELS: Record<ComplaintStatus, string> = {
-  [ComplaintStatus.Claim]: 'Reclamo',
-  [ComplaintStatus.Found]: 'Encontrado',
-  [ComplaintStatus.Match]: 'Coincidencia',
-  [ComplaintStatus.Pickup]: 'Retirado',
-};
-
 export const ChangeReportStatusModal: React.FC<ChangeReportStatusModalProps> = ({
   isOpen,
   onClose,
@@ -59,9 +51,6 @@ export const ChangeReportStatusModal: React.FC<ChangeReportStatusModalProps> = (
   const [selectedStatus, setSelectedStatus] = useState<TicketStatus>(
     report?.ticketType ?? TicketStatus.Pending,
   );
-  const [selectedComplaintStatus, setSelectedComplaintStatus] = useState<ComplaintStatus>(
-    report?.complaintDetails?.status ?? ComplaintStatus.Claim,
-  );
 
   const updateStatus = useUpdateReportStatus();
   const notifyEditor = useUiState((state) => state.notifyEditor);
@@ -69,9 +58,6 @@ export const ChangeReportStatusModal: React.FC<ChangeReportStatusModalProps> = (
   useEffect(() => {
     if (report) {
       setSelectedStatus(report.ticketType);
-      if (report.complaintDetails) {
-        setSelectedComplaintStatus(report.complaintDetails.status);
-      }
     }
   }, [report]);
 
@@ -84,7 +70,6 @@ export const ChangeReportStatusModal: React.FC<ChangeReportStatusModalProps> = (
       {
         id: report.id,
         status: selectedStatus,
-        complaintStatus: report.complaintDetails ? selectedComplaintStatus : undefined,
       },
       {
         onSuccess: () => {
@@ -96,9 +81,7 @@ export const ChangeReportStatusModal: React.FC<ChangeReportStatusModalProps> = (
     );
   };
 
-  const isUnchanged =
-    selectedStatus === report.ticketType &&
-    (!report.complaintDetails || selectedComplaintStatus === report.complaintDetails.status);
+  const isUnchanged = selectedStatus === report.ticketType;
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
@@ -167,41 +150,6 @@ export const ChangeReportStatusModal: React.FC<ChangeReportStatusModalProps> = (
             })}
           </div>
         </div>
-
-        {/* Optional Sub-Status (ComplaintDetails) */}
-        {report.complaintDetails && (
-          <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Estado del Reclamo / Gestión
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {(
-                [
-                  ComplaintStatus.Claim,
-                  ComplaintStatus.Found,
-                  ComplaintStatus.Match,
-                  ComplaintStatus.Pickup,
-                ] as ComplaintStatus[]
-              ).map((cStatus) => {
-                const isSelected = selectedComplaintStatus === cStatus;
-                return (
-                  <button
-                    key={cStatus}
-                    type="button"
-                    onClick={() => setSelectedComplaintStatus(cStatus)}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                      isSelected
-                        ? 'border-page-blue bg-blue-50/80 text-page-blue shadow-2xs'
-                        : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {COMPLAINT_STATUS_LABELS[cStatus]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Error notification */}
         {updateStatus.isError && (

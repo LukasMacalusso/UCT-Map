@@ -9,15 +9,10 @@ import type { RoomDto, CreateRoomDto, UpdateRoomDto } from '../dtos/campus/RoomD
 import type { StructureDto, CreateStructureDto, UpdateStructureDto } from '../dtos/campus/StructureDto';
 import type { BuildingDto, CreateBuildingDto, UpdateBuildingDto } from '../dtos/campus/BuildingDto';
 import type {
-  CategoryGroupDto,
-  CreateCategoryGroupDto,
-  UpdateCategoryGroupDto,
-  ReorderItemDto,
-} from '../dtos/campus/CategoryGroupDto';
-import type {
   CategoryDto,
   CreateCategoryDto,
   UpdateCategoryDto,
+  ReorderItemDto,
 } from '../dtos/campus/CategoryDto';
 
 export const useCampuses = () => {
@@ -189,53 +184,6 @@ export const useDeleteStructure = () => {
     mutationFn: (id) => campusService.deleteStructure(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['structures'] });
-    },
-  });
-};
-
-// Category Groups (Filter Groups)
-export const useCategoryGroups = () => {
-  return useQuery<CategoryGroupDto[], Error>({
-    queryKey: queryKeys.categoryGroups,
-    queryFn: () => campusService.getCategoryGroups(),
-  });
-};
-
-export const useCreateCategoryGroup = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation<CategoryGroupDto, Error, CreateCategoryGroupDto>({
-    mutationFn: (payload) => campusService.createCategoryGroup(payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categoryGroups }),
-  });
-};
-
-export const useUpdateCategoryGroup = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation<void, Error, { id: string; payload: UpdateCategoryGroupDto }>({
-    mutationFn: ({ id, payload }) => campusService.updateCategoryGroup(id, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categoryGroups }),
-  });
-};
-
-export const useReorderCategoryGroups = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation<void, Error, ReorderItemDto[]>({
-    mutationFn: (items) => campusService.reorderCategoryGroups(items),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categoryGroups }),
-  });
-};
-
-export const useDeleteCategoryGroup = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation<void, Error, string>({
-    mutationFn: (id) => campusService.deleteCategoryGroup(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.categoryGroups });
-      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     },
   });
 };

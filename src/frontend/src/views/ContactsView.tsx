@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Select } from '../components/ui/Select';
 import { SearchInput } from '../components/ui/SearchInput';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -55,7 +54,6 @@ const AVAILABILITY_OPTIONS: { value: string; label: string }[] = [
 ];
 
 export const ContactsView = () => {
-  const navigate = useNavigate();
   const currentUser = useAuthState((state) => state.user);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -427,6 +425,8 @@ export const ContactsView = () => {
             name={selectedTeacher.name}
             role="Profesor"
             department="Docente UCT"
+            campus={getTeacherPrimaryLocation(selectedTeacher.id).campus}
+            building={getTeacherPrimaryLocation(selectedTeacher.id).office}
             office={getTeacherPrimaryLocation(selectedTeacher.id).office}
             email={selectedTeacher.email}
             photoUrl={selectedTeacher.avatar}
@@ -438,10 +438,6 @@ export const ContactsView = () => {
             bookingError={createMeeting.error?.message ?? null}
             bookingSuccess={bookingSuccess}
             onBookSlot={handleBookSlot}
-            onViewOffice={() => {
-              handleCloseProfile();
-              navigate('/map');
-            }}
             onClose={handleCloseProfile}
           />
         )}
