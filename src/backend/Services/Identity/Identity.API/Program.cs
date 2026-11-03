@@ -43,14 +43,15 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
+    await RoleSeeder.EnsureAsync(roleManager);
+
     if (context.Database.IsRelational())
     {
         await context.Database.MigrateAsync();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        await RoleSeeder.EnsureAsync(roleManager, userManager);
     }
-
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
-    await RoleSeeder.EnsureAsync(roleManager, userManager);
 }
 
 if (app.Environment.IsDevelopment())
