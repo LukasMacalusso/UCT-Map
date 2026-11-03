@@ -102,6 +102,31 @@
   }
 }
 
+@keyframes toast-expo-flow {
+  0% {
+    transform: translateY(140%);
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  14% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  86% {
+    transform: translateY(0);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
+  }
+  100% {
+    transform: translateY(140%);
+    opacity: 0;
+  }
+}
+
+.animate-toast-expo {
+  animation: toast-expo-flow 4s forwards;
+}
+
 .animate-spin-expo {
   animation: uct-spin-expo 2.8s infinite;
 }

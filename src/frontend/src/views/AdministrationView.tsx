@@ -233,10 +233,10 @@ export const AdministrationView = () => {
   }, [profileUser, allMeetings, usersById, structureNames]);
 
   return (
-    <div className="p-6 min-h-screen bg-page-dark flex flex-col gap-6">
+    <div className="p-6 min-h-screen bg-transparent flex flex-col gap-6">
 
       {/* Filter Bar */}
-      <div className="bg-page-dark py-2 px-4 flex flex-col gap-4">
+      <div className="py-2 px-4 flex flex-col gap-4">
         <div className="flex flex-wrap items-end justify-end gap-4">
 
           {/* User Search */}

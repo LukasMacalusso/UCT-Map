@@ -4,4 +4,7 @@ export interface CampusDto {
   address: string;
   latitude: number;
   longitude: number;
+  zoom: number;
+  pitch: number;
+  bearing: number;
 }

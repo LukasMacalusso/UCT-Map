@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -7,9 +7,12 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Pagination } from '../components/ui/Pagination';
 import { ModalOverlay } from '../components/layout/ModalOverlay';
 import { IncidentCard } from '../modules/incidents/IncidentCard';
+import { ChangeReportStatusModal } from '../modules/incidents/ChangeReportStatusModal';
 import { PublishReportCard, type PublishIncidentReportData } from '../modules/incidents/PublishReportCard';
 import { useReports, useCreateReport } from '../hooks/useReports';
 import { useAuthState } from '../states/authState';
+import { RoleGuard } from '../router/RoleGuard';
+import { Role, ROLES } from '../constants/role';
 import { useCampuses, useStructures } from '../hooks/useCampus';
 import { useUsers } from '../hooks/useUsers';
 import { ComplaintStatus } from '../constants/complaintStatus';
@@ -20,6 +23,7 @@ import {
 } from '../constants/ticketStatus';
 import { formatRelativeTime } from '../utils/date';
 import type { ReportSearchParams } from '../dtos/incident/reports/ReportSearchParams';
+import type { ReportDto } from '../dtos/incident/reports/ReportDto';
 
 import BuildingIcon from '../assets/svg/icons/icon_building.svg?react';
 import SortIcon from '../assets/svg/icons/icon_sort.svg?react';
@@ -27,17 +31,28 @@ import PlusIcon from '../assets/svg/icons/icon_plus.svg?react';
 
 const PAGE_SIZE = 10;
 
+type ReportPrefill = { campusId?: string; structureName?: string };
+
 export const IncidentsView = () => {
   const [sortOrder, setSortOrder] = useState('reciente');
   const [campusId, setCampusId] = useState('');
   const [structureId, setStructureId] = useState('');
   const [page, setPage] = useState(1);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [prefill, setPrefill] = useState<ReportPrefill | null>(
+    () => (location.state as ReportPrefill | null) ?? null,
+  );
+  const [isCreateOpen, setIsCreateOpen] = useState(() => !!prefill?.structureName);
 
   const { data: campuses = [] } = useCampuses();
   const { data: structures = [] } = useStructures();
   const { data: users = [] } = useUsers();
   const createReport = useCreateReport();
+  const currentUser = useAuthState((state) => state.user);
+  const canManageStatus =
+    currentUser?.role === Role.Admin || currentUser?.role === Role.ComplaintsOfficer;
+  const [selectedStatusReport, setSelectedStatusReport] = useState<ReportDto | null>(null);
 
   const params = useMemo<ReportSearchParams>(
     () => ({
@@ -55,6 +70,16 @@ export const IncidentsView = () => {
   const visibleReports = useMemo(
     () => (data?.items ?? []).filter((report) => report.complaintDetails != null),
     [data?.items],
+  );
+
+  const structuresById = useMemo(
+    () => new Map(structures.map((structure) => [structure.id, structure])),
+    [structures],
+  );
+
+  const campusNames = useMemo(
+    () => new Map(campuses.map((campus) => [campus.id, campus.name])),
+    [campuses],
   );
 
   const structureNames = useMemo(
@@ -97,19 +122,28 @@ export const IncidentsView = () => {
     setPage(1);
   };
 
-  const navigate = useNavigate();
   const isAuthenticated = useAuthState((state) => state.isAuthenticated);
+
+  useEffect(() => {
+    if (prefill) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [prefill, navigate, location.pathname]);
 
   const openCreate = () => {
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
+    setPrefill(null);
     createReport.reset();
     setIsCreateOpen(true);
   };
 
-  const closeCreate = () => setIsCreateOpen(false);
+  const closeCreate = () => {
+    setIsCreateOpen(false);
+    setPrefill(null);
+  };
 
   const handlePublish = (report: PublishIncidentReportData) => {
     createReport.mutate(
@@ -134,8 +168,8 @@ export const IncidentsView = () => {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-page-dark flex flex-col gap-6">
-      <div className="bg-page-dark py-2 px-4 flex flex-wrap items-end justify-end gap-4">
+    <div className="p-6 min-h-screen bg-transparent flex flex-col gap-6">
+      <div className="py-2 px-4 flex flex-wrap items-end justify-end gap-4">
         <div className="w-52">
           <Select
             label="Ordenar por"
@@ -166,17 +200,19 @@ export const IncidentsView = () => {
           />
         </div>
 
-        <div>
-          <Button
-            variant="solid"
-            color="blue"
-            size="md"
-            onClick={openCreate}
-            className="font-bold tracking-wide shadow-md hover:scale-105 transition-transform whitespace-nowrap !w-auto px-6 h-[50px] flex items-center justify-center gap-2"
-          >
-            <PlusIcon className="w-5 h-5 stroke-[3]" /> PUBLICAR
-          </Button>
-        </div>
+        <RoleGuard allowedRoles={ROLES}>
+          <div>
+            <Button
+              variant="solid"
+              color="blue"
+              size="md"
+              onClick={openCreate}
+              className="font-bold tracking-wide shadow-md hover:scale-105 transition-transform whitespace-nowrap !w-auto px-6 h-[50px] flex items-center justify-center gap-2"
+            >
+              <PlusIcon className="w-5 h-5 stroke-[3]" /> PUBLICAR
+            </Button>
+          </div>
+        </RoleGuard>
       </div>
 
       <div className="flex-1 flex items-start gap-6">
@@ -197,15 +233,20 @@ export const IncidentsView = () => {
             <div className="flex-1 grid grid-cols-[repeat(auto-fill,minmax(min(100%,24rem),24rem))] justify-center content-start gap-6">
               {visibleReports.map((report) => {
                 const reporter = usersById.get(report.userRefId);
+                const structure = report.structureRefId
+                  ? structuresById.get(report.structureRefId)
+                  : undefined;
+                const buildingName = structure?.name ?? 'Sin ubicación';
+                const campusName = structure?.campusId
+                  ? campusNames.get(structure.campusId)
+                  : undefined;
 
                 return (
                   <IncidentCard
                     key={report.id}
-                    className="!w-full max-w-[24rem] !h-[30rem]"
-                    location={
-                      (report.structureRefId && structureNames.get(report.structureRefId)) ||
-                      'Sin ubicación'
-                    }
+                    className="!w-full max-w-[24rem]"
+                    campus={campusName}
+                    location={buildingName}
                     status={TICKET_STATUS_LABELS[report.ticketType] ?? 'SIN ESTADO'}
                     statusColor={TICKET_STATUS_COLORS[report.ticketType] ?? 'gray'}
                     title={report.complaintDetails?.title ?? 'Reporte sin título'}
@@ -213,6 +254,9 @@ export const IncidentsView = () => {
                     reporterAvatar={reporter?.avatar}
                     reportTime={formatRelativeTime(report.reportedAt)}
                     description={report.complaintDetails?.description ?? 'Sin descripción'}
+                    onStatusChangeClick={
+                      canManageStatus ? () => setSelectedStatusReport(report) : undefined
+                    }
                   />
                 );
               })}
@@ -234,8 +278,21 @@ export const IncidentsView = () => {
           error={createReport.error?.message ?? null}
           onPublish={handlePublish}
           onDiscard={closeCreate}
+          initialCampusId={prefill?.campusId}
+          initialStructureName={prefill?.structureName}
         />
       </ModalOverlay>
+
+      <ChangeReportStatusModal
+        isOpen={!!selectedStatusReport}
+        onClose={() => setSelectedStatusReport(null)}
+        report={selectedStatusReport}
+        locationName={
+          (selectedStatusReport?.structureRefId &&
+            structureNames.get(selectedStatusReport.structureRefId)) ||
+          undefined
+        }
+      />
     </div>
   );
 };

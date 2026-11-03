@@ -22,9 +22,13 @@ export const CAMPUS_BOUNDS: [[number, number], [number, number]] = [
   [-72.635, -38.758],
   [-72.568, -38.716],
 ];
-const MIN_ZOOM = 14;
+const MAP_MAX_BOUNDS: [[number, number], [number, number]] = [
+  [-72.75, -38.85],
+  [-72.45, -38.63],
+];
+const MIN_ZOOM = 12;
 const MAX_ZOOM = 19;
-const INITIAL_ZOOM = 15;
+const INITIAL_ZOOM = 14;
 const INITIAL_PITCH = 50;
 const INITIAL_BEARING = -20;
 
@@ -114,6 +118,8 @@ let sharedMapError: string | null = null;
 const sharedMarkers = new Map<string, MarkerEntry>();
 const loadListeners = new Set<() => void>();
 const errorListeners = new Set<(err: string) => void>();
+let lastDragEndTimestamp = 0;
+let isDraggingMarker = false;
 
 function ensureSharedMap(host: HTMLDivElement): {
   containerEl: HTMLDivElement;
@@ -151,7 +157,7 @@ function ensureSharedMap(host: HTMLDivElement): {
         zoom: INITIAL_ZOOM,
         pitch: INITIAL_PITCH,
         bearing: INITIAL_BEARING,
-        maxBounds: CAMPUS_BOUNDS,
+        maxBounds: MAP_MAX_BOUNDS,
         minZoom: MIN_ZOOM,
         maxZoom: MAX_ZOOM,
         renderWorldCopies: false,
@@ -198,6 +204,49 @@ function ensureSharedMap(host: HTMLDivElement): {
   };
 }
 
+export interface CampusCamera {
+  latitude: number;
+  longitude: number;
+  zoom: number;
+  pitch: number;
+  bearing: number;
+}
+
+export const getSharedMapCamera = (): CampusCamera | null => {
+  if (!sharedMapInstance) return null;
+
+  const center = sharedMapInstance.getCenter();
+  return {
+    latitude: center.lat,
+    longitude: center.lng,
+    zoom: sharedMapInstance.getZoom(),
+    pitch: sharedMapInstance.getPitch(),
+    bearing: sharedMapInstance.getBearing(),
+  };
+};
+
+export const applySharedMapCamera = (camera: CampusCamera, smooth = false) => {
+  if (!sharedMapInstance) return;
+
+  if (smooth) {
+    sharedMapInstance.flyTo({
+      center: [camera.longitude, camera.latitude],
+      zoom: camera.zoom,
+      pitch: camera.pitch,
+      bearing: camera.bearing,
+      duration: 900,
+      essential: true,
+    });
+  } else {
+    sharedMapInstance.jumpTo({
+      center: [camera.longitude, camera.latitude],
+      zoom: camera.zoom,
+      pitch: camera.pitch,
+      bearing: camera.bearing,
+    });
+  }
+};
+
 export interface CampusMapHandle {
   flyToBuilding: (building: BuildingLocationDto) => void;
   flyToCampus: (campus: CampusDto) => void;
@@ -210,6 +259,9 @@ interface CampusMapCanvasProps {
   selectedBuildingId?: string | null;
   onBuildingClick?: (building: BuildingLocationDto) => void;
   onMapClick?: (coords: [number, number]) => void;
+  markersDraggable?: boolean;
+  onMarkerDragEnd?: (building: BuildingLocationDto, coords: [number, number]) => void;
+  cursorMode?: 'default' | 'crosshair' | 'grab' | 'pointer';
   children?: React.ReactNode;
 }
 
@@ -221,6 +273,9 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
       selectedBuildingId = null,
       onBuildingClick,
       onMapClick,
+      markersDraggable = false,
+      onMarkerDragEnd,
+      cursorMode = 'default',
       children,
     },
     ref
@@ -245,6 +300,7 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
           if (!sharedMapInstance) return;
           const coordinate: [number, number] = [campus.longitude, campus.latitude];
           const currently3D = sharedMapInstance.getPitch() > 1;
+          const hasStoredCamera = campus.zoom > 0;
           setMapInteraction(sharedMapInstance, false);
           sharedMapInstance.once('moveend', () => {
             if (sharedMapInstance) setMapInteraction(sharedMapInstance, true);
@@ -253,9 +309,9 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
             sharedMapInstance,
             isWithinCampus(coordinate) ? coordinate : CAMPUS_CENTER,
             {
-              zoom: INITIAL_ZOOM,
-              pitch: currently3D ? INITIAL_PITCH : 0,
-              bearing: currently3D ? INITIAL_BEARING : 0,
+              zoom: hasStoredCamera ? campus.zoom : INITIAL_ZOOM,
+              pitch: hasStoredCamera ? campus.pitch : currently3D ? INITIAL_PITCH : 0,
+              bearing: hasStoredCamera ? campus.bearing : currently3D ? INITIAL_BEARING : 0,
             }
           );
         },
@@ -299,12 +355,34 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
       };
     }, []);
 
-    // Map ground click listener
+    // Dynamic map canvas cursor
+    React.useEffect(() => {
+      const map = sharedMapInstance;
+      if (!map) return;
+      const canvas = map.getCanvas();
+      if (!canvas) return;
+
+      if (cursorMode === 'crosshair') {
+        canvas.style.cursor = 'crosshair';
+      } else if (cursorMode === 'grab') {
+        canvas.style.cursor = 'grab';
+      } else if (cursorMode === 'pointer') {
+        canvas.style.cursor = 'pointer';
+      } else {
+        canvas.style.cursor = '';
+      }
+    }, [cursorMode, isMapLoaded]);
+
+    // Ground click listener
     React.useEffect(() => {
       const map = sharedMapInstance;
       if (!map || !onMapClick) return;
 
       const handleClick = (event: mapboxgl.MapMouseEvent) => {
+        // If a marker is currently being dragged or was just dropped within 350ms, ignore ground click
+        if (isDraggingMarker || Date.now() - lastDragEndTimestamp < 350) {
+          return;
+        }
         onMapClick([event.lngLat.lng, event.lngLat.lat]);
       };
 
@@ -313,6 +391,9 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
         map.off('click', handleClick);
       };
     }, [onMapClick, isMapLoaded]);
+
+    const callbacksRef = React.useRef({ onBuildingClick, onMarkerDragEnd, buildings });
+    callbacksRef.current = { onBuildingClick, onMarkerDragEnd, buildings };
 
     // Sync building markers with active view's buildings & click handler
     React.useEffect(() => {
@@ -348,19 +429,51 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
         if (!entry) {
           const element = document.createElement('div');
           const root = createRoot(element);
-          const marker = new mapboxgl.Marker({ element, anchor: 'bottom' })
+          const marker = new mapboxgl.Marker({
+            element,
+            anchor: 'bottom',
+            draggable: !!markersDraggable,
+          })
             .setLngLat([lng, lat])
             .addTo(map);
+
+          marker.on('dragstart', () => {
+            isDraggingMarker = true;
+            lastDragEndTimestamp = Date.now();
+            const current =
+              callbacksRef.current.buildings?.find((b) => b.id === building.id) || building;
+            callbacksRef.current.onBuildingClick?.(current);
+          });
+
+          marker.on('drag', () => {
+            isDraggingMarker = true;
+            lastDragEndTimestamp = Date.now();
+          });
+
+          marker.on('dragend', () => {
+            isDraggingMarker = false;
+            lastDragEndTimestamp = Date.now();
+            const lngLat = marker.getLngLat();
+            const current =
+              callbacksRef.current.buildings?.find((b) => b.id === building.id) || building;
+            callbacksRef.current.onBuildingClick?.(current);
+            callbacksRef.current.onMarkerDragEnd?.(current, [lngLat.lng, lngLat.lat]);
+          });
+
           entry = { marker, root, lng, lat };
           sharedMarkers.set(building.id, entry);
-        } else if (entry.lng !== lng || entry.lat !== lat) {
-          entry.marker.setLngLat([lng, lat]);
-          entry.lng = lng;
-          entry.lat = lat;
+        } else {
+          entry.marker.setDraggable(!!markersDraggable);
+          if (entry.lng !== lng || entry.lat !== lat) {
+            entry.marker.setLngLat([lng, lat]);
+            entry.lng = lng;
+            entry.lat = lat;
+          }
         }
+
         entry.root.render(content);
       });
-    }, [buildings, isMapLoaded, selectedBuildingId, onBuildingClick]);
+    }, [buildings, isMapLoaded, selectedBuildingId, onBuildingClick, markersDraggable, onMarkerDragEnd]);
 
     const handleZoomIn = () => sharedMapInstance?.zoomIn({ duration: 300 });
     const handleZoomOut = () => sharedMapInstance?.zoomOut({ duration: 300 });

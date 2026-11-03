@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Select } from '../components/ui/Select';
 import { SearchInput } from '../components/ui/SearchInput';
 import { SquareButton } from '../components/ui/SquareButton';
@@ -32,6 +33,7 @@ export const MapView = () => {
 
   const mapRef = React.useRef<CampusMapHandle | null>(null);
   const cardCloseTimeoutRef = React.useRef<number | null>(null);
+  const navigate = useNavigate();
 
   const mapSearchOptions = (buildings ?? []).map((building) => ({
     value: building.id,
@@ -130,7 +132,28 @@ export const MapView = () => {
           isBuildingCardOpen ? 'translate-x-0' : '-translate-x-[150%]'
         }`}
       >
-        <ActiveBuildingCard building={selectedBuilding} onClose={handleCloseBuildingCard} />
+        <ActiveBuildingCard
+          building={selectedBuilding}
+          onClose={handleCloseBuildingCard}
+          onReportProblem={() => {
+            if (!selectedBuilding) return;
+            navigate('/reports', {
+              state: {
+                campusId: selectedBuilding.metadata?.campusId ?? activeCampusId,
+                structureName: selectedBuilding.name,
+              },
+            });
+          }}
+          onReportLostObject={() => {
+            if (!selectedBuilding) return;
+            navigate('/objects', {
+              state: {
+                campusId: selectedBuilding.metadata?.campusId ?? activeCampusId,
+                structureName: selectedBuilding.name,
+              },
+            });
+          }}
+        />
       </div>
     </CampusMapCanvas>
   );

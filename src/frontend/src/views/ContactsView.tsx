@@ -110,6 +110,11 @@ export const ContactsView = () => {
     [structures],
   );
 
+  const campusNames = useMemo(
+    () => new Map(campuses.map((campus) => [campus.id, campus.name])),
+    [campuses],
+  );
+
   const teachers = useMemo(
     () => users.filter((user) => user.role === Role.Teacher && !user.isSuspended),
     [users],
@@ -207,14 +212,21 @@ export const ContactsView = () => {
     [filteredTeachers, activePage],
   );
 
-  const getTeacherPrimaryOffice = (teacherId: string): string => {
+  const getTeacherPrimaryLocation = (teacherId: string): { campus?: string; office: string } => {
     const blocks = officeHoursByTeacher.get(teacherId) ?? [];
     for (const block of blocks) {
       if (block.structureRefId && structureNames.has(block.structureRefId)) {
-        return structureNames.get(block.structureRefId)!;
+        const campusId = structureCampusMap.get(block.structureRefId);
+        const campusName = campusId ? campusNames.get(campusId) : undefined;
+        return {
+          campus: campusName,
+          office: structureNames.get(block.structureRefId)!,
+        };
       }
     }
-    return 'Ubicación por confirmar';
+    return {
+      office: 'Ubicación por confirmar',
+    };
   };
 
   const getTeacherScheduleSummary = (teacherId: string): string => {
@@ -301,8 +313,8 @@ export const ContactsView = () => {
   const isLoading = isLoadingUsers || isLoadingOfficeHours;
 
   return (
-    <div className="p-6 min-h-screen bg-page-dark flex flex-col gap-6">
-      <div className="bg-page-dark py-2 px-4 flex flex-col gap-4">
+    <div className="p-6 min-h-screen bg-transparent flex flex-col gap-6">
+      <div className="py-2 px-4 flex flex-col gap-4">
         <div className="flex flex-wrap items-end justify-end gap-4">
           <div className="w-80">
             <SearchInput
@@ -377,19 +389,24 @@ export const ContactsView = () => {
         ) : (
           <>
             <div className="flex-1 grid grid-cols-[repeat(auto-fill,minmax(min(100%,38rem),38rem))] justify-center content-start gap-6">
-              {paginatedTeachers.map((teacher) => (
-                <ContactCard
-                  key={teacher.id}
-                  className="!w-full max-w-[38rem] min-h-[17rem]"
-                  name={teacher.name}
-                  role="Profesor"
-                  email={teacher.email}
-                  office={getTeacherPrimaryOffice(teacher.id)}
-                  scheduleSummary={getTeacherScheduleSummary(teacher.id)}
-                  photoUrl={teacher.avatar}
-                  onInfoClick={() => handleOpenProfile(teacher)}
-                />
-              ))}
+              {paginatedTeachers.map((teacher) => {
+                const { campus: teacherCampus, office: teacherOffice } =
+                  getTeacherPrimaryLocation(teacher.id);
+
+                return (
+                  <ContactCard
+                    key={teacher.id}
+                    className="!w-full max-w-[38rem]"
+                    name={teacher.name}
+                    campus={teacherCampus}
+                    office={teacherOffice}
+                    email={teacher.email}
+                    scheduleSummary={getTeacherScheduleSummary(teacher.id)}
+                    photoUrl={teacher.avatar}
+                    onInfoClick={() => handleOpenProfile(teacher)}
+                  />
+                );
+              })}
             </div>
 
             <Pagination
@@ -410,7 +427,7 @@ export const ContactsView = () => {
             name={selectedTeacher.name}
             role="Profesor"
             department="Docente UCT"
-            office={getTeacherPrimaryOffice(selectedTeacher.id)}
+            office={getTeacherPrimaryLocation(selectedTeacher.id).office}
             email={selectedTeacher.email}
             photoUrl={selectedTeacher.avatar}
             officeHours={selectedTeacherOfficeHours}

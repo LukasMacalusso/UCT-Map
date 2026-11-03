@@ -114,9 +114,9 @@ export const ScheduleView = () => {
   const isRefreshing = isFetching && !isLoading;
 
   return (
-    <div className="p-6 h-full min-h-screen bg-page-dark flex flex-col gap-6 overflow-hidden">
+    <div className="p-6 h-full min-h-screen bg-transparent flex flex-col gap-6 overflow-hidden">
       {/* Top Controls */}
-      <div className="bg-page-dark py-2 px-4 flex flex-wrap items-end justify-end gap-4 flex-shrink-0">
+      <div className="py-2 px-4 flex flex-wrap items-end justify-end gap-4 flex-shrink-0">
         <div className="w-64">
           <Select
             label="Rango de fechas"

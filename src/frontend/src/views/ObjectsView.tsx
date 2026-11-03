@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { SearchInput } from '../components/ui/SearchInput';
@@ -8,12 +8,15 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Pagination } from '../components/ui/Pagination';
 import { ModalOverlay } from '../components/layout/ModalOverlay';
 import { ObjectReportCard } from '../modules/objects/ObjectReportCard';
+import { ChangeObjectStatusModal } from '../modules/objects/ChangeObjectStatusModal';
 import {
   ReportLostObjectCard,
   type ReportLostObjectData,
 } from '../modules/objects/ReportLostObjectCard';
 import { useLostObjects, useCreateLostObject } from '../hooks/useLostObjects';
 import { useAuthState } from '../states/authState';
+import { RoleGuard } from '../router/RoleGuard';
+import { Role } from '../constants/role';
 import { useCampuses, useStructures } from '../hooks/useCampus';
 import { useUsers } from '../hooks/useUsers';
 import {
@@ -23,6 +26,7 @@ import {
 } from '../constants/lostObjectsStatus';
 import { formatRelativeTime } from '../utils/date';
 import type { LostObjectSearchParams } from '../dtos/incident/objects/LostObjectSearchParams';
+import type { LostObjectDto } from '../dtos/incident/objects/LostObjectDto';
 
 import SearchIcon from '../assets/svg/icons/icon_search.svg?react';
 import BuildingIcon from '../assets/svg/icons/icon_building.svg?react';
@@ -32,6 +36,8 @@ import PlusIcon from '../assets/svg/icons/icon_plus.svg?react';
 
 const PAGE_SIZE = 10;
 
+type LostObjectPrefill = { campusId?: string; structureName?: string };
+
 export const ObjectsView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -40,12 +46,21 @@ export const ObjectsView = () => {
   const [sortOrder, setSortOrder] = useState('reciente');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [prefill, setPrefill] = useState<LostObjectPrefill | null>(
+    () => (location.state as LostObjectPrefill | null) ?? null,
+  );
+  const [isCreateOpen, setIsCreateOpen] = useState(() => !!prefill?.structureName);
 
   const { data: campuses = [] } = useCampuses();
   const { data: structures = [] } = useStructures();
   const { data: users = [] } = useUsers();
   const createLostObject = useCreateLostObject();
+  const currentUser = useAuthState((state) => state.user);
+  const canManageStatus =
+    currentUser?.role === Role.Admin || currentUser?.role === Role.ObjectsOfficer;
+  const [selectedStatusObject, setSelectedStatusObject] = useState<LostObjectDto | null>(null);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -71,9 +86,14 @@ export const ObjectsView = () => {
 
   const { data, isLoading, isError, error } = useLostObjects(params);
 
-  const structureNames = useMemo(
-    () => new Map(structures.map((structure) => [structure.id, structure.name])),
+  const structuresById = useMemo(
+    () => new Map(structures.map((structure) => [structure.id, structure])),
     [structures],
+  );
+
+  const campusNames = useMemo(
+    () => new Map(campuses.map((campus) => [campus.id, campus.name])),
+    [campuses],
   );
 
   const usersById = useMemo(
@@ -127,25 +147,34 @@ export const ObjectsView = () => {
     setPage(1);
   };
 
-  const navigate = useNavigate();
   const isAuthenticated = useAuthState((state) => state.isAuthenticated);
+
+  useEffect(() => {
+    if (prefill) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [prefill, navigate, location.pathname]);
 
   const openCreate = () => {
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
+    setPrefill(null);
     createLostObject.reset();
     setIsCreateOpen(true);
   };
 
-  const closeCreate = () => setIsCreateOpen(false);
+  const closeCreate = () => {
+    setIsCreateOpen(false);
+    setPrefill(null);
+  };
 
   const handlePublish = (lostObject: ReportLostObjectData) => {
     createLostObject.mutate(
       {
         title: lostObject.title,
-        description: lostObject.description,
+        description: lostObject.description ?? '',
         status: LostObjectStatus.Pending,
         structureId: lostObject.structureId,
       },
@@ -159,8 +188,8 @@ export const ObjectsView = () => {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-page-dark flex flex-col gap-6">
-      <div className="bg-page-dark py-2 px-4 flex flex-col gap-4">
+    <div className="p-6 min-h-screen bg-transparent flex flex-col gap-6">
+      <div className="py-2 px-4 flex flex-col gap-4">
         <div className="flex flex-wrap items-end justify-end gap-4">
           <div className="w-80">
             <SearchInput
@@ -193,17 +222,19 @@ export const ObjectsView = () => {
             />
           </div>
 
-          <div>
-            <Button
-              variant="solid"
-              color="blue"
-              size="md"
-              onClick={openCreate}
-              className="font-bold tracking-wide shadow-md hover:scale-105 transition-transform whitespace-nowrap !w-auto px-6 h-[50px] flex items-center justify-center gap-2"
-            >
-              <PlusIcon className="w-5 h-5 stroke-[3]" /> PUBLICAR
-            </Button>
-          </div>
+          <RoleGuard allowedRoles={[Role.ObjectsOfficer, Role.Admin]}>
+            <div>
+              <Button
+                variant="solid"
+                color="blue"
+                size="md"
+                onClick={openCreate}
+                className="font-bold tracking-wide shadow-md hover:scale-105 transition-transform whitespace-nowrap !w-auto px-6 h-[50px] flex items-center justify-center gap-2"
+              >
+                <PlusIcon className="w-5 h-5 stroke-[3]" /> PUBLICAR
+              </Button>
+            </div>
+          </RoleGuard>
         </div>
 
         <div className="flex flex-wrap items-end justify-end gap-4 pt-2">
@@ -249,16 +280,23 @@ export const ObjectsView = () => {
                 const reporter = lostObject.userRefId
                   ? usersById.get(lostObject.userRefId)
                   : undefined;
+                const structure = structuresById.get(lostObject.structureId);
+                const buildingName = structure?.name ?? 'Sin ubicación';
+                const campusName = structure?.campusId ? campusNames.get(structure.campusId) : undefined;
 
                 return (
                   <ObjectReportCard
                     key={lostObject.id ?? `${lostObject.title}-${index}`}
-                    className="!w-full max-w-[38rem] !h-60"
+                    className="!w-full max-w-[38rem]"
                     title={lostObject.title}
                     status={LOST_OBJECT_STATUS_LABELS[lostObject.status]}
                     statusColor={LOST_OBJECT_STATUS_COLORS[lostObject.status]}
                     photoUrl={lostObject.photoUrl}
-                    building={structureNames.get(lostObject.structureId) ?? 'Sin ubicación'}
+                    campus={campusName}
+                    building={buildingName}
+                    onStatusChangeClick={
+                      canManageStatus ? () => setSelectedStatusObject(lostObject) : undefined
+                    }
                     actions={[
                       {
                         title: reporter ? `Reportado por ${reporter.name}` : 'Reportado por Usuario',
@@ -287,8 +325,16 @@ export const ObjectsView = () => {
           error={createLostObject.error?.message ?? null}
           onPublish={handlePublish}
           onDiscard={closeCreate}
+          initialCampusId={prefill?.campusId}
+          initialStructureName={prefill?.structureName}
         />
       </ModalOverlay>
+
+      <ChangeObjectStatusModal
+        isOpen={!!selectedStatusObject}
+        onClose={() => setSelectedStatusObject(null)}
+        lostObject={selectedStatusObject}
+      />
     </div>
   );
 };

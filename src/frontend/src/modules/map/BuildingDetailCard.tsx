@@ -4,8 +4,11 @@ import { ImageGallery } from '../../components/media/ImageGallery';
 import { Tag } from '../../components/ui/Tag';
 import { ScheduleCard } from './ScheduleCard';
 import { Button } from '../../components/ui/Button';
+import { RoleGuard } from '../../router/RoleGuard';
+import { Role } from '../../constants/role';
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
 import WarningIcon from '../../assets/svg/icons/icon_warning.svg?react';
+import ObjectsIcon from '../../assets/svg/icons/icon_section_objects.svg?react';
 import NavigationIcon from '../../assets/svg/icons/icon_navigation.svg?react';
 import Rotate360Icon from '../../assets/svg/icons/icon_repeat.svg?react';
 import DoorIcon from '../../assets/svg/icons/icon_door.svg?react';
@@ -26,6 +29,7 @@ export interface BuildingDetailCardProps {
   onNavigate?: () => void;
   onView360?: () => void;
   onReportProblem?: () => void;
+  onReportLostObject?: () => void;
 }
 
 export const BuildingDetailCard = ({
@@ -41,6 +45,7 @@ export const BuildingDetailCard = ({
   onNavigate,
   onView360,
   onReportProblem,
+  onReportLostObject,
 }: BuildingDetailCardProps) => {
   const floorNumbers = [...new Set(rooms.map((room) => room.floor))].sort((a, b) => a - b);
 
@@ -150,14 +155,31 @@ export const BuildingDetailCard = ({
           </Button>
         </div>
 
-        <button
-          type="button"
-          onClick={onReportProblem}
-          className="self-center flex items-center gap-3 py-1 text-gray-800 hover:text-red-600 transition-colors font-bold text-sm group"
-        >
-          <WarningIcon className="w-6 h-6 text-gray-800" />
-          <span className="underline group-hover:no-underline">Reportar un problema aquí</span>
-        </button>
+        {onReportProblem && (
+          <RoleGuard allowedRoles={[Role.ComplaintsOfficer, Role.Admin]}>
+            <button
+              type="button"
+              onClick={onReportProblem}
+              className="self-center flex items-center gap-3 py-1 text-gray-800 hover:text-red-600 transition-colors font-bold text-sm group"
+            >
+              <WarningIcon className="w-6 h-6 text-gray-800" />
+              <span className="underline group-hover:no-underline">Reportar un problema aquí</span>
+            </button>
+          </RoleGuard>
+        )}
+
+        {onReportLostObject && (
+          <RoleGuard allowedRoles={[Role.ObjectsOfficer, Role.Admin]}>
+            <button
+              type="button"
+              onClick={onReportLostObject}
+              className="self-center flex items-center gap-3 py-1 text-gray-800 hover:text-page-blue transition-colors font-bold text-sm group"
+            >
+              <ObjectsIcon className="w-6 h-6 text-gray-800" />
+              <span className="underline group-hover:no-underline">Reportar objeto perdido aquí</span>
+            </button>
+          </RoleGuard>
+        )}
       </div>
     </Panel>
   );

@@ -20,6 +20,7 @@ import UserIcon from '../../assets/svg/icons/icon_user.svg?react';
 import { RoleGuard } from '../../router/RoleGuard';
 import { GlobalModals } from './GlobalModals';
 import { useUiState } from '../../states/uiState';
+import { GeometricBackground } from '../ui/GeometricBackground';
 
 export const AppLayout = () => {
   const { isExpanded, isHidden, setIsExpanded, setIsHidden } = useNavStore();
@@ -264,7 +265,10 @@ export const AppLayout = () => {
         style={{ left: '88px' }}
       />
 
-      <main className="flex-1 relative overflow-auto bg-page-dark z-10">
+      <main className="flex-1 relative overflow-auto z-10">
+        <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+          <GeometricBackground variant="dark" className="w-full h-full" />
+        </div>
         <Outlet />
       </main>
 

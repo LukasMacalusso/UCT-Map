@@ -1,142 +1,121 @@
-import { useState, useEffect } from 'react';
 import { SquareButton } from '../../components/ui/SquareButton';
-import { Button } from '../../components/ui/Button';
-import { useUiState } from '../../states/uiState';
+import type { BuildingLocationDto } from '../../dtos/campus/BuildingLocationDto';
 
 import PencilIcon from '../../assets/svg/icons/icon_pencil.svg?react';
 import MapPinIcon from '../../assets/svg/icons/icon_location.svg?react';
 import TrashIcon from '../../assets/svg/icons/icon_trash.svg?react';
-import CheckIcon from '../../assets/svg/icons/icon_check.svg?react';
-import CrossIcon from '../../assets/svg/icons/icon_cross.svg?react';
 import MoveIcon from '../../assets/svg/icons/icon_move.svg?react';
+import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
+import CrossIcon from '../../assets/svg/icons/icon_cross.svg?react';
 
-type EditorMode = 'idle' | 'adding' | 'deleting' | 'moving' | 'editing';
+export type EditorMapTool = 'none' | 'create' | 'inspect' | 'move' | 'delete';
 
-export const MapEditorPanel = () => {
-  const [mode, setMode] = useState<EditorMode>('idle');
-  const [displayMode, setDisplayMode] = useState<EditorMode>('adding'); // Saves the last state for animation
+interface MapEditorPanelProps {
+  activeTool?: EditorMapTool;
+  onSelectTool?: (tool: EditorMapTool) => void;
+  selectedBuilding?: BuildingLocationDto | null;
+  onDeselectBuilding?: () => void;
+}
 
-  // Updates visible text only when entering a mode (not when exiting)
-  useEffect(() => {
-    if (mode !== 'idle') {
-      setDisplayMode(mode);
-    }
-  }, [mode]);
+export const MapEditorPanel = ({
+  activeTool = 'none',
+  onSelectTool,
+  selectedBuilding = null,
+  onDeselectBuilding,
+}: MapEditorPanelProps) => {
+  const handleToggle = (tool: EditorMapTool) => {
+    if (!onSelectTool) return;
+    onSelectTool(activeTool === tool ? 'none' : tool);
+  };
 
   return (
-    <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 inline-block min-w-[360px]">
+    <div className="flex flex-row items-center gap-2">
+      {/* 1. Create Marker Button (always visible) */}
+      <SquareButton
+        title={activeTool === 'create' ? 'Cancelar creación' : 'Añadir marcador'}
+        onClick={() => handleToggle('create')}
+        className={`transition-all ${
+          activeTool === 'create'
+            ? '!bg-page-blue !text-white ring-2 ring-page-blue shadow-md scale-105'
+            : ''
+        }`}
+      >
+        <MapPinIcon className="w-7 h-7" />
+      </SquareButton>
 
-      {/* Panel Title */}
-      <div className="flex items-center gap-2 mb-2 px-1">
-        <PencilIcon className="w-4 h-4 text-gray-700" />
-        <h2 className="font-semibold text-gray-700 text-sm">Editor de Mapa</h2>
-      </div>
+      {/* 2. Move Marker Button (always visible alongside Create) */}
+      <SquareButton
+        title={activeTool === 'move' ? 'Terminar de mover' : 'Mover marcador en el mapa'}
+        onClick={() => handleToggle('move')}
+        className={`transition-all ${
+          activeTool === 'move'
+            ? '!bg-page-green !text-white ring-2 ring-page-green shadow-md scale-105'
+            : ''
+        }`}
+      >
+        <MoveIcon className="w-7 h-7" />
+      </SquareButton>
 
-      {/* Animated Buttons/Modes Container */}
-      <div className="relative overflow-hidden transition-all duration-300 ease-in-out" style={{ minHeight: '64px' }}>
-
-        {/* IDLE MODE */}
-        <div
-          className={`absolute inset-0 flex items-center justify-center gap-3 transition-all duration-300 ease-in-out ${
-            mode === 'idle' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-10 pointer-events-none'
-          }`}
-        >
-          {/* Add Point */}
+      {/* 3. Actions & Info Card for Selected Marker (only when a marker is selected) */}
+      {selectedBuilding && (
+        <>
+          {/* Edit Marker Button */}
           <SquareButton
-            title="Añadir un punto"
-            onClick={() => setMode('adding')}
+            title={activeTool === 'inspect' ? 'Cancelar edición' : 'Editar detalles del edificio'}
+            onClick={() => handleToggle('inspect')}
+            className={`transition-all ${
+              activeTool === 'inspect'
+                ? '!bg-page-yellow !text-page-dark ring-2 ring-page-yellow shadow-md scale-105'
+                : ''
+            }`}
           >
-            <MapPinIcon className="w-8 h-8" />
+            <PencilIcon className="w-7 h-7" />
           </SquareButton>
 
-          {/* Move Point */}
+          {/* Delete Marker Button */}
           <SquareButton
-            title="Mover un punto"
-            onClick={() => setMode('moving')}
+            title={activeTool === 'delete' ? 'Cancelar eliminación' : 'Eliminar marcador'}
+            onClick={() => handleToggle('delete')}
+            className={`transition-all ${
+              activeTool === 'delete'
+                ? '!bg-page-red !text-white ring-2 ring-page-red shadow-md scale-105'
+                : 'hover:text-page-red'
+            }`}
           >
-            <MoveIcon className="w-8 h-8" />
+            <TrashIcon className="w-7 h-7" />
           </SquareButton>
 
-          {/* Edit Point */}
-          <SquareButton
-            title="Editar un punto"
-            onClick={() => setMode('editing')}
-          >
-            <PencilIcon className="w-8 h-8" />
-          </SquareButton>
-
-          {/* Delete Point */}
-          <SquareButton
-            title="Eliminar un punto"
-            onClick={() => setMode('deleting')}
-          >
-            <TrashIcon className="w-8 h-8" />
-          </SquareButton>
-
-          <div className="w-px h-10 bg-gray-200 mx-1"></div> {/* Visual Separator */}
-
-          {/* Save Changes (Green) */}
-          <SquareButton
-            title="Guardar cambios"
-            className="!text-green-600 hover:!bg-green-50 active:!bg-green-600 active:!text-white"
-            onClick={() => useUiState.getState().openPanel('saveMapChanges')}
-          >
-            <CheckIcon className="w-8 h-8" />
-          </SquareButton>
-
-          {/* Discard Changes */}
-          <SquareButton
-            title="Descartar cambios"
-            className="!text-red-600 hover:!bg-red-50 active:!bg-red-600 active:!text-white"
-            onClick={() => useUiState.getState().openPanel('discardMapChanges')}
-          >
-            <CrossIcon className="w-8 h-8" />
-          </SquareButton>
-        </div>
-
-        {/* EDIT MODE*/}
-        <div
-          className={`absolute inset-0 flex items-center justify-between gap-6 px-2 bg-gray-50 rounded-2xl border border-gray-200 transition-all duration-300 ease-in-out ${
-            mode !== 'idle' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-10 pointer-events-none'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-full ${
-              displayMode === 'adding' ? 'bg-blue-100 text-blue-600' :
-              displayMode === 'deleting' ? 'bg-red-100 text-red-600' :
-              displayMode === 'moving' ? 'bg-purple-100 text-purple-600' :
-              'bg-green-100 text-green-600'
-            }`}>
-              {displayMode === 'adding' ? <MapPinIcon className="w-5 h-5" /> : 
-               displayMode === 'deleting' ? <TrashIcon className="w-5 h-5" /> :
-               displayMode === 'moving' ? <MoveIcon className="w-5 h-5" /> :
-               <PencilIcon className="w-5 h-5" />}
+          {/* Basic Marker Info Panel */}
+          <div className="h-14 px-4 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-3.5 min-w-[260px] max-w-sm animate-in fade-in slide-in-from-left-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 text-page-blue flex items-center justify-center shrink-0">
+                <BuildingIcon className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col text-left min-w-0">
+                <span
+                  className="text-sm font-bold text-gray-800 truncate"
+                  title={selectedBuilding.name}
+                >
+                  {selectedBuilding.name}
+                </span>
+                <span className="text-[11px] font-semibold text-gray-400 truncate">
+                  {selectedBuilding.metadata.floorsCount || 1}{' '}
+                  {(selectedBuilding.metadata.floorsCount || 1) === 1 ? 'piso' : 'pisos'}
+                </span>
+              </div>
             </div>
-            <p className="font-medium text-gray-700 text-sm">
-              {displayMode === 'adding' && 'Haz clic en el mapa para colocar el punto.'}
-              {displayMode === 'deleting' && 'Haz clic en un punto del mapa para eliminarlo.'}
-              {displayMode === 'moving' && 'Haz clic y arrastra un punto para moverlo.'}
-              {displayMode === 'editing' && 'Haz clic en un punto para editar sus datos.'}
-            </p>
+
+            <button
+              type="button"
+              onClick={onDeselectBuilding}
+              title="Deseleccionar marcador"
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
+            >
+              <CrossIcon className="w-4 h-4" />
+            </button>
           </div>
-
-          <Button
-            variant="solid"
-            color={
-              displayMode === 'adding' ? 'blue' : 
-              displayMode === 'deleting' ? 'red' :
-              displayMode === 'moving' ? 'purple' : 'green'
-            }
-            size="sm"
-            className="!w-auto !px-4 shadow-none"
-            onClick={() => setMode('idle')}
-          >
-            Terminar
-          </Button>
-        </div>
-
-      </div>
-
+        </>
+      )}
     </div>
   );
 };
