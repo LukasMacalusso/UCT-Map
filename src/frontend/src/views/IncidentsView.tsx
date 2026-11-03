@@ -67,15 +67,20 @@ export const IncidentsView = () => {
 
   const { data, isLoading, isError, error } = useReports(params);
 
-  const visibleReports = useMemo(
-    () => (data?.items ?? []).filter((report) => report.complaintDetails != null),
-    [data?.items],
-  );
-
   const structuresById = useMemo(
     () => new Map(structures.map((structure) => [structure.id, structure])),
     [structures],
   );
+
+  const visibleReports = useMemo(() => {
+    const items = (data?.items ?? []).filter((report) => report.complaintDetails != null);
+    if (!campusId) return items;
+    return items.filter((report) => {
+      if (!report.structureRefId) return false;
+      const structure = structuresById.get(report.structureRefId);
+      return structure?.campusId === campusId;
+    });
+  }, [data?.items, campusId, structuresById]);
 
   const campusNames = useMemo(
     () => new Map(campuses.map((campus) => [campus.id, campus.name])),

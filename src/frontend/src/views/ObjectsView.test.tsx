@@ -77,4 +77,22 @@ describe('ObjectsView', () => {
 
     expect(screen.getByText('REPORTAR OBJETO PERDIDO')).toBeInTheDocument();
   });
+
+  it('filters lost objects by campus when campus is selected', () => {
+    renderWithQueryClient(
+      <MemoryRouter>
+        <ObjectsView />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Calculadora Casio')).toBeInTheDocument();
+
+    const triggers = screen.getAllByRole('button', { name: /todos los campus/i });
+    fireEvent.click(triggers[0]);
+
+    const campusOption = screen.getByRole('button', { name: 'Campus San Juan' });
+    fireEvent.click(campusOption);
+
+    expect(screen.getByText('Calculadora Casio')).toBeInTheDocument();
+  });
 });

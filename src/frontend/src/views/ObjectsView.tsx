@@ -91,6 +91,16 @@ export const ObjectsView = () => {
     [structures],
   );
 
+  const visibleObjects = useMemo(() => {
+    const items = data?.items ?? [];
+    if (!campusId) return items;
+    return items.filter((lostObject) => {
+      if (!lostObject.structureId) return false;
+      const structure = structuresById.get(lostObject.structureId);
+      return structure?.campusId === campusId;
+    });
+  }, [data?.items, campusId, structuresById]);
+
   const campusNames = useMemo(
     () => new Map(campuses.map((campus) => [campus.id, campus.name])),
     [campuses],
@@ -269,14 +279,14 @@ export const ObjectsView = () => {
           <div className="flex-1 flex items-center justify-center p-12">
             <EmptyState message={error?.message ?? 'No se pudieron cargar los objetos perdidos.'} />
           </div>
-        ) : !data || data.items.length === 0 ? (
+        ) : !data || visibleObjects.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-12">
             <EmptyState message="No hay objetos perdidos que coincidan con los filtros." />
           </div>
         ) : (
           <>
             <div className="flex-1 grid grid-cols-[repeat(auto-fill,minmax(min(100%,38rem),38rem))] justify-center content-start gap-6">
-              {data.items.map((lostObject, index) => {
+              {visibleObjects.map((lostObject, index) => {
                 const reporter = lostObject.userRefId
                   ? usersById.get(lostObject.userRefId)
                   : undefined;
