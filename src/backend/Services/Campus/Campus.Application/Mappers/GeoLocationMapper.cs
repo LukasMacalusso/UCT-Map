@@ -33,6 +33,7 @@ public static class GeoLocationMapper
             building.FloorsCount,
             building.Coordinates.Latitude,
             building.Coordinates.Longitude,
+            building.CategoryId,
             building.OpenTime,
             building.CloseTime,
             building.Services
@@ -57,8 +58,10 @@ public static class GeoLocationMapper
                 building.CampusId,
                 building.FloorsCount,
                 FormatSchedule(building.OpenTime, building.CloseTime),
-                ParseServices(building.Services)
-            )
+                ParseServices(building.Services),
+                building.CategoryId
+            ),
+            building.CategoryId
         );
 
     public static StructureLocationDto ToLocationDto(this Structure structure, string? categoryName, string? categoryIcon) =>

@@ -13,6 +13,7 @@ public class Category
     public int Order { get; private set; }
 
     public CategoryGroup CategoryGroup { get; private set; } = null!;
+    public ICollection<Building> Buildings { get; private set; } = new List<Building>();
     public ICollection<Room> Rooms { get; private set; } = new List<Room>();
     public ICollection<Structure> Structures { get; private set; } = new List<Structure>();
 
