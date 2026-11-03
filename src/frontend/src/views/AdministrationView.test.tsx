@@ -81,7 +81,7 @@ describe('AdministrationView', () => {
     renderWithQueryClient(<AdministrationView />);
 
     await screen.findByText('Usuario 0');
-    fireEvent.click(screen.getAllByRole('button', { name: 'Ver perfil' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /ver perfil/i })[0]);
 
     expect(await screen.findByText('Información de Cuenta')).toBeInTheDocument();
   });
@@ -91,7 +91,7 @@ describe('AdministrationView', () => {
     renderWithQueryClient(<AdministrationView />);
 
     await screen.findByText('Usuario 0');
-    fireEvent.click(screen.getAllByRole('button', { name: 'Ver perfil' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /ver perfil/i })[0]);
 
     expect(await screen.findByText('Tus Contribuciones')).toBeInTheDocument();
   });
@@ -101,7 +101,7 @@ describe('AdministrationView', () => {
     renderWithQueryClient(<AdministrationView />);
 
     await screen.findByText('Usuario 0');
-    fireEvent.click(screen.getAllByRole('button', { name: 'Ver perfil' })[1]);
+    fireEvent.click(screen.getAllByRole('button', { name: /ver perfil/i })[1]);
 
     expect(await screen.findByText('Contribuciones')).toBeInTheDocument();
     expect(screen.queryByText('Tus Contribuciones')).not.toBeInTheDocument();

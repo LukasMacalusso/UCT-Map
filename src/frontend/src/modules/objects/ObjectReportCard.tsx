@@ -40,7 +40,7 @@ export const ObjectReportCard = ({
   return (
     <Panel
       color="white"
-      outerClassName={`w-full ${compact ? 'max-w-full' : 'max-w-3xl min-h-[14rem]'} ${className}`}
+      outerClassName={`w-full ${compact ? '!w-full !max-w-full' : 'max-w-3xl min-h-[14rem]'} ${className}`}
       innerClassName={`${compact ? 'p-4 gap-4' : 'p-5 gap-5'} flex flex-row items-stretch`}
     >
       {/* Object Image */}

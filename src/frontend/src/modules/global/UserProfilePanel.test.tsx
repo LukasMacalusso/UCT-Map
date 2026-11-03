@@ -49,4 +49,27 @@ describe('UserProfilePanel', () => {
     render(<UserProfilePanel {...baseProps} onLogout={() => {}} />);
     expect(screen.getByText('CERRAR SESIÓN')).toBeInTheDocument();
   });
+
+  it('oculta la pestaña de objetos para un usuario con rol Student', () => {
+    render(<UserProfilePanel {...baseProps} role={Role.Student} />);
+    expect(screen.queryByRole('button', { name: /objetos/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /incidencias/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /reuniones/i })).toBeInTheDocument();
+  });
+
+  it('muestra la pestaña de objetos para roles Admin y ObjectsOfficer', () => {
+    const { unmount } = render(<UserProfilePanel {...baseProps} role={Role.Admin} />);
+    expect(screen.getByRole('button', { name: /objetos/i })).toBeInTheDocument();
+    unmount();
+
+    render(<UserProfilePanel {...baseProps} role={Role.ObjectsOfficer} />);
+    expect(screen.getByRole('button', { name: /objetos/i })).toBeInTheDocument();
+  });
+
+  it('muestra las 3 pestañas cuando showAllTabs es true aunque sea Student', () => {
+    render(<UserProfilePanel {...baseProps} role={Role.Student} showAllTabs={true} />);
+    expect(screen.getByRole('button', { name: /objetos/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /incidencias/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /reuniones/i })).toBeInTheDocument();
+  });
 });

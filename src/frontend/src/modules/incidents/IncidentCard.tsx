@@ -42,7 +42,7 @@ export const IncidentCard = ({
   return (
     <Panel
       color="white"
-      outerClassName={`w-full ${compact ? 'max-w-full' : 'max-w-2xl min-h-[35rem]'} flex flex-col justify-between ${className}`}
+      outerClassName={`w-full ${compact ? '!w-full !max-w-full' : 'max-w-2xl min-h-[35rem]'} flex flex-col justify-between ${className}`}
       innerClassName={`${compact ? 'p-3 gap-2.5' : 'p-5 gap-3.5'} flex flex-col h-full justify-between flex-1`}
     >
       <div className="flex flex-col gap-2.5">

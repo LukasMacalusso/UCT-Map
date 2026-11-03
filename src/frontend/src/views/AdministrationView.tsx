@@ -329,6 +329,7 @@ export const AdministrationView = () => {
             role={profileUser.role}
             photoUrl={profileUser.avatar}
             isOwnProfile={profileUser.id === currentUserId}
+            showAllTabs={true}
             objectReports={profileObjects}
             incidentReports={profileIncidents}
             requestedMeetings={profileMeetings}

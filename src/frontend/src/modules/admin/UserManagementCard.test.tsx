@@ -23,15 +23,15 @@ describe('UserManagementCard', () => {
 
   it('solo muestra el tag "Suspendido" cuando la cuenta está suspendida', () => {
     const { rerender } = render(<UserManagementCard {...baseProps} isSuspended={false} />);
-    expect(screen.queryByText('Suspendido')).not.toBeInTheDocument();
+    expect(screen.queryByText(/suspendido/i)).not.toBeInTheDocument();
 
     rerender(<UserManagementCard {...baseProps} isSuspended={true} />);
-    expect(screen.getByText('Suspendido')).toBeInTheDocument();
+    expect(screen.getByText(/suspendido/i)).toBeInTheDocument();
   });
 
   it('deshabilita el botón de suspensión si canToggleSuspension es false', () => {
     render(<UserManagementCard {...baseProps} canToggleSuspension={false} />);
-    const button = screen.getByRole('button', { name: 'Suspender' });
+    const button = screen.getByRole('button', { name: /suspender/i });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('title', 'No puedes suspender tu propia cuenta');
   });
@@ -41,7 +41,7 @@ describe('UserManagementCard', () => {
     const onToggleSuspension = vi.fn();
     render(<UserManagementCard {...baseProps} onToggleSuspension={onToggleSuspension} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Suspender' }));
+    fireEvent.click(screen.getByRole('button', { name: /suspender/i }));
 
     expect(screen.getByText('Suspender cuenta')).toBeInTheDocument();
     expect(onToggleSuspension).not.toHaveBeenCalled();
@@ -62,7 +62,7 @@ describe('UserManagementCard', () => {
     const onToggleSuspension = vi.fn();
     render(<UserManagementCard {...baseProps} onToggleSuspension={onToggleSuspension} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Suspender' }));
+    fireEvent.click(screen.getByRole('button', { name: /suspender/i }));
 
     act(() => {
       vi.advanceTimersByTime(3200);
@@ -78,7 +78,7 @@ describe('UserManagementCard', () => {
     const onViewProfile = vi.fn();
     render(<UserManagementCard {...baseProps} onViewProfile={onViewProfile} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ver perfil' }));
+    fireEvent.click(screen.getByRole('button', { name: /ver perfil/i }));
 
     expect(onViewProfile).toHaveBeenCalledWith('u1');
   });
