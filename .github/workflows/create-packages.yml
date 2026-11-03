@@ -1,16 +1,16 @@
 name: Create Packages
 
 on:
-  workflow_run:
-    workflows: ["Backend CI"]
-    types:
-      - completed
+  push:
     branches: [main, taller-2]
   workflow_dispatch:
 
 jobs:
+  backend-tests:
+    uses: ./.github/workflows/backend-ci.yml
+
   build:
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    needs: backend-tests
     runs-on: ubuntu-latest
     permissions:
       contents: read
