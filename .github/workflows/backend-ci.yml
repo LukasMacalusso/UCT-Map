@@ -3,11 +3,6 @@ name: Backend CI
 on:
   push:
     branches: [ "main", "taller-2" ]
-    paths:
-      - 'src/backend/**'
-      - 'tests/postman/**'
-      - 'docker-compose.yml'
-      - '.github/workflows/**'
   pull_request:
     branches: [ "main", "taller-2" ]
 
