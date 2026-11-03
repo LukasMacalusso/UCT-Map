@@ -74,6 +74,6 @@ jobs:
           file: ./src/frontend/Dockerfile
           push: true
           build-args: |
-            API_GATEWAY_URL=http://api-gateway-kuberoapp:8080
+            API_GATEWAY_URL=http://api-gateway-kuberoapp
             VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}
           tags: ghcr.io/${{ steps.owner.outputs.lc }}/uct-frontend:latest
