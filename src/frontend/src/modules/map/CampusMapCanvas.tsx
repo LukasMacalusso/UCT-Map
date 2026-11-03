@@ -7,83 +7,33 @@ import { SquareButton } from '../../components/ui/SquareButton';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { MapMarker } from '../../components/ui/MapMarker';
 import type { BuildingLocationDto } from '../../dtos/campus/BuildingLocationDto';
+import type { StructureDto } from '../../dtos/campus/StructureDto';
 import type { CampusDto } from '../../dtos/campus/CampusDto';
+import type { MapMarkerItem } from '../../interfaces/MapMarkerItem';
 import { UCT_LOADING_PHRASES } from '../../constants/loadingPhrases';
 
-import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
 import PlusIcon from '../../assets/svg/icons/icon_plus.svg?react';
 import MinusIcon from '../../assets/svg/icons/icon_minus.svg?react';
 import TargetIcon from '../../assets/svg/icons/icon_target.svg?react';
+import {
+  CAMPUS_CENTER,
+  MAP_MAX_BOUNDS,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  INITIAL_ZOOM,
+  INITIAL_PITCH,
+  INITIAL_BEARING,
+  isWithinCampus,
+  resolveBuildingCoordinate,
+  resolveStructureCoordinate,
+  flyToCoordinate,
+  setSharedMapInstanceRef,
+} from './campusMapUtils';
+
+export type { CampusCamera } from './campusMapUtils';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const MAP_STYLE = 'mapbox://styles/mapbox/standard';
-export const CAMPUS_CENTER: [number, number] = [-72.6019, -38.7368];
-export const CAMPUS_BOUNDS: [[number, number], [number, number]] = [
-  [-72.635, -38.758],
-  [-72.568, -38.716],
-];
-const MIN_ZOOM = 14;
-const MAX_ZOOM = 19;
-const INITIAL_ZOOM = 15;
-const INITIAL_PITCH = 50;
-const INITIAL_BEARING = -20;
-
-const MOCK_SPREAD = 0.006;
-
-const hashString = (value: string): number => {
-  let hash = 2166136261;
-  for (let i = 0; i < value.length; i++) {
-    hash ^= value.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return Math.abs(hash);
-};
-
-export const isWithinCampus = ([lng, lat]: [number, number]) =>
-  lng >= CAMPUS_BOUNDS[0][0] &&
-  lng <= CAMPUS_BOUNDS[1][0] &&
-  lat >= CAMPUS_BOUNDS[0][1] &&
-  lat <= CAMPUS_BOUNDS[1][1];
-
-export const resolveBuildingCoordinate = (building: BuildingLocationDto): [number, number] => {
-  const coordinate: [number, number] = [building.location.longitude, building.location.latitude];
-  if (isWithinCampus(coordinate)) return coordinate;
-  const seed = hashString(building.id);
-  const angle = ((seed % 360) * Math.PI) / 180;
-  const radius = MOCK_SPREAD * (0.45 + ((seed % 50) / 50) * 0.55);
-  return [
-    CAMPUS_CENTER[0] + Math.cos(angle) * radius,
-    CAMPUS_CENTER[1] + Math.sin(angle) * radius,
-  ];
-};
-
-interface CameraOptions {
-  zoom?: number;
-  pitch?: number;
-  bearing?: number;
-  duration?: number;
-}
-
-const easeInOutCubic = (t: number): number =>
-  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-export const flyToCoordinate = (
-  map: MapboxMap,
-  center: [number, number],
-  options: CameraOptions = {}
-) => {
-  map.flyTo({
-    center,
-    zoom: options.zoom ?? map.getZoom(),
-    pitch: options.pitch ?? map.getPitch(),
-    bearing: options.bearing ?? map.getBearing(),
-    duration: options.duration ?? 950,
-    curve: 1.42,
-    speed: 1.2,
-    essential: true,
-    easing: easeInOutCubic,
-  });
-};
 
 const setMapInteraction = (map: MapboxMap, enabled: boolean) => {
   const handlers = [
@@ -114,6 +64,8 @@ let sharedMapError: string | null = null;
 const sharedMarkers = new Map<string, MarkerEntry>();
 const loadListeners = new Set<() => void>();
 const errorListeners = new Set<(err: string) => void>();
+let lastDragEndTimestamp = 0;
+let isDraggingMarker = false;
 
 function ensureSharedMap(host: HTMLDivElement): {
   containerEl: HTMLDivElement;
@@ -151,7 +103,7 @@ function ensureSharedMap(host: HTMLDivElement): {
         zoom: INITIAL_ZOOM,
         pitch: INITIAL_PITCH,
         bearing: INITIAL_BEARING,
-        maxBounds: CAMPUS_BOUNDS,
+        maxBounds: MAP_MAX_BOUNDS,
         minZoom: MIN_ZOOM,
         maxZoom: MAX_ZOOM,
         renderWorldCopies: false,
@@ -182,6 +134,7 @@ function ensureSharedMap(host: HTMLDivElement): {
       map.on('error', (event) => console.error('Mapbox error:', event.error));
 
       sharedMapInstance = map;
+      setSharedMapInstanceRef(map);
     } catch (error) {
       sharedMapError = error instanceof Error ? error.message : 'No se pudo inicializar Mapbox';
       errorListeners.forEach((listener) => listener(sharedMapError!));
@@ -199,28 +152,38 @@ function ensureSharedMap(host: HTMLDivElement): {
 }
 
 export interface CampusMapHandle {
+  flyToMarker: (marker: MapMarkerItem | { coordinates: [number, number] }) => void;
   flyToBuilding: (building: BuildingLocationDto) => void;
+  flyToStructure: (structure: StructureDto) => void;
   flyToCampus: (campus: CampusDto) => void;
   getMap: () => MapboxMap | null;
 }
 
 interface CampusMapCanvasProps {
-  buildings?: BuildingLocationDto[];
-  areBuildingsLoading?: boolean;
-  selectedBuildingId?: string | null;
-  onBuildingClick?: (building: BuildingLocationDto) => void;
+  markers?: MapMarkerItem[];
+  areMarkersLoading?: boolean;
+  selectedMarkerId?: string | null;
+  onMarkerClick?: (marker: MapMarkerItem) => void;
   onMapClick?: (coords: [number, number]) => void;
+  markersDraggable?: boolean;
+  onMarkerDragEnd?: (marker: MapMarkerItem, coords: [number, number]) => void;
+  cursorMode?: 'default' | 'crosshair' | 'grab' | 'pointer';
+  showControls?: boolean;
   children?: React.ReactNode;
 }
 
 export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvasProps>(
   (
     {
-      buildings,
-      areBuildingsLoading = false,
-      selectedBuildingId = null,
-      onBuildingClick,
+      markers,
+      areMarkersLoading = false,
+      selectedMarkerId = null,
+      onMarkerClick,
       onMapClick,
+      markersDraggable = false,
+      onMarkerDragEnd,
+      cursorMode = 'default',
+      showControls = true,
       children,
     },
     ref
@@ -235,9 +198,21 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
     React.useImperativeHandle(
       ref,
       () => ({
+        flyToMarker: (marker: MapMarkerItem | { coordinates: [number, number] }) => {
+          if (!sharedMapInstance) return;
+          flyToCoordinate(sharedMapInstance, marker.coordinates, {
+            zoom: Math.max(sharedMapInstance.getZoom(), 17),
+          });
+        },
         flyToBuilding: (building: BuildingLocationDto) => {
           if (!sharedMapInstance) return;
           flyToCoordinate(sharedMapInstance, resolveBuildingCoordinate(building), {
+            zoom: Math.max(sharedMapInstance.getZoom(), 17),
+          });
+        },
+        flyToStructure: (structure: StructureDto) => {
+          if (!sharedMapInstance) return;
+          flyToCoordinate(sharedMapInstance, resolveStructureCoordinate(structure), {
             zoom: Math.max(sharedMapInstance.getZoom(), 17),
           });
         },
@@ -245,6 +220,7 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
           if (!sharedMapInstance) return;
           const coordinate: [number, number] = [campus.longitude, campus.latitude];
           const currently3D = sharedMapInstance.getPitch() > 1;
+          const hasStoredCamera = campus.zoom > 0;
           setMapInteraction(sharedMapInstance, false);
           sharedMapInstance.once('moveend', () => {
             if (sharedMapInstance) setMapInteraction(sharedMapInstance, true);
@@ -253,9 +229,9 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
             sharedMapInstance,
             isWithinCampus(coordinate) ? coordinate : CAMPUS_CENTER,
             {
-              zoom: INITIAL_ZOOM,
-              pitch: currently3D ? INITIAL_PITCH : 0,
-              bearing: currently3D ? INITIAL_BEARING : 0,
+              zoom: hasStoredCamera ? campus.zoom : INITIAL_ZOOM,
+              pitch: hasStoredCamera ? campus.pitch : currently3D ? INITIAL_PITCH : 0,
+              bearing: hasStoredCamera ? campus.bearing : currently3D ? INITIAL_BEARING : 0,
             }
           );
         },
@@ -299,12 +275,34 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
       };
     }, []);
 
-    // Map ground click listener
+    // Dynamic map canvas cursor
+    React.useEffect(() => {
+      const map = sharedMapInstance;
+      if (!map) return;
+      const canvas = map.getCanvas();
+      if (!canvas) return;
+
+      if (cursorMode === 'crosshair') {
+        canvas.style.cursor = 'crosshair';
+      } else if (cursorMode === 'grab') {
+        canvas.style.cursor = 'grab';
+      } else if (cursorMode === 'pointer') {
+        canvas.style.cursor = 'pointer';
+      } else {
+        canvas.style.cursor = '';
+      }
+    }, [cursorMode, isMapLoaded]);
+
+    // Ground click listener
     React.useEffect(() => {
       const map = sharedMapInstance;
       if (!map || !onMapClick) return;
 
       const handleClick = (event: mapboxgl.MapMouseEvent) => {
+        // If a marker is currently being dragged or was just dropped within 350ms, ignore ground click
+        if (isDraggingMarker || Date.now() - lastDragEndTimestamp < 350) {
+          return;
+        }
         onMapClick([event.lngLat.lng, event.lngLat.lat]);
       };
 
@@ -314,12 +312,24 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
       };
     }, [onMapClick, isMapLoaded]);
 
-    // Sync building markers with active view's buildings & click handler
+    const callbacksRef = React.useRef({
+      onMarkerClick,
+      onMarkerDragEnd,
+      markers,
+    });
+    callbacksRef.current = {
+      onMarkerClick,
+      onMarkerDragEnd,
+      markers,
+    };
+
+    // Unified sync for any MapMarkerItem
     React.useEffect(() => {
       const map = sharedMapInstance;
-      if (!map || !isMapLoaded || !buildings) return;
+      if (!map || !isMapLoaded) return;
 
-      const currentIds = new Set(buildings.map((building) => building.id));
+      const activeMarkers = markers ?? [];
+      const currentIds = new Set(activeMarkers.map((m) => m.id));
 
       sharedMarkers.forEach((entry, id) => {
         if (!currentIds.has(id)) {
@@ -329,38 +339,72 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
         }
       });
 
-      buildings.forEach((building) => {
-        const isActive = selectedBuildingId === building.id;
-        const [lng, lat] = resolveBuildingCoordinate(building);
+      activeMarkers.forEach((markerItem) => {
+        const isActive = selectedMarkerId === markerItem.id;
+        const [lng, lat] = markerItem.coordinates;
+        const color = isActive ? 'green' : (markerItem.color ?? 'blue');
+
         const content = (
           <MapMarker
-            icon={<BuildingIcon className="w-5 h-5" />}
-            color={isActive ? 'green' : 'blue'}
+            icon={markerItem.icon}
+            color={color}
             isActive={isActive}
             onClick={(e) => {
               e.stopPropagation();
-              onBuildingClick?.(building);
+              callbacksRef.current.onMarkerClick?.(markerItem);
             }}
           />
         );
 
-        let entry = sharedMarkers.get(building.id);
+        let entry = sharedMarkers.get(markerItem.id);
         if (!entry) {
           const element = document.createElement('div');
           const root = createRoot(element);
-          const marker = new mapboxgl.Marker({ element, anchor: 'bottom' })
+          const marker = new mapboxgl.Marker({
+            element,
+            anchor: 'bottom',
+            draggable: !!markersDraggable,
+          })
             .setLngLat([lng, lat])
             .addTo(map);
+
+          marker.on('dragstart', () => {
+            isDraggingMarker = true;
+            lastDragEndTimestamp = Date.now();
+            const current =
+              callbacksRef.current.markers?.find((m) => m.id === markerItem.id) || markerItem;
+            callbacksRef.current.onMarkerClick?.(current);
+          });
+
+          marker.on('drag', () => {
+            isDraggingMarker = true;
+            lastDragEndTimestamp = Date.now();
+          });
+
+          marker.on('dragend', () => {
+            isDraggingMarker = false;
+            lastDragEndTimestamp = Date.now();
+            const lngLat = marker.getLngLat();
+            const current =
+              callbacksRef.current.markers?.find((m) => m.id === markerItem.id) || markerItem;
+            callbacksRef.current.onMarkerClick?.(current);
+            callbacksRef.current.onMarkerDragEnd?.(current, [lngLat.lng, lngLat.lat]);
+          });
+
           entry = { marker, root, lng, lat };
-          sharedMarkers.set(building.id, entry);
-        } else if (entry.lng !== lng || entry.lat !== lat) {
-          entry.marker.setLngLat([lng, lat]);
-          entry.lng = lng;
-          entry.lat = lat;
+          sharedMarkers.set(markerItem.id, entry);
+        } else {
+          entry.marker.setDraggable(!!markersDraggable);
+          if (entry.lng !== lng || entry.lat !== lat) {
+            entry.marker.setLngLat([lng, lat]);
+            entry.lng = lng;
+            entry.lat = lat;
+          }
         }
+
         entry.root.render(content);
       });
-    }, [buildings, isMapLoaded, selectedBuildingId, onBuildingClick]);
+    }, [markers, isMapLoaded, selectedMarkerId, markersDraggable]);
 
     const handleZoomIn = () => sharedMapInstance?.zoomIn({ duration: 300 });
     const handleZoomOut = () => sharedMapInstance?.zoomOut({ duration: 300 });
@@ -388,7 +432,7 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
       });
     };
 
-    const isDataLoading = !isMapLoaded || areBuildingsLoading;
+    const isDataLoading = !isMapLoaded || areMarkersLoading;
 
     return (
       <div className="w-full h-full absolute inset-0 overflow-hidden">
@@ -415,38 +459,40 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
         )}
 
         {/* Map camera controls */}
-        <div className="absolute bottom-6 right-6 z-20 flex items-end gap-6">
-          <div className="flex flex-row items-center gap-2">
-            <SquareButton
-              onClick={handleToggleDimension}
-              title={is3D ? 'Cambiar a vista 2D' : 'Cambiar a vista 3D'}
-              className={is3D ? '!bg-page-blue !text-white' : ''}
-            >
-              <span className="text-base font-extrabold leading-none">{is3D ? '3D' : '2D'}</span>
-            </SquareButton>
-
-            <SquareButton onClick={handleResetView} title="Centrar mapa">
-              <TargetIcon className="w-7 h-7" />
-            </SquareButton>
-
-            <div className="flex flex-row rounded-2xl bg-page-white shadow-sm">
+        {showControls && (
+          <div className="absolute bottom-6 right-6 z-20 flex items-end gap-6">
+            <div className="flex flex-row items-center gap-2">
               <SquareButton
-                onClick={handleZoomIn}
-                title="Acercar mapa"
-                className="!rounded-r-none !shadow-none active:!scale-100"
+                onClick={handleToggleDimension}
+                title={is3D ? 'Cambiar a vista 2D' : 'Cambiar a vista 3D'}
+                className={is3D ? '!bg-page-blue !text-white' : ''}
               >
-                <PlusIcon className="w-8 h-8" />
+                <span className="text-base font-extrabold leading-none">{is3D ? '3D' : '2D'}</span>
               </SquareButton>
-              <SquareButton
-                onClick={handleZoomOut}
-                title="Alejar mapa"
-                className="!rounded-l-none !shadow-none active:!scale-100"
-              >
-                <MinusIcon className="w-8 h-8" />
+
+              <SquareButton onClick={handleResetView} title="Centrar mapa">
+                <TargetIcon className="w-7 h-7" />
               </SquareButton>
+
+              <div className="flex flex-row rounded-2xl bg-page-white shadow-sm">
+                <SquareButton
+                  onClick={handleZoomIn}
+                  title="Acercar mapa"
+                  className="!rounded-r-none !shadow-none active:!scale-100"
+                >
+                  <PlusIcon className="w-8 h-8" />
+                </SquareButton>
+                <SquareButton
+                  onClick={handleZoomOut}
+                  title="Alejar mapa"
+                  className="!rounded-l-none !shadow-none active:!scale-100"
+                >
+                  <MinusIcon className="w-8 h-8" />
+                </SquareButton>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {children}
       </div>

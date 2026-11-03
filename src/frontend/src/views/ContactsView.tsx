@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Select } from '../components/ui/Select';
 import { SearchInput } from '../components/ui/SearchInput';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -19,6 +18,7 @@ import {
 import { useAuthState } from '../states/authState';
 import { Role } from '../constants/role';
 import type { UserIdentity } from '../interfaces/identities/UserIdentity';
+import type { BookingSlot } from '../interfaces/BookingSlot';
 import type { OfficeHourDto, DayOfWeekName } from '../dtos/schedule/OfficeHourDto';
 import {
   addDays,
@@ -27,7 +27,6 @@ import {
   formatOfficeHour,
   sortOfficeHours,
   startOfDay,
-  type BookingSlot,
 } from '../utils/schedule';
 
 import SearchIcon from '../assets/svg/icons/icon_search.svg?react';
@@ -55,7 +54,6 @@ const AVAILABILITY_OPTIONS: { value: string; label: string }[] = [
 ];
 
 export const ContactsView = () => {
-  const navigate = useNavigate();
   const currentUser = useAuthState((state) => state.user);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -108,6 +106,11 @@ export const ContactsView = () => {
   const structureCampusMap = useMemo(
     () => new Map(structures.map((structure) => [structure.id, structure.campusId])),
     [structures],
+  );
+
+  const campusNames = useMemo(
+    () => new Map(campuses.map((campus) => [campus.id, campus.name])),
+    [campuses],
   );
 
   const teachers = useMemo(
@@ -207,14 +210,21 @@ export const ContactsView = () => {
     [filteredTeachers, activePage],
   );
 
-  const getTeacherPrimaryOffice = (teacherId: string): string => {
+  const getTeacherPrimaryLocation = (teacherId: string): { campus?: string; office: string } => {
     const blocks = officeHoursByTeacher.get(teacherId) ?? [];
     for (const block of blocks) {
       if (block.structureRefId && structureNames.has(block.structureRefId)) {
-        return structureNames.get(block.structureRefId)!;
+        const campusId = structureCampusMap.get(block.structureRefId);
+        const campusName = campusId ? campusNames.get(campusId) : undefined;
+        return {
+          campus: campusName,
+          office: structureNames.get(block.structureRefId)!,
+        };
       }
     }
-    return 'Ubicación por confirmar';
+    return {
+      office: 'Ubicación por confirmar',
+    };
   };
 
   const getTeacherScheduleSummary = (teacherId: string): string => {
@@ -301,8 +311,8 @@ export const ContactsView = () => {
   const isLoading = isLoadingUsers || isLoadingOfficeHours;
 
   return (
-    <div className="p-6 min-h-screen bg-page-dark flex flex-col gap-6">
-      <div className="bg-page-dark py-2 px-4 flex flex-col gap-4">
+    <div className="p-6 min-h-screen bg-transparent flex flex-col gap-6">
+      <div className="py-2 px-4 flex flex-col gap-4">
         <div className="flex flex-wrap items-end justify-end gap-4">
           <div className="w-80">
             <SearchInput
@@ -377,19 +387,24 @@ export const ContactsView = () => {
         ) : (
           <>
             <div className="flex-1 grid grid-cols-[repeat(auto-fill,minmax(min(100%,38rem),38rem))] justify-center content-start gap-6">
-              {paginatedTeachers.map((teacher) => (
-                <ContactCard
-                  key={teacher.id}
-                  className="!w-full max-w-[38rem] min-h-[17rem]"
-                  name={teacher.name}
-                  role="Profesor"
-                  email={teacher.email}
-                  office={getTeacherPrimaryOffice(teacher.id)}
-                  scheduleSummary={getTeacherScheduleSummary(teacher.id)}
-                  photoUrl={teacher.avatar}
-                  onInfoClick={() => handleOpenProfile(teacher)}
-                />
-              ))}
+              {paginatedTeachers.map((teacher) => {
+                const { campus: teacherCampus, office: teacherOffice } =
+                  getTeacherPrimaryLocation(teacher.id);
+
+                return (
+                  <ContactCard
+                    key={teacher.id}
+                    className="!w-full max-w-[38rem]"
+                    name={teacher.name}
+                    campus={teacherCampus}
+                    office={teacherOffice}
+                    email={teacher.email}
+                    scheduleSummary={getTeacherScheduleSummary(teacher.id)}
+                    photoUrl={teacher.avatar}
+                    onInfoClick={() => handleOpenProfile(teacher)}
+                  />
+                );
+              })}
             </div>
 
             <Pagination
@@ -410,7 +425,9 @@ export const ContactsView = () => {
             name={selectedTeacher.name}
             role="Profesor"
             department="Docente UCT"
-            office={getTeacherPrimaryOffice(selectedTeacher.id)}
+            campus={getTeacherPrimaryLocation(selectedTeacher.id).campus}
+            building={getTeacherPrimaryLocation(selectedTeacher.id).office}
+            office={getTeacherPrimaryLocation(selectedTeacher.id).office}
             email={selectedTeacher.email}
             photoUrl={selectedTeacher.avatar}
             officeHours={selectedTeacherOfficeHours}
@@ -421,10 +438,6 @@ export const ContactsView = () => {
             bookingError={createMeeting.error?.message ?? null}
             bookingSuccess={bookingSuccess}
             onBookSlot={handleBookSlot}
-            onViewOffice={() => {
-              handleCloseProfile();
-              navigate('/map');
-            }}
             onClose={handleCloseProfile}
           />
         )}

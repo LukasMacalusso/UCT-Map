@@ -1,72 +1,177 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { ModalOverlay } from './ModalOverlay';
 
-const renderOverlay = (isOpen = true, onClose = vi.fn()) =>
-  render(
-    <ModalOverlay isOpen={isOpen} onClose={onClose}>
-      <div>
-        <h2>Contenido modal</h2>
-        <button type="button">Acción</button>
-      </div>
-    </ModalOverlay>
-  );
-
-afterEach(() => {
-  document.body.style.overflow = '';
-});
-
 describe('ModalOverlay', () => {
-  it('no renderiza nada cuando está cerrado', () => {
-    renderOverlay(false);
-    expect(screen.queryByText('Contenido modal')).not.toBeInTheDocument();
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    document.body.style.overflow = '';
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      callback(0);
+      return 1;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
   });
 
-  it('monta el modal en document.body mediante un portal', () => {
-    const { container } = renderOverlay();
-    expect(screen.getByText('Contenido modal')).toBeInTheDocument();
-    expect(container).not.toContainElement(screen.getByText('Contenido modal'));
+  it('renders nothing when closed', () => {
+    render(
+      <ModalOverlay isOpen={false} onClose={vi.fn()}>
+        <button type="button">Contenido</button>
+      </ModalOverlay>,
+    );
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe('');
   });
 
-  it('cierra al hacer click en el fondo pero no en el contenido', () => {
+  it('renders children in a portal, focuses the first focusable element and locks scroll', () => {
+    const { container } = render(
+      <ModalOverlay isOpen onClose={vi.fn()}>
+        <button type="button">Primero</button>
+        <button type="button">Último</button>
+      </ModalOverlay>,
+    );
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(container).not.toContainElement(screen.getByText('Primero'));
+    expect(screen.getByText('Primero')).toHaveFocus();
+    expect(document.body.style.overflow).toBe('hidden');
+  });
+
+  it('focuses the dialog container when there are no focusable elements', () => {
+    render(
+      <ModalOverlay isOpen onClose={vi.fn()}>
+        <p>Sin controles</p>
+      </ModalOverlay>,
+    );
+
+    expect(screen.getByRole('dialog')).toHaveFocus();
+  });
+
+  it('closes on Escape and on backdrop click, but not on inner click', () => {
     const onClose = vi.fn();
-    renderOverlay(true, onClose);
+
+    render(
+      <ModalOverlay isOpen onClose={onClose}>
+        <button type="button">Dentro</button>
+      </ModalOverlay>,
+    );
 
     const dialog = screen.getByRole('dialog');
+    const backdrop = dialog.parentElement as HTMLElement;
+
     fireEvent.click(dialog);
     expect(onClose).not.toHaveBeenCalled();
 
-    fireEvent.click(dialog.parentElement as HTMLElement);
+    fireEvent.click(backdrop);
     expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('cierra al presionar Escape', () => {
-    const onClose = vi.fn();
-    renderOverlay(true, onClose);
 
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(2);
   });
 
-  it('bloquea el scroll del body mientras está abierto y lo restaura al cerrar', () => {
-    const { rerender } = renderOverlay();
+  it('cycles focus forward and backward with Tab', () => {
+    render(
+      <ModalOverlay isOpen onClose={vi.fn()}>
+        <button type="button">Primero</button>
+        <button type="button">Último</button>
+      </ModalOverlay>,
+    );
+
+    const first = screen.getByText('Primero');
+    const last = screen.getByText('Último');
+
+    last.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(first).toHaveFocus();
+
+    first.focus();
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(last).toHaveFocus();
+  });
+
+  it('brings focus inside when Tab is pressed while focus is outside', () => {
+    const outside = document.createElement('button');
+    outside.textContent = 'Fuera';
+    document.body.appendChild(outside);
+    outside.focus();
+
+    render(
+      <ModalOverlay isOpen onClose={vi.fn()}>
+        <button type="button">Primero</button>
+        <button type="button">Último</button>
+      </ModalOverlay>,
+    );
+
+    const first = screen.getByText('Primero');
+    const last = screen.getByText('Último');
+
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(first).toHaveFocus();
+
+    outside.focus();
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(last).toHaveFocus();
+
+    outside.remove();
+  });
+
+  it('keeps focus in the dialog when Tab is pressed with no focusable elements', () => {
+    render(
+      <ModalOverlay isOpen onClose={vi.fn()}>
+        <p>Sin controles</p>
+      </ModalOverlay>,
+    );
+
+    const dialog = screen.getByRole('dialog');
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(dialog).toHaveFocus();
+  });
+
+  it('restores focus and unlocks scroll when closed', () => {
+    const outside = document.createElement('button');
+    outside.textContent = 'Fuera';
+    document.body.appendChild(outside);
+    outside.focus();
+
+    const { rerender } = render(
+      <ModalOverlay isOpen onClose={vi.fn()}>
+        <button type="button">Dentro</button>
+      </ModalOverlay>,
+    );
 
     expect(document.body.style.overflow).toBe('hidden');
 
     rerender(
-      <ModalOverlay isOpen={false} onClose={() => {}}>
-        <div>Contenido modal</div>
-      </ModalOverlay>
+      <ModalOverlay isOpen={false} onClose={vi.fn()}>
+        <button type="button">Dentro</button>
+      </ModalOverlay>,
     );
 
     expect(document.body.style.overflow).toBe('');
+    expect(outside).toHaveFocus();
+
+    outside.remove();
   });
 
-  it('enfoca el primer elemento interactivo al abrirse', async () => {
-    renderOverlay();
-
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Acción' })).toHaveFocus()
+  it('keeps the scroll lock while another overlay is still open', () => {
+    const first = render(
+      <ModalOverlay isOpen onClose={vi.fn()}>
+        <button type="button">Uno</button>
+      </ModalOverlay>,
     );
+    const second = render(
+      <ModalOverlay isOpen onClose={vi.fn()}>
+        <button type="button">Dos</button>
+      </ModalOverlay>,
+    );
+
+    expect(document.body.style.overflow).toBe('hidden');
+
+    first.unmount();
+    expect(document.body.style.overflow).toBe('hidden');
+
+    second.unmount();
+    expect(document.body.style.overflow).toBe('');
   });
 });

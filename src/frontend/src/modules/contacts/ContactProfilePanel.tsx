@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Panel } from '../../components/layout/Panel';
 import { PhotoFrame } from '../../components/media/PhotoFrame';
 import { IconText } from '../../components/ui/IconText';
@@ -7,12 +7,14 @@ import { CloseButton } from '../../components/ui/ExitButton';
 import { Tag } from '../../components/ui/Tag';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
+import MapPinIcon from '../../assets/svg/icons/icon_location.svg?react';
 import PhoneIcon from '../../assets/svg/icons/icon_phone.svg?react';
 import MailIcon from '../../assets/svg/icons/icon_mail.svg?react';
 import ClockIcon from '../../assets/svg/icons/icon_clock.svg?react';
 import CalendarIcon from '../../assets/svg/icons/icon_calendar.svg?react';
 
 import type { ScheduleItem } from '../../interfaces/ScheduleItem';
+import type { BookingSlot } from '../../interfaces/BookingSlot';
 import type { OfficeHourDto } from '../../dtos/schedule/OfficeHourDto';
 import type { MeetingDto } from '../../dtos/schedule/MeetingDto';
 import {
@@ -22,7 +24,6 @@ import {
   formatLongDate,
   formatOfficeHour,
   sortOfficeHours,
-  type BookingSlot,
 } from '../../utils/schedule';
 
 export interface ContactProfilePanelProps {
@@ -30,6 +31,8 @@ export interface ContactProfilePanelProps {
   degree?: string;
   role: string;
   department?: string;
+  campus?: string;
+  building?: string;
   office?: string;
   email: string;
   phone?: string;
@@ -57,6 +60,8 @@ export const ContactProfilePanel = ({
   degree,
   role,
   department,
+  campus,
+  building,
   office,
   email,
   phone,
@@ -74,7 +79,6 @@ export const ContactProfilePanel = ({
   bookingSuccess = null,
   onBookSlot,
   onClose,
-  onViewOffice,
 }: ContactProfilePanelProps) => {
   const [durationMinutes, setDurationMinutes] = useState<number>(30);
   const [selectedDayKey, setSelectedDayKey] = useState<string>('');
@@ -92,25 +96,15 @@ export const ContactProfilePanel = ({
     return buildBookingDays(officeHours, meetings, durationMinutes, BOOKING_DAYS_AHEAD);
   }, [officeHours, meetings, durationMinutes]);
 
-  useEffect(() => {
-    if (bookingDays.length === 0) {
-      setSelectedDayKey('');
-      setSelectedSlotKey('');
-      return;
-    }
-
-    const dayStillExists = bookingDays.some((day) => day.key === selectedDayKey);
-    if (!dayStillExists) {
-      const firstDayWithFree = bookingDays.find((day) => day.freeSlots > 0) ?? bookingDays[0];
-      setSelectedDayKey(firstDayWithFree.key);
-      setSelectedSlotKey('');
-    }
+  const activeDay = useMemo(() => {
+    if (bookingDays.length === 0) return null;
+    return (
+      bookingDays.find((day) => day.key === selectedDayKey) ??
+      bookingDays.find((day) => day.freeSlots > 0) ??
+      bookingDays[0] ??
+      null
+    );
   }, [bookingDays, selectedDayKey]);
-
-  const activeDay = useMemo(
-    () => bookingDays.find((day) => day.key === selectedDayKey) ?? bookingDays[0] ?? null,
-    [bookingDays, selectedDayKey],
-  );
 
   const selectedSlot = useMemo(
     () => activeDay?.slots.find((slot) => slot.key === selectedSlotKey && !slot.isTaken) ?? null,
@@ -160,38 +154,34 @@ export const ContactProfilePanel = ({
             </div>
 
             <div className="flex flex-col gap-2 mb-3 w-full">
-              {office && (
+              {campus && (
                 <IconText
-                  icon={<BuildingIcon className="w-4 h-4 flex-shrink-0" />}
-                  text={office}
+                  icon={<MapPinIcon className="w-4 h-4 flex-shrink-0 text-gray-500" />}
+                  text={campus}
+                  className="!text-sm font-medium"
+                />
+              )}
+              {(building || office) && (
+                <IconText
+                  icon={<BuildingIcon className="w-4 h-4 flex-shrink-0 text-gray-500" />}
+                  text={building ?? office ?? ''}
                   className="!text-sm font-medium"
                 />
               )}
               <IconText
-                icon={<MailIcon className="w-4 h-4 flex-shrink-0" />}
+                icon={<MailIcon className="w-4 h-4 flex-shrink-0 text-gray-500" />}
                 text={email}
                 className="!text-sm font-medium break-all"
               />
               {phone && (
                 <IconText
-                  icon={<PhoneIcon className="w-4 h-4 flex-shrink-0" />}
+                  icon={<PhoneIcon className="w-4 h-4 flex-shrink-0 text-gray-500" />}
                   text={phone}
                   className="!text-sm font-medium"
                 />
               )}
             </div>
           </div>
-
-          {onViewOffice && (
-            <Button
-              variant="solid"
-              size="md"
-              onClick={onViewOffice}
-              className="!w-auto px-6 font-bold tracking-wide mt-auto"
-            >
-              VER OFICINA
-            </Button>
-          )}
         </div>
       </div>
 

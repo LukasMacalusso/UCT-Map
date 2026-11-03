@@ -63,43 +63,102 @@ Las vistas principales de la aplicación corresponden a las páginas renderizada
 | `LoginView` | `/login` | Inicio de sesión |
 | `ShowcaseView` | `/showcase` | Galería interactiva para pruebas y prototipado de componentes. |
 
-## Interfaz Role-Based
+## Enrutamiento y Control de Acceso (AppRouter, ProtectedRoute, RoleGuard)
 
-Con la gestión de interfaces basadas en roles se permite añadir nuevas funcionalidades específicas de manera limpia:
+El frontend implementa una arquitectura de navegación desacoplada y fuertemente tipada con **React Router v7** y **Zustand**, organizada en el directorio `src/router/`:
 
-1. **Para componentes de UI:**
-   Se utiliza el componente `<RoleGuard>`. Si se desea que solo ciertos roles vean una funcionalidad, simplemente se envuelve el código:
-   ```tsx
-   <RoleGuard allowedRoles={['INCIDENTS_OFFICER', 'ADMIN']}>
-     <IncidentManagerPanel />
-   </RoleGuard>
-   ```
-   Si el usuario no tiene los permisos, React ignora el componente por completo.
-
-2. **Para Vistas y Páginas Completas:**
-   La navegación y enrutamiento se protegen con `<ProtectedRoute>` en el `AppRouter`:
-   ```tsx
-   <Route path="settings" element={
-     <ProtectedRoute allowedRoles={['ADMIN', 'TEACHER']}>
-       <SettingsView />
-     </ProtectedRoute>
-   } />
-   ```
-Si se desea llevar al usuario a una ruta específica si no cuenta con autorización, se puede modificar con `unauthorizedTo` (por default, lleva a `/map`):
-
-```tsx
-<Route element="{<ProtectedRoute" unauthorizedTo="/login"/>}>
-  <Route element="{<ContactsView" path="/contacts"/>} />
-</Route>
 ```
-   El enrutador maneja la seguridad automáticamente e intercepta a los usuarios no autorizados.
+src/router/
+├── AppRouter.tsx        # Árbol jerárquico de rutas y vistas de la aplicación
+├── ProtectedRoute.tsx   # Guardián de navegación a nivel de ruta (Route Guard)
+├── RoleGuard.tsx        # Guardián granular de interfaz a nivel de componente (UI Guard)
+└── ProtectedRoute.test.tsx
+```
 
-3. **Para Lógica Interna:**
-   Cualquier parte del código puede acceder instantáneamente a la sesión mediante el store global Zustand (`useAuthState`):
-   ```tsx
-   const user = useAuthState(state => state.user);
-   if (user?.role === 'MEMBER') { /* lógica específica */ }
-   ```
+---
+
+### 1. `AppRouter` (`src/router/AppRouter.tsx`)
+* **¿Qué es?**: Componente central que define la jerarquía completa de rutas de la aplicación Single Page Application (SPA).
+* **¿Para qué sirve y cómo funciona?**:
+  * **Separación de layouts**: Define rutas autónomas sin barra de navegación (como `/login`) y rutas envueltas en el diseño principal (`<AppLayout />`), el cual proporciona la barra lateral persistente y los paneles modales globales.
+  * **Estructura jerárquica de permisos**:
+    1. **Rutas Públicas Generales**: Accesibles sin autenticación previa (`/map`, `/showcase`).
+    2. **Rutas Protegidas Autenticadas**: Requieren iniciar sesión obligatoriamente (`/contacts`, `/reports`, `/objects`). Si el usuario es anónimo o visitante no autenticado, se le redirige automáticamente a `/login` mediante `unauthorizedTo="/login"`.
+    3. **Rutas Restringidas por Rol**:
+       * `Role.Admin`: Protege el panel `/administration` y las subrutas anidadas del editor del mapa `/edition` (`/edition/map`, `/edition/campus`, `/edition/buildings`, `/edition/filters`).
+       * `Role.Teacher`: Protege la gestión de horarios y bloques de atención docente en `/schedule`.
+  * **Ruta de fallback (Catch-all)**: Cualquier URL desconocida o no registrada es interceptada por `<Route path="*" element={<Navigate to="/map" />} />`, asegurando que el usuario regrese a la vista principal del mapa.
+
+---
+
+### 2. `ProtectedRoute` (`src/router/ProtectedRoute.tsx`)
+* **¿Qué es?**: Componente envoltorio (*Route Layout Guard*) que aprovecha el patrón `<Outlet />` de React Router para proteger rutas completas o grupos de rutas anidadas.
+* **Propiedades (Props)**:
+  | Propiedad | Tipo | Obligatorio | Descripción |
+  |---|---|---|---|
+  | `allowedRoles` | `Role[]` | No | Lista de roles autorizados para acceder (ej. `[Role.Admin]`). Si no se proporciona, solo valida que el usuario esté autenticado. |
+  | `unauthorizedTo` | `string` | No (default: `"/map"`) | Ruta a la que se redirige al usuario si no cumple con la autenticación o con los roles permitidos. |
+
+* **Lógica de evaluación**:
+  1. Consulta reactivamente el estado de autenticación en Zustand (`useAuthState`).
+  2. Si `!isAuthenticated` o no existe `user`, redirige a `unauthorizedTo` reemplazando el historial (`replace`).
+  3. Si se definieron `allowedRoles` y el rol actual del usuario (`user.role`) no forma parte de dicha lista, deniega el acceso y redirige a `unauthorizedTo`.
+  4. Si se superan todas las validaciones, renderiza el `<Outlet />`, desplegando la vista hija correspondiente.
+
+* **Ejemplo de uso en el Router**:
+  ```tsx
+  // Solo usuarios con rol Administrador
+  <Route element={<ProtectedRoute allowedRoles={[Role.Admin]} unauthorizedTo="/map" />}>
+    <Route path="/administration" element={<AdministrationView />} />
+  </Route>
+
+  // Cualquier usuario con sesión activa (redirige a /login si no ha iniciado sesión)
+  <Route element={<ProtectedRoute unauthorizedTo="/login" />}>
+    <Route path="/reports" element={<IncidentsView />} />
+  </Route>
+  ```
+
+---
+
+### 3. `RoleGuard` (`src/router/RoleGuard.tsx`)
+* **¿Qué es?**: Componente guardián condicional para elementos visuales dentro del DOM.
+* **¿Para qué sirve?**: Permite ocultar o mostrar partes específicas de la interfaz (botones de acción, pestañas administrativas, controles de edición o eliminación) según el rol del usuario logueado, sin necesidad de alterar la lógica de rutas.
+* **Propiedades (Props)**:
+  | Propiedad | Tipo | Obligatorio | Descripción |
+  |---|---|---|---|
+  | `allowedRoles` | `Role[]` | Sí | Array con los roles que tienen permiso para visualizar los componentes hijos (`children`). |
+  | `children` | `React.ReactNode` | Sí | Elementos JSX que se renderizarán si el usuario cuenta con el rol requerido. |
+
+* **Comportamiento**:
+  * Si el usuario no ha iniciado sesión (`!user`) o su rol no está incluido en `allowedRoles`, el componente retorna `null`, evitando que el elemento exista en el DOM.
+  * Si el rol es válido, renderiza los elementos hijos envueltos en un fragmento `<>{children}</>`.
+
+* **Ejemplo de uso en vistas o componentes**:
+  ```tsx
+  import { RoleGuard } from '../router/RoleGuard';
+  import { Role } from '../constants/role';
+
+  <RoleGuard allowedRoles={[Role.Admin, Role.ObjectsOfficer]}>
+    <button onClick={handleOpenCreateReportModal}>
+      Publicar Objeto Encontrado
+    </button>
+  </RoleGuard>
+  ```
+
+---
+
+### 4. Acceso al Estado de Usuario en Lógica Interna
+Cuando se requiere condicionar flujos en funciones, hooks o efectos secundarios sin un componente visual, se consulta directamente el store de autenticación:
+```tsx
+import { useAuthState } from '../states/authState';
+import { Role } from '../constants/role';
+
+const user = useAuthState(state => state.user);
+
+if (user?.role === Role.Admin) {
+  // Lógica administrativa específica
+}
+```
 
 ## Gestión de Modales Globales
 
@@ -177,6 +236,91 @@ El ciclo de vida de una petición HTTP típica es el siguiente:
 6. **Retorno y Actualización de Estado:**
    La respuesta transita la misma ruta en sentido inverso. El servicio resuelve la promesa, TanStack Query actualiza su estado reactivo de forma automática, y la vista del frontend refleja los cambios correspondientes.
 
+## Capa de Servicios (Data Access Layer)
+
+Los servicios ubicados en `src/services/` actúan como la capa de abstracción y acceso a datos (*Data Access Layer*) de la aplicación. Su responsabilidad exclusiva es comunicarse con los microservicios del backend a través de `httpClient` y transformar las respuestas en DTOs fuertemente tipados.
+
+### Principios y Reglas de Diseño
+
+1. **Aislamiento de la UI**: Los componentes de React **nunca** llaman a los servicios directamente ni realizan peticiones HTTP directas. Consumen los *custom hooks* de **TanStack Query** (`useCampuses`, `useSchedule`, `useLostObjects`, etc.), los cuales delegan la petición al servicio correspondiente y administran el estado reactivo (`data`, `isLoading`, `error`).
+2. **Normalización uniforme de errores**: Cada método dentro de un servicio envuelve su llamada en un bloque `try/catch` y canaliza cualquier excepción hacia `toApiError(error, 'Mensaje amigable')`, asegurando que la UI siempre reciba instancias consistentes de `ApiError`.
+3. **Mapeo directo con Microservicios del Backend**: Cada servicio del frontend encapsula las operaciones de un microservicio específico del ecosistema UCT Map.
+
+### Catálogo de Servicios
+
+| Servicio | Archivo | Microservicio Backend | Responsabilidad Principal |
+|---|---|---|---|
+| `authService` | [`src/services/authService.ts`](./src/services/authService.ts) | **Identity.API** | Autenticación institucional: inicio de sesión (`login`), registro de nuevos usuarios (`register`) y obtención de datos del usuario actual. |
+| `userService` | [`src/services/userService.ts`](./src/services/userService.ts) | **Identity.API** | Administración de cuentas: listado general de usuarios, asignación/cambio de roles y suspensión preventiva de cuentas. |
+| `campusService` | [`src/services/campusService.ts`](./src/services/campusService.ts) | **Campus.API** | Gestión geoespacial del campus: CRUD de edificios, pisos, salas, estructuras externas, categorías y ordenamiento interactivo de capas. |
+| `incidentService` | [`src/services/incidentService.ts`](./src/services/incidentService.ts) | **Incidents.API** | Infraestructura y objetos perdidos: reporte de incidencias en campus, publicación y búsqueda de objetos extraviados, y transiciones de estado de reportes. |
+| `scheduleService` | [`src/services/scheduleService.ts`](./src/services/scheduleService.ts) | **Schedule.API** | Directorio y agenda académica: consulta de docentes, creación de bloques de atención y agendamiento de reuniones estudiante-docente. |
+
+## Archivos Relevantes del Core
+
+Dentro del directorio `src/api/` se encuentran tres piezas fundamentales que articulan la infraestructura de comunicación de red, el manejo de errores y la sincronización de caché con los microservicios:
+
+### 1. `src/api/apiError.ts` (Manejo y Normalización de Errores)
+* **¿Qué es?**: Proporciona la clase personalizada `ApiError` (que extiende del objeto estándar `Error` de JavaScript) y la función utilitaria `toApiError`.
+* **¿Para qué sirve?**:
+  * **Normalización de respuestas de error**: Cuando un microservicio responde con un error HTTP o falla la conexión, `toApiError` extrae de forma segura el mensaje más descriptivo retornado por el backend (inspeccionando campos estándar de RFC 7807 / ASP.NET como `detail`, `title`, `message` o cadenas de texto planas).
+  * **Mapeo declarativo por código de estado**: Permite definir diccionarios de mensajes específicos por código HTTP (`statusMessages: Record<number, string>`) y un mensaje por defecto (`fallback`) para presentar información amigable al usuario en la UI.
+  * **Trazabilidad**: Asigna de forma tipada el código HTTP recibido en la propiedad `.status` y conserva el error original en `.cause`.
+  * **Tipado desacoplado**: La interfaz de opciones del constructor `ApiErrorOptions` se encuentra desacoplada en [`src/interfaces/ApiErrorOptions.ts`](./src/interfaces/ApiErrorOptions.ts).
+
+### 2. `src/api/httpClient.ts` (Cliente HTTP Centralizado)
+* **¿Qué es?**: Instancia configurada (*singleton*) de **Axios** utilizada por todos los servicios (`services/*`) de la aplicación para comunicarse con el API Gateway.
+* **¿Para qué sirve?**:
+  * **Configuración uniforme**: Establece encabezados base (`Content-Type: application/json`), rutas relativas (`/api/...`) compatibles con el proxy Nginx/Vite, y un timeout predeterminado de 10 segundos para prevenir bloqueos de red.
+  * **Inyección automática de autenticación (Request Interceptor)**: En cada petición saliente, consulta de forma reactiva el store global de Zustand (`useAuthState`). Si existe un token JWT válido, inyecta automáticamente la cabecera `Authorization: Bearer <token>`.
+  * **Gestión global de sesión y errores (Response Interceptor)**: Monitorea todas las respuestas del servidor. Si un microservicio responde con un código `401 Unauthorized` (sesión expirada o token inválido), automáticamente ejecuta el cierre de sesión (`useAuthState.getState().logout()`) para redirigir al usuario al login de forma transparente. También captura advertencias para códigos 403, 404 y errores 500+.
+
+### 3. `src/api/queryKeys.ts` (Fábrica Centralizada de Claves de Caché)
+* **¿Qué es?**: Objeto estructurado que define y genera las claves de consulta (*Query Keys*) tipadas para **TanStack Query** (`@tanstack/react-query`).
+* **¿Para qué sirve?**:
+  * **Única fuente de verdad para la caché**: TanStack Query identifica y almacena en caché las respuestas del servidor mediante arrays de claves. `queryKeys` centraliza todas estas definiciones jerárquicas (campus, categorías, estructuras, reportes, objetos perdidos, docentes, reuniones, etc.).
+  * **Eliminación de "magic strings"**: Evita errores tipográficos al invocar hooks como `useQuery`, `useMutation` o `queryClient.invalidateQueries`.
+  * **Parametrización fuertemente tipada**: Proporciona funciones tipadas que aceptan identificadores (`campusId`, `buildingId`, `teacherId`) o DTOs de búsqueda (`ReportSearchParams`, `LostObjectSearchParams`), garantizando que la caché se invalide y refresque de forma exacta y determinista cuando los datos cambian.
+
+---
+
+## Librerías y Dependencias Utilizadas
+
+El ecosistema del frontend se compone de dependencias cuidadosamente seleccionadas para garantizar alto rendimiento, escalabilidad, tipado estricto y una experiencia de usuario interactiva:
+
+### Dependencias de Producción (`dependencies`)
+
+| Librería | Versión | Propósito y Justificación |
+|---|---|---|
+| **`react`** y **`react-dom`** | `^19.2.8` | Biblioteca base para la interfaz de usuario, empleando arquitectura declarativa basada en componentes y el motor React 19. |
+| **`react-router-dom`** | `^7.18.3` | Enrutador del lado del cliente (SPA) para gestionar navegación, parámetros de URL, rutas protegidas y guardas de seguridad por rol (`RoleGuard`). |
+| **`@tanstack/react-query`** | `^5.102.8` | Gestor asíncrono de estado del servidor. Administra caché en memoria, deduplicación de peticiones, revalidación en segundo plano y mutaciones optimistas. |
+| **`zustand`** | `^5.0.15` | Gestor de estado global del cliente ligero, rápido y sin boilerplate de Redux. Gestiona la sesión (`authState`), navegación activa (`navState`) y modales/notificaciones (`uiState`). |
+| **`axios`** | `^1.20.0` | Cliente HTTP basado en promesas para consumir los microservicios a través del API Gateway, soportando interceptores, timeouts y serialización automática. |
+| **`tailwindcss`** y **`@tailwindcss/vite`** | `^4.3.3` | Framework CSS utilitario de última generación integrado con Vite, utilizado para el diseño responsivo, temas y la paleta de colores institucional de la UCT. |
+| **`mapbox-gl`** | `^3.33.0` | Motor gráfico para renderizado de mapas vectoriales interactivos, edificios en 3D, controles de cámara, marcadores de salas y mapas de calor geoespaciales. |
+| **`@photo-sphere-viewer/core`** | `^5.15.1` | Visor esférico interactivo para renderizar imágenes panorámicas en 360°, permitiendo recorridos virtuales dentro de salas y oficinas de los edificios. |
+| **`react-zoom-pan-pinch`** | `^4.2.0` | Componente interactivo para realizar zoom, arrastre y gestos táctiles suaves sobre los planos esquemáticos de los pisos y estructuras. |
+| **`react-hook-form`** | `^7.87.0` | Manejo de formularios reactivos con mínimo re-renderizado de componentes y alta velocidad de validación. |
+| **`zod`** | `^4.5.4` | Biblioteca de validación de esquemas con inferencia estática de tipos TypeScript, garantizando integridad en los datos ingresados en formularios. |
+| **`@hookform/resolvers`** | `^5.9.1` | Adaptador que conecta los esquemas de validación de `zod` directamente con los formularios de `react-hook-form`. |
+
+### Dependencias de Desarrollo y Calidad (`devDependencies`)
+
+| Herramienta | Versión | Propósito y Justificación |
+|---|---|---|
+| **`vite`** | `^8.2.2` | Entorno de desarrollo local de arranque instantáneo y empaquetador para producción mediante Rollup. |
+| **`typescript`** | `~6.0.2` | Compilador de TypeScript que proporciona chequeo estático de tipos, autocompletado y prevención temprana de bugs. |
+| **`vitest`** | `^5.0.3` | Framework de pruebas unitarias ultrarrápido y nativo para Vite, con soporte para mocks (`vi.fn`), snapshots y temporizadores falsos. |
+| **`@testing-library/react`** y **`@testing-library/jest-dom`** | `^16.3.3` / `^7.0.1` | Utilidades para testing de componentes React basadas en el comportamiento real del usuario, accesibilidad (roles, etiquetas) y aserciones extendidas del DOM. |
+| **`jsdom`** | `^30.1.2` | Emulación completa del entorno DOM/HTML de navegadores dentro de Node.js para ejecutar la suite de pruebas sin requerir un navegador gráfico. |
+| **`@vitest/coverage-v8`** | `^5.0.3` | Motor de cobertura de código basado en el inspector V8 para medir el porcentaje de código testeado y generar reportes en consola y formato Cobertura XML para el CI. |
+| **`eslint`** y **`typescript-eslint`** | `^10.9.0` / `^8.67.0` | Linter estático para asegurar código limpio, consistente y prevenir malas prácticas en React (`eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`). |
+| **`vite-plugin-svgr`** | `^5.2.0` | Plugin de Vite que transforma archivos vectoriales `.svg` en componentes React listos para usar (`?react`) con soporte completo de propiedades y Tailwind. |
+| **`postcss`** y **`autoprefixer`** | `^8.5.28` / `^10.5.5` | Procesadores CSS que agregan automáticamente prefijos de compatibilidad para navegadores. |
+
+---
+
 ## Construcción de la Imagen 
 
 El proceso del archivo `Dockerfile` del frontend se divide en dos fases:
@@ -228,3 +372,7 @@ npm run validate
 * **Ubicación (Co-location):** Los archivos de prueba tienen la extensión `.test.ts` o `.test.tsx` y se ubican en la misma carpeta del componente o hook correspondiente (ej. `Avatar.tsx` -> `Avatar.test.tsx`).
 * **Entorno:** Utiliza **Vitest** junto con **JSDOM** (`jsdom`) para emular el navegador y `@testing-library/react` para validar comportamiento y accesibilidad.
 * **Alcance:** Solo se testea código con lógica ejecutable (componentes, hooks, utilitarios, servicios). Las definiciones de tipos (`interfaces/`) no requieren archivos de test.
+* **Infraestructura de Testing (`src/test/`):**
+  El directorio `src/test/` alberga la infraestructura base compartida por toda la suite de pruebas:
+  * **`src/test/setup.ts`**: Archivo de arranque global referenciado en `vite.config.ts` (`setupFiles`). Registra las aserciones extendidas del DOM (`@testing-library/jest-dom/vitest`) y ejecuta `cleanup()` automáticamente tras cada prueba (`afterEach`) para desmontar componentes y resetear el DOM virtual, garantizando aislamiento estricto entre pruebas.
+  * **`src/test/renderWithQueryClient.tsx`**: Función utilitaria de renderizado imprescindible para cualquier componente o vista que consuma datos del servidor mediante **TanStack Query** (`useQuery`, `useMutation`). Instancia un `QueryClient` de prueba configurado específicamente para tests (`retry: false` para fallar inmediatamente sin demoras y `gcTime: 0` para no retener caché entre ejecuciones) y envuelve el componente en un `<QueryClientProvider>`, previniendo el error `"No QueryClient set"`. Retorna la instancia de `queryClient` y todos los métodos de consulta de `@testing-library/react`.

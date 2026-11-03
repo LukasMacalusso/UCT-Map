@@ -23,12 +23,15 @@ export const TimedActionCard = ({
 }: TimedActionCardProps) => {
   const [isActive, setIsActive] = useState(false);
   const [progress, setProgress] = useState(100);
+  const [prevDuration, setPrevDuration] = useState(initialDurationMs);
 
-  useEffect(() => {
-    // Reset state when instantiated
+  if (initialDurationMs !== prevDuration) {
+    setPrevDuration(initialDurationMs);
     setIsActive(false);
     setProgress(100);
+  }
 
+  useEffect(() => {
     const startTime = Date.now();
     const endTime = startTime + initialDurationMs;
 

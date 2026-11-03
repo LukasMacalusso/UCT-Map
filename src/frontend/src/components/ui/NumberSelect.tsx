@@ -24,9 +24,15 @@ export const NumberSelect = ({
   label
 }: NumberSelectProps) => {
   const [renderValue, setRenderValue] = useState<number>(initialValue);
+  const [prevInitialValue, setPrevInitialValue] = useState<number>(initialValue);
   const [animatingValue, setAnimatingValue] = useState<number | null>(null);
   const [direction, setDirection] = useState<'increase' | 'decrease' | null>(null);
   const [errorPulse, setErrorPulse] = useState(false);
+
+  if (initialValue !== prevInitialValue) {
+    setPrevInitialValue(initialValue);
+    setRenderValue(initialValue);
+  }
 
   // Refs for auto-repeat
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -34,7 +40,6 @@ export const NumberSelect = ({
   const valueRef = useRef<number>(renderValue);
 
   useEffect(() => {
-    setRenderValue(initialValue);
     valueRef.current = initialValue;
   }, [initialValue]);
 

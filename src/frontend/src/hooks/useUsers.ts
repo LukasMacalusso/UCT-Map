@@ -14,10 +14,11 @@ interface ToggleUserSuspensionVars {
   isSuspended: boolean;
 }
 
-export const useUsers = () => {
+export const useUsers = (enabled = true) => {
   return useQuery<UserIdentity[], Error>({
     queryKey: queryKeys.users,
     queryFn: () => userService.getAllUsers(),
+    enabled,
   });
 };
 

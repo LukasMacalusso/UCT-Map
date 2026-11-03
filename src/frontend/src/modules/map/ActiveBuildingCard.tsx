@@ -6,9 +6,20 @@ import type { RoomData } from '../../interfaces/RoomData';
 interface ActiveBuildingCardProps {
   building: BuildingLocationDto | null;
   onClose: () => void;
+  onNavigate?: () => void;
+  onView360?: () => void;
+  onReportProblem?: () => void;
+  onReportLostObject?: () => void;
 }
 
-export const ActiveBuildingCard = ({ building, onClose }: ActiveBuildingCardProps) => {
+export const ActiveBuildingCard = ({
+  building,
+  onClose,
+  onNavigate,
+  onView360,
+  onReportProblem,
+  onReportLostObject,
+}: ActiveBuildingCardProps) => {
   const { data: rooms, isLoading } = useBuildingRooms(building?.id || '');
 
   if (!building) return null;
@@ -36,6 +47,10 @@ export const ActiveBuildingCard = ({ building, onClose }: ActiveBuildingCardProp
         rooms={mappedRooms}
         roomsLoading={isLoading}
         onClose={onClose}
+        onNavigate={onNavigate}
+        onView360={onView360}
+        onReportProblem={onReportProblem}
+        onReportLostObject={onReportLostObject}
       />
     </div>
   );

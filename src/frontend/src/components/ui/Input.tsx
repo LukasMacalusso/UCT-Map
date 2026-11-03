@@ -9,9 +9,9 @@ type InputProps = {
   rightElement?: React.ReactNode;
 } & React.InputHTMLAttributes<HTMLInputElement> & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
-export const Input = React.forwardRef<any, InputProps>(
-  ({ label, labelColor = 'text-white', error, className = '', multiline, icon, rightElement, placeholder, ...props }, ref) => {
-    const inputPlaceholder = placeholder !== undefined ? placeholder : (props as any).placeholder;
+export const Input = React.forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
+  ({ label, labelColor = 'text-gray-700', error, className = '', multiline, icon, rightElement, placeholder, ...props }, ref) => {
+    const inputPlaceholder = placeholder !== undefined ? placeholder : (props as Record<string, unknown>).placeholder as string | undefined;
     const paddingClass = `${icon ? 'pl-12' : 'pl-4'} ${rightElement ? 'pr-12' : 'pr-4'}`;
 
     return (
@@ -31,25 +31,25 @@ export const Input = React.forwardRef<any, InputProps>(
 
           {multiline ? (
             <textarea
-              ref={ref}
+              ref={ref as React.ForwardedRef<HTMLTextAreaElement>}
               placeholder={inputPlaceholder}
               className={`peer w-full ${paddingClass} py-3 border-2 rounded-[18px] outline-none bg-white relative z-10 transition-colors
                 placeholder:text-gray-400 placeholder:opacity-100 text-gray-900 font-medium
                 ${error ? 'border-red-300' : 'border-gray-400'}
                 ${className}
               `}
-              {...(props as any)}
+              {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
             />
           ) : (
             <input
-              ref={ref}
+              ref={ref as React.ForwardedRef<HTMLInputElement>}
               placeholder={inputPlaceholder}
               className={`peer w-full ${paddingClass} py-3 border-2 rounded-[18px] outline-none bg-white relative z-10 transition-colors
                 placeholder:text-gray-400 placeholder:opacity-100 text-gray-900 font-medium
                 ${error ? 'border-red-300' : 'border-gray-400'}
                 ${className}
               `}
-              {...(props as any)}
+              {...(props as React.InputHTMLAttributes<HTMLInputElement>)}
             />
           )}
 

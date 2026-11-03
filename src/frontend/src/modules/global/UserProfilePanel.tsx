@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Panel } from '../../components/layout/Panel';
 import { Avatar } from '../../components/media/Avatar';
 import { IconText } from '../../components/ui/IconText';
 import { CloseButton } from '../../components/ui/ExitButton';
 import { Button } from '../../components/ui/Button';
 import { Tag } from '../../components/ui/Tag';
-import { ROLE_STYLES, type Role } from '../../constants/role';
+import { ROLE_STYLES, Role } from '../../constants/role';
 import type { PageColor } from '../../constants/colors';
 import MailIcon from '../../assets/svg/icons/icon_mail.svg?react';
 import StudyIcon from '../../assets/svg/icons/icon_study.svg?react';
@@ -42,6 +42,7 @@ export interface UserProfilePanelProps {
   requestedMeetings?: UserProfileMeetingItem[];
   isLoading?: boolean;
   isOwnProfile?: boolean;
+  showAllTabs?: boolean;
   onCancelMeeting?: (meetingId: string) => void;
   isCancellingMeeting?: boolean;
   onClose?: () => void;
@@ -49,12 +50,6 @@ export interface UserProfilePanelProps {
 }
 
 type ProfileTab = 'objects' | 'incidents' | 'meetings';
-
-const TAB_INDEX: Record<ProfileTab, number> = {
-  objects: 0,
-  incidents: 1,
-  meetings: 2,
-};
 
 const getRoleConfig = (role?: Role): { label: string; color: PageColor } => {
   if (!role) return { label: 'ESTUDIANTE', color: 'blue' };
@@ -73,29 +68,46 @@ export const UserProfilePanel = ({
   requestedMeetings = [],
   isLoading = false,
   isOwnProfile = true,
+  showAllTabs = false,
   onCancelMeeting,
   isCancellingMeeting = false,
   onClose,
   onLogout,
 }: UserProfilePanelProps) => {
-  const [activeTab, setActiveTab] = useState<ProfileTab>('objects');
-  const [prevTab, setPrevTab] = useState<ProfileTab>('objects');
+  const canViewObjects = Boolean(
+    showAllTabs ||
+    role === Role.Admin ||
+    role === Role.ObjectsOfficer
+  );
+
+  const availableTabs = useMemo<{ id: ProfileTab; label: string }[]>(() => {
+    const tabs: { id: ProfileTab; label: string }[] = [];
+    if (canViewObjects) {
+      tabs.push({ id: 'objects', label: `Objetos (${objectReports.length})` });
+    }
+    tabs.push({ id: 'incidents', label: `Incidencias (${incidentReports.length})` });
+    tabs.push({ id: 'meetings', label: `Reuniones (${requestedMeetings.length})` });
+    return tabs;
+  }, [canViewObjects, objectReports.length, incidentReports.length, requestedMeetings.length]);
+
+  const [activeTab, setActiveTab] = useState<ProfileTab>(() =>
+    canViewObjects ? 'objects' : 'incidents'
+  );
+
+  const effectiveTab = availableTabs.some((t) => t.id === activeTab)
+    ? activeTab
+    : (availableTabs[0]?.id ?? 'incidents');
+
+  const activeIndex = Math.max(
+    0,
+    availableTabs.findIndex((t) => t.id === effectiveTab)
+  );
 
   if (isLoading) {
     return <LoadingSpinner size="xl" text="Cargando perfil..." className="py-12" />;
   }
 
   const roleConfig = getRoleConfig(role);
-
-  const handleTabChange = (tab: ProfileTab) => {
-    if (tab !== activeTab) {
-      setPrevTab(activeTab);
-      setActiveTab(tab);
-    }
-  };
-
-  const movingRight = TAB_INDEX[activeTab] > TAB_INDEX[prevTab];
-  const movingLeft = TAB_INDEX[activeTab] < TAB_INDEX[prevTab];
 
   return (
     <Panel color="white" withUctBorder={true} size="xl" outerClassName="!w-[64rem] max-w-[95vw] !h-[44rem] max-h-[90vh]" innerClassName="p-6 lg:p-8 flex flex-col relative h-full overflow-hidden">
@@ -146,93 +158,79 @@ export const UserProfilePanel = ({
           <h3 className="text-xl font-black text-gray-700 uppercase tracking-wider mb-2 px-1">{isOwnProfile ? 'Tus Contribuciones' : 'Contribuciones'}</h3>
           
           <div className="relative flex border-b-2 border-gray-200 mt-1 flex-shrink-0">
-            <button 
-              type="button"
-              className={`w-40 text-sm sm:text-base font-bold py-2.5 transition-colors z-10 cursor-pointer
-                ${activeTab === 'objects' ? 'text-page-blue' : 'text-gray-400 hover:text-gray-600'}
-              `}
-              onClick={() => handleTabChange('objects')}
-            >
-              Objetos ({objectReports.length})
-            </button>
-            <button 
-              type="button"
-              className={`w-40 text-sm sm:text-base font-bold py-2.5 transition-colors z-10 cursor-pointer
-                ${activeTab === 'incidents' ? 'text-page-blue' : 'text-gray-400 hover:text-gray-600'}
-              `}
-              onClick={() => handleTabChange('incidents')}
-            >
-              Incidencias ({incidentReports.length})
-            </button>
-            <button 
-              type="button"
-              className={`w-40 text-sm sm:text-base font-bold py-2.5 transition-colors z-10 cursor-pointer
-                ${activeTab === 'meetings' ? 'text-page-blue' : 'text-gray-400 hover:text-gray-600'}
-              `}
-              onClick={() => handleTabChange('meetings')}
-            >
-              Reuniones ({requestedMeetings.length})
-            </button>
+            {availableTabs.map((tab) => {
+              const isSelected = effectiveTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`w-40 text-sm sm:text-base font-bold py-2.5 transition-colors duration-200 z-10 cursor-pointer text-center
+                    ${isSelected ? 'text-page-blue' : 'text-gray-400 hover:text-gray-600'}
+                  `}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
 
             {/* Animated Sliding Bar */}
-            <div 
-              className={`absolute bottom-[-2px] left-0 h-[4px] w-40 bg-page-blue rounded-full origin-center transition-transform duration-300
-                ${movingRight ? 'animate-slide-stretch-right' : ''}
-                ${movingLeft ? 'animate-slide-stretch-left' : ''}
-              `}
-              style={{ transform: `translateX(${TAB_INDEX[activeTab] * 100}%)` }}
+            <div
+              className="absolute bottom-[-2px] left-0 h-[4px] w-40 bg-page-blue rounded-full transition-transform duration-300 ease-out z-0 pointer-events-none"
+              style={{ transform: `translateX(${activeIndex * 100}%)` }}
             />
           </div>
 
           <div className="bg-page-gray-light mt-4 p-4 rounded-2xl overflow-y-auto flex flex-col gap-3 flex-1 min-h-0 shadow-inner">
-            {activeTab === 'objects' && (
-              objectReports.length > 0 ? objectReports.map((report, idx) => (
-                <ObjectReportCard key={idx} {...report} compact={true} className="!max-w-full shadow-sm hover:shadow-md transition-shadow" />
-              )) : <EmptyState message="No hay reportes de objetos" />
-            )}
+            <div key={effectiveTab} className="w-full flex flex-col gap-3 animate-tab-fade">
+              {effectiveTab === 'objects' && canViewObjects && (
+                objectReports.length > 0 ? objectReports.map((report, idx) => (
+                  <ObjectReportCard key={idx} {...report} compact={true} className="!w-full !max-w-full shadow-sm hover:shadow-md transition-shadow" />
+                )) : <EmptyState message="No hay reportes de objetos" />
+              )}
 
-            {activeTab === 'incidents' && (
-              incidentReports.length > 0 ? incidentReports.map((incident, idx) => (
-                <IncidentCard key={idx} {...incident} compact={true} className="!max-w-full shadow-sm hover:shadow-md transition-shadow" />
-              )) : <EmptyState message="No hay incidencias reportadas" />
-            )}
+              {effectiveTab === 'incidents' && (
+                incidentReports.length > 0 ? incidentReports.map((incident, idx) => (
+                  <IncidentCard key={idx} {...incident} compact={true} className="!w-full !max-w-full shadow-sm hover:shadow-md transition-shadow" />
+                )) : <EmptyState message="No hay incidencias reportadas" />
+              )}
 
-            {activeTab === 'meetings' && (
-              requestedMeetings.length > 0 ? requestedMeetings.map((meeting) => (
-                <Panel
-                  key={meeting.id}
-                  color="white"
-                  outerClassName="!w-full !max-w-full shadow-sm hover:shadow-md transition-shadow"
-                  innerClassName="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                >
-                  <div className="flex flex-col gap-1.5 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-gray-800 text-sm sm:text-base">
-                        {meeting.dateLabel}
-                      </span>
-                      <span className="text-xs sm:text-sm font-semibold text-page-blue flex items-center gap-1">
-                        <ClockIcon className="w-3.5 h-3.5" />
-                        {meeting.timeLabel}
-                      </span>
+              {effectiveTab === 'meetings' && (
+                requestedMeetings.length > 0 ? requestedMeetings.map((meeting) => (
+                  <Panel
+                    key={meeting.id}
+                    color="white"
+                    outerClassName="!w-full !max-w-full shadow-sm hover:shadow-md transition-shadow"
+                    innerClassName="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="flex flex-col gap-1.5 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-gray-800 text-sm sm:text-base">
+                          {meeting.dateLabel}
+                        </span>
+                        <span className="text-xs sm:text-sm font-semibold text-page-blue flex items-center gap-1">
+                          <ClockIcon className="w-3.5 h-3.5" />
+                          {meeting.timeLabel}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
+                        <IconText
+                          icon={<UserIcon className="w-4 h-4 text-gray-700" />}
+                          text={
+                            meeting.teacherEmail
+                              ? `Prof. ${meeting.teacherName} (${meeting.teacherEmail})`
+                              : `Prof. ${meeting.teacherName}`
+                          }
+                          className="!text-xs"
+                        />
+                        <IconText
+                          icon={<BuildingIcon className="w-4 h-4 text-gray-700" />}
+                          text={meeting.location}
+                          className="!text-xs"
+                        />
+                      </div>
                     </div>
-
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
-                      <IconText
-                        icon={<UserIcon className="w-4 h-4 text-gray-700" />}
-                        text={
-                          meeting.teacherEmail
-                            ? `Prof. ${meeting.teacherName} (${meeting.teacherEmail})`
-                            : `Prof. ${meeting.teacherName}`
-                        }
-                        className="!text-xs"
-                      />
-                      <IconText
-                        icon={<BuildingIcon className="w-4 h-4 text-gray-700" />}
-                        text={meeting.location}
-                        className="!text-xs"
-                      />
-                    </div>
-                  </div>
 
                     <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-center">
                       {meeting.canCancel && onCancelMeeting && (
@@ -253,9 +251,10 @@ export const UserProfilePanel = ({
                         className="!text-xs !px-3 !py-1 font-semibold flex-shrink-0"
                       />
                     </div>
-                </Panel>
-              )) : <EmptyState message="No hay reuniones solicitadas" />
-            )}
+                  </Panel>
+                )) : <EmptyState message="No hay reuniones solicitadas" />
+              )}
+            </div>
           </div>
         </div>
       </div>

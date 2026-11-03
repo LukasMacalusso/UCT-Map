@@ -10,7 +10,7 @@ import { useCampuses, useStructures } from '../../hooks/useCampus';
 
 export interface ReportLostObjectData {
   title: string;
-  description: string;
+  description?: string;
   structureId: string;
   files: File[];
 }
@@ -20,6 +20,8 @@ interface ReportLostObjectCardProps {
   error?: string | null;
   onPublish?: (data: ReportLostObjectData) => void;
   onDiscard?: () => void;
+  initialCampusId?: string;
+  initialStructureName?: string;
 }
 
 export const ReportLostObjectCard = ({
@@ -27,22 +29,37 @@ export const ReportLostObjectCard = ({
   error,
   onPublish,
   onDiscard,
+  initialCampusId,
+  initialStructureName,
 }: ReportLostObjectCardProps) => {
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [campusSelection, setCampusSelection] = useState('');
+  const [campusSelection, setCampusSelection] = useState(initialCampusId ?? '');
   const [structureSelection, setStructureSelection] = useState('');
+  const [isInitialStructureActive, setIsInitialStructureActive] = useState(true);
   const [files, setFiles] = useState<File[]>([]);
 
   const { data: campuses = [] } = useCampuses();
   const campusId = campusSelection || campuses[0]?.id || '';
 
   const { data: structures = [] } = useStructures(campusId || undefined, !!campusId);
-  const structureId = structureSelection || structures[0]?.id || '';
+  const initialStructure = initialStructureName
+    ? structures.find((structure) => structure.name === initialStructureName)
+    : undefined;
+  const structureId =
+    (isInitialStructureActive ? initialStructure?.id : undefined) ||
+    structureSelection ||
+    structures[0]?.id ||
+    '';
 
   const handleCampusChange = (value: string) => {
     setCampusSelection(value);
     setStructureSelection('');
+    setIsInitialStructureActive(false);
+  };
+
+  const handleStructureChange = (value: string) => {
+    setIsInitialStructureActive(false);
+    setStructureSelection(value);
   };
 
   const campusOptions = campuses.map((campus) => ({ value: campus.id, label: campus.name }));
@@ -51,15 +68,14 @@ export const ReportLostObjectCard = ({
     label: structure.name,
   }));
 
-  const canPublish =
-    title.trim() !== '' && description.trim() !== '' && structureId !== '' && !isSubmitting;
+  const canPublish = title.trim() !== '' && structureId !== '' && !isSubmitting;
 
   const handlePublish = () => {
     if (!canPublish || !onPublish) return;
 
     onPublish({
       title: title.trim(),
-      description: description.trim(),
+      description: '',
       structureId,
       files,
     });
@@ -77,15 +93,6 @@ export const ReportLostObjectCard = ({
         placeholder="¿QUÉ SE PERDIÓ?"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-      />
-
-      <Input
-        labelColor="text-gray-700"
-        multiline
-        placeholder="DESCRIPCIÓN"
-        rows={2}
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
       />
 
       <FileUpload
@@ -111,7 +118,7 @@ export const ReportLostObjectCard = ({
             labelColor="text-gray-700"
             options={structureOptions}
             value={structureId}
-            onChange={setStructureSelection}
+            onChange={handleStructureChange}
             icon={<BuildingIcon className="w-5 h-5 text-gray-700" />}
           />
         </div>

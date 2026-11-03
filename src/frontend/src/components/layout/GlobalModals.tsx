@@ -7,7 +7,7 @@ import {
   UserProfilePanel,
   type UserProfileMeetingItem,
 } from '../../modules/global/UserProfilePanel';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useReports } from '../../hooks/useReports';
 import { useLostObjectsByIds } from '../../hooks/useLostObjects';
 import { useAllMeetings, useUpdateMeetingStatus } from '../../hooks/useSchedule';
@@ -35,15 +35,17 @@ import type { IncidentCardProps } from '../../modules/incidents/IncidentCard';
 export const GlobalModals = () => {
   const activePanel = useUiState((state) => state.activePanel);
   const closePanel = useUiState((state) => state.closePanel);
+  const editorToast = useUiState((state) => state.editorToast);
   const user = useAuthState((state) => state.user);
   const logout = useAuthState((state) => state.logout);
   const navigate = useNavigate();
+  const location = useLocation();
   const updateMeetingStatus = useUpdateMeetingStatus();
 
   const isProfileOpen = activePanel === 'userProfile' && !!user;
 
   const { data: structures = [] } = useStructures(undefined, isProfileOpen);
-  const { data: users = [] } = useUsers();
+  const { data: users = [] } = useUsers(isProfileOpen);
 
   const reportParams = useMemo(
     () => ({
@@ -151,7 +153,7 @@ export const GlobalModals = () => {
     if (!user?.registeredAt) return undefined;
     const year = new Date(user.registeredAt).getFullYear();
     return Number.isNaN(year) ? undefined : String(year);
-  }, [user?.registeredAt]);
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -236,6 +238,24 @@ export const GlobalModals = () => {
           ]}
         />
       </ModalOverlay>
+
+      {/* Floating Toast Notification for General Views */}
+      {editorToast && !location.pathname.startsWith('/edition') && (
+        <div className="fixed bottom-6 right-6 z-50 pointer-events-none">
+          <div
+            key={editorToast.id}
+            className={`animate-toast-expo flex items-center px-4 py-2.5 rounded-2xl text-xs font-bold shadow-2xl border backdrop-blur-md will-change-transform ${
+              editorToast.type === 'error'
+                ? 'bg-red-50/95 border-red-200 text-page-red'
+                : editorToast.type === 'info'
+                ? 'bg-blue-50/95 border-blue-200 text-page-blue'
+                : 'bg-emerald-50/95 border-emerald-200 text-emerald-800'
+            }`}
+          >
+            <span>{editorToast.message}</span>
+          </div>
+        </div>
+      )}
     </>
   );
 };

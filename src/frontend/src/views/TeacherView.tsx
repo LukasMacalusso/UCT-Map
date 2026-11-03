@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { Panel } from '../components/layout/Panel';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
-import { Tag } from '../components/ui/Tag';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { IconText } from '../components/ui/IconText';
@@ -11,6 +10,7 @@ import { useStructures } from '../hooks/useCampus';
 import { useUsers } from '../hooks/useUsers';
 import { useAuthState } from '../states/authState';
 import { MeetingStatusSelect } from '../modules/schedule/MeetingStatusSelect';
+import { CreateOfficeHourModal } from '../modules/schedule/CreateOfficeHourModal';
 import {
   addDays,
   formatClock,
@@ -27,6 +27,7 @@ import BuildingIcon from '../assets/svg/icons/icon_building.svg?react';
 import UserIcon from '../assets/svg/icons/icon_user.svg?react';
 import FilterIcon from '../assets/svg/icons/icon_filter.svg?react';
 import RefreshIcon from '../assets/svg/icons/icon_repeat.svg?react';
+import PlusIcon from '../assets/svg/icons/icon_plus.svg?react';
 
 const RANGE_OPTIONS = [
   { value: '7', label: 'Próximos 7 días' },
@@ -46,6 +47,7 @@ export const ScheduleView = () => {
   const user = useAuthState((state) => state.user);
   const [daysAhead, setDaysAhead] = useState('14');
   const [statusFilter, setStatusFilter] = useState('todos');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const dateRange = useMemo(() => {
     const fromDate = startOfDay(new Date());
@@ -114,9 +116,9 @@ export const ScheduleView = () => {
   const isRefreshing = isFetching && !isLoading;
 
   return (
-    <div className="p-6 h-full min-h-screen bg-page-dark flex flex-col gap-6 overflow-hidden">
+    <div className="p-6 h-full min-h-screen bg-transparent flex flex-col gap-6 overflow-hidden">
       {/* Top Controls */}
-      <div className="bg-page-dark py-2 px-4 flex flex-wrap items-end justify-end gap-4 flex-shrink-0">
+      <div className="py-2 px-4 flex flex-wrap items-end justify-end gap-4 flex-shrink-0">
         <div className="w-64">
           <Select
             label="Rango de fechas"
@@ -216,16 +218,22 @@ export const ScheduleView = () => {
               outerClassName="!w-full !h-full min-h-0"
               innerClassName="p-6 flex flex-col gap-4 h-full min-h-0"
             >
-              <div className="flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center justify-between gap-2 flex-wrap flex-shrink-0">
                 <h2 className="text-lg font-bold text-gray-800 uppercase tracking-wide flex items-center gap-2">
                   <ClockIcon className="w-5 h-5 text-page-blue" />
                   Mis Bloques de Atención
                 </h2>
-                <Tag
-                  label={String(sortedOfficeHours.length)}
+                <Button
+                  type="button"
                   color="blue"
-                  className="!text-xs !px-2.5 !py-0.5"
-                />
+                  size="sm"
+                  className="!w-auto flex items-center gap-1.5"
+                  onClick={() => setIsCreateOpen(true)}
+                  disabled={!user?.id}
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Agregar
+                </Button>
               </div>
 
               <div className="bg-page-gray-light p-4 rounded-xl flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto">
@@ -265,16 +273,11 @@ export const ScheduleView = () => {
               outerClassName="!w-full !h-full lg:col-span-2 min-h-0"
               innerClassName="p-6 flex flex-col gap-4 h-full min-h-0"
             >
-              <div className="flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center flex-shrink-0">
                 <h2 className="text-lg font-bold text-gray-800 uppercase tracking-wide flex items-center gap-2">
                   <CalendarIcon className="w-5 h-5 text-page-blue" />
                   Reuniones Agendadas
                 </h2>
-                <Tag
-                  label={`${filteredMeetings.length} ${filteredMeetings.length === 1 ? 'CITA' : 'CITAS'}`}
-                  color="blue"
-                  className="!text-xs !px-3 !py-0.5"
-                />
               </div>
 
               <div className="bg-page-gray-light p-4 rounded-xl flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto">
@@ -340,6 +343,13 @@ export const ScheduleView = () => {
           </div>
         </div>
       )}
+
+      <CreateOfficeHourModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        teacherRefId={user?.id}
+        structures={structures}
+      />
     </div>
   );
 };

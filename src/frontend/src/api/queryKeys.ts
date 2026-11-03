@@ -3,6 +3,7 @@ import type { ReportSearchParams } from "../dtos/incident/reports/ReportSearchPa
 
 export const queryKeys = {
   campuses: ['campuses'] as const,
+  categories: ['categories'] as const,
   buildingLocations: (campusId?: string) => ['buildingLocations', campusId] as const,
   buildingRooms: (buildingId?: string) => ['buildingRooms', buildingId] as const,
   roomSearch: (term: string) => ['roomSearch', term] as const,

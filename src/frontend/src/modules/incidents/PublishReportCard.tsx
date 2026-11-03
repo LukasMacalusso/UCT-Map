@@ -20,6 +20,8 @@ interface PublishReportCardProps {
   error?: string | null;
   onPublish?: (data: PublishIncidentReportData) => void;
   onDiscard?: () => void;
+  initialCampusId?: string;
+  initialStructureName?: string;
 }
 
 export const PublishReportCard = ({
@@ -27,22 +29,38 @@ export const PublishReportCard = ({
   error,
   onPublish,
   onDiscard,
+  initialCampusId,
+  initialStructureName,
 }: PublishReportCardProps) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [campusSelection, setCampusSelection] = useState('');
+  const [campusSelection, setCampusSelection] = useState(initialCampusId ?? '');
   const [structureSelection, setStructureSelection] = useState('');
+  const [isInitialStructureActive, setIsInitialStructureActive] = useState(true);
   const [files, setFiles] = useState<File[]>([]);
 
   const { data: campuses = [] } = useCampuses();
   const campusId = campusSelection || campuses[0]?.id || '';
 
   const { data: structures = [] } = useStructures(campusId || undefined, !!campusId);
-  const structureId = structureSelection || structures[0]?.id || '';
+  const initialStructure = initialStructureName
+    ? structures.find((structure) => structure.name === initialStructureName)
+    : undefined;
+  const structureId =
+    (isInitialStructureActive ? initialStructure?.id : undefined) ||
+    structureSelection ||
+    structures[0]?.id ||
+    '';
 
   const handleCampusChange = (value: string) => {
     setCampusSelection(value);
     setStructureSelection('');
+    setIsInitialStructureActive(false);
+  };
+
+  const handleStructureChange = (value: string) => {
+    setIsInitialStructureActive(false);
+    setStructureSelection(value);
   };
 
   const campusOptions = campuses.map((campus) => ({ value: campus.id, label: campus.name }));
@@ -111,7 +129,7 @@ export const PublishReportCard = ({
             labelColor="text-gray-700"
             options={structureOptions}
             value={structureId}
-            onChange={setStructureSelection}
+            onChange={handleStructureChange}
             icon={<BuildingIcon className="w-5 h-5 text-gray-700" />}
           />
         </div>

@@ -4,7 +4,7 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 ARG VITE_MAPBOX_TOKEN
-ENV VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN
+RUN if [ -n "$VITE_MAPBOX_TOKEN" ]; then echo "VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN" > .env.production.local; fi
 RUN npm run build
 
 FROM nginx:alpine
