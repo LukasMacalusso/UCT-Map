@@ -26,4 +26,25 @@ public static class RoleSeeder
             }
         }
     }
+
+    public static async Task EnsureAsync(RoleManager<Role> roleManager, UserManager<User> userManager)
+    {
+        await EnsureAsync(roleManager);
+        ArgumentNullException.ThrowIfNull(userManager);
+
+        const string adminEmail = "admin@uct.cl";
+        var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
+        if (adminUser is null)
+        {
+            adminUser = User.Create("Admin UCT", adminEmail);
+            var result = await userManager.CreateAsync(adminUser, "Sprint2!");
+            if (!result.Succeeded) return;
+        }
+
+        if (!await userManager.IsInRoleAsync(adminUser, Role.Admin))
+        {
+            await userManager.AddToRoleAsync(adminUser, Role.Admin);
+        }
+    }
 }

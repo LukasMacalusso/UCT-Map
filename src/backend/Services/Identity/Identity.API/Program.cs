@@ -49,7 +49,8 @@ using (var scope = app.Services.CreateScope())
     }
 
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-    await RoleSeeder.EnsureAsync(roleManager);
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+    await RoleSeeder.EnsureAsync(roleManager, userManager);
 }
 
 if (app.Environment.IsDevelopment())
