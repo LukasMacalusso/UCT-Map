@@ -1,7 +1,10 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+
 import '../config/env_config.dart';
+import 'api_endpoints.dart';
 
 typedef TokenProvider = String? Function();
 typedef ApiKeyProvider = String? Function();
@@ -37,11 +40,23 @@ class AuthenticatedClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    // 1. Inyectar Token Bearer si está disponible y no se configuró manualmente
+    final isLogin =
+        request.method == 'POST' &&
+        request.url.path == ApiEndpoints.identityLogin;
     final token = tokenProvider?.call();
-    if (token != null && token.isNotEmpty && !request.headers.containsKey('Authorization')) {
+    if (!isLogin &&
+        token != null &&
+        token.isNotEmpty &&
+        !request.headers.containsKey('Authorization')) {
       request.headers['Authorization'] = 'Bearer $token';
     }
+    final authorization = request.headers['Authorization'];
+    final usedToken = authorization == null
+        ? null
+        : RegExp(
+            r'^Bearer\s+(\S+)\s*$',
+            caseSensitive: false,
+          ).firstMatch(authorization)?.group(1);
 
     // 2. Inyectar ApiKey si está configurada
     final key = apiKeyProvider?.call() ?? EnvConfig.apiKey;
@@ -57,7 +72,8 @@ class AuthenticatedClient extends http.BaseClient {
       request.headers['User-Agent'] = 'UCT-Map/1.0 (Flutter; Mobile)';
     }
     final currentContentType = request.headers['content-type'];
-    if (currentContentType == null || currentContentType.startsWith('text/plain')) {
+    if (currentContentType == null ||
+        currentContentType.startsWith('text/plain')) {
       if (request is http.Request && request.body.isNotEmpty) {
         request.headers['content-type'] = 'application/json; charset=utf-8';
       }
@@ -81,8 +97,8 @@ class AuthenticatedClient extends http.BaseClient {
       }
 
       // Si el Gateway retorna 401 Unauthorized, notificar para revocar sesión
-      if (response.statusCode == 401) {
-        onUnauthorized?.call(token);
+      if (response.statusCode == 401 && !isLogin) {
+        onUnauthorized?.call(usedToken);
       }
 
       return response;

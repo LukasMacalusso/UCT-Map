@@ -1,3 +1,6 @@
+import java.util.Base64
+import java.net.URI
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -8,6 +11,14 @@ plugins {
 jacoco {
     toolVersion = "0.8.12"
 }
+
+val oauthRedirect = providers.gradleProperty("dart-defines").orNull
+    ?.split(",")
+    ?.map { String(Base64.getDecoder().decode(it), Charsets.UTF_8) }
+    ?.firstOrNull { it.startsWith("OAUTH_REDIRECT_URI=") }
+    ?.substringAfter("=")
+val oauthScheme = oauthRedirect?.takeIf { it.isNotBlank() }?.let { URI(it).scheme }
+val oauthCallbackEnabled = oauthScheme != null && oauthScheme != "http" && oauthScheme != "https"
 
 android {
     namespace = "com.example.uct_map"
@@ -22,6 +33,8 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.uct_map"
+        manifestPlaceholders["oauthCallbackEnabled"] = oauthCallbackEnabled.toString()
+        manifestPlaceholders["oauthRedirectScheme"] = oauthScheme ?: "oauth-disabled"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

@@ -32,9 +32,15 @@ class _SessionRequiredViewState extends State<SessionRequiredView> {
   Future<void> _login(BuildContext context) async {
     if (_busy) return;
     _busy = true;
+    final revision = _session.revision;
     try {
       final result = await Navigator.pushNamed(context, '/login');
-      if (!context.mounted || result is! Map || result['ok'] != true) return;
+      if (!context.mounted ||
+          _session.revision != revision ||
+          result is! Map ||
+          result['ok'] != true) {
+        return;
+      }
       await _session.signInReal(
         AuthLoginResult(
           userId: result['userId'] as String,
