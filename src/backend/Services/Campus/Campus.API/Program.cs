@@ -19,7 +19,6 @@ builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepositor
 builder.Services.AddScoped<ICampusRepository, CampusRepository>();
 builder.Services.AddScoped<CampusHandler>();
 builder.Services.AddScoped<BuildingHandler>();
-builder.Services.AddScoped<CategoryGroupHandler>();
 builder.Services.AddScoped<CategoryHandler>();
 builder.Services.AddScoped<RoomHandler>();
 builder.Services.AddScoped<StructureHandler>();

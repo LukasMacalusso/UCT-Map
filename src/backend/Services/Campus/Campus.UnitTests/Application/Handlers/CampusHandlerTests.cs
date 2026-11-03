@@ -180,8 +180,7 @@ public class CampusHandlerTests
             pitch: 50.0m,
             bearing: -20.0m
         );
-        var group = new CategoryGroup("Espacios Comunes");
-        var category = new Category("Sala de Estudio", "users", "Espacio grupal", group);
+        var category = new Category("Sala de Estudio", "users", "Espacio grupal");
         var building = new Building(
             "Edificio 16",
             3,

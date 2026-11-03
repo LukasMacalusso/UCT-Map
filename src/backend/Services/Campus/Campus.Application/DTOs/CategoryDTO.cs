@@ -5,7 +5,6 @@ namespace Campus.Application.DTOs;
 
 public record CategoryDto(
     Guid Id,
-    Guid CategoryGroupId,
     string Name,
     string Icon,
     string? Description,
@@ -13,9 +12,6 @@ public record CategoryDto(
 );
 
 public record CreateCategoryDto(
-    [Required(ErrorMessage = "CategoryGroupId is required.")]
-    Guid CategoryGroupId,
-
     [Required(ErrorMessage = "Name is mandatory.")]
     [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters.")]
     string Name,
@@ -31,9 +27,6 @@ public record CreateCategoryDto(
 );
 
 public record UpdateCategoryDto(
-    [Required(ErrorMessage = "CategoryGroupId is required.")]
-    Guid CategoryGroupId,
-
     [Required(ErrorMessage = "Name is mandatory.")]
     [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters.")]
     string Name,
@@ -46,4 +39,12 @@ public record UpdateCategoryDto(
     string? Description = null,
 
     int Order = 0
+);
+
+public record ReorderItemDto(
+    [Required(ErrorMessage = "Id is required.")]
+    Guid Id,
+
+    [Required(ErrorMessage = "Order is required.")]
+    int Order
 );

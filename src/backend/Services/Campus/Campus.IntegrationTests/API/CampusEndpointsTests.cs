@@ -105,10 +105,7 @@ public class CampusEndpointsTests : ApiTestBase
         );
         var campus = await ReadJsonAsync<CampusDto>(campusRes);
 
-        var groupRes = await Http.PostAsync("/api/campus/category-groups", JsonBody(new CreateCategoryGroupDto("Espacios Exterior")));
-        var group = await ReadJsonAsync<CategoryGroupDto>(groupRes);
-
-        var catRes = await Http.PostAsync("/api/campus/categories", JsonBody(new CreateCategoryDto(group!.Id, "Estacionamiento", "car", "Zona vehicular")));
+        var catRes = await Http.PostAsync("/api/campus/categories", JsonBody(new CreateCategoryDto("Estacionamiento", "car", "Zona vehicular")));
         var category = await ReadJsonAsync<CategoryDto>(catRes);
 
         await Http.PostAsync(
