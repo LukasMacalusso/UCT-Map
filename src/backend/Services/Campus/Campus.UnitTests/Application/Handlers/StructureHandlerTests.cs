@@ -298,7 +298,7 @@ public class StructureHandlerTests
     public async Task GetAllLocationsAsync_ShouldMapCategoryNameAndIconAndHandleMissingCategory()
     {
         var campusId = Guid.NewGuid();
-        var category = new Category("Sala de Estudio", "users", "Espacio común", Guid.NewGuid());
+        var category = new Category("Sala de Estudio", "users", "Espacio común");
         var missingCategoryId = Guid.NewGuid();
 
         var structures = new List<Structure>
