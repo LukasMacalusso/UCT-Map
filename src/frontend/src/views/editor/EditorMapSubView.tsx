@@ -10,15 +10,13 @@ import { useUiState } from '../../states/uiState';
 import {
   useCampuses,
   useCreateBuilding,
-  useUpdateBuilding,
+  useUpdateBuildingLocation,
   useDeleteBuilding,
   useCreateStructure,
-  useUpdateStructure,
+  useUpdateStructureLocation,
   useDeleteStructure,
   useCategories,
 } from '../../hooks/useCampus';
-import type { BuildingLocationDto } from '../../dtos/campus/BuildingLocationDto';
-import type { StructureDto } from '../../dtos/campus/StructureDto';
 import type { MapMarkerItem } from '../../interfaces/MapMarkerItem';
 
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
@@ -50,10 +48,10 @@ export const EditorMapSubView = () => {
   const { data: categories } = useCategories();
 
   const createBuilding = useCreateBuilding();
-  const updateBuilding = useUpdateBuilding();
+  const updateBuildingLocation = useUpdateBuildingLocation();
   const deleteBuilding = useDeleteBuilding();
   const createStructure = useCreateStructure();
-  const updateStructure = useUpdateStructure();
+  const updateStructureLocation = useUpdateStructureLocation();
   const deleteStructure = useDeleteStructure();
 
   const effectiveCampusId = activeCampusId || campuses?.[0]?.id || '';
@@ -133,49 +131,36 @@ export const EditorMapSubView = () => {
       const [lng, lat] = coords;
       setSelectedMarker(marker);
 
+      const entityId = marker.id;
+      const entityName = marker.name;
+
       if (marker.type === 'building') {
-        const building = marker.data as BuildingLocationDto;
-        updateBuilding.mutate(
-          {
-            id: building.id,
-            payload: {
-              campusId: building.metadata?.campusId ?? effectiveCampusId,
-              name: building.name,
-              floorsCount: building.metadata?.floorsCount || 1,
-              latitude: lat,
-              longitude: lng,
-              services: building.metadata?.services?.join(', ') || undefined,
-              openTime: building.metadata?.schedule ? undefined : undefined,
-            },
-          },
+        updateBuildingLocation.mutate(
+          { id: entityId, latitude: lat, longitude: lng },
           {
             onSuccess: () => {
-              notifyEditor(`Ubicación de "${building.name}" actualizada con éxito.`);
+              notifyEditor(`Ubicación de "${entityName}" actualizada con éxito.`);
+            },
+            onError: (err) => {
+              notifyEditor(`Error al mover "${entityName}": ${err.message}`, 'error');
             },
           },
         );
       } else {
-        const structure = marker.data as StructureDto;
-        updateStructure.mutate(
-          {
-            id: structure.id,
-            payload: {
-              campusId: structure.campusId,
-              categoryId: structure.categoryId,
-              name: structure.name,
-              latitude: lat,
-              longitude: lng,
-            },
-          },
+        updateStructureLocation.mutate(
+          { id: entityId, latitude: lat, longitude: lng },
           {
             onSuccess: () => {
-              notifyEditor(`Ubicación de "${structure.name}" actualizada con éxito.`);
+              notifyEditor(`Ubicación de "${entityName}" actualizada con éxito.`);
+            },
+            onError: (err) => {
+              notifyEditor(`Error al mover "${entityName}": ${err.message}`, 'error');
             },
           },
         );
       }
     },
-    [updateBuilding, updateStructure, effectiveCampusId, notifyEditor],
+    [updateBuildingLocation, updateStructureLocation, notifyEditor],
   );
 
   // Submit creation

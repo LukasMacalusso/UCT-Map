@@ -17,7 +17,7 @@ import { useLostObjects, useCreateLostObject } from '../hooks/useLostObjects';
 import { useAuthState } from '../states/authState';
 import { RoleGuard } from '../router/RoleGuard';
 import { Role } from '../constants/role';
-import { useCampuses, useStructures } from '../hooks/useCampus';
+import { useCampuses, useStructures, useBuildingLocations } from '../hooks/useCampus';
 import { useUsers } from '../hooks/useUsers';
 import {
   LostObjectStatus,
@@ -55,6 +55,7 @@ export const ObjectsView = () => {
 
   const { data: campuses = [] } = useCampuses();
   const { data: structures = [] } = useStructures();
+  const { data: buildings = [] } = useBuildingLocations();
   const { data: users = [] } = useUsers();
   const createLostObject = useCreateLostObject();
   const currentUser = useAuthState((state) => state.user);
@@ -86,20 +87,22 @@ export const ObjectsView = () => {
 
   const { data, isLoading, isError, error } = useLostObjects(params);
 
-  const structuresById = useMemo(
-    () => new Map(structures.map((structure) => [structure.id, structure])),
-    [structures],
-  );
+  const locationsById = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; campusId?: string; isBuilding: boolean }>();
+    buildings.forEach((b) => map.set(b.id, { id: b.id, name: b.name, campusId: b.metadata?.campusId, isBuilding: true }));
+    structures.forEach((s) => map.set(s.id, { id: s.id, name: s.name, campusId: s.campusId, isBuilding: false }));
+    return map;
+  }, [buildings, structures]);
 
   const visibleObjects = useMemo(() => {
     const items = data?.items ?? [];
     if (!campusId) return items;
     return items.filter((lostObject) => {
       if (!lostObject.structureId) return false;
-      const structure = structuresById.get(lostObject.structureId);
-      return structure?.campusId === campusId;
+      const location = locationsById.get(lostObject.structureId);
+      return location?.campusId === campusId;
     });
-  }, [data?.items, campusId, structuresById]);
+  }, [data?.items, campusId, locationsById]);
 
   const campusNames = useMemo(
     () => new Map(campuses.map((campus) => [campus.id, campus.name])),
@@ -122,10 +125,13 @@ export const ObjectsView = () => {
   ];
 
   const structureOptions = [
-    { value: '', label: 'Todos los edificios' },
-    ...structures
-      .filter((structure) => !campusId || structure.campusId === campusId)
-      .map((structure) => ({ value: structure.id, label: structure.name })),
+    { value: '', label: 'Todos los lugares' },
+    ...Array.from(locationsById.values())
+      .filter((loc) => !campusId || loc.campusId === campusId)
+      .map((loc) => ({
+        value: loc.id,
+        label: loc.name,
+      })),
   ];
 
   const statusOptions = [
@@ -290,9 +296,9 @@ export const ObjectsView = () => {
                 const reporter = lostObject.userRefId
                   ? usersById.get(lostObject.userRefId)
                   : undefined;
-                const structure = structuresById.get(lostObject.structureId);
-                const buildingName = structure?.name ?? 'Sin ubicación';
-                const campusName = structure?.campusId ? campusNames.get(structure.campusId) : undefined;
+                const location = locationsById.get(lostObject.structureId);
+                const buildingName = location?.name ?? 'Sin ubicación';
+                const campusName = location?.campusId ? campusNames.get(location.campusId) : undefined;
 
                 return (
                   <ObjectReportCard

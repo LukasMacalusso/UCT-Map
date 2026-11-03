@@ -18,9 +18,11 @@ const mockDeleteCategory = vi.fn();
 const mockReorderCategories = vi.fn();
 const mockCreateBuilding = vi.fn();
 const mockUpdateBuilding = vi.fn();
+const mockUpdateBuildingLocation = vi.fn();
 const mockDeleteBuilding = vi.fn();
 const mockCreateStructure = vi.fn();
 const mockUpdateStructure = vi.fn();
+const mockUpdateStructureLocation = vi.fn();
 const mockDeleteStructure = vi.fn();
 const mockCreateRoom = vi.fn();
 const mockUpdateRoom = vi.fn();
@@ -70,6 +72,7 @@ vi.mock('../../hooks/useCampus', () => ({
   }),
   useCreateBuilding: () => ({ mutate: mockCreateBuilding, isPending: false }),
   useUpdateBuilding: () => ({ mutate: mockUpdateBuilding, isPending: false }),
+  useUpdateBuildingLocation: () => ({ mutate: mockUpdateBuildingLocation, isPending: false }),
   useDeleteBuilding: () => ({ mutate: mockDeleteBuilding, isPending: false }),
   useSetBuildingLocation: () => ({ mutate: vi.fn(), isPending: false }),
 
@@ -89,6 +92,7 @@ vi.mock('../../hooks/useCampus', () => ({
   }),
   useCreateStructure: () => ({ mutate: mockCreateStructure, isPending: false }),
   useUpdateStructure: () => ({ mutate: mockUpdateStructure, isPending: false }),
+  useUpdateStructureLocation: () => ({ mutate: mockUpdateStructureLocation, isPending: false }),
   useDeleteStructure: () => ({ mutate: mockDeleteStructure, isPending: false }),
   useSetStructureLocation: () => ({ mutate: vi.fn(), isPending: false }),
 

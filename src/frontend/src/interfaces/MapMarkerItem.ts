@@ -13,4 +13,6 @@ export interface MapMarkerItem<T = BuildingLocationDto | StructureDto> {
   color?: PageColor;
   icon?: React.ReactNode;
   data: T;
+  badge?: number | string;
+  heatmapIntensity?: number; // 0 to 100
 }

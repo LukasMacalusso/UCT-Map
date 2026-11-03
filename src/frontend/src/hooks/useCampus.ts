@@ -143,6 +143,32 @@ export const useUpdateBuilding = () => {
     mutationFn: ({ id, payload }) => campusService.updateBuilding(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['buildingLocations'] });
+      queryClient.invalidateQueries({ queryKey: ['buildings'] });
+    },
+  });
+};
+
+export const useUpdateBuildingLocation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { id: string; latitude: number; longitude: number }>({
+    mutationFn: ({ id, latitude, longitude }) =>
+      campusService.updateBuildingLocation(id, latitude, longitude),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['buildingLocations'] });
+      queryClient.invalidateQueries({ queryKey: ['buildings'] });
+    },
+  });
+};
+
+export const useUpdateStructureLocation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { id: string; latitude: number; longitude: number }>({
+    mutationFn: ({ id, latitude, longitude }) =>
+      campusService.updateStructureLocation(id, latitude, longitude),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['structures'] });
     },
   });
 };

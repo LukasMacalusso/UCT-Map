@@ -9,9 +9,11 @@ import type { MapMarkerItem } from '../../interfaces/MapMarkerItem';
 const mocks = vi.hoisted(() => ({
   createBuilding: vi.fn(),
   updateBuilding: vi.fn(),
+  updateBuildingLocation: vi.fn(),
   deleteBuilding: vi.fn(),
   createStructure: vi.fn(),
   updateStructure: vi.fn(),
+  updateStructureLocation: vi.fn(),
   deleteStructure: vi.fn(),
 }));
 
@@ -30,6 +32,12 @@ vi.mock('../../hooks/useCampus', () => ({
     isError: false,
     error: null,
   }),
+  useUpdateBuildingLocation: () => ({
+    mutate: mocks.updateBuildingLocation,
+    isPending: false,
+    isError: false,
+    error: null,
+  }),
   useDeleteBuilding: () => ({
     mutate: mocks.deleteBuilding,
     isPending: false,
@@ -44,6 +52,12 @@ vi.mock('../../hooks/useCampus', () => ({
   }),
   useUpdateStructure: () => ({
     mutate: mocks.updateStructure,
+    isPending: false,
+    isError: false,
+    error: null,
+  }),
+  useUpdateStructureLocation: () => ({
+    mutate: mocks.updateStructureLocation,
     isPending: false,
     isError: false,
     error: null,
@@ -202,26 +216,22 @@ describe('EditorMapSubView', () => {
     fireEvent.click(screen.getByTitle('Mover marcador en el mapa'));
     fireEvent.click(screen.getByText('mock-building-drag'));
 
-    expect(mocks.updateBuilding).toHaveBeenCalledWith(
+    expect(mocks.updateBuildingLocation).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 'b1',
-        payload: expect.objectContaining({
-          latitude: -38.72,
-          longitude: -72.62,
-        }),
+        latitude: -38.72,
+        longitude: -72.62,
       }),
       expect.any(Object),
     );
 
     fireEvent.click(screen.getByText('mock-structure-drag'));
 
-    expect(mocks.updateStructure).toHaveBeenCalledWith(
+    expect(mocks.updateStructureLocation).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 's1',
-        payload: expect.objectContaining({
-          latitude: -38.73,
-          longitude: -72.63,
-        }),
+        latitude: -38.73,
+        longitude: -72.63,
       }),
       expect.any(Object),
     );

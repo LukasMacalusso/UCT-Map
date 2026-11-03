@@ -47,6 +47,10 @@ vi.mock('../hooks/useCampus', () => ({
     data: [{ id: 's1', name: 'Sala 204', campusId: 'c1' }],
     isLoading: false,
   }),
+  useBuildingLocations: () => ({
+    data: [{ id: 'b1', name: 'Edificio Central', metadata: { campusId: 'c1' } }],
+    isLoading: false,
+  }),
 }));
 
 vi.mock('../hooks/useUsers', () => ({

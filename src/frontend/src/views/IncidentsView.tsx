@@ -13,7 +13,7 @@ import { useReports, useCreateReport } from '../hooks/useReports';
 import { useAuthState } from '../states/authState';
 import { RoleGuard } from '../router/RoleGuard';
 import { Role, ROLES } from '../constants/role';
-import { useCampuses, useStructures } from '../hooks/useCampus';
+import { useCampuses, useStructures, useBuildingLocations } from '../hooks/useCampus';
 import { useUsers } from '../hooks/useUsers';
 import { ComplaintStatus } from '../constants/complaintStatus';
 import {
@@ -47,6 +47,7 @@ export const IncidentsView = () => {
 
   const { data: campuses = [] } = useCampuses();
   const { data: structures = [] } = useStructures();
+  const { data: buildings = [] } = useBuildingLocations();
   const { data: users = [] } = useUsers();
   const createReport = useCreateReport();
   const currentUser = useAuthState((state) => state.user);
@@ -67,29 +68,31 @@ export const IncidentsView = () => {
 
   const { data, isLoading, isError, error } = useReports(params);
 
-  const structuresById = useMemo(
-    () => new Map(structures.map((structure) => [structure.id, structure])),
-    [structures],
-  );
+  const locationsById = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; campusId?: string; isBuilding: boolean }>();
+    buildings.forEach((b) => map.set(b.id, { id: b.id, name: b.name, campusId: b.metadata?.campusId, isBuilding: true }));
+    structures.forEach((s) => map.set(s.id, { id: s.id, name: s.name, campusId: s.campusId, isBuilding: false }));
+    return map;
+  }, [buildings, structures]);
 
   const visibleReports = useMemo(() => {
     const items = (data?.items ?? []).filter((report) => report.complaintDetails != null);
     if (!campusId) return items;
     return items.filter((report) => {
       if (!report.structureRefId) return false;
-      const structure = structuresById.get(report.structureRefId);
-      return structure?.campusId === campusId;
+      const location = locationsById.get(report.structureRefId);
+      return location?.campusId === campusId;
     });
-  }, [data?.items, campusId, structuresById]);
+  }, [data?.items, campusId, locationsById]);
 
   const campusNames = useMemo(
     () => new Map(campuses.map((campus) => [campus.id, campus.name])),
     [campuses],
   );
 
-  const structureNames = useMemo(
-    () => new Map(structures.map((structure) => [structure.id, structure.name])),
-    [structures],
+  const locationNames = useMemo(
+    () => new Map(Array.from(locationsById.values()).map((loc) => [loc.id, loc.name])),
+    [locationsById],
   );
 
   const usersById = useMemo(() => new Map(users.map((user) => [user.id, user])), [users]);
@@ -105,10 +108,13 @@ export const IncidentsView = () => {
   ];
 
   const structureOptions = [
-    { value: '', label: 'Todos los edificios' },
-    ...structures
-      .filter((structure) => !campusId || structure.campusId === campusId)
-      .map((structure) => ({ value: structure.id, label: structure.name })),
+    { value: '', label: 'Todos los lugares' },
+    ...Array.from(locationsById.values())
+      .filter((loc) => !campusId || loc.campusId === campusId)
+      .map((loc) => ({
+        value: loc.id,
+        label: loc.name,
+      })),
   ];
 
   const handleCampusChange = (value: string) => {
@@ -238,12 +244,12 @@ export const IncidentsView = () => {
             <div className="flex-1 grid grid-cols-[repeat(auto-fill,minmax(min(100%,24rem),24rem))] justify-center content-start gap-6">
               {visibleReports.map((report) => {
                 const reporter = usersById.get(report.userRefId);
-                const structure = report.structureRefId
-                  ? structuresById.get(report.structureRefId)
+                const location = report.structureRefId
+                  ? locationsById.get(report.structureRefId)
                   : undefined;
-                const buildingName = structure?.name ?? 'Sin ubicación';
-                const campusName = structure?.campusId
-                  ? campusNames.get(structure.campusId)
+                const buildingName = location?.name ?? 'Sin ubicación';
+                const campusName = location?.campusId
+                  ? campusNames.get(location.campusId)
                   : undefined;
 
                 return (
@@ -294,7 +300,7 @@ export const IncidentsView = () => {
         report={selectedStatusReport}
         locationName={
           (selectedStatusReport?.structureRefId &&
-            structureNames.get(selectedStatusReport.structureRefId)) ||
+            locationNames.get(selectedStatusReport.structureRefId)) ||
           undefined
         }
       />

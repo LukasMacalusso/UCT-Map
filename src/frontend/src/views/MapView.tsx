@@ -9,8 +9,10 @@ import BuildingIcon from '../assets/svg/icons/icon_building.svg?react';
 import FilterIcon from '../assets/svg/icons/icon_filter.svg?react';
 import { RoleGuard } from '../router/RoleGuard';
 import { MapSidePanel } from '../modules/map/MapSidePanel';
-import { MapHeatmapPanel } from '../modules/map/MapHeatmapPanel';
+import { MapHeatmapPanel, type HeatmapMode } from '../modules/map/MapHeatmapPanel';
 import { useBuildingLocations, useCampuses, useStructures } from '../hooks/useCampus';
+import { useReports } from '../hooks/useReports';
+import { useLostObjects } from '../hooks/useLostObjects';
 import { ActiveEntityCard } from '../modules/map/ActiveEntityCard';
 import { CampusMapCanvas, type CampusMapHandle } from '../modules/map/CampusMapCanvas';
 import { toBuildingMarker, toStructureMarker } from '../modules/map/mapAdapters';
@@ -26,6 +28,7 @@ export const MapView = () => {
   const [selectedMarker, setSelectedMarker] = React.useState<MapMarkerItem | null>(null);
   const [isDetailCardOpen, setIsDetailCardOpen] = React.useState(false);
   const [selectedCampus, setSelectedCampus] = React.useState('');
+  const [heatmapMode, setHeatmapMode] = React.useState<HeatmapMode>('none');
 
   const { data: campuses, isLoading: areCampusesLoading } = useCampuses();
   const activeCampusId = selectedCampus || campuses?.[0]?.id || '';
@@ -38,10 +41,54 @@ export const MapView = () => {
     !areCampusesLoading
   );
 
-  const markers: MapMarkerItem[] = React.useMemo(() => [
-    ...(buildings ?? []).map(toBuildingMarker),
-    ...(structures ?? []).map(toStructureMarker),
-  ], [buildings, structures]);
+  // Queries for heatmap
+  const { data: reportsData } = useReports(
+    { pageSize: 100 },
+    heatmapMode === 'reports'
+  );
+  const { data: lostObjectsData } = useLostObjects(
+    { pageSize: 100 },
+    heatmapMode === 'objects'
+  );
+
+  // Counts mapped by structure/building ID
+  const countsByEntityId = React.useMemo(() => {
+    const map = new Map<string, number>();
+    if (heatmapMode === 'reports') {
+      (reportsData?.items ?? []).forEach((r) => {
+        if (r.structureRefId) {
+          map.set(r.structureRefId, (map.get(r.structureRefId) ?? 0) + 1);
+        }
+      });
+    } else if (heatmapMode === 'objects') {
+      (lostObjectsData?.items ?? []).forEach((o) => {
+        if (o.structureId) {
+          map.set(o.structureId, (map.get(o.structureId) ?? 0) + 1);
+        }
+      });
+    }
+    return map;
+  }, [heatmapMode, reportsData?.items, lostObjectsData?.items]);
+
+  const markers: MapMarkerItem[] = React.useMemo(() => {
+    const base = [
+      ...(buildings ?? []).map(toBuildingMarker),
+      ...(structures ?? []).map(toStructureMarker),
+    ];
+
+    if (heatmapMode === 'none') return base;
+
+    return base.map((m) => {
+      const count = countsByEntityId.get(m.id) ?? 0;
+      // Escala absoluta fija: 1 objeto/reporte = ~15% (naranja suave y radio pequeño), y crece hasta 7+ = 100% (rojo grande)
+      const intensity = count > 0 ? Math.min(Math.round((count / 7) * 100), 100) : 0;
+      return {
+        ...m,
+        badge: count > 0 ? count : undefined,
+        heatmapIntensity: intensity,
+      };
+    });
+  }, [buildings, structures, heatmapMode, countsByEntityId]);
 
   const mapRef = React.useRef<CampusMapHandle | null>(null);
   const cardCloseTimeoutRef = React.useRef<number | null>(null);
@@ -134,7 +181,7 @@ export const MapView = () => {
         </div>
         <RoleGuard allowedRoles={OFFICIAL_ROLES}>
           <div className="shrink-0">
-            <MapHeatmapPanel />
+            <MapHeatmapPanel mode={heatmapMode} onModeChange={setHeatmapMode} />
           </div>
         </RoleGuard>
       </div>

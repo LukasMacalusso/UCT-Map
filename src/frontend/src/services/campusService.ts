@@ -164,6 +164,22 @@ export const campusService = {
     }
   },
 
+  updateBuildingLocation: async (id: string, latitude: number, longitude: number): Promise<void> => {
+    try {
+      await httpClient.patch(`/api/campus/buildings/${id}/location`, { latitude, longitude });
+    } catch (error) {
+      throw toApiError(error, 'Error al actualizar la ubicación del edificio');
+    }
+  },
+
+  updateStructureLocation: async (id: string, latitude: number, longitude: number): Promise<void> => {
+    try {
+      await httpClient.patch(`/api/campus/structures/${id}/location`, { latitude, longitude });
+    } catch (error) {
+      throw toApiError(error, 'Error al actualizar la ubicación de la estructura');
+    }
+  },
+
   deleteBuilding: async (id: string): Promise<void> => {
     try {
       await httpClient.delete(`/api/campus/buildings/${id}`);

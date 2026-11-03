@@ -66,6 +66,11 @@ const loadListeners = new Set<() => void>();
 const errorListeners = new Set<(err: string) => void>();
 let lastDragEndTimestamp = 0;
 let isDraggingMarker = false;
+let activeCallbacks: {
+  onMarkerClick?: (marker: MapMarkerItem) => void;
+  onMarkerDragEnd?: (marker: MapMarkerItem, coords: [number, number]) => void;
+  markers?: MapMarkerItem[];
+} = {};
 
 function ensureSharedMap(host: HTMLDivElement): {
   containerEl: HTMLDivElement;
@@ -312,12 +317,7 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
       };
     }, [onMapClick, isMapLoaded]);
 
-    const callbacksRef = React.useRef({
-      onMarkerClick,
-      onMarkerDragEnd,
-      markers,
-    });
-    callbacksRef.current = {
+    activeCallbacks = {
       onMarkerClick,
       onMarkerDragEnd,
       markers,
@@ -349,9 +349,11 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
             icon={markerItem.icon}
             color={color}
             isActive={isActive}
+            badge={markerItem.badge}
+            heatmapIntensity={markerItem.heatmapIntensity}
             onClick={(e) => {
               e.stopPropagation();
-              callbacksRef.current.onMarkerClick?.(markerItem);
+              activeCallbacks.onMarkerClick?.(markerItem);
             }}
           />
         );
@@ -372,8 +374,8 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
             isDraggingMarker = true;
             lastDragEndTimestamp = Date.now();
             const current =
-              callbacksRef.current.markers?.find((m) => m.id === markerItem.id) || markerItem;
-            callbacksRef.current.onMarkerClick?.(current);
+              activeCallbacks.markers?.find((m) => m.id === markerItem.id) || markerItem;
+            activeCallbacks.onMarkerClick?.(current);
           });
 
           marker.on('drag', () => {
@@ -385,10 +387,15 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
             isDraggingMarker = false;
             lastDragEndTimestamp = Date.now();
             const lngLat = marker.getLngLat();
+            const currentEntry = sharedMarkers.get(markerItem.id);
+            if (currentEntry) {
+              currentEntry.lng = lngLat.lng;
+              currentEntry.lat = lngLat.lat;
+            }
             const current =
-              callbacksRef.current.markers?.find((m) => m.id === markerItem.id) || markerItem;
-            callbacksRef.current.onMarkerClick?.(current);
-            callbacksRef.current.onMarkerDragEnd?.(current, [lngLat.lng, lngLat.lat]);
+              activeCallbacks.markers?.find((m) => m.id === markerItem.id) || markerItem;
+            activeCallbacks.onMarkerClick?.(current);
+            activeCallbacks.onMarkerDragEnd?.(current, [lngLat.lng, lngLat.lat]);
           });
 
           entry = { marker, root, lng, lat };

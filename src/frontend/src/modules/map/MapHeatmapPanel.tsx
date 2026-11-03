@@ -2,7 +2,27 @@ import { Panel } from '../../components/layout/Panel';
 import { CheckboxItem } from '../../components/ui/CheckboxItem';
 import AdminIcon from '../../assets/svg/icons/icon_admin.svg?react';
 
-export const MapHeatmapPanel = () => {
+export type HeatmapMode = 'none' | 'reports' | 'objects';
+
+interface MapHeatmapPanelProps {
+  mode?: HeatmapMode;
+  onModeChange?: (mode: HeatmapMode) => void;
+}
+
+export const MapHeatmapPanel = ({
+  mode = 'none',
+  onModeChange,
+}: MapHeatmapPanelProps) => {
+  const handleReportsToggle = () => {
+    const next: HeatmapMode = mode === 'reports' ? 'none' : 'reports';
+    onModeChange?.(next);
+  };
+
+  const handleObjectsToggle = () => {
+    const next: HeatmapMode = mode === 'objects' ? 'none' : 'objects';
+    onModeChange?.(next);
+  };
+
   return (
     <Panel
       withUctBorder={false}
@@ -18,8 +38,18 @@ export const MapHeatmapPanel = () => {
       </div>
 
       <div className="flex flex-col gap-2 mt-3">
-        <CheckboxItem label="Problemas reportados" className="!max-w-none" />
-        <CheckboxItem label="Objetos perdidos" className="!max-w-none" />
+        <CheckboxItem
+          label="Problemas reportados"
+          className="!max-w-none"
+          checked={mode === 'reports'}
+          onChange={handleReportsToggle}
+        />
+        <CheckboxItem
+          label="Objetos perdidos"
+          className="!max-w-none"
+          checked={mode === 'objects'}
+          onChange={handleObjectsToggle}
+        />
       </div>
     </Panel>
   );

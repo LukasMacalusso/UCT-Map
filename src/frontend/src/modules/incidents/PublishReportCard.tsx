@@ -6,7 +6,7 @@ import { FileUpload } from '../../components/ui/FileUpload';
 import { Button } from '../../components/ui/Button';
 import { CloseButton } from '../../components/ui/ExitButton';
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
-import { useCampuses, useStructures } from '../../hooks/useCampus';
+import { useCampuses, useStructures, useBuildingLocations } from '../../hooks/useCampus';
 
 export interface PublishIncidentReportData {
   title: string;
@@ -43,13 +43,20 @@ export const PublishReportCard = ({
   const campusId = campusSelection || campuses[0]?.id || '';
 
   const { data: structures = [] } = useStructures(campusId || undefined, !!campusId);
-  const initialStructure = initialStructureName
-    ? structures.find((structure) => structure.name === initialStructureName)
+  const { data: buildings = [] } = useBuildingLocations(campusId || undefined, !!campusId);
+
+  const allLocations = [
+    ...buildings.map((b) => ({ id: b.id, name: b.name, isBuilding: true })),
+    ...structures.map((s) => ({ id: s.id, name: s.name, isBuilding: false })),
+  ];
+
+  const initialLocation = initialStructureName
+    ? allLocations.find((loc) => loc.name === initialStructureName)
     : undefined;
   const structureId =
-    (isInitialStructureActive ? initialStructure?.id : undefined) ||
+    (isInitialStructureActive ? initialLocation?.id : undefined) ||
     structureSelection ||
-    structures[0]?.id ||
+    allLocations[0]?.id ||
     '';
 
   const handleCampusChange = (value: string) => {
@@ -64,9 +71,9 @@ export const PublishReportCard = ({
   };
 
   const campusOptions = campuses.map((campus) => ({ value: campus.id, label: campus.name }));
-  const structureOptions = structures.map((structure) => ({
-    value: structure.id,
-    label: structure.name,
+  const structureOptions = allLocations.map((loc) => ({
+    value: loc.id,
+    label: loc.name,
   }));
 
   const canPublish =

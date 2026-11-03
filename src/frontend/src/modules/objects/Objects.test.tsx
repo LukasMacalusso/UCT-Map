@@ -17,6 +17,10 @@ vi.mock('../../hooks/useCampus', () => ({
     data: [{ id: 's1', name: 'Biblioteca', campusId: 'c1' }],
     isLoading: false,
   }),
+  useBuildingLocations: () => ({
+    data: [{ id: 'b1', name: 'Edificio A', metadata: { campusId: 'c1' } }],
+    isLoading: false,
+  }),
 }));
 
 const mockUpdateLostObjectStatus = vi.fn();
@@ -80,7 +84,7 @@ describe('Objects modules', () => {
       expect(onPublish).toHaveBeenCalledWith({
         title: 'Billetera',
         description: '',
-        structureId: 's1',
+        structureId: 'b1',
         files: [],
       });
     });
