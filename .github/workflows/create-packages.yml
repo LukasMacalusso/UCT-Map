@@ -1,6 +1,89 @@
 name: Create Packages
 
 on:
+  workflow_run:
+    workflows: ["Backend CI"]
+    types:
+      - completed
+    branches: [main, taller-2]
+  workflow_dispatch:
+
+jobs:
+  build:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: lukasmacalusso
+        id: owner
+        run: echo "lc=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push API Gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/backend/ApiGateway/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.owner.outputs.lc }}/uct-api-gateway:latest
+
+      - name: Build and push Identity API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/backend/Services/Identity/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.owner.outputs.lc }}/uct-identity-api:latest
+
+      - name: Build and push Campus API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/backend/Services/Campus/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.owner.outputs.lc }}/uct-campus-api:latest
+
+      - name: Build and push Incident API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/backend/Services/Incident/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.owner.outputs.lc }}/uct-incident-api:latest
+
+      - name: Build and push Schedule API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/backend/Services/Schedule/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.owner.outputs.lc }}/uct-schedule-api:latest
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./src/frontend
+          file: ./src/frontend/Dockerfile
+          push: true
+          build-args: |
+            API_GATEWAY_URL=http://api-gateway-kuberoapp
+            VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}
+          tags: ghcr.io/${{ steps.owner.outputs.lc }}/uct-frontend:latest
+name: Create Packages
+
+on:
   push:
     branches: [main, taller-2]
   workflow_dispatch:
