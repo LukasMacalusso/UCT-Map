@@ -32,6 +32,9 @@ class SessionController extends ChangeNotifier {
     return result;
   }
 
+  /// Cambia cuando se inicia o se cierra una sesión.
+  int get revision => _generation;
+
   bool get isAuthenticated => _session != null && _session!.isValid;
   User? get currentUser => _session?.user;
   String? get token {
