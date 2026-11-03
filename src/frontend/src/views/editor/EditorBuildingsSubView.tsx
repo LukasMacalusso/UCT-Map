@@ -348,6 +348,7 @@ export const EditorBuildingsSubView = () => {
         <div className="w-72">
           <SearchInput
             label="Búsqueda"
+            labelColor="text-white"
             placeholder="Buscar por nombre..."
             value={searchQuery}
             onChange={setSearchQuery}
@@ -419,14 +420,14 @@ export const EditorBuildingsSubView = () => {
                     }`}
                   >
                     <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                        isBuilding ? 'bg-blue-100 text-page-blue' : 'bg-amber-100 text-amber-600'
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${
+                        isBuilding ? 'bg-page-blue text-white' : 'bg-page-yellow text-white'
                       }`}
                     >
                       {isBuilding ? (
-                        <BuildingIcon className="w-5 h-5" />
+                        <BuildingIcon className="w-5 h-5 text-white" />
                       ) : (
-                        <CubeIcon className="w-5 h-5" />
+                        <CubeIcon className="w-5 h-5 text-white" />
                       )}
                     </div>
 
@@ -583,8 +584,8 @@ export const EditorBuildingsSubView = () => {
                 <div className="grid grid-cols-3 gap-4 rounded-2xl bg-gray-50 p-4 border border-gray-200">
                   {/* Total pisos */}
                   <div className="flex items-center gap-3.5">
-                    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-blue-50 text-page-blue flex-shrink-0">
-                      <FloorsIcon className="w-5 h-5" />
+                    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-page-blue text-white shadow-xs flex-shrink-0">
+                      <FloorsIcon className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
@@ -598,8 +599,8 @@ export const EditorBuildingsSubView = () => {
 
                   {/* Total salas */}
                   <div className="flex items-center gap-3.5">
-                    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-blue-50 text-page-blue flex-shrink-0">
-                      <DoorIcon className="w-5 h-5" />
+                    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-page-blue text-white shadow-xs flex-shrink-0">
+                      <DoorIcon className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
@@ -613,8 +614,8 @@ export const EditorBuildingsSubView = () => {
 
                   {/* Horario */}
                   <div className="flex items-center gap-3.5">
-                    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-blue-50 text-page-blue flex-shrink-0">
-                      <ScheduleIcon className="w-5 h-5" />
+                    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-page-blue text-white shadow-xs flex-shrink-0">
+                      <ScheduleIcon className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
@@ -651,6 +652,7 @@ export const EditorBuildingsSubView = () => {
 
                       <Button
                         size="md"
+                        variant="outline"
                         color="blue"
                         className="!w-auto flex items-center gap-2 text-sm font-bold"
                         onClick={handleOpenAddRoom}
@@ -719,8 +721,8 @@ export const EditorBuildingsSubView = () => {
                           className="group flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white p-3.5 hover:border-gray-300 transition-colors"
                         >
                           <div className="flex items-center gap-3.5 min-w-0">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 text-page-blue flex-shrink-0">
-                              <DoorIcon className="w-5 h-5" />
+                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-page-blue text-white shadow-xs flex-shrink-0">
+                              <DoorIcon className="w-5 h-5 text-white" />
                             </div>
 
                             <div className="flex flex-col min-w-0">

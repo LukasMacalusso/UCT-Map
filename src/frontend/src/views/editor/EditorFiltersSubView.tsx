@@ -712,8 +712,8 @@ export const EditorFiltersSubView = () => {
                                 <div className="flex items-center gap-3.5 min-w-0 pr-3">
                                   <GripIcon className="w-4.5 h-4.5 text-gray-400 group-hover/item:text-gray-600 flex-shrink-0" />
 
-                                  <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-page-blue flex-shrink-0">
-                                    <CategoryIcon icon={cat.icon} className="w-5 h-5" />
+                                  <div className="w-9 h-9 rounded-xl bg-page-blue flex items-center justify-center text-white flex-shrink-0 shadow-xs">
+                                    <CategoryIcon icon={cat.icon} className="w-5 h-5 text-white" />
                                   </div>
 
                                   <span className="text-base md:text-lg font-bold text-gray-800 truncate">
@@ -857,8 +857,8 @@ export const EditorFiltersSubView = () => {
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold text-gray-700 uppercase">Ícono</label>
               <div className="flex items-center gap-2.5">
-                <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-page-blue shrink-0">
-                  <CategoryIcon icon={categoryIcon} className="w-5 h-5" />
+                <div className="w-11 h-11 rounded-2xl bg-page-blue flex items-center justify-center text-white shrink-0 shadow-xs">
+                  <CategoryIcon icon={categoryIcon} className="w-5 h-5 text-white" />
                 </div>
                 <select
                   className="flex-1 rounded-2xl border border-gray-200 p-3 text-sm font-semibold text-gray-800 focus:outline-none focus:border-page-blue"

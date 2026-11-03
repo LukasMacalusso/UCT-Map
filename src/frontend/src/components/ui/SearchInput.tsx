@@ -18,7 +18,7 @@ interface SearchInputProps {
 
 export const SearchInput = ({
   label,
-  labelColor,
+  labelColor = 'text-white',
   options = [],
   value,
   onChange,

@@ -21,7 +21,7 @@ import {
 import { EditorMapCanvas } from './EditorMapCanvas';
 import { CampusCameraInfo } from './CampusCameraInfo';
 import type { CampusDto } from '../../dtos/campus/CampusDto';
-import { bgPageColors, borderPageColors, textPageColors } from '../../constants/colors';
+import { textPageColors } from '../../constants/colors';
 import { useUiState } from '../../states/uiState';
 
 import PencilIcon from '../../assets/svg/icons/icon_pencil.svg?react';
@@ -271,20 +271,20 @@ export const EditorCampusSubView = () => {
 
                         <div className="flex flex-wrap items-center gap-1.5 mt-2">
                           <span
-                            className={`inline-flex items-center gap-1 rounded-lg bg-blue-50 border ${borderPageColors.blue}/30 px-2 py-0.5 text-xs font-bold ${textPageColors.blue}`}
+                            className="inline-flex items-center gap-1 rounded-lg bg-page-blue px-2 py-0.5 text-xs font-bold text-white shadow-xs"
                             title={`${bCount} edificios asociados`}
                           >
-                            <BuildingIcon className="w-3.5 h-3.5" />
+                            <BuildingIcon className="w-3.5 h-3.5 text-white" />
                             <span>
                               {bCount} {bCount === 1 ? 'edificio' : 'edificios'}
                             </span>
                           </span>
 
                           <span
-                            className={`inline-flex items-center gap-1 rounded-lg ${bgPageColors.yellow} ${borderPageColors.yellow} border px-2 py-0.5 text-xs font-bold text-page-dark shadow-xs`}
+                            className="inline-flex items-center gap-1 rounded-lg bg-page-yellow px-2 py-0.5 text-xs font-bold text-white shadow-xs"
                             title={`${sCount} estructuras asociadas`}
                           >
-                            <CubeIcon className="w-3.5 h-3.5 text-page-dark" />
+                            <CubeIcon className="w-3.5 h-3.5 text-white" />
                             <span>
                               {sCount} {sCount === 1 ? 'estructura' : 'estructuras'}
                             </span>
@@ -365,8 +365,8 @@ export const EditorCampusSubView = () => {
                 <div className="flex flex-col gap-2 rounded-xl bg-gray-50 p-3 border border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-blue-50 text-page-blue flex items-center justify-center shrink-0">
-                        <CameraIcon className="w-3.5 h-3.5" />
+                      <div className="w-6 h-6 rounded-lg bg-page-blue text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <CameraIcon className="w-3.5 h-3.5 text-white" />
                       </div>
                       <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wide">
                         Cámara de presentación
@@ -479,8 +479,8 @@ export const EditorCampusSubView = () => {
                     <div className="flex flex-col gap-2 rounded-xl bg-gray-50 p-3 border border-gray-200">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-lg bg-blue-50 text-page-blue flex items-center justify-center shrink-0">
-                            <CameraIcon className="w-3.5 h-3.5" />
+                          <div className="w-6 h-6 rounded-lg bg-page-blue text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <CameraIcon className="w-3.5 h-3.5 text-white" />
                           </div>
                           <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wide">
                             Cámara de presentación
