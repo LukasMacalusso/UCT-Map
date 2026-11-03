@@ -59,5 +59,10 @@ public class Category
         this.Order = order;
     }
 
+    public void AssignCategoryGroup(Guid categoryGroupId)
+    {
+        this.CategoryGroupId = categoryGroupId;
+    }
+
     protected Category() { }
 }

@@ -249,6 +249,51 @@ public class RoomHandlerTests
     }
 
     [Fact]
+    public async Task CreateAsync_WhenCategoryIdIsNull_ShouldPersistAndReturnDto()
+    {
+        var buildingId = Guid.NewGuid();
+        var request = new CreateRoomDto(buildingId, null, "104", 1);
+
+        _buildingRepository.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        var result = await _handler.CreateAsync(request, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("104", result.Value.Name);
+        Assert.Equal(buildingId, result.Value.BuildingId);
+        Assert.Null(result.Value.CategoryId);
+
+        await _repository.Received(1).AddAsync(Arg.Is<Room>(r => r.Name == "104" && r.CategoryId == null), Arg.Any<CancellationToken>());
+        await _repository.SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _categoryRepository.DidNotReceive().ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenCategoryIdIsNull_ShouldPersistAndReturnSuccess()
+    {
+        var buildingId = Guid.NewGuid();
+        var room = new Room("100", 1, buildingId, Guid.NewGuid());
+        _repository.GetByIdAsync(room.Id, Arg.Any<CancellationToken>())
+            .Returns(room);
+
+        _buildingRepository.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        var request = new UpdateRoomDto(buildingId, null, "306", 3);
+
+        var result = await _handler.UpdateAsync(room.Id, request, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(Result.Success, result.Value);
+        Assert.Equal("306", room.Name);
+        Assert.Null(room.CategoryId);
+        _repository.Received(1).Update(room);
+        await _repository.SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _categoryRepository.DidNotReceive().ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task DeleteAsync_WhenNotFound_ShouldReturnNotFoundError()
     {
         var id = Guid.NewGuid();

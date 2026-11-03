@@ -119,4 +119,38 @@ public class RoomEndpointsTests : ApiTestBase
         var getRes = await Http.GetAsync($"{Endpoint}/{created.Id}");
         Assert.Equal(HttpStatusCode.NotFound, getRes.StatusCode);
     }
+
+    [DockerFact]
+    public async Task Post_WhenCategoryIdIsNull_CreatesRoomAndReturns201()
+    {
+        var (buildingId, _) = await SetupDependenciesAsync();
+        var body = new CreateRoomDto(buildingId, null, "Sala Sin Categoria", 1);
+
+        var response = await Http.PostAsync(Endpoint, JsonBody(body));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var created = await ReadJsonAsync<RoomDto>(response);
+        Assert.NotNull(created);
+        Assert.Null(created.CategoryId);
+        Assert.Equal("Sala Sin Categoria", created.Name);
+    }
+
+    [DockerFact]
+    public async Task Put_WhenCategoryIdIsNull_UpdatesRoomAndReturnsNoContent()
+    {
+        var (buildingId, categoryId) = await SetupDependenciesAsync();
+        var createRes = await Http.PostAsync(Endpoint, JsonBody(new CreateRoomDto(buildingId, categoryId, "Sala Original", 1)));
+        var created = await ReadJsonAsync<RoomDto>(createRes);
+
+        var updateBody = new UpdateRoomDto(buildingId, null, "Sala Desasignada", 1);
+        var updateRes = await Http.PutAsync($"{Endpoint}/{created!.Id}", JsonBody(updateBody));
+
+        Assert.Equal(HttpStatusCode.NoContent, updateRes.StatusCode);
+
+        var getRes = await Http.GetAsync($"{Endpoint}/{created.Id}");
+        var fetched = await ReadJsonAsync<RoomDto>(getRes);
+        Assert.NotNull(fetched);
+        Assert.Null(fetched.CategoryId);
+        Assert.Equal("Sala Desasignada", fetched.Name);
+    }
 }

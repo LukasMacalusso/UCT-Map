@@ -50,14 +50,21 @@ public class CategoryGroupHandler
         return true;
     }
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<(bool success, string? error, bool notFound)> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var group = await _repository.GetByIdAsync(id, cancellationToken);
-        if (group == null) return false;
+        if (group == null) return (false, null, true);
 
-        _repository.Delete(group);
-        await _repository.SaveChangesAsync(cancellationToken);
-        return true;
+        try
+        {
+            _repository.Delete(group);
+            await _repository.SaveChangesAsync(cancellationToken);
+            return (true, null, false);
+        }
+        catch (Exception ex) when (ex.GetType().Name == "DbUpdateException")
+        {
+            return (false, "Cannot delete category group due to existing database constraints.", false);
+        }
     }
 
     public async Task<bool> ReorderAsync(IEnumerable<ReorderItemDto> items, CancellationToken cancellationToken)

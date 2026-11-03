@@ -53,8 +53,8 @@ public class RoomHandler
         if (!await _buildingRepository.ExistsAsync(b => b.Id == request.BuildingId, cancellationToken))
             return Error.NotFound("Building.NotFound", $"Building with ID '{request.BuildingId}' does not exist.");
 
-        if (!await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId, cancellationToken))
-            return Error.NotFound("Category.NotFound", $"Category with ID '{request.CategoryId}' does not exist.");
+        if (request.CategoryId.HasValue && !await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId.Value, cancellationToken))
+            return Error.NotFound("Category.NotFound", $"Category with ID '{request.CategoryId.Value}' does not exist.");
 
         var room = new Room(request.Name, request.Floor, request.BuildingId, request.CategoryId);
 
@@ -72,8 +72,8 @@ public class RoomHandler
         if (!await _buildingRepository.ExistsAsync(b => b.Id == request.BuildingId, cancellationToken))
             return Error.NotFound("Building.NotFound", $"Building with ID '{request.BuildingId}' does not exist.");
 
-        if (!await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId, cancellationToken))
-            return Error.NotFound("Category.NotFound", $"Category with ID '{request.CategoryId}' does not exist.");
+        if (request.CategoryId.HasValue && !await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId.Value, cancellationToken))
+            return Error.NotFound("Category.NotFound", $"Category with ID '{request.CategoryId.Value}' does not exist.");
 
         room.Update(request.Name, request.Floor, request.BuildingId, request.CategoryId);
 

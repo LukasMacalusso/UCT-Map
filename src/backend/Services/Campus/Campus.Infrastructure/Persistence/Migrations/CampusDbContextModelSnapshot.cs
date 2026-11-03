@@ -154,7 +154,7 @@ namespace Campus.Infrastructure.Migrations
                     b.Property<Guid>("BuildingId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CategoryId")
+                    b.Property<Guid?>("CategoryId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Floor")
@@ -263,7 +263,7 @@ namespace Campus.Infrastructure.Migrations
                     b.HasOne("Campus.Domain.Entities.CategoryGroup", "CategoryGroup")
                         .WithMany("Categories")
                         .HasForeignKey("CategoryGroupId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("CategoryGroup");
@@ -280,8 +280,7 @@ namespace Campus.Infrastructure.Migrations
                     b.HasOne("Campus.Domain.Entities.Category", "Category")
                         .WithMany("Rooms")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Building");
 
