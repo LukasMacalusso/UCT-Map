@@ -142,13 +142,13 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.lock_outline, color: AppColors.uctBlue),
                   title: const Text('Seguridad y Contraseña'),
-                  subtitle: const Text('Gestionar credenciales institucionales'),
+                  subtitle: const Text('Información de acceso a UCT Map'),
                   trailing: const Icon(Icons.chevron_right, color: AppColors.hint),
                   onTap: () {
                     _showInfoDialog(
                       context,
-                      'Gestión de Contraseña UCT',
-                      'Para cambiar tu contraseña de acceso, debes ingresar al Portal de Autoservicio Institucional de la Universidad Católica de Temuco.',
+                      'Contraseña de UCT Map',
+                      'Estas cuentas pertenecen a UCT Map. La recuperación de contraseña aún no está disponible en la aplicación.',
                     );
                   },
                 ),
