@@ -17,6 +17,10 @@ vi.mock('../hooks/useCampus', () => ({
     data: [{ id: 'r1', name: 'Sala 101', floor: 1, number: '101' }],
     isLoading: false,
   }),
+  useBuildingLocations: () => ({
+    data: [{ id: 'b1', name: 'Edificio B', metadata: { campusId: 'c1' } }],
+    isLoading: false,
+  }),
 }));
 
 describe('ShowcaseView', () => {

@@ -16,6 +16,10 @@ vi.mock('../../hooks/useCampus', () => ({
     data: [{ id: 's1', name: 'Edificio A', campusId: 'c1' }],
     isLoading: false,
   }),
+  useBuildingLocations: () => ({
+    data: [],
+    isLoading: false,
+  }),
 }));
 
 const mockUpdateStatusMutate = vi.fn();
