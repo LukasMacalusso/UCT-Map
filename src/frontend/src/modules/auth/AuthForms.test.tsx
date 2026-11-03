@@ -92,8 +92,8 @@ describe('AuthForms', () => {
 
       fireEvent.change(nameInput, { target: { value: 'Juan' } });
       fireEvent.change(emailInput, { target: { value: 'juan@uct.cl' } });
-      fireEvent.change(passwordInputs[0], { target: { value: 'password123' } });
-      fireEvent.change(passwordInputs[1], { target: { value: 'password123' } });
+      fireEvent.change(passwordInputs[0], { target: { value: 'Password123!' } });
+      fireEvent.change(passwordInputs[1], { target: { value: 'Password123!' } });
 
       const submitButton = screen.getByRole('button', { name: 'Registrarse' });
       fireEvent.click(submitButton);
@@ -101,7 +101,7 @@ describe('AuthForms', () => {
       expect(mutateAsyncRegisterMock).toHaveBeenCalledWith({
         name: 'Juan',
         email: 'juan@uct.cl',
-        password: 'password123',
+        password: 'Password123!',
       });
 
       const loginLink = screen.getByText('Inicia sesión');

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import EyeIcon from '../../assets/svg/icons/icon_eye.svg?react';
@@ -18,12 +18,40 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
 
   const { mutateAsync: register, isPending: isRegisterLoading, error: registerError, reset: resetRegisterError } = useRegister();
 
+  const passwordRules = useMemo(() => {
+    return [
+      { label: 'Mínimo 6 caracteres', valid: registerPassword.length >= 6 },
+      { label: 'Una letra mayúscula', valid: /[A-Z]/.test(registerPassword) },
+      { label: 'Una letra minúscula', valid: /[a-z]/.test(registerPassword) },
+      { label: 'Un número', valid: /[0-9]/.test(registerPassword) },
+      { label: 'Un carácter especial (ej. !@#$_-)', valid: /[^a-zA-Z0-9]/.test(registerPassword) },
+    ];
+  }, [registerPassword]);
+
+  const strengthScore = useMemo(() => {
+    if (!registerPassword) return 0;
+    return passwordRules.filter((r) => r.valid).length;
+  }, [passwordRules, registerPassword]);
+
+  const isPasswordValid = strengthScore === 5;
+
+  const strengthColor = useMemo(() => {
+    if (strengthScore <= 2) return 'bg-red-500';
+    if (strengthScore <= 4) return 'bg-yellow-500';
+    return 'bg-green-500';
+  }, [strengthScore]);
+
   const onRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     resetRegisterError();
 
     if (registerPassword !== registerConfirmPassword) {
       alert("Las contraseñas no coinciden");
+      return;
+    }
+
+    if (!isPasswordValid) {
+      alert("La contraseña no cumple con los requisitos de seguridad requeridos.");
       return;
     }
 
@@ -87,6 +115,7 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
             </button>
           }
         />
+
         <Input
           label="Confirmar Contraseña"
           labelColor="text-gray-700"
@@ -106,6 +135,29 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
             </button>
           }
         />
+
+        {registerPassword.length > 0 && (
+          <div className="flex flex-col gap-1.5 px-1 py-1">
+            <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${strengthColor}`}
+                style={{ width: `${(strengthScore / 5) * 100}%` }}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]">
+              {passwordRules.map((rule) => (
+                <div
+                  key={rule.label}
+                  className={`flex items-center gap-1.5 ${rule.valid ? 'text-green-600 font-semibold' : 'text-gray-400'}`}
+                >
+                  <span>{rule.valid ? '✓' : '○'}</span>
+                  <span>{rule.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {registerError && (
           <div className="text-red-600 text-xs font-medium bg-red-50 p-2 rounded-lg border border-red-200">
