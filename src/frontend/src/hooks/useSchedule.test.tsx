@@ -9,12 +9,14 @@ import {
   useTeacherMeetings,
   useAllMeetings,
   useCreateMeeting,
+  useCreateOfficeHour,
   useUpdateMeetingStatus,
 } from './useSchedule';
 import { scheduleService } from '../services/scheduleService';
 import type { TeacherAvailabilityDto } from '../dtos/schedule/TeacherAvailabilityDto';
 import type { TeacherWorkloadDto } from '../dtos/schedule/TeacherWorkloadDto';
 import type { MeetingDto } from '../dtos/schedule/MeetingDto';
+import type { OfficeHourDto } from '../dtos/schedule/OfficeHourDto';
 
 vi.mock('../services/scheduleService');
 
@@ -53,6 +55,33 @@ describe('useSchedule hooks', () => {
 
     const { result: am } = renderHook(() => useAllMeetings(), { wrapper });
     await waitFor(() => expect(am.current.isSuccess).toBe(true));
+  });
+
+  it('creates an office hour', async () => {
+    vi.mocked(scheduleService.createOfficeHour).mockResolvedValue({
+      id: 'oh1',
+    } as unknown as OfficeHourDto);
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useCreateOfficeHour(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        teacherRefId: 't1',
+        structureRefId: null,
+        dayOfWeek: 'Monday',
+        startTime: '09:00:00',
+        endTime: '10:00:00',
+      });
+    });
+
+    expect(scheduleService.createOfficeHour).toHaveBeenCalledWith({
+      teacherRefId: 't1',
+      structureRefId: null,
+      dayOfWeek: 'Monday',
+      startTime: '09:00:00',
+      endTime: '10:00:00',
+    });
   });
 
   it('mutations create and update meeting status', async () => {

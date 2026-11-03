@@ -45,7 +45,7 @@ export const GlobalModals = () => {
   const isProfileOpen = activePanel === 'userProfile' && !!user;
 
   const { data: structures = [] } = useStructures(undefined, isProfileOpen);
-  const { data: users = [] } = useUsers();
+  const { data: users = [] } = useUsers(isProfileOpen);
 
   const reportParams = useMemo(
     () => ({

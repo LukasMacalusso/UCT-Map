@@ -1,9 +1,5 @@
 import axios from 'axios';
-
-interface ApiErrorOptions {
-  status?: number;
-  cause?: unknown;
-}
+import type { ApiErrorOptions } from '../interfaces/ApiErrorOptions';
 
 export class ApiError extends Error {
   readonly status?: number;

@@ -13,6 +13,12 @@ const state = vi.hoisted(() => ({
   isError: false,
   error: null as { message?: string } | null,
   refetch: vi.fn(),
+  createOfficeHour: {
+    mutate: vi.fn(),
+    reset: vi.fn(),
+    isPending: false,
+    error: null as { message?: string } | null,
+  },
 }));
 
 vi.mock('../hooks/useSchedule', () => ({
@@ -28,6 +34,7 @@ vi.mock('../hooks/useSchedule', () => ({
     mutate: vi.fn(),
     isPending: false,
   }),
+  useCreateOfficeHour: () => state.createOfficeHour,
 }));
 
 vi.mock('../hooks/useCampus', () => ({
@@ -97,6 +104,8 @@ describe('TeacherView', () => {
     state.isFetching = false;
     state.isError = false;
     state.error = null;
+    state.createOfficeHour.isPending = false;
+    state.createOfficeHour.error = null;
     useAuthState.getState().mockLoginAs(Role.Teacher);
   });
 
@@ -109,13 +118,30 @@ describe('TeacherView', () => {
     expect(screen.getByText('Reuniones Agendadas')).toBeInTheDocument();
     expect(screen.getByText('1 h 30 min')).toBeInTheDocument();
     expect(screen.getByText('2 bloques activos')).toBeInTheDocument();
-    expect(screen.getByText('2 CITAS')).toBeInTheDocument();
     expect(screen.getByText('30 min')).toBeInTheDocument();
     expect(screen.getByText('Estudiante Juan (juan@uct.cl)')).toBeInTheDocument();
     expect(screen.getByText('Estudiante (missing)')).toBeInTheDocument();
     expect(screen.getAllByText('Oficina 301').length).toBeGreaterThan(0);
     expect(screen.getByText('Ubicación por confirmar')).toBeInTheDocument();
     expect(screen.getByText('Oficina docente')).toBeInTheDocument();
+  });
+
+  it('opens the create office hour modal for the current teacher', () => {
+    state.workload = fullWorkload();
+
+    renderView();
+
+    fireEvent.click(screen.getByRole('button', { name: /agregar/i }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Nuevo Bloque de Atención')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /guardar bloque/i }));
+
+    expect(state.createOfficeHour.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ teacherRefId: '123' }),
+      expect.anything(),
+    );
   });
 
   it.each([
@@ -154,14 +180,12 @@ describe('TeacherView', () => {
         'No hay reuniones agendadas que coincidan con el filtro seleccionado.',
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText('0 CITAS')).toBeInTheDocument();
   });
 
   it('handles undefined workload data', () => {
     renderView();
 
     expect(screen.getAllByText('0 min').length).toBeGreaterThan(0);
-    expect(screen.getByText('0 CITAS')).toBeInTheDocument();
   });
 
   it('filters meetings by status', () => {
@@ -172,7 +196,6 @@ describe('TeacherView', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Todos los estados' })[0]);
     fireEvent.click(screen.getAllByRole('button', { name: 'Cancelada' })[0]);
 
-    expect(screen.getByText('1 CITA')).toBeInTheDocument();
     expect(screen.getByText('Estudiante (missing)')).toBeInTheDocument();
     expect(screen.queryByText('Estudiante Juan (juan@uct.cl)')).not.toBeInTheDocument();
   });

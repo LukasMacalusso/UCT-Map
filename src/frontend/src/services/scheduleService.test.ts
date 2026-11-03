@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { scheduleService } from './scheduleService';
 import httpClient from '../api/httpClient';
+import type { CreateOfficeHourRequest } from '../dtos/schedule/CreateOfficeHourRequest';
 
 vi.mock('../api/httpClient');
 
@@ -31,6 +32,43 @@ describe('scheduleService', () => {
     expect(httpClient.get).toHaveBeenCalledWith('/api/schedule/office-hours', {
       params: { teacherId: 't1' },
     });
+  });
+
+  it('createOfficeHour calls POST with the payload', async () => {
+    const payload: CreateOfficeHourRequest = {
+      teacherRefId: 't1',
+      structureRefId: 'st1',
+      dayOfWeek: 'Monday',
+      startTime: '09:00:00',
+      endTime: '10:00:00',
+    };
+    vi.mocked(httpClient.post).mockResolvedValueOnce({ data: { id: 'oh1' } });
+
+    const res = await scheduleService.createOfficeHour(payload);
+
+    expect(res.id).toBe('oh1');
+    expect(httpClient.post).toHaveBeenCalledWith('/api/schedule/office-hours', {
+      ...payload,
+      dayOfWeek: 1,
+    });
+  });
+
+  it('createOfficeHour maps a bad request error', async () => {
+    const payload: CreateOfficeHourRequest = {
+      teacherRefId: 't1',
+      structureRefId: null,
+      dayOfWeek: 'Monday',
+      startTime: '09:00:00',
+      endTime: '08:00:00',
+    };
+    vi.mocked(httpClient.post).mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { status: 400, data: {} },
+    });
+
+    await expect(scheduleService.createOfficeHour(payload)).rejects.toThrow(
+      'Los datos del horario no son válidos',
+    );
   });
 
   it('getMeetings calls GET', async () => {

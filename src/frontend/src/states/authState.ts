@@ -57,7 +57,8 @@ const getInitialAuth = () => {
       isAuthenticated: !!user,
     };
   } catch {
-    return { token, user: null, isAuthenticated: false };
+    removeItems();
+    return { token: null, user: null, isAuthenticated: false };
   }
 };
 

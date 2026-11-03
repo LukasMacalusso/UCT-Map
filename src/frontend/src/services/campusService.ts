@@ -4,15 +4,19 @@ import type { BuildingLocationDto } from '../dtos/campus/BuildingLocationDto';
 import type { CampusDto } from '../dtos/campus/CampusDto';
 import type { CreateCampusDto } from '../dtos/campus/CreateCampusDto';
 import type { UpdateCampusDto } from '../dtos/campus/UpdateCampusDto';
-import type { RoomDto, CreateRoomDto, UpdateRoomDto } from '../dtos/campus/RoomDto';
-import type { StructureDto, CreateStructureDto, UpdateStructureDto } from '../dtos/campus/StructureDto';
-import type { BuildingDto, CreateBuildingDto, UpdateBuildingDto } from '../dtos/campus/BuildingDto';
-import type {
-  CategoryDto,
-  CreateCategoryDto,
-  UpdateCategoryDto,
-  ReorderItemDto,
-} from '../dtos/campus/CategoryDto';
+import type { RoomDto } from '../dtos/campus/RoomDto';
+import type { CreateRoomDto } from '../dtos/campus/CreateRoomDto';
+import type { UpdateRoomDto } from '../dtos/campus/UpdateRoomDto';
+import type { StructureDto } from '../dtos/campus/StructureDto';
+import type { CreateStructureDto } from '../dtos/campus/CreateStructureDto';
+import type { UpdateStructureDto } from '../dtos/campus/UpdateStructureDto';
+import type { BuildingDto } from '../dtos/campus/BuildingDto';
+import type { CreateBuildingDto } from '../dtos/campus/CreateBuildingDto';
+import type { UpdateBuildingDto } from '../dtos/campus/UpdateBuildingDto';
+import type { CategoryDto } from '../dtos/campus/CategoryDto';
+import type { CreateCategoryDto } from '../dtos/campus/CreateCategoryDto';
+import type { UpdateCategoryDto } from '../dtos/campus/UpdateCategoryDto';
+import type { ReorderItemDto } from '../dtos/campus/ReorderItemDto';
 
 export const campusService = {
   getCampuses: async (): Promise<CampusDto[]> => {

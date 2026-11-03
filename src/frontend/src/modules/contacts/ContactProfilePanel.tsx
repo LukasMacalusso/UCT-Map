@@ -14,6 +14,7 @@ import ClockIcon from '../../assets/svg/icons/icon_clock.svg?react';
 import CalendarIcon from '../../assets/svg/icons/icon_calendar.svg?react';
 
 import type { ScheduleItem } from '../../interfaces/ScheduleItem';
+import type { BookingSlot } from '../../interfaces/BookingSlot';
 import type { OfficeHourDto } from '../../dtos/schedule/OfficeHourDto';
 import type { MeetingDto } from '../../dtos/schedule/MeetingDto';
 import {
@@ -23,7 +24,6 @@ import {
   formatLongDate,
   formatOfficeHour,
   sortOfficeHours,
-  type BookingSlot,
 } from '../../utils/schedule';
 
 export interface ContactProfilePanelProps {

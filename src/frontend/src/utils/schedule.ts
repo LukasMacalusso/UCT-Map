@@ -1,5 +1,9 @@
 import type { DayOfWeekName, OfficeHourDto } from '../dtos/schedule/OfficeHourDto';
 import type { MeetingDto } from '../dtos/schedule/MeetingDto';
+import type { BookingSlot } from '../interfaces/BookingSlot';
+import type { BookingDay } from '../interfaces/BookingDay';
+
+export type { BookingSlot, BookingDay };
 
 export const DAY_INDEX: Record<DayOfWeekName, number> = {
   Sunday: 0,
@@ -28,21 +32,6 @@ export const MEETING_STATUS_COLORS: Record<string, 'yellow' | 'blue' | 'red' | '
 };
 
 export const DURATION_OPTIONS = [15, 30, 45, 60];
-
-export interface BookingSlot {
-  key: string;
-  start: Date;
-  end: Date;
-  structureRefId: string | null;
-  isTaken: boolean;
-}
-
-export interface BookingDay {
-  key: string;
-  date: Date;
-  slots: BookingSlot[];
-  freeSlots: number;
-}
 
 const TIMEZONE_SUFFIX = /(Z|[+-]\d{2}:?\d{2})$/i;
 

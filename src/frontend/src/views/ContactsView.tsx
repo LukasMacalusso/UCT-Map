@@ -18,6 +18,7 @@ import {
 import { useAuthState } from '../states/authState';
 import { Role } from '../constants/role';
 import type { UserIdentity } from '../interfaces/identities/UserIdentity';
+import type { BookingSlot } from '../interfaces/BookingSlot';
 import type { OfficeHourDto, DayOfWeekName } from '../dtos/schedule/OfficeHourDto';
 import {
   addDays,
@@ -26,7 +27,6 @@ import {
   formatOfficeHour,
   sortOfficeHours,
   startOfDay,
-  type BookingSlot,
 } from '../utils/schedule';
 
 import SearchIcon from '../assets/svg/icons/icon_search.svg?react';

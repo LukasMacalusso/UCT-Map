@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../api/queryKeys';
 import { scheduleService } from '../services/scheduleService';
 import type { CreateMeetingRequest } from '../dtos/schedule/CreateMeetingRequest';
+import type { CreateOfficeHourRequest } from '../dtos/schedule/CreateOfficeHourRequest';
 import type { MeetingDto, MeetingStatusName } from '../dtos/schedule/MeetingDto';
 import type { OfficeHourDto } from '../dtos/schedule/OfficeHourDto';
 import type { TeacherAvailabilityDto } from '../dtos/schedule/TeacherAvailabilityDto';
@@ -12,6 +13,17 @@ export const useOfficeHours = (teacherId?: string, enabled = true) => {
     queryKey: queryKeys.teachers.officeHours(teacherId),
     queryFn: () => scheduleService.getOfficeHours(teacherId),
     enabled,
+  });
+};
+
+export const useCreateOfficeHour = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<OfficeHourDto, Error, CreateOfficeHourRequest>({
+    mutationFn: (payload) => scheduleService.createOfficeHour(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.teachers.all });
+    },
   });
 };
 

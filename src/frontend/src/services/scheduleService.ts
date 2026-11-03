@@ -1,10 +1,12 @@
 import { toApiError } from "../api/apiError";
 import httpClient from "../api/httpClient";
 import type { CreateMeetingRequest } from "../dtos/schedule/CreateMeetingRequest";
+import type { CreateOfficeHourRequest } from "../dtos/schedule/CreateOfficeHourRequest";
 import type { MeetingDto, MeetingStatusName } from "../dtos/schedule/MeetingDto";
 import type { OfficeHourDto } from "../dtos/schedule/OfficeHourDto";
 import type { TeacherAvailabilityDto } from "../dtos/schedule/TeacherAvailabilityDto";
 import type { TeacherWorkloadDto } from "../dtos/schedule/TeacherWorkloadDto";
+import { DAY_INDEX } from "../utils/schedule";
 
 const CREATE_MEETING_ERRORS: Record<number, string> = {
   400: "Los datos de la reunión no son válidos",
@@ -17,6 +19,13 @@ const UPDATE_MEETING_STATUS_ERRORS: Record<number, string> = {
   403: "No tienes permiso para cambiar el estado de esta reunión",
   404: "La reunión ya no existe",
   409: "El estado actual de la reunión no permite ese cambio",
+};
+
+const CREATE_OFFICE_HOUR_ERRORS: Record<number, string> = {
+  400: "Los datos del horario no son válidos",
+  401: "Tu sesión expiró. Inicia sesión nuevamente",
+  403: "No tienes permiso para crear este horario",
+  500: "Error interno del servidor. Intenta más tarde",
 };
 
 // Schedule.md convention: "Dates use ISO 8601 without time zone: 2026-10-12T15:30:00"
@@ -64,6 +73,30 @@ export const scheduleService = {
       return data;
     } catch (error) {
       throw toApiError(error, "Error al cargar los horarios de atención");
+    }
+  },
+
+  async createOfficeHour(payload: CreateOfficeHourRequest): Promise<OfficeHourDto> {
+    try {
+      const dayOfWeek =
+        typeof payload.dayOfWeek === 'string' && payload.dayOfWeek in DAY_INDEX
+          ? DAY_INDEX[payload.dayOfWeek as keyof typeof DAY_INDEX]
+          : payload.dayOfWeek;
+
+      const { data } = await httpClient.post<OfficeHourDto>(
+        "/api/schedule/office-hours",
+        {
+          ...payload,
+          dayOfWeek,
+        },
+      );
+      return data;
+    } catch (error) {
+      throw toApiError(
+        error,
+        "Error al crear el horario de atención",
+        CREATE_OFFICE_HOUR_ERRORS,
+      );
     }
   },
 
