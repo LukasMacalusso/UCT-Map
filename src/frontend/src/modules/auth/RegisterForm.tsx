@@ -59,14 +59,14 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
           labelColor="text-gray-700"
           placeholder="Ej. Juan Pérez"
           value={registerName}
-          onChange={(e: any) => setRegisterName(e.target.value)}
+          onChange={(e) => setRegisterName(e.target.value)}
         />
         <Input
           label="Email"
           labelColor="text-gray-700"
           placeholder="usuario@uct.cl"
           value={registerEmail}
-          onChange={(e: any) => setRegisterEmail(e.target.value)}
+          onChange={(e) => setRegisterEmail(e.target.value)}
         />
         <Input
           label="Contraseña"
@@ -74,7 +74,7 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
           type={showPassword ? 'text' : 'password'}
           placeholder="••••••••"
           value={registerPassword}
-          onChange={(e: any) => setRegisterPassword(e.target.value)}
+          onChange={(e) => setRegisterPassword(e.target.value)}
           rightElement={
             <button
               type="button"
@@ -93,7 +93,7 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
           type={showConfirmPassword ? 'text' : 'password'}
           placeholder="••••••••"
           value={registerConfirmPassword}
-          onChange={(e: any) => setRegisterConfirmPassword(e.target.value)}
+          onChange={(e) => setRegisterConfirmPassword(e.target.value)}
           rightElement={
             <button
               type="button"

@@ -1,4 +1,4 @@
-import type { CampusCamera } from '../../modules/map/CampusMapCanvas';
+import type { CampusCamera } from '../../modules/map/campusMapUtils';
 
 const format = (value: number, digits: number) => value.toFixed(digits);
 

@@ -160,11 +160,6 @@ export const AdministrationView = () => {
     [structures],
   );
 
-  const usersById = useMemo(
-    () => new Map(users.map((item) => [item.id, item])),
-    [users],
-  );
-
   const profileIncidents = useMemo<IncidentCardProps[]>(() => {
     if (!profileUser || !reportsPage?.items) return [];
     return reportsPage.items
@@ -201,36 +196,35 @@ export const AdministrationView = () => {
     }));
   }, [profileUser, profileLostObjects, structureNames]);
 
-  const profileMeetings = useMemo<UserProfileMeetingItem[]>(() => {
-    if (!profileUser) return [];
-    return allMeetings
-      .filter((meeting) => meeting.studentRefId === profileUser.id)
-      .sort(
-        (a, b) =>
-          parseScheduleDate(b.scheduledAt).getTime() -
-          parseScheduleDate(a.scheduledAt).getTime(),
-      )
-      .map((meeting) => {
-        const start = parseScheduleDate(meeting.scheduledAt);
-        const end = new Date(start.getTime() + meeting.durationMinutes * 60000);
-        const teacher = usersById.get(meeting.teacherRefId);
-        const location =
-          (meeting.structureRefId && structureNames.get(meeting.structureRefId)) ||
-          'Oficina docente';
+  const profileMeetings: UserProfileMeetingItem[] = !profileUser
+    ? []
+    : allMeetings
+        .filter((meeting) => meeting.studentRefId === profileUser.id)
+        .sort(
+          (a, b) =>
+            parseScheduleDate(b.scheduledAt).getTime() -
+            parseScheduleDate(a.scheduledAt).getTime(),
+        )
+        .map((meeting) => {
+          const start = parseScheduleDate(meeting.scheduledAt);
+          const end = new Date(start.getTime() + meeting.durationMinutes * 60000);
+          const teacher = users.find((u) => u.id === meeting.teacherRefId);
+          const location =
+            (meeting.structureRefId && structureNames.get(meeting.structureRefId)) ||
+            'Oficina docente';
 
-        return {
-          id: meeting.id,
-          teacherName: teacher?.name ?? 'Profesor',
-          teacherEmail: teacher?.email,
-          location,
-          dateLabel: formatLongDate(start),
-          timeLabel: `${formatClock(start)} - ${formatClock(end)} (${meeting.durationMinutes} min)`,
-          statusLabel:
-            MEETING_STATUS_LABELS[meeting.status] ?? meeting.status.toUpperCase(),
-          statusColor: MEETING_STATUS_COLORS[meeting.status] ?? 'blue',
-        };
-      });
-  }, [profileUser, allMeetings, usersById, structureNames]);
+          return {
+            id: meeting.id,
+            teacherName: teacher?.name ?? 'Profesor',
+            teacherEmail: teacher?.email,
+            location,
+            dateLabel: formatLongDate(start),
+            timeLabel: `${formatClock(start)} - ${formatClock(end)} (${meeting.durationMinutes} min)`,
+            statusLabel:
+              MEETING_STATUS_LABELS[meeting.status] ?? meeting.status.toUpperCase(),
+            statusColor: MEETING_STATUS_COLORS[meeting.status] ?? 'blue',
+          };
+        });
 
   return (
     <div className="p-6 min-h-screen bg-transparent flex flex-col gap-6">

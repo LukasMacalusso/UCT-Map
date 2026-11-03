@@ -15,92 +15,25 @@ import { UCT_LOADING_PHRASES } from '../../constants/loadingPhrases';
 import PlusIcon from '../../assets/svg/icons/icon_plus.svg?react';
 import MinusIcon from '../../assets/svg/icons/icon_minus.svg?react';
 import TargetIcon from '../../assets/svg/icons/icon_target.svg?react';
+import {
+  CAMPUS_CENTER,
+  MAP_MAX_BOUNDS,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  INITIAL_ZOOM,
+  INITIAL_PITCH,
+  INITIAL_BEARING,
+  isWithinCampus,
+  resolveBuildingCoordinate,
+  resolveStructureCoordinate,
+  flyToCoordinate,
+  setSharedMapInstanceRef,
+} from './campusMapUtils';
+
+export type { CampusCamera } from './campusMapUtils';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const MAP_STYLE = 'mapbox://styles/mapbox/standard';
-export const CAMPUS_CENTER: [number, number] = [-72.6019, -38.7368];
-export const CAMPUS_BOUNDS: [[number, number], [number, number]] = [
-  [-72.635, -38.758],
-  [-72.568, -38.716],
-];
-const MAP_MAX_BOUNDS: [[number, number], [number, number]] = [
-  [-72.75, -38.85],
-  [-72.45, -38.63],
-];
-const MIN_ZOOM = 12;
-const MAX_ZOOM = 19;
-const INITIAL_ZOOM = 14;
-const INITIAL_PITCH = 50;
-const INITIAL_BEARING = -20;
-
-const MOCK_SPREAD = 0.006;
-
-const hashString = (value: string): number => {
-  let hash = 2166136261;
-  for (let i = 0; i < value.length; i++) {
-    hash ^= value.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return Math.abs(hash);
-};
-
-export const isWithinCampus = ([lng, lat]: [number, number]) =>
-  lng >= CAMPUS_BOUNDS[0][0] &&
-  lng <= CAMPUS_BOUNDS[1][0] &&
-  lat >= CAMPUS_BOUNDS[0][1] &&
-  lat <= CAMPUS_BOUNDS[1][1];
-
-export const resolveBuildingCoordinate = (building: BuildingLocationDto): [number, number] => {
-  const coordinate: [number, number] = [building.location.longitude, building.location.latitude];
-  if (coordinate[0] !== 0 || coordinate[1] !== 0) return coordinate;
-  const seed = hashString(building.id);
-  const angle = ((seed % 360) * Math.PI) / 180;
-  const radius = MOCK_SPREAD * (0.45 + ((seed % 50) / 50) * 0.55);
-  return [
-    CAMPUS_CENTER[0] + Math.cos(angle) * radius,
-    CAMPUS_CENTER[1] + Math.sin(angle) * radius,
-  ];
-};
-
-export const resolveStructureCoordinate = (structure: StructureDto): [number, number] => {
-  const coordinate: [number, number] = [structure.longitude, structure.latitude];
-  if (coordinate[0] !== 0 || coordinate[1] !== 0) return coordinate;
-  const seed = hashString(structure.id);
-  const angle = ((seed % 360) * Math.PI) / 180;
-  const radius = MOCK_SPREAD * (0.45 + ((seed % 50) / 50) * 0.55);
-  return [
-    CAMPUS_CENTER[0] + Math.cos(angle) * radius,
-    CAMPUS_CENTER[1] + Math.sin(angle) * radius,
-  ];
-};
-
-interface CameraOptions {
-  zoom?: number;
-  pitch?: number;
-  bearing?: number;
-  duration?: number;
-}
-
-const easeInOutCubic = (t: number): number =>
-  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-export const flyToCoordinate = (
-  map: MapboxMap,
-  center: [number, number],
-  options: CameraOptions = {}
-) => {
-  map.flyTo({
-    center,
-    zoom: options.zoom ?? map.getZoom(),
-    pitch: options.pitch ?? map.getPitch(),
-    bearing: options.bearing ?? map.getBearing(),
-    duration: options.duration ?? 950,
-    curve: 1.42,
-    speed: 1.2,
-    essential: true,
-    easing: easeInOutCubic,
-  });
-};
 
 const setMapInteraction = (map: MapboxMap, enabled: boolean) => {
   const handlers = [
@@ -201,6 +134,7 @@ function ensureSharedMap(host: HTMLDivElement): {
       map.on('error', (event) => console.error('Mapbox error:', event.error));
 
       sharedMapInstance = map;
+      setSharedMapInstanceRef(map);
     } catch (error) {
       sharedMapError = error instanceof Error ? error.message : 'No se pudo inicializar Mapbox';
       errorListeners.forEach((listener) => listener(sharedMapError!));
@@ -216,49 +150,6 @@ function ensureSharedMap(host: HTMLDivElement): {
     error: sharedMapError,
   };
 }
-
-export interface CampusCamera {
-  latitude: number;
-  longitude: number;
-  zoom: number;
-  pitch: number;
-  bearing: number;
-}
-
-export const getSharedMapCamera = (): CampusCamera | null => {
-  if (!sharedMapInstance) return null;
-
-  const center = sharedMapInstance.getCenter();
-  return {
-    latitude: center.lat,
-    longitude: center.lng,
-    zoom: sharedMapInstance.getZoom(),
-    pitch: sharedMapInstance.getPitch(),
-    bearing: sharedMapInstance.getBearing(),
-  };
-};
-
-export const applySharedMapCamera = (camera: CampusCamera, smooth = false) => {
-  if (!sharedMapInstance) return;
-
-  if (smooth) {
-    sharedMapInstance.flyTo({
-      center: [camera.longitude, camera.latitude],
-      zoom: camera.zoom,
-      pitch: camera.pitch,
-      bearing: camera.bearing,
-      duration: 900,
-      essential: true,
-    });
-  } else {
-    sharedMapInstance.jumpTo({
-      center: [camera.longitude, camera.latitude],
-      zoom: camera.zoom,
-      pitch: camera.pitch,
-      bearing: camera.bearing,
-    });
-  }
-};
 
 export interface CampusMapHandle {
   flyToMarker: (marker: MapMarkerItem | { coordinates: [number, number] }) => void;

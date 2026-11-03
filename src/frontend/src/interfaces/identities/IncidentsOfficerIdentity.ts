@@ -1,5 +1,3 @@
-import type { OfficialIdentity } from "./OfficialIdentity";
+import type { OfficialIdentity } from './OfficialIdentity';
 
-export interface IncidentsOfficerIdentity extends OfficialIdentity {
-  
-}
+export type IncidentsOfficerIdentity = OfficialIdentity;

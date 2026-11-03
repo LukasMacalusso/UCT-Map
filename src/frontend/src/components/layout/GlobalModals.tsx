@@ -153,7 +153,7 @@ export const GlobalModals = () => {
     if (!user?.registeredAt) return undefined;
     const year = new Date(user.registeredAt).getFullYear();
     return Number.isNaN(year) ? undefined : String(year);
-  }, [user?.registeredAt]);
+  }, [user]);
 
   const handleLogout = () => {
     logout();

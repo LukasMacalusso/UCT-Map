@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Panel } from '../../components/layout/Panel';
 import { PhotoFrame } from '../../components/media/PhotoFrame';
 import { IconText } from '../../components/ui/IconText';
@@ -96,25 +96,15 @@ export const ContactProfilePanel = ({
     return buildBookingDays(officeHours, meetings, durationMinutes, BOOKING_DAYS_AHEAD);
   }, [officeHours, meetings, durationMinutes]);
 
-  useEffect(() => {
-    if (bookingDays.length === 0) {
-      setSelectedDayKey('');
-      setSelectedSlotKey('');
-      return;
-    }
-
-    const dayStillExists = bookingDays.some((day) => day.key === selectedDayKey);
-    if (!dayStillExists) {
-      const firstDayWithFree = bookingDays.find((day) => day.freeSlots > 0) ?? bookingDays[0];
-      setSelectedDayKey(firstDayWithFree.key);
-      setSelectedSlotKey('');
-    }
+  const activeDay = useMemo(() => {
+    if (bookingDays.length === 0) return null;
+    return (
+      bookingDays.find((day) => day.key === selectedDayKey) ??
+      bookingDays.find((day) => day.freeSlots > 0) ??
+      bookingDays[0] ??
+      null
+    );
   }, [bookingDays, selectedDayKey]);
-
-  const activeDay = useMemo(
-    () => bookingDays.find((day) => day.key === selectedDayKey) ?? bookingDays[0] ?? null,
-    [bookingDays, selectedDayKey],
-  );
 
   const selectedSlot = useMemo(
     () => activeDay?.slots.find((slot) => slot.key === selectedSlotKey && !slot.isTaken) ?? null,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ModalOverlay } from '../../components/layout/ModalOverlay';
 import { Button } from '../../components/ui/Button';
 import { Tag } from '../../components/ui/Tag';
@@ -51,15 +51,17 @@ export const ChangeReportStatusModal: React.FC<ChangeReportStatusModalProps> = (
   const [selectedStatus, setSelectedStatus] = useState<TicketStatus>(
     report?.ticketType ?? TicketStatus.Pending,
   );
+  const [prevReport, setPrevReport] = useState(report);
 
-  const updateStatus = useUpdateReportStatus();
-  const notifyEditor = useUiState((state) => state.notifyEditor);
-
-  useEffect(() => {
+  if (report !== prevReport) {
+    setPrevReport(report);
     if (report) {
       setSelectedStatus(report.ticketType);
     }
-  }, [report]);
+  }
+
+  const updateStatus = useUpdateReportStatus();
+  const notifyEditor = useUiState((state) => state.notifyEditor);
 
   if (!report) return null;
 

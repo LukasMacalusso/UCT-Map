@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Panel } from '../../components/layout/Panel';
 import { Avatar } from '../../components/media/Avatar';
 import { IconText } from '../../components/ui/IconText';
@@ -94,15 +94,13 @@ export const UserProfilePanel = ({
     canViewObjects ? 'objects' : 'incidents'
   );
 
-  useEffect(() => {
-    if (!availableTabs.some((t) => t.id === activeTab)) {
-      setActiveTab(availableTabs[0]?.id ?? 'incidents');
-    }
-  }, [availableTabs, activeTab]);
+  const effectiveTab = availableTabs.some((t) => t.id === activeTab)
+    ? activeTab
+    : (availableTabs[0]?.id ?? 'incidents');
 
   const activeIndex = Math.max(
     0,
-    availableTabs.findIndex((t) => t.id === activeTab)
+    availableTabs.findIndex((t) => t.id === effectiveTab)
   );
 
   if (isLoading) {
@@ -161,7 +159,7 @@ export const UserProfilePanel = ({
           
           <div className="relative flex border-b-2 border-gray-200 mt-1 flex-shrink-0">
             {availableTabs.map((tab) => {
-              const isSelected = activeTab === tab.id;
+              const isSelected = effectiveTab === tab.id;
               return (
                 <button
                   key={tab.id}
@@ -184,20 +182,20 @@ export const UserProfilePanel = ({
           </div>
 
           <div className="bg-page-gray-light mt-4 p-4 rounded-2xl overflow-y-auto flex flex-col gap-3 flex-1 min-h-0 shadow-inner">
-            <div key={activeTab} className="w-full flex flex-col gap-3 animate-tab-fade">
-              {activeTab === 'objects' && canViewObjects && (
+            <div key={effectiveTab} className="w-full flex flex-col gap-3 animate-tab-fade">
+              {effectiveTab === 'objects' && canViewObjects && (
                 objectReports.length > 0 ? objectReports.map((report, idx) => (
                   <ObjectReportCard key={idx} {...report} compact={true} className="!w-full !max-w-full shadow-sm hover:shadow-md transition-shadow" />
                 )) : <EmptyState message="No hay reportes de objetos" />
               )}
 
-              {activeTab === 'incidents' && (
+              {effectiveTab === 'incidents' && (
                 incidentReports.length > 0 ? incidentReports.map((incident, idx) => (
                   <IncidentCard key={idx} {...incident} compact={true} className="!w-full !max-w-full shadow-sm hover:shadow-md transition-shadow" />
                 )) : <EmptyState message="No hay incidencias reportadas" />
               )}
 
-              {activeTab === 'meetings' && (
+              {effectiveTab === 'meetings' && (
                 requestedMeetings.length > 0 ? requestedMeetings.map((meeting) => (
                   <Panel
                     key={meeting.id}

@@ -33,15 +33,13 @@ const backgroundData: LoginBackgroundData[] = [
 export const LoginView = () => {
   const navigate = useNavigate();
   const logout = useAuthState((state) => state.logout);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [currentIndex, setCurrentIndex] = useState<number>(() =>
+    backgroundData.length > 0 ? Math.floor(Math.random() * backgroundData.length) : 0,
+  );
   const [isRegistering, setIsRegistering] = useState(false);
 
   useEffect(() => {
     if (backgroundData.length === 0) return;
-
-    // Random image
-    const initialIndex = Math.floor(Math.random() * backgroundData.length);
-    setCurrentIndex(initialIndex);
 
     // Change image
     const intervalId = setInterval(() => {

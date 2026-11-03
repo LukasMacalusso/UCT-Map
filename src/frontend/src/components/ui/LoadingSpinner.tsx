@@ -29,9 +29,10 @@ export const LoadingSpinner = ({
   const hasMultipleTexts = Array.isArray(texts) && texts.length > 0;
   const [currentText, setCurrentText] = useState(() => hasMultipleTexts ? texts[0] : text);
   const [isFading, setIsFading] = useState(false);
+  const textsKey = texts ? texts.join('||') : '';
 
   useEffect(() => {
-    if (!hasMultipleTexts || !texts) return;
+    if (!hasMultipleTexts || !texts || texts.length === 0) return;
 
     const interval = setInterval(() => {
       setIsFading(true);
@@ -50,7 +51,7 @@ export const LoadingSpinner = ({
     }, 3500); 
 
     return () => clearInterval(interval);
-  }, [JSON.stringify(texts), hasMultipleTexts]);
+  }, [textsKey, hasMultipleTexts, texts]);
 
   const outerArc1Class = variant === 'dark' ? 'text-black opacity-90' : variant === 'light' ? 'text-white opacity-90' : 'opacity-80';
   const outerArc2Class = variant === 'dark' ? 'text-black opacity-40' : variant === 'light' ? 'text-white opacity-40' : 'text-page-yellow opacity-80';

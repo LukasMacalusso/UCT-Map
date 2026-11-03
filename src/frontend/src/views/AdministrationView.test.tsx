@@ -121,4 +121,21 @@ describe('AdministrationView', () => {
     expect(screen.queryByText('Usuario 0')).not.toBeInTheDocument();
     expect(screen.queryByText('Usuario 2')).not.toBeInTheDocument();
   });
+
+  it('permite buscar usuarios por nombre y recargar la lista', async () => {
+    getAllUsersMock.mockResolvedValue(makeUsers(5));
+    renderWithQueryClient(<AdministrationView />);
+
+    await screen.findByText('Usuario 0');
+
+    const searchInput = screen.getByPlaceholderText('Buscar por nombre o correo...');
+    fireEvent.change(searchInput, { target: { value: 'Usuario 3' } });
+
+    expect(screen.getByText('Usuario 3')).toBeInTheDocument();
+    expect(screen.queryByText('Usuario 0')).not.toBeInTheDocument();
+
+    const refreshBtn = screen.getByRole('button', { name: /actualizar/i });
+    fireEvent.click(refreshBtn);
+    expect(getAllUsersMock).toHaveBeenCalled();
+  });
 });

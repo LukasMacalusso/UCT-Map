@@ -61,7 +61,7 @@ export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
           labelColor="text-gray-700"
           placeholder="usuario@uct.cl"
           value={email}
-          onChange={(e: any) => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
         />
         <Input
           label="Contraseña"
@@ -69,7 +69,7 @@ export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
           type={showPassword ? 'text' : 'password'}
           placeholder="••••••••"
           value={password}
-          onChange={(e: any) => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           rightElement={
             <button
               type="button"

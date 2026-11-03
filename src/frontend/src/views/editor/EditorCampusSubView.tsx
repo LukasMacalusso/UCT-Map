@@ -17,7 +17,7 @@ import {
   getSharedMapCamera,
   applySharedMapCamera,
   type CampusCamera,
-} from '../../modules/map/CampusMapCanvas';
+} from '../../modules/map/campusMapUtils';
 import { EditorMapCanvas } from './EditorMapCanvas';
 import { CampusCameraInfo } from './CampusCameraInfo';
 import type { CampusDto } from '../../dtos/campus/CampusDto';

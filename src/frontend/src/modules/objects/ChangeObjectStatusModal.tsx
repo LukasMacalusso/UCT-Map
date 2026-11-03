@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ModalOverlay } from '../../components/layout/ModalOverlay';
 import { Button } from '../../components/ui/Button';
 import { Tag } from '../../components/ui/Tag';
@@ -49,15 +49,17 @@ export const ChangeObjectStatusModal: React.FC<ChangeObjectStatusModalProps> = (
   const [selectedStatus, setSelectedStatus] = useState<LostObjectStatus>(
     lostObject?.status ?? LostObjectStatus.Pending,
   );
+  const [prevLostObject, setPrevLostObject] = useState(lostObject);
 
-  const updateStatus = useUpdateLostObjectStatus();
-  const notifyEditor = useUiState((state) => state.notifyEditor);
-
-  useEffect(() => {
+  if (lostObject !== prevLostObject) {
+    setPrevLostObject(lostObject);
     if (lostObject) {
       setSelectedStatus(lostObject.status);
     }
-  }, [lostObject]);
+  }
+
+  const updateStatus = useUpdateLostObjectStatus();
+  const notifyEditor = useUiState((state) => state.notifyEditor);
 
   if (!lostObject) return null;
 

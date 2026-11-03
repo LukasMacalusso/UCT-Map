@@ -39,7 +39,7 @@ export const useImageControls = ({
     }, autoPlayInterval);
 
     return () => clearInterval(intervalId);
-  }, [totalItems, autoPlayInterval, isPaused]);
+  }, [autoPlay, totalItems, autoPlayInterval, isPaused]);
 
   return {
     currentIndex,
