@@ -68,10 +68,12 @@ class AppRoutes {
   static Route<dynamic> onGenerateRoute(
     RouteSettings settings, {
     AuthRepository? authRepository,
+    OAuthRepository? oauthRepository,
   }) {
     final route = _generateRoute(
       settings,
       authRepository: authRepository,
+      oauthRepository: oauthRepository,
     ) as MaterialPageRoute<dynamic>;
     final rolePermission = switch (settings.name) {
       teacherSchedule => AppPermission.teacherSchedule,
@@ -114,6 +116,7 @@ class AppRoutes {
   static Route<dynamic> _generateRoute(
     RouteSettings settings, {
     AuthRepository? authRepository,
+    OAuthRepository? oauthRepository,
   }) {
     switch (settings.name) {
       case myMeetings:
@@ -402,7 +405,10 @@ class AppRoutes {
       case login:
         return MaterialPageRoute(
           settings: settings,
-          builder: (_) => LoginPage(authRepository: authRepository),
+          builder: (_) => LoginPage(
+            authRepository: authRepository,
+            oauthRepository: oauthRepository,
+          ),
         );
 
       default:

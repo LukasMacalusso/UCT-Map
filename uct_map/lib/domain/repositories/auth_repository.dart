@@ -27,3 +27,8 @@ abstract class AuthRepository {
     required String password,
   });
 }
+
+/// Inicio externo; null representa una cancelación sin crear sesión.
+abstract class OAuthRepository {
+  Future<AuthLoginResult?> signIn();
+}
