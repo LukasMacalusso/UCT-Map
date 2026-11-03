@@ -7,6 +7,7 @@ import MapPinIcon from '../../assets/svg/icons/icon_location.svg?react';
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
 import TicketIcon from '../../assets/svg/icons/icon_category.svg?react';
 import PencilIcon from '../../assets/svg/icons/icon_pencil.svg?react';
+import TrashIcon from '../../assets/svg/icons/icon_trash.svg?react';
 
 
 import type { ObjectReportAction } from '../../interfaces/ObjectReportAction';
@@ -22,6 +23,7 @@ export interface ObjectReportCardProps {
   compact?: boolean;
   className?: string;
   onStatusChangeClick?: () => void;
+  onDeleteClick?: () => void;
 }
 
 export const ObjectReportCard = ({
@@ -36,6 +38,7 @@ export const ObjectReportCard = ({
   compact = false,
   className = '',
   onStatusChangeClick,
+  onDeleteClick,
 }: ObjectReportCardProps) => {
   return (
     <Panel
@@ -98,18 +101,32 @@ export const ObjectReportCard = ({
           </div>
         </div>
 
-        {/* Bottom Action: Change Status */}
-        {onStatusChangeClick && (
-          <div className="pt-2 flex justify-end">
-            <button
-              type="button"
-              onClick={onStatusChangeClick}
-              className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:text-page-blue hover:border-page-blue/50 hover:bg-blue-50/70 transition-all cursor-pointer shadow-2xs active:scale-95"
-              title="Cambiar estado del objeto"
-            >
-              <PencilIcon className="w-3.5 h-3.5" />
-              <span>Cambiar estado</span>
-            </button>
+        {/* Bottom Action: Change Status & Delete */}
+        {(onStatusChangeClick || onDeleteClick) && (
+          <div className="pt-2 flex items-center justify-end gap-2">
+            {onDeleteClick && (
+              <button
+                type="button"
+                onClick={onDeleteClick}
+                className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-xl border border-red-200 bg-red-50 text-page-red hover:bg-red-100/80 transition-all cursor-pointer shadow-2xs active:scale-95"
+                title="Eliminar objeto perdido"
+              >
+                <TrashIcon className="w-3.5 h-3.5" />
+                <span>Eliminar</span>
+              </button>
+            )}
+
+            {onStatusChangeClick && (
+              <button
+                type="button"
+                onClick={onStatusChangeClick}
+                className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:text-page-blue hover:border-page-blue/50 hover:bg-blue-50/70 transition-all cursor-pointer shadow-2xs active:scale-95"
+                title="Cambiar estado del objeto"
+              >
+                <PencilIcon className="w-3.5 h-3.5" />
+                <span>Cambiar estado</span>
+              </button>
+            )}
           </div>
         )}
       </div>

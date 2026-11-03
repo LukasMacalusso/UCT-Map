@@ -13,7 +13,8 @@ import {
   ReportLostObjectCard,
   type ReportLostObjectData,
 } from '../modules/objects/ReportLostObjectCard';
-import { useLostObjects, useCreateLostObject } from '../hooks/useLostObjects';
+import { useLostObjects, useCreateLostObject, useDeleteLostObject } from '../hooks/useLostObjects';
+import { TimedActionCard } from '../components/ui/TimedActionCard';
 import { useAuthState } from '../states/authState';
 import { RoleGuard } from '../router/RoleGuard';
 import { Role } from '../constants/role';
@@ -58,10 +59,13 @@ export const ObjectsView = () => {
   const { data: buildings = [] } = useBuildingLocations();
   const { data: users = [] } = useUsers();
   const createLostObject = useCreateLostObject();
+  const deleteLostObject = useDeleteLostObject();
   const currentUser = useAuthState((state) => state.user);
+  const isAdmin = currentUser?.role === Role.Admin;
   const canManageStatus =
     currentUser?.role === Role.Admin || currentUser?.role === Role.ObjectsOfficer;
   const [selectedStatusObject, setSelectedStatusObject] = useState<LostObjectDto | null>(null);
+  const [deletingObject, setDeletingObject] = useState<LostObjectDto | null>(null);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -313,6 +317,9 @@ export const ObjectsView = () => {
                     onStatusChangeClick={
                       canManageStatus ? () => setSelectedStatusObject(lostObject) : undefined
                     }
+                    onDeleteClick={
+                      isAdmin ? () => setDeletingObject(lostObject) : undefined
+                    }
                     actions={[
                       {
                         title: reporter ? `Reportado por ${reporter.name}` : 'Reportado por Usuario',
@@ -351,6 +358,35 @@ export const ObjectsView = () => {
         onClose={() => setSelectedStatusObject(null)}
         lostObject={selectedStatusObject}
       />
+
+      <ModalOverlay isOpen={!!deletingObject} onClose={() => setDeletingObject(null)}>
+        <TimedActionCard
+          title="Eliminar objeto perdido"
+          description={`¿Estás seguro de que deseas eliminar el objeto "${
+            deletingObject?.title || 'Objeto perdido'
+          }"? Esta acción no se puede deshacer.`}
+          initialDurationMs={1500}
+          options={[
+            {
+              label: 'Cancelar',
+              color: 'gray',
+              onClick: () => setDeletingObject(null),
+            },
+            {
+              label: 'Sí, eliminar',
+              color: 'red',
+              onClick: () => {
+                if (!deletingObject?.id) return;
+                deleteLostObject.mutate(deletingObject.id, {
+                  onSuccess: () => {
+                    setDeletingObject(null);
+                  },
+                });
+              },
+            },
+          ]}
+        />
+      </ModalOverlay>
     </div>
   );
 };

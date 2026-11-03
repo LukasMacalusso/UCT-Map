@@ -9,7 +9,8 @@ import { ModalOverlay } from '../components/layout/ModalOverlay';
 import { IncidentCard } from '../modules/incidents/IncidentCard';
 import { ChangeReportStatusModal } from '../modules/incidents/ChangeReportStatusModal';
 import { PublishReportCard, type PublishIncidentReportData } from '../modules/incidents/PublishReportCard';
-import { useReports, useCreateReport } from '../hooks/useReports';
+import { useReports, useCreateReport, useDeleteReport } from '../hooks/useReports';
+import { TimedActionCard } from '../components/ui/TimedActionCard';
 import { useAuthState } from '../states/authState';
 import { RoleGuard } from '../router/RoleGuard';
 import { Role, ROLES } from '../constants/role';
@@ -50,10 +51,13 @@ export const IncidentsView = () => {
   const { data: buildings = [] } = useBuildingLocations();
   const { data: users = [] } = useUsers();
   const createReport = useCreateReport();
+  const deleteReport = useDeleteReport();
   const currentUser = useAuthState((state) => state.user);
+  const isAdmin = currentUser?.role === Role.Admin;
   const canManageStatus =
     currentUser?.role === Role.Admin || currentUser?.role === Role.ComplaintsOfficer;
   const [selectedStatusReport, setSelectedStatusReport] = useState<ReportDto | null>(null);
+  const [deletingReport, setDeletingReport] = useState<ReportDto | null>(null);
 
   const params = useMemo<ReportSearchParams>(
     () => ({
@@ -268,6 +272,9 @@ export const IncidentsView = () => {
                     onStatusChangeClick={
                       canManageStatus ? () => setSelectedStatusReport(report) : undefined
                     }
+                    onDeleteClick={
+                      isAdmin ? () => setDeletingReport(report) : undefined
+                    }
                   />
                 );
               })}
@@ -304,6 +311,35 @@ export const IncidentsView = () => {
           undefined
         }
       />
+
+      <ModalOverlay isOpen={!!deletingReport} onClose={() => setDeletingReport(null)}>
+        <TimedActionCard
+          title="Eliminar reporte"
+          description={`¿Estás seguro de que deseas eliminar el reporte "${
+            deletingReport?.complaintDetails?.title || 'Reporte'
+          }"? Esta acción no se puede deshacer.`}
+          initialDurationMs={1500}
+          options={[
+            {
+              label: 'Cancelar',
+              color: 'gray',
+              onClick: () => setDeletingReport(null),
+            },
+            {
+              label: 'Sí, eliminar',
+              color: 'red',
+              onClick: () => {
+                if (!deletingReport?.id) return;
+                deleteReport.mutate(deletingReport.id, {
+                  onSuccess: () => {
+                    setDeletingReport(null);
+                  },
+                });
+              },
+            },
+          ]}
+        />
+      </ModalOverlay>
     </div>
   );
 };

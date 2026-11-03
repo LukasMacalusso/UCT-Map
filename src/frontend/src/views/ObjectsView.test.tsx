@@ -36,6 +36,10 @@ vi.mock('../hooks/useLostObjects', () => ({
     mutate: vi.fn(),
     isPending: false,
   }),
+  useDeleteLostObject: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
 }));
 
 vi.mock('../hooks/useCampus', () => ({

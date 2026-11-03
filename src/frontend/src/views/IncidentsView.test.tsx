@@ -36,6 +36,10 @@ vi.mock('../hooks/useReports', () => ({
     mutate: vi.fn(),
     isPending: false,
   }),
+  useDeleteReport: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
 }));
 
 vi.mock('../hooks/useCampus', () => ({

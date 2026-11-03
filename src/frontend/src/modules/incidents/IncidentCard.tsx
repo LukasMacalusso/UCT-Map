@@ -6,6 +6,7 @@ import { Tag } from '../../components/ui/Tag';
 import MapPinIcon from '../../assets/svg/icons/icon_location.svg?react';
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
 import PencilIcon from '../../assets/svg/icons/icon_pencil.svg?react';
+import TrashIcon from '../../assets/svg/icons/icon_trash.svg?react';
 
 
 export interface IncidentCardProps {
@@ -22,6 +23,7 @@ export interface IncidentCardProps {
   compact?: boolean;
   className?: string;
   onStatusChangeClick?: () => void;
+  onDeleteClick?: () => void;
 }
 
 export const IncidentCard = ({
@@ -38,6 +40,7 @@ export const IncidentCard = ({
   compact = false,
   className = '',
   onStatusChangeClick,
+  onDeleteClick,
 }: IncidentCardProps) => {
   return (
     <Panel
@@ -90,18 +93,32 @@ export const IncidentCard = ({
         </p>
       </div>
 
-      {/* Bottom Action: Change Status */}
-      {onStatusChangeClick && (
-        <div className="mt-3 pt-2.5 border-t border-gray-100 flex justify-end">
-          <button
-            type="button"
-            onClick={onStatusChangeClick}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:text-page-blue hover:border-page-blue/50 hover:bg-blue-50/70 transition-all cursor-pointer shadow-2xs active:scale-95"
-            title="Cambiar estado del reporte"
-          >
-            <PencilIcon className="w-3.5 h-3.5" />
-            <span>Cambiar estado</span>
-          </button>
+      {/* Bottom Action: Change Status & Delete */}
+      {(onStatusChangeClick || onDeleteClick) && (
+        <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-end gap-2">
+          {onDeleteClick && (
+            <button
+              type="button"
+              onClick={onDeleteClick}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-red-200 bg-red-50 text-page-red hover:bg-red-100/80 transition-all cursor-pointer shadow-2xs active:scale-95"
+              title="Eliminar reporte"
+            >
+              <TrashIcon className="w-3.5 h-3.5" />
+              <span>Eliminar</span>
+            </button>
+          )}
+
+          {onStatusChangeClick && (
+            <button
+              type="button"
+              onClick={onStatusChangeClick}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:text-page-blue hover:border-page-blue/50 hover:bg-blue-50/70 transition-all cursor-pointer shadow-2xs active:scale-95"
+              title="Cambiar estado del reporte"
+            >
+              <PencilIcon className="w-3.5 h-3.5" />
+              <span>Cambiar estado</span>
+            </button>
+          )}
         </div>
       )}
     </Panel>
