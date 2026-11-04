@@ -1,3 +1,6 @@
+import '../../widgets/meeting_actions.dart';
+import '../../widgets/agenda_filters.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/navigation/app_routes.dart';
@@ -63,6 +66,10 @@ class _StudentMeetingsState extends State<_StudentMeetings> {
   late final _repository = widget.repository ?? ScheduleRemoteDataSource();
   late final _campus = widget.campusRepository ?? CampusRemoteDataSource();
   late final _identity = widget.identityRepository ?? IdentityRepositoryImpl();
+  late DateTime _from = DateUtils.dateOnly(DateTime.now());
+  late DateTime _to = DateTime(_from.year, _from.month, _from.day + 60);
+  MeetingStatus? _status;
+
   late Future<_StudentAgenda> _data = _load();
 
   void _checkSession() {
@@ -74,7 +81,7 @@ class _StudentMeetingsState extends State<_StudentMeetings> {
   Future<_StudentAgenda> _load() async {
     _checkSession();
     final id = _session.currentUser!.id;
-    final meetings = await _repository.getMyMeetings();
+    final meetings = await _repository.getMyMeetings(from: _from, to: _to);
     _checkSession();
     if (meetings.any((m) => m.studentRefId != id)) {
       throw const FormatException('Las citas no corresponden a tu cuenta.');
@@ -229,7 +236,9 @@ class _StudentMeetingsState extends State<_StudentMeetings> {
         final data = snapshot.data!;
         final theme = Theme.of(context);
         final days = <DateTime, List<ScheduleMeeting>>{};
-        for (final meeting in data.meetings) {
+        for (final meeting in data.meetings.where(
+          (m) => _status == null || m.status == _status,
+        )) {
           final date = meeting.scheduledAt.toLocal();
           final day = DateTime(date.year, date.month, date.day);
           (days[day] ??= []).add(meeting);
@@ -240,6 +249,19 @@ class _StudentMeetingsState extends State<_StudentMeetings> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
+                AgendaFilters(
+                  from: _from,
+                  to: _to,
+                  status: _status,
+                  onRangeChanged: (range) {
+                    setState(() {
+                      _from = range.start;
+                      _to = range.end;
+                      _data = _load();
+                    });
+                  },
+                  onStatusChanged: (status) => setState(() => _status = status),
+                ),
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -270,7 +292,7 @@ class _StudentMeetingsState extends State<_StudentMeetings> {
                       ),
                       const SizedBox(height: 14),
                       const Text(
-                        'Tus consultas de los próximos 60 días, incluido hoy.',
+                        'Consulta tus citas y selecciona el período que necesitas.',
                         style: TextStyle(color: Color(0xFFE0EBF5), height: 1.5),
                       ),
                     ],
@@ -287,7 +309,7 @@ class _StudentMeetingsState extends State<_StudentMeetings> {
                   ),
                 ],
                 const SizedBox(height: 24),
-                if (data.meetings.isEmpty) ...[
+                if (days.isEmpty) ...[
                   const Icon(
                     Icons.event_note,
                     size: 48,
@@ -414,6 +436,11 @@ class _StudentMeetingsState extends State<_StudentMeetings> {
           backgroundColor: statusColor.withValues(alpha: 0.08),
           side: BorderSide.none,
           visualDensity: VisualDensity.compact,
+        ),
+        MeetingActions(
+          meeting: meeting,
+          repository: _repository,
+          onChanged: _reload,
         ),
       ],
     );

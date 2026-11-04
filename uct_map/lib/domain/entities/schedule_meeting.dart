@@ -52,6 +52,21 @@ class ScheduleMeeting {
   bool get isActive =>
       status == MeetingStatus.pending || status == MeetingStatus.confirmed;
 
+  List<MeetingStatus> allowedTransitions({
+    required bool isTeacher,
+    required bool isStudent,
+  }) {
+    if (!isActive) return const [];
+    if (isTeacher) {
+      return [
+        if (status == MeetingStatus.pending) MeetingStatus.confirmed,
+        if (status == MeetingStatus.confirmed) MeetingStatus.completed,
+        MeetingStatus.cancelled,
+      ];
+    }
+    return isStudent ? const [MeetingStatus.cancelled] : const [];
+  }
+
   const ScheduleMeeting({
     required this.id,
     required this.teacherRefId,

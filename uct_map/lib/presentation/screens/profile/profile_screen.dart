@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../application/session/session_controller.dart';
 import '../../../domain/entities/user_role.dart';
+import '../../../domain/entities/managed_user.dart';
+import '../../../domain/repositories/identity_repository.dart';
+import '../../../data/repositories/identity_repository_impl.dart';
 import 'saved_places_screen.dart';
 import 'my_reports_screen.dart';
 import 'my_lost_items_screen.dart';
@@ -10,6 +13,8 @@ import 'profile_settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final SessionController? session;
+  final IdentityRepository? repository;
+  final bool active;
   final Function(int)? onNavigateToTab;
   final Future<void> Function()? onLogout;
   final int savedPlacesCount;
@@ -19,6 +24,8 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
     super.key,
     this.session,
+    this.repository,
+    this.active = true,
     this.onNavigateToTab,
     this.onLogout,
     this.savedPlacesCount = 4,
@@ -31,6 +38,88 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  ManagedUser? _profile;
+  bool _loadingProfile = false;
+  bool _profileFailed = false;
+  int _profileRequest = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.session?.addListener(_sessionChanged);
+    if (widget.active) _loadProfile();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.session != widget.session) {
+      oldWidget.session?.removeListener(_sessionChanged);
+      widget.session?.addListener(_sessionChanged);
+      _sessionChanged();
+    } else if (widget.active && !oldWidget.active) {
+      _loadProfile();
+    }
+  }
+
+  void _sessionChanged() {
+    if (!mounted) return;
+    _profileRequest++;
+    setState(() {
+      _profile = null;
+      _loadingProfile = false;
+      _profileFailed = false;
+    });
+    if (widget.active && widget.session?.isAuthenticated == true) {
+      _loadProfile();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.session?.removeListener(_sessionChanged);
+    _profileRequest++;
+    super.dispose();
+  }
+
+  Future<void> _loadProfile() async {
+    final request = ++_profileRequest;
+    final session = widget.session;
+    _profile = null;
+    if (session == null) return;
+    await session.ready;
+    if (!mounted || request != _profileRequest || !widget.active) return;
+    final token = session.token;
+    final id = session.currentUser?.id;
+    if (token == null || id == null) return;
+    setState(() {
+      _loadingProfile = true;
+      _profileFailed = false;
+    });
+    try {
+      final profile = await (widget.repository ?? IdentityRepositoryImpl())
+          .getUserById(id);
+      if (!mounted || request != _profileRequest || session.token != token) {
+        return;
+      }
+      if (profile.id != id || profile.email != session.currentUser?.email) {
+        throw const FormatException('El perfil no corresponde a tu sesión.');
+      }
+      setState(() {
+        _profile = profile;
+        _loadingProfile = false;
+      });
+    } catch (_) {
+      if (!mounted || request != _profileRequest || session.token != token) {
+        return;
+      }
+      setState(() {
+        _profileFailed = true;
+        _loadingProfile = false;
+      });
+    }
+  }
+
   // Avatar seleccionado (índice para simulación de cambio de foto)
   int _avatarIndex = 0;
 
@@ -272,10 +361,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final user = widget.session?.currentUser;
     final userName = (widget.session?.isAuthenticated == true)
-        ? (user?.name ?? user?.email ?? 'Usuario')
+        ? (_profile?.name.trim().isNotEmpty == true
+              ? _profile!.name
+              : (user?.name ?? user?.email ?? 'Usuario'))
         : 'Invitado';
     final userEmail = (widget.session?.isAuthenticated == true)
-        ? (user?.email ?? '')
+        ? (_profile?.email ?? user?.email ?? '')
         : 'Modo invitado (sin cuenta)';
     final userRole = user?.role;
 
@@ -365,6 +456,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: const TextStyle(fontSize: 13, color: AppColors.subtitle),
           ),
 
+          if (_loadingProfile)
+            const Padding(
+              padding: EdgeInsets.only(top: 12),
+              child: LinearProgressIndicator(semanticsLabel: 'Cargando perfil'),
+            ),
+          if (_profileFailed)
+            TextButton.icon(
+              onPressed: _loadProfile,
+              icon: const Icon(Icons.refresh),
+              label: const Text('No se pudo cargar el perfil. Reintentar'),
+            ),
           const SizedBox(height: 12),
 
           // Rol del usuario según sesión; oculto si no hay rol asignado.

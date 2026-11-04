@@ -1,3 +1,6 @@
+import '../../widgets/meeting_actions.dart';
+import '../../widgets/agenda_filters.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client_provider.dart';
@@ -40,6 +43,8 @@ class TeacherScheduleScreen extends StatelessWidget {
 
 typedef _Agenda = ({
   List<OfficeHour> hours,
+  int weeklyMinutes,
+  int meetingCount,
   List<ScheduleMeeting> meetings,
   Map<String, String> names,
   Map<String, String> locations,
@@ -67,6 +72,10 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
   late final _repository = widget.repository ?? ScheduleRemoteDataSource();
   late final _campus = widget.campusRepository ?? CampusRemoteDataSource();
   late final _identity = widget.identityRepository ?? IdentityRepositoryImpl();
+  late DateTime _from = DateUtils.dateOnly(DateTime.now());
+  late DateTime _to = DateTime(_from.year, _from.month, _from.day + 60);
+  MeetingStatus? _status;
+
   late Future<_Agenda> _data = _load();
 
   void _checkSession() {
@@ -78,10 +87,10 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
   Future<_Agenda> _load() async {
     _checkSession();
     final id = _session.currentUser!.id;
-    final hours = await _repository.getOfficeHours(id);
+    final workload = await _repository.getMyWorkload(from: _from, to: _to);
     _checkSession();
-    final meetings = await _repository.getMyMeetings();
-    _checkSession();
+    final hours = workload.officeHours.toList();
+    final meetings = workload.meetings.toList();
     if (hours.any((h) => h.teacherRefId != id) ||
         meetings.any((m) => m.teacherRefId != id)) {
       throw const FormatException('La agenda no corresponde al docente');
@@ -128,6 +137,8 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
     }
     return (
       hours: hours,
+      weeklyMinutes: workload.weeklyOfficeHourMinutes,
+      meetingCount: workload.meetingCount,
       meetings: meetings,
       names: names,
       locations: locations,
@@ -172,15 +183,16 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
           );
         }
         final data = snapshot.data!;
-        final upcoming = data.meetings.where(
+        final filtered = data.meetings
+            .where((m) => _status == null || m.status == _status)
+            .toList();
+        final upcoming = filtered.where(
           (m) => m.isActive && !m.scheduledAt.isBefore(DateTime.now()),
         );
         final theme = Theme.of(context);
         final next = upcoming.firstOrNull;
         final days = <DateTime, List<ScheduleMeeting>>{};
-        for (final meeting in data.meetings.where(
-          (meeting) => meeting != next,
-        )) {
+        for (final meeting in filtered.where((meeting) => meeting != next)) {
           final date = meeting.scheduledAt.toLocal();
           (days[DateUtils.dateOnly(date)] ??= []).add(meeting);
         }
@@ -190,6 +202,33 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
+                AgendaFilters(
+                  from: _from,
+                  to: _to,
+                  status: _status,
+                  onRangeChanged: (range) {
+                    setState(() {
+                      _from = range.start;
+                      _to = range.end;
+                      _data = _load();
+                    });
+                  },
+                  onStatusChanged: (status) => setState(() => _status = status),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Wrap(
+                    spacing: 24,
+                    runSpacing: 12,
+                    children: [
+                      _summary(
+                        'Atención semanal',
+                        '${data.weeklyMinutes ~/ 60} h ${data.weeklyMinutes % 60 == 0 ? '' : '${data.weeklyMinutes % 60} min'}',
+                      ),
+                      _summary('Citas del período', '${data.meetingCount}'),
+                    ],
+                  ),
+                ),
                 if (data.incompleteLabels)
                   const Padding(
                     padding: EdgeInsets.only(top: 16),
@@ -213,14 +252,10 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
                   ),
                   _meetingCard(context, next, data),
                 ],
-                _heading(
-                  context,
-                  'Otras citas de los próximos 60 días',
-                  Icons.event_note,
-                ),
+                _heading(context, 'Otras citas del período', Icons.event_note),
                 if (days.isEmpty)
                   Text(
-                    data.meetings.isEmpty
+                    filtered.isEmpty
                         ? 'Sin citas registradas.'
                         : 'No hay más citas en este período.',
                   ),
@@ -278,6 +313,22 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
         );
       },
     ),
+  );
+
+  Widget _summary(String label, String value) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(label, style: const TextStyle(color: AppColors.subtitle)),
+      Text(
+        value.trim(),
+        style: const TextStyle(
+          color: AppColors.uctBlue,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ],
   );
 
   Widget _heading(BuildContext context, String title, IconData icon) => Padding(
@@ -380,6 +431,11 @@ class _TeacherAgendaState extends State<_TeacherAgenda> {
           backgroundColor: color.withValues(alpha: 0.08),
           side: BorderSide.none,
           visualDensity: VisualDensity.compact,
+        ),
+        MeetingActions(
+          meeting: meeting,
+          repository: _repository,
+          onChanged: _reload,
         ),
       ],
     );

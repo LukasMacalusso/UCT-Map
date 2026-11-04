@@ -94,7 +94,7 @@ class LostObject {
     }
 
     return LostObject(
-      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      id: (json['lostObjectId'] ?? json['id'] ?? json['_id'] ?? '').toString(),
       title: (json['title'] ?? json['Title'] ?? '').toString(),
       description: (json['description'] ?? json['Description'] ?? '').toString(),
       date: parsedDate,
