@@ -7,6 +7,7 @@ import '../../core/network/api_client_provider.dart';
 import '../../core/network/api_config.dart';
 import '../../core/network/api_exception.dart';
 import '../../domain/entities/office_hour.dart';
+import '../../domain/entities/teacher_workload.dart';
 import '../../domain/entities/booking_interval.dart';
 import '../../domain/entities/user_role.dart';
 import '../../domain/entities/professor.dart';
@@ -26,10 +27,19 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
     String path, {
     Map<String, dynamic>? query,
     Map<String, dynamic>? body,
+    bool patch = false,
   }) async {
     try {
       final uri = _config.uri(path, query);
-      final response = body == null
+      final response = patch
+          ? await _client
+                .patch(
+                  uri,
+                  headers: const {'Content-Type': 'application/json'},
+                  body: jsonEncode(body),
+                )
+                .timeout(_config.timeout)
+          : body == null
           ? await _client.get(uri).timeout(_config.timeout)
           : await _client
                 .post(
@@ -95,7 +105,10 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
   }
 
   @override
-  Future<List<ScheduleMeeting>> getMyMeetings() async {
+  Future<List<ScheduleMeeting>> getMyMeetings({
+    DateTime? from,
+    DateTime? to,
+  }) async {
     final session = ApiClientProvider.session;
     final user = session.currentUser;
     final token = session.token;
@@ -106,14 +119,19 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
       throw const ForbiddenException();
     }
     final now = DateTime.now();
-    final from = DateTime(now.year, now.month, now.day).toIso8601String();
-    final to = DateTime(now.year, now.month, now.day + 60).toIso8601String();
+    final start = from ?? DateTime(now.year, now.month, now.day);
+    final end = to ?? DateTime(now.year, now.month, now.day + 60);
+    if (!end.isAfter(start)) throw ArgumentError('El rango no es válido.');
     final teacher = user.role == UserRole.profesor;
     final data = await _request(
       teacher
           ? '/api/schedule/meetings'
           : '/api/schedule/students/${user.id}/meetings',
-      query: {'from': from, 'to': to, if (teacher) 'teacherId': user.id},
+      query: {
+        'from': start.toIso8601String(),
+        'to': end.toIso8601String(),
+        if (teacher) 'teacherId': user.id,
+      },
     );
     if (session.token != token) {
       throw const UnauthorizedException('La sesión cambió.');
@@ -131,6 +149,38 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
       throw const ForbiddenException('La agenda no corresponde a tu cuenta.');
     }
     return meetings;
+  }
+
+  @override
+  Future<TeacherWorkload> getMyWorkload({
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final session = ApiClientProvider.session;
+    final token = session.token;
+    final user = session.currentUser;
+    if (!session.isAuthenticated || user == null) {
+      throw const UnauthorizedException();
+    }
+    if (user.role != UserRole.profesor) throw const ForbiddenException();
+    if (!to.isAfter(from)) throw ArgumentError('El rango no es válido.');
+    final data = await _request(
+      '/api/schedule/teachers/${user.id}/workload',
+      query: {'from': from.toIso8601String(), 'to': to.toIso8601String()},
+    );
+    if (session.token != token) {
+      throw const UnauthorizedException('La sesión cambió.');
+    }
+    final result = TeacherWorkload.fromJson(data as Map<String, dynamic>);
+    if (result.teacherRefId != user.id ||
+        result.officeHours.any((h) => h.teacherRefId != user.id) ||
+        result.meetings.any((m) => m.teacherRefId != user.id)) {
+      throw const ForbiddenException('El resumen no corresponde al docente.');
+    }
+    if (result.from != from || result.to != to) {
+      throw const FormatException('El resumen no corresponde al período.');
+    }
+    return result;
   }
 
   @override
@@ -217,8 +267,74 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
     String meetingId,
     MeetingStatus status,
   ) async {
-    throw UnsupportedError(
-      'Schedule aún no ofrece cambios de estado de citas.',
-    );
+    final session = ApiClientProvider.session;
+    final user = session.currentUser;
+    final token = session.token;
+    final revision = session.revision;
+    if (!session.isAuthenticated || user == null) {
+      throw const UnauthorizedException();
+    }
+    if (user.role != UserRole.estudiante && user.role != UserRole.profesor) {
+      throw const ForbiddenException();
+    }
+    if (meetingId.isEmpty) throw ArgumentError('Cita requerida.');
+    void checkSession() {
+      if (session.token != token || session.revision != revision) {
+        throw const UnauthorizedException('La sesión cambió.');
+      }
+    }
+
+    Future<ScheduleMeeting> read() async {
+      final data = await _request(
+        '/api/schedule/meetings/${Uri.encodeComponent(meetingId)}',
+      );
+      checkSession();
+      final meeting = ScheduleMeeting.fromJson(data as Map<String, dynamic>);
+      if (meeting.id != meetingId) {
+        throw const FormatException('Cita incorrecta.');
+      }
+      return meeting;
+    }
+
+    final current = await read();
+    final teacher =
+        user.role == UserRole.profesor && current.teacherRefId == user.id;
+    final student =
+        user.role == UserRole.estudiante && current.studentRefId == user.id;
+    if ((!teacher && !student) ||
+        (!teacher && status != MeetingStatus.cancelled)) {
+      throw const ForbiddenException(
+        'No puedes realizar este cambio de estado.',
+      );
+    }
+    if (!current
+        .allowedTransitions(isTeacher: teacher, isStudent: student)
+        .contains(status)) {
+      throw const ConflictException('La cita ya cambió de estado.');
+    }
+    checkSession();
+    try {
+      final data = await _request(
+        '/api/schedule/meetings/${Uri.encodeComponent(meetingId)}/status',
+        patch: true,
+        body: {'status': status.name},
+      );
+      checkSession();
+      final updated = ScheduleMeeting.fromJson(data as Map<String, dynamic>);
+      if (updated.id != meetingId ||
+          updated.status != status ||
+          updated.teacherRefId != current.teacherRefId ||
+          updated.studentRefId != current.studentRefId) {
+        throw const FormatException(
+          'No se pudo verificar el estado de la cita.',
+        );
+      }
+      return true;
+    } on NetworkException {
+      // Una escritura sin respuesta puede haberse guardado; consultar antes de repetir.
+      final actual = await read();
+      if (actual.status == status) return true;
+      rethrow;
+    }
   }
 }

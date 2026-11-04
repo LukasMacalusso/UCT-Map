@@ -16,6 +16,19 @@ class IdentityRepositoryImpl implements IdentityRepository {
   }
 
   @override
+  Future<ManagedUser> getUserById(String userId) async {
+    if (userId.isEmpty) throw ArgumentError('Usuario requerido.');
+    final data = await _client.getJson<Map<String, dynamic>>(
+      '/api/identity/${Uri.encodeComponent(userId)}',
+    );
+    final user = ManagedUser.fromJson(data);
+    if (user.id != userId) {
+      throw const FormatException('El perfil no corresponde a la cuenta.');
+    }
+    return user;
+  }
+
+  @override
   Future<void> replaceRole(String userId, String role) async {
     await _client.put(
       '/api/identity/$userId/roles',

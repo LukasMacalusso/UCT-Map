@@ -148,6 +148,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
       _protected(
         ProfileScreen(
+          active: _currentIndex == 4,
           session: _session,
           onNavigateToTab: _onTabTapped,
           onLogout: () async {
