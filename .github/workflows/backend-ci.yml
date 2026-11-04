@@ -30,10 +30,10 @@ jobs:
         run: |
           if [ -d "src/backend" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Directorio src/backend detectado. Procediendo con verificación de microservicios."
+            echo "Directorio src/backend detectado. Procediendo con verificacion de microservicios."
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ Directorio src/backend no presente en esta rama. Omitiendo verificación de backend."
+            echo "Directorio src/backend no presente en esta rama. Omitiendo verificacion de backend."
           fi
 
       - name: Setup .NET 10
@@ -92,10 +92,10 @@ jobs:
         run: |
           if [ -d "src/backend" ] && [ -f "docker-compose.yml" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Directorio src/backend y docker-compose.yml detectados. Procediendo con pruebas E2E."
+            echo "Directorio src/backend y docker-compose.yml detectados. Procediendo con pruebas E2E."
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ Backend o docker-compose.yml no presentes. Omitiendo pruebas E2E de API Gateway."
+            echo "Backend o docker-compose.yml no presentes. Omitiendo pruebas E2E de API Gateway."
           fi
 
       - name: Setup Node.js 22.x

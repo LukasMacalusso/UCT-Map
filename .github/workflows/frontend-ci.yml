@@ -28,10 +28,10 @@ jobs:
         run: |
           if [ -d "src/frontend" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Directorio src/frontend detectado. Procediendo con verificación de frontend web."
+            echo "Directorio src/frontend detectado. Procediendo con verificacion de frontend web."
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ Directorio src/frontend no presente en esta rama. Omitiendo verificación de frontend."
+            echo "Directorio src/frontend no presente en esta rama. Omitiendo verificacion de frontend."
           fi
 
       - name: Setup Node.js 22.x

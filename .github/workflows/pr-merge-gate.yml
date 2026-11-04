@@ -31,25 +31,25 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          echo "Evaluando título del PR: '$PR_TITLE'"
+          echo "Evaluando titulo del PR: '$PR_TITLE'"
           
-          # Si se corre con workflow_dispatch, usar un título de prueba o saltar
+          # Si se corre con workflow_dispatch, usar un titulo de prueba o saltar
           if [ -z "$PR_TITLE" ]; then
-            echo "Workflow ejecutado fuera de evento pull_request. Saltando validación de título."
+            echo "Workflow ejecutado fuera de evento pull_request. Saltando validacion de titulo."
             exit 0
           fi
 
-          # Patrón Conventional Commits con o sin scope (ej: ci(TI4-100): o feat(UCT-122): o fix: ...)
+          # Patron Conventional Commits con o sin scope (ej: ci(TI4-100): o feat(UCT-122): o fix: ...)
           PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_\/\-]+\))?(!)?: .+$"
 
           if [[ "$PR_TITLE" =~ $PATTERN ]]; then
-            echo "✅ El título del PR cumple con el estándar Conventional Commits."
+            echo "El titulo del PR cumple con el estandar Conventional Commits."
           else
-            echo "❌ ERROR: El título del PR no cumple con el formato Conventional Commits."
-            echo "Formato esperado: <tipo>(<scope>): <descripción>"
-            echo "Ejemplos válidos:"
+            echo "ERROR: El titulo del PR no cumple con el formato Conventional Commits."
+            echo "Formato esperado: <tipo>(<scope>): <descripcion>"
+            echo "Ejemplos validos:"
             echo "  ci(TI4-100): integrar checks de ambos equipos en pull requests"
-            echo "  feat(UCT-122): implementar panel de administración"
+            echo "  feat(UCT-122): implementar panel de administracion"
             echo "  fix(tickets): corregir validacion de formulario"
             echo "  ci: actualizar pipeline de github actions"
             exit 1
@@ -77,12 +77,12 @@ jobs:
               *.env|*.env.local|*.env.production|*.env.staging)
                 # Permitir .env.example
                 if [[ "$file" != *".env.example" ]]; then
-                  echo "❌ ARCHIVO PROHIBIDO DETECTADO: $file (Variables de entorno con posibles secretos)"
+                  echo "ARCHIVO PROHIBIDO DETECTADO: $file (Variables de entorno con posibles secretos)"
                   FORBIDDEN_FOUND=1
                 fi
                 ;;
               *.pem|*.key|*id_rsa*|*.pfx|*.keystore)
-                echo "❌ ARCHIVO PROHIBIDO DETECTADO: $file (Llave o certificado criptográfico)"
+                echo "ARCHIVO PROHIBIDO DETECTADO: $file (Llave o certificado criptografico)"
                 FORBIDDEN_FOUND=1
                 ;;
             esac
@@ -92,7 +92,7 @@ jobs:
             echo "ERROR: Se detectaron archivos prohibidos en el PR. Revertir y remover antes de continuar."
             exit 1
           fi
-          echo "✅ No se detectaron archivos sensibles ni credenciales."
+          echo "No se detectaron archivos sensibles ni credenciales."
 
       - name: Verify PR Description Not Empty
         id: check-pr-body
@@ -103,23 +103,23 @@ jobs:
             # Limpiar espacios en blanco
             CLEANED_BODY=$(echo "$PR_BODY" | tr -d '[:space:]')
             if [ ${#CLEANED_BODY} -lt 15 ]; then
-              echo "⚠️ ADVERTENCIA: La descripción del PR está vacía o es muy corta."
+              echo "ADVERTENCIA: La descripcion del PR esta vacia o es muy corta."
               echo "Por favor utiliza la plantilla .github/pull_request_template.md."
             else
-              echo "✅ Descripción del PR presente y documentada."
+              echo "Descripcion del PR presente y documentada."
             fi
           fi
 
       - name: Generate Merge Gatekeeper Summary
         if: always()
         run: |
-          echo "## 🛡️ Gatekeeper de Merge: Condiciones Evaluadas" >> $GITHUB_STEP_SUMMARY
+          echo "## Gatekeeper de Merge: Condiciones Evaluadas" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Condición | Estado | Tipo |" >> $GITHUB_STEP_SUMMARY
+          echo "| Condicion | Estado | Tipo |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Título Conventional Commits** | ✅ Aprobado | Automático |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Archivos Sensibles / Secretos** | ✅ Sin secretos detectados | Automático |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Plantilla de PR diligenciada** | ✅ Validada | Documental |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Revisión por Pares (Peer Review)** | ⏳ Pendiente de aprobación | Manual |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Titulo Conventional Commits** | Aprobado | Automatico |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Archivos Sensibles / Secretos** | Sin secretos detectados | Automatico |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Plantilla de PR diligenciada** | Validada | Documental |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Revision por Pares (Peer Review)** | Pendiente de aprobacion | Manual |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> 📖 Consulta las políticas completas en [docs/MERGE_CONDITIONS.md](https://github.com/${{ github.repository }}/blob/main/docs/MERGE_CONDITIONS.md)." >> $GITHUB_STEP_SUMMARY
+          echo "> Consulta las politicas completas en [docs/MERGE_CONDITIONS.md](https://github.com/${{ github.repository }}/blob/main/docs/MERGE_CONDITIONS.md)." >> $GITHUB_STEP_SUMMARY

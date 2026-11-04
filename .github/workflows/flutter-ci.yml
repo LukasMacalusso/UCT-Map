@@ -39,10 +39,10 @@ jobs:
         run: |
           if [ -d "uct_map" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Directorio uct_map detectado. Procediendo con análisis estático."
+            echo "Directorio uct_map detectado. Procediendo con analisis estatico."
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ Directorio uct_map no presente en esta rama. Omitiendo análisis de Flutter."
+            echo "Directorio uct_map no presente en esta rama. Omitiendo analisis de Flutter."
           fi
 
       - name: Setup Flutter
@@ -92,10 +92,10 @@ jobs:
         run: |
           if [ -d "uct_map" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Directorio uct_map detectado. Procediendo con pruebas unitarias y de widgets."
+            echo "Directorio uct_map detectado. Procediendo con pruebas unitarias y de widgets."
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ Directorio uct_map no presente en esta rama. Omitiendo pruebas unitarias de Flutter."
+            echo "Directorio uct_map no presente en esta rama. Omitiendo pruebas unitarias de Flutter."
           fi
 
       - name: Setup Flutter
@@ -153,13 +153,13 @@ jobs:
                 if (lf > 0) {
                   pct = (lh / lf) * 100
                   target = 90.0
-                  status = (pct >= target) ? "✅ Cumplido (>= 90%)" : "⚠️ En progreso (< 90%)"
-                  print "### 📊 Reporte de Cobertura JaCoCo (TI4-94)" >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  status = (pct >= target) ? "Cumplido (>= 90%)" : "En progreso (< 90%)"
+                  print "### Reporte de Cobertura JaCoCo (TI4-94)" >> ENVIRON["GITHUB_STEP_SUMMARY"]
                   print "" >> ENVIRON["GITHUB_STEP_SUMMARY"]
-                  print "| Métrica | Valor |" >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  print "| Metrica | Valor |" >> ENVIRON["GITHUB_STEP_SUMMARY"]
                   print "|---|---|" >> ENVIRON["GITHUB_STEP_SUMMARY"]
-                  printf "| **Líneas evaluadas** | %d |\n", lf >> ENVIRON["GITHUB_STEP_SUMMARY"]
-                  printf "| **Líneas cubiertas** | %d |\n", lh >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  printf "| **Lineas evaluadas** | %d |\n", lf >> ENVIRON["GITHUB_STEP_SUMMARY"]
+                  printf "| **Lineas cubiertas** | %d |\n", lh >> ENVIRON["GITHUB_STEP_SUMMARY"]
                   printf "| **Porcentaje actual** | **%.2f%%** |\n", pct >> ENVIRON["GITHUB_STEP_SUMMARY"]
                   printf "| **Umbral objetivo** | **%.2f%%** |\n", target >> ENVIRON["GITHUB_STEP_SUMMARY"]
                   printf "| **Estado JaCoCo** | %s |\n", status >> ENVIRON["GITHUB_STEP_SUMMARY"]
@@ -181,10 +181,10 @@ jobs:
         run: |
           if [ -d "uct_map" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Directorio uct_map detectado. Procediendo con compilación web."
+            echo "Directorio uct_map detectado. Procediendo con compilacion web."
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ Directorio uct_map no presente en esta rama. Omitiendo compilación web de Flutter."
+            echo "Directorio uct_map no presente en esta rama. Omitiendo compilacion web de Flutter."
           fi
 
       - name: Setup Flutter
@@ -235,10 +235,10 @@ jobs:
         run: |
           if [ -d "uct_map" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Directorio uct_map detectado. Procediendo con compilación Android."
+            echo "Directorio uct_map detectado. Procediendo con compilacion Android."
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ Directorio uct_map no presente en esta rama. Omitiendo compilación Android de Flutter."
+            echo "Directorio uct_map no presente en esta rama. Omitiendo compilacion Android de Flutter."
           fi
 
       - name: Setup Java 17
@@ -297,10 +297,10 @@ jobs:
         run: |
           if [ -d "uct_map" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Directorio uct_map detectado. Procediendo con pruebas de integración móvil."
+            echo "Directorio uct_map detectado. Procediendo con pruebas de integracion movil."
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ Directorio uct_map no presente en esta rama. Omitiendo pruebas de integración móvil."
+            echo "Directorio uct_map no presente en esta rama. Omitiendo pruebas de integracion movil."
           fi
 
       - name: Setup Flutter
