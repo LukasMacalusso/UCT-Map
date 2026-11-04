@@ -1,7 +1,8 @@
 # Code Owners para UCT-Map
 
 # Responsable global de todo el repositorio
-* @LukasMacalusso
+* @TsuKenZo @h1mee3 @Canteroxx @patitojavi @LukasMacalusso @Nicolas-Cayuman @notKechai @Joaco20x @sofiarodrigueznog @SrPernax
+
 
 # Workflows y configuración de CI/CD
 /.github/ @LukasMacalusso @h1mee3
