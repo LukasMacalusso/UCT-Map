@@ -1,0 +1,50 @@
+name: Deploy to Kubero
+
+on:
+  workflow_run:
+    workflows: ["Create Packages"]
+    types:
+      - completed
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  deploy-kubero:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Redeploy Identity API en Kubero
+        run: |
+          curl -s -o /dev/null -w "%{http_code}\n" -X GET \
+            "https://kubero.inf.uct.cl/api/apps/uct-map/production/identity-api/restart" \
+            -H "Authorization: Bearer ${{ secrets.KUBERO_TOKEN }}"
+
+      - name: Redeploy Campus API en Kubero
+        run: |
+          curl -s -o /dev/null -w "%{http_code}\n" -X GET \
+            "https://kubero.inf.uct.cl/api/apps/uct-map/production/campus-api/restart" \
+            -H "Authorization: Bearer ${{ secrets.KUBERO_TOKEN }}"
+
+      - name: Redeploy Incident API en Kubero
+        run: |
+          curl -s -o /dev/null -w "%{http_code}\n" -X GET \
+            "https://kubero.inf.uct.cl/api/apps/uct-map/production/incident-api/restart" \
+            -H "Authorization: Bearer ${{ secrets.KUBERO_TOKEN }}"
+
+      - name: Redeploy Schedule API en Kubero
+        run: |
+          curl -s -o /dev/null -w "%{http_code}\n" -X GET \
+            "https://kubero.inf.uct.cl/api/apps/uct-map/production/schedule-api/restart" \
+            -H "Authorization: Bearer ${{ secrets.KUBERO_TOKEN }}"
+
+      - name: Redeploy API Gateway en Kubero
+        run: |
+          curl -s -o /dev/null -w "%{http_code}\n" -X GET \
+            "https://kubero.inf.uct.cl/api/apps/uct-map/production/api-gateway/restart" \
+            -H "Authorization: Bearer ${{ secrets.KUBERO_TOKEN }}"
+
+      - name: Redeploy Frontend en Kubero
+        run: |
+          curl -s -o /dev/null -w "%{http_code}\n" -X GET \
+            "https://kubero.inf.uct.cl/api/apps/uct-map/production/frontend/restart" \
+            -H "Authorization: Bearer ${{ secrets.KUBERO_TOKEN }}"

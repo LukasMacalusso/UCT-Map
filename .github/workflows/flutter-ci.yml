@@ -5,10 +5,9 @@ on:
     branches:
       - main
       - taller-4
-      - TI4-94
-      - TI4-96
-      - TI4-97
-      - TI4-98
+      - taller-2
+      - ti4
+      - ti2
     paths:
       - 'uct_map/**'
       - '.github/workflows/flutter-ci.yml'
@@ -16,10 +15,10 @@ on:
     branches:
       - main
       - taller-4
-      - TI4-94
-      - TI4-96
-      - TI4-97
-      - TI4-98
+      - taller-2
+      - ti4
+      - ti2
+  workflow_call:
   workflow_dispatch:
 
 concurrency:
@@ -30,15 +29,24 @@ jobs:
   lint-and-analyze:
     name: Code Analysis & Linter
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./uct_map
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Check Flutter Directory
+        id: check-flutter
+        run: |
+          if [ -d "uct_map" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Directorio uct_map detectado. Procediendo con análisis estático."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Directorio uct_map no presente en esta rama. Omitiendo análisis de Flutter."
+          fi
+
       - name: Setup Flutter
+        if: steps.check-flutter.outputs.exists == 'true'
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
@@ -46,6 +54,8 @@ jobs:
           cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
 
       - name: Prepare Environment (.env)
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: |
           if [ -f .env.example ]; then
             cp .env.example .env
@@ -54,27 +64,42 @@ jobs:
           fi
 
       - name: Install Dependencies
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: flutter pub get
 
       - name: Verify Code Formatting
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: dart format --output=none --set-exit-if-changed .
         continue-on-error: true # Permite reporte de linter sin bloquear mientras se estandariza el formato
 
       - name: Run Static Analysis
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: flutter analyze --no-fatal-infos
 
   unit-tests:
     name: Unit & Widget Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./uct_map
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Check Flutter Directory
+        id: check-flutter
+        run: |
+          if [ -d "uct_map" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Directorio uct_map detectado. Procediendo con pruebas unitarias y de widgets."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Directorio uct_map no presente en esta rama. Omitiendo pruebas unitarias de Flutter."
+          fi
+
       - name: Setup Flutter
+        if: steps.check-flutter.outputs.exists == 'true'
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
@@ -82,6 +107,8 @@ jobs:
           cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
 
       - name: Prepare Environment (.env)
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: |
           if [ -f .env.example ]; then
             cp .env.example .env
@@ -90,17 +117,22 @@ jobs:
           fi
 
       - name: Install Dependencies
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: flutter pub get
 
       - name: Run Tests with Coverage
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: flutter test --coverage
 
       - name: Generate JaCoCo XML Coverage Report & Verify 90% Threshold
-        if: always()
+        if: always() && steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: dart run tool/generate_jacoco_report.dart
 
       - name: Upload JaCoCo & LCOV Coverage to Artifacts
-        if: always()
+        if: always() && steps.check-flutter.outputs.exists == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-coverage-report
@@ -110,7 +142,8 @@ jobs:
           if-no-files-found: ignore
 
       - name: Generate Code Coverage Summary
-        if: always()
+        if: always() && steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: |
           if [ -f coverage/lcov.info ]; then
             awk -F':' '
@@ -138,15 +171,24 @@ jobs:
   build-web:
     name: Build Web App
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./uct_map
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Check Flutter Directory
+        id: check-flutter
+        run: |
+          if [ -d "uct_map" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Directorio uct_map detectado. Procediendo con compilación web."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Directorio uct_map no presente en esta rama. Omitiendo compilación web de Flutter."
+          fi
+
       - name: Setup Flutter
+        if: steps.check-flutter.outputs.exists == 'true'
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
@@ -154,6 +196,8 @@ jobs:
           cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
 
       - name: Prepare Environment (.env)
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: |
           if [ -f .env.example ]; then
             cp .env.example .env
@@ -162,12 +206,17 @@ jobs:
           fi
 
       - name: Install Dependencies
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: flutter pub get
 
       - name: Build Web
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: flutter build web --release
 
       - name: Upload Web Build Artifact
+        if: steps.check-flutter.outputs.exists == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: web-release-build
@@ -176,21 +225,31 @@ jobs:
   build-android:
     name: Build Android APK (Debug)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./uct_map
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Check Flutter Directory
+        id: check-flutter
+        run: |
+          if [ -d "uct_map" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Directorio uct_map detectado. Procediendo con compilación Android."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Directorio uct_map no presente en esta rama. Omitiendo compilación Android de Flutter."
+          fi
+
       - name: Setup Java 17
+        if: steps.check-flutter.outputs.exists == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Setup Flutter
+        if: steps.check-flutter.outputs.exists == 'true'
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
@@ -198,6 +257,8 @@ jobs:
           cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
 
       - name: Prepare Environment (.env)
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: |
           if [ -f .env.example ]; then
             cp .env.example .env
@@ -206,13 +267,17 @@ jobs:
           fi
 
       - name: Install Dependencies
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: flutter pub get
 
       - name: Build Android Debug APK
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: flutter build apk --debug
 
       - name: Upload Android APK Artifact
-        if: success()
+        if: success() && steps.check-flutter.outputs.exists == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
@@ -222,15 +287,24 @@ jobs:
   integration-tests:
     name: Mobile Integration Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./uct_map
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Check Flutter Directory
+        id: check-flutter
+        run: |
+          if [ -d "uct_map" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Directorio uct_map detectado. Procediendo con pruebas de integración móvil."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Directorio uct_map no presente en esta rama. Omitiendo pruebas de integración móvil."
+          fi
+
       - name: Setup Flutter
+        if: steps.check-flutter.outputs.exists == 'true'
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
@@ -238,6 +312,8 @@ jobs:
           cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
 
       - name: Prepare Environment (.env)
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: |
           if [ -f .env.example ]; then
             cp .env.example .env
@@ -246,13 +322,18 @@ jobs:
           fi
 
       - name: Install Dependencies
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: flutter pub get
 
       - name: Install Linux build dependencies
+        if: steps.check-flutter.outputs.exists == 'true'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libjsoncpp-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev xvfb
           flutter config --enable-linux-desktop
 
       - name: Run Mobile Integration Tests
+        if: steps.check-flutter.outputs.exists == 'true'
+        working-directory: ./uct_map
         run: xvfb-run -a flutter test integration_test/app_integration_test.dart -d linux

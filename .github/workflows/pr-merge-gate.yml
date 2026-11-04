@@ -6,9 +6,9 @@ on:
     branches:
       - main
       - taller-4
-      - TI4-96
-      - TI4-97
-      - TI4-98
+      - taller-2
+      - ti4
+      - ti2
   workflow_dispatch:
 
 concurrency:
@@ -39,7 +39,7 @@ jobs:
             exit 0
           fi
 
-          # Patrón Conventional Commits con o sin scope (ej: feat(TI4-98): o fix: ...)
+          # Patrón Conventional Commits con o sin scope (ej: ci(TI4-100): o feat(UCT-122): o fix: ...)
           PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_\/\-]+\))?(!)?: .+$"
 
           if [[ "$PR_TITLE" =~ $PATTERN ]]; then
@@ -48,7 +48,8 @@ jobs:
             echo "❌ ERROR: El título del PR no cumple con el formato Conventional Commits."
             echo "Formato esperado: <tipo>(<scope>): <descripción>"
             echo "Ejemplos válidos:"
-            echo "  feat(TI4-98): definir condiciones de merge"
+            echo "  ci(TI4-100): integrar checks de ambos equipos en pull requests"
+            echo "  feat(UCT-122): implementar panel de administración"
             echo "  fix(tickets): corregir validacion de formulario"
             echo "  ci: actualizar pipeline de github actions"
             exit 1
