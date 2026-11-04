@@ -92,7 +92,19 @@ export const MapView = () => {
 
   const mapRef = React.useRef<CampusMapHandle | null>(null);
   const cardCloseTimeoutRef = React.useRef<number | null>(null);
+  const lastFlownCampusIdRef = React.useRef<string | null>(null);
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (!activeCampusId || !campuses || campuses.length === 0) return;
+    if (lastFlownCampusIdRef.current === activeCampusId) return;
+
+    const campus = campuses.find((item) => item.id === activeCampusId);
+    if (!campus) return;
+
+    lastFlownCampusIdRef.current = activeCampusId;
+    mapRef.current?.flyToCampus(campus);
+  }, [activeCampusId, campuses]);
 
   const mapSearchOptions = markers.map((m) => ({
     value: m.id,
@@ -122,6 +134,7 @@ export const MapView = () => {
     handleCloseDetailCard();
     const campus = campuses?.find((item) => item.id === value);
     if (!campus) return;
+    lastFlownCampusIdRef.current = value;
     mapRef.current?.flyToCampus(campus);
   };
 

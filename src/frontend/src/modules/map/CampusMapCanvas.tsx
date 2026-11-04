@@ -23,7 +23,6 @@ import {
   INITIAL_ZOOM,
   INITIAL_PITCH,
   INITIAL_BEARING,
-  isWithinCampus,
   resolveBuildingCoordinate,
   resolveStructureCoordinate,
   flyToCoordinate,
@@ -34,20 +33,6 @@ export type { CampusCamera } from './campusMapUtils';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const MAP_STYLE = 'mapbox://styles/mapbox/standard';
-
-const setMapInteraction = (map: MapboxMap, enabled: boolean) => {
-  const handlers = [
-    map.dragPan,
-    map.scrollZoom,
-    map.boxZoom,
-    map.dragRotate,
-    map.keyboard,
-    map.doubleClickZoom,
-    map.touchZoomRotate,
-    map.touchPitch,
-  ];
-  handlers.forEach((handler) => (enabled ? handler.enable() : handler.disable()));
-};
 
 interface MarkerEntry {
   marker: mapboxgl.Marker;
@@ -223,22 +208,35 @@ export const CampusMapCanvas = React.forwardRef<CampusMapHandle, CampusMapCanvas
         },
         flyToCampus: (campus: CampusDto) => {
           if (!sharedMapInstance) return;
-          const coordinate: [number, number] = [campus.longitude, campus.latitude];
-          const currently3D = sharedMapInstance.getPitch() > 1;
-          const hasStoredCamera = campus.zoom > 0;
-          setMapInteraction(sharedMapInstance, false);
-          sharedMapInstance.once('moveend', () => {
-            if (sharedMapInstance) setMapInteraction(sharedMapInstance, true);
-          });
-          flyToCoordinate(
-            sharedMapInstance,
-            isWithinCampus(coordinate) ? coordinate : CAMPUS_CENTER,
-            {
-              zoom: hasStoredCamera ? campus.zoom : INITIAL_ZOOM,
-              pitch: hasStoredCamera ? campus.pitch : currently3D ? INITIAL_PITCH : 0,
-              bearing: hasStoredCamera ? campus.bearing : currently3D ? INITIAL_BEARING : 0,
-            }
-          );
+
+          const executeFly = () => {
+            if (!sharedMapInstance) return;
+            const hasCoordinates =
+              (campus.latitude !== 0 || campus.longitude !== 0) &&
+              !Number.isNaN(campus.latitude) &&
+              !Number.isNaN(campus.longitude);
+            const coordinate: [number, number] = hasCoordinates
+              ? [campus.longitude, campus.latitude]
+              : CAMPUS_CENTER;
+            const currently3D = sharedMapInstance.getPitch() > 1;
+            const hasStoredCamera = campus.zoom > 0;
+
+            flyToCoordinate(
+              sharedMapInstance,
+              coordinate,
+              {
+                zoom: hasStoredCamera ? campus.zoom : INITIAL_ZOOM,
+                pitch: hasStoredCamera ? campus.pitch : currently3D ? INITIAL_PITCH : 0,
+                bearing: hasStoredCamera ? campus.bearing : currently3D ? INITIAL_BEARING : 0,
+              }
+            );
+          };
+
+          if (!sharedMapLoaded) {
+            sharedMapInstance.once('load', executeFly);
+          } else {
+            executeFly();
+          }
         },
         getMap: () => sharedMapInstance,
       }),

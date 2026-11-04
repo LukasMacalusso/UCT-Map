@@ -8,10 +8,10 @@ export const CAMPUS_BOUNDS: [[number, number], [number, number]] = [
   [-72.568, -38.716],
 ];
 export const MAP_MAX_BOUNDS: [[number, number], [number, number]] = [
-  [-72.75, -38.85],
-  [-72.45, -38.63],
+  [-73.45, -39.95],
+  [-72.10, -38.55],
 ];
-export const MIN_ZOOM = 12;
+export const MIN_ZOOM = 9;
 export const MAX_ZOOM = 19;
 export const INITIAL_ZOOM = 14;
 export const INITIAL_PITCH = 50;
