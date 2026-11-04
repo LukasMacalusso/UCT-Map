@@ -378,7 +378,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               onPressed: () => Navigator.pushNamed(
                 context,
                 AppRoutes.mapLocation,
-                arguments: CampusMapTarget.structure(ticket.structureRefId),
+                arguments: CampusMapTarget.location(ticket.structureRefId),
               ),
               icon: const Icon(Icons.location_on_outlined),
               label: const Text('Ver ubicación'),

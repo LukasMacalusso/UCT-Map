@@ -6,6 +6,7 @@ class CategoryModel extends Category {
     required super.name,
     required super.icon,
     required super.description,
+    super.order,
   });
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
@@ -15,11 +16,18 @@ class CategoryModel extends Category {
       icon: (json['icon'] ?? json['Icon'] ?? '').toString(),
       description: (json['description'] ?? json['Description'] ?? '')
           .toString(),
+      order: (json['order'] ?? json['Order'] ?? 0) as int,
     );
   }
 
   @override
   Map<String, dynamic> toJson() {
-    return {'id': id, 'name': name, 'icon': icon, 'description': description};
+    return {
+      'id': id,
+      'name': name,
+      'icon': icon,
+      'description': description,
+      'order': order,
+    };
   }
 }

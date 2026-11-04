@@ -21,15 +21,12 @@ import 'package:uct_map/presentation/screens/lost_found/lost_found_screen.dart';
 import 'package:uct_map/presentation/screens/lost_found/lost_item_detail_screen.dart';
 import 'package:uct_map/presentation/screens/professors/professors_screen.dart';
 import 'package:uct_map/presentation/screens/reports/report_detail_screen.dart';
-import 'helpers/mock_mapbox_platform.dart';
 import 'package:uct_map/application/session/session_controller.dart';
 import 'package:uct_map/core/network/api_client_provider.dart';
 import 'package:uct_map/data/storage/token_storage.dart';
 import 'package:uct_map/domain/repositories/auth_repository.dart';
 
 void main() {
-  setUpAll(setupMockMapboxPlatform);
-
   group('AppRoutes tests', () {
     testWidgets('AppRoutes.onGenerateRoute resuelve todas las rutas nombradas',
         (tester) async {

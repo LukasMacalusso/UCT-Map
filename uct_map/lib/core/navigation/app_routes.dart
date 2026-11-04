@@ -9,6 +9,7 @@ import '../network/api_client_provider.dart';
 import '../../domain/entities/lost_item.dart';
 import '../../domain/entities/app_permission.dart';
 import '../../presentation/screens/roles/admin_users_screen.dart';
+import '../../presentation/screens/admin/admin_campus_screen.dart';
 import '../../presentation/screens/roles/teacher_schedule_screen.dart';
 import '../../presentation/screens/roles/student_meetings_screen.dart';
 import '../../domain/entities/report.dart';
@@ -40,6 +41,7 @@ class AppRoutes {
   static const String myMeetings = '/my-meetings';
   static const String teacherSchedule = '/teacher-schedule';
   static const String manageUsers = '/manage-users';
+  static const String manageCampus = '/manage-campus';
   static const String manageObjects = '/manage-objects';
   static const String manageReports = '/manage-reports';
 
@@ -79,6 +81,7 @@ class AppRoutes {
       teacherSchedule => AppPermission.teacherSchedule,
       myMeetings => AppPermission.bookConsultation,
       manageUsers => AppPermission.manageUsers,
+      manageCampus => AppPermission.manageUsers,
       manageObjects => AppPermission.manageObjects,
       manageReports => AppPermission.manageReports,
       _ => null,
@@ -133,6 +136,11 @@ class AppRoutes {
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => const AdminUsersScreen(),
+        );
+      case manageCampus:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const AdminCampusScreen(),
         );
       case manageObjects:
         return MaterialPageRoute(

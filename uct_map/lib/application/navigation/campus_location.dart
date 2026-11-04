@@ -1,4 +1,5 @@
 import '../../data/models/campus_location_dto.dart';
+import '../../core/network/api_exception.dart';
 import '../../domain/entities/building.dart';
 import '../../domain/entities/campus.dart';
 import '../../domain/entities/room.dart';
@@ -25,6 +26,20 @@ Future<CampusLocation> resolveCampusLocation(
   CampusRepository repository,
   CampusMapTarget target,
 ) async {
+  final locationId = target.locationId;
+  if (locationId != null) {
+    try {
+      return await resolveCampusLocation(
+        repository,
+        CampusMapTarget.structure(locationId),
+      );
+    } on NotFoundException {
+      return resolveCampusLocation(
+        repository,
+        CampusMapTarget.building(locationId),
+      );
+    }
+  }
   final structureId = target.structureId;
   if (structureId != null) {
     if (structureId.trim().isEmpty) throw LocationUnavailable();

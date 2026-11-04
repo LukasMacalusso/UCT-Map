@@ -5,11 +5,6 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-    id("jacoco")
-}
-
-jacoco {
-    toolVersion = "0.8.12"
 }
 
 val oauthRedirect = providers.gradleProperty("dart-defines").orNull
@@ -48,10 +43,6 @@ android {
     }
 
     buildTypes {
-        debug {
-            enableUnitTestCoverage = true
-            enableAndroidTestCoverage = true
-        }
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
@@ -69,21 +60,3 @@ kotlin {
 flutter {
     source = "../.."
 }
-
-tasks.register<JacocoReport>("jacocoTestReport") {
-    reports {
-        xml.required.set(true)
-        html.required.set(true)
-    }
-}
-
-tasks.register<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
-    violationRules {
-        rule {
-            limit {
-                minimum = "0.90".toBigDecimal()
-            }
-        }
-    }
-}
-

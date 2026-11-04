@@ -21,11 +21,11 @@ void main() {
       );
       expect(
         config.uri(ApiEndpoints.campusList).toString(),
-        'http://localhost:5052/api/campus/campuses',
+        'http://localhost:5052/api/campus',
       );
       expect(
         config.uri(ApiEndpoints.campusBuildings('c-1')).toString(),
-        'http://localhost:5052/api/campus/buildings?campusId=c-1',
+        'http://localhost:5052/api/campus/c-1/buildings',
       );
       expect(
         config.uri(ApiEndpoints.scheduleProfessors).toString(),
@@ -115,7 +115,7 @@ void main() {
   group('ApiClient High-Level Client Tests', () {
     test('get y getJson decodifican exitosamente respuesta 200', () async {
       final mockInner = MockClient((request) async {
-        if (request.url.path.startsWith('/api/campus')) {
+        if (request.url.path == '/api/campus') {
           return http.Response(
             jsonEncode([{'id': 'c-1', 'name': 'Campus San Francisco'}]),
             200,

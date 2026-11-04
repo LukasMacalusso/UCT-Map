@@ -70,6 +70,11 @@ class CustomDrawer extends StatelessWidget {
               'Administrar usuarios',
               AppRoutes.manageUsers,
             ),
+            (
+              AppPermission.manageUsers,
+              'Administrar campus',
+              AppRoutes.manageCampus,
+            ),
           ])
             if (ApiClientProvider.session.isAuthenticated &&
                 entry.$1.allows(ApiClientProvider.session.currentUser?.role))

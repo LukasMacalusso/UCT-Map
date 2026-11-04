@@ -68,6 +68,16 @@ class _AdminHomeState extends State<_AdminHome> {
     if (mounted && _token == _session.token) _reload();
   }
 
+  Future<void> _openCampus() async {
+    if (!_session.isAuthenticated ||
+        _token != _session.token ||
+        !AppPermission.manageUsers.allows(_session.currentUser?.role)) {
+      return;
+    }
+    await Navigator.pushNamed(context, AppRoutes.manageCampus);
+    if (mounted && _token == _session.token) _reload();
+  }
+
   @override
   Widget build(BuildContext context) => ManagementHomeLayout(
     icon: Icons.manage_accounts_outlined,
@@ -159,6 +169,15 @@ class _AdminHomeState extends State<_AdminHome> {
                     onPressed: _openUsers,
                     icon: const Icon(Icons.manage_accounts_outlined),
                     label: const Text('Gestionar usuarios'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _openCampus,
+                    icon: const Icon(Icons.map_outlined),
+                    label: const Text('Administrar campus'),
                   ),
                 ),
               ],

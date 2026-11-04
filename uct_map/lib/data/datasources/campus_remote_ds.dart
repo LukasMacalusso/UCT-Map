@@ -32,6 +32,10 @@ class CampusRemoteDataSource implements CampusRepository {
 
   final ApiClient _api;
 
+  Future<void> _discardResponse(Future<http.Response> request) async {
+    await request;
+  }
+
   Future<List<T>> _list<T>(
     String path,
     T Function(Map<String, dynamic>) parse, {
@@ -76,6 +80,30 @@ class CampusRemoteDataSource implements CampusRepository {
   Future<Campus> getCampusById(String id) =>
       _one(ApiEndpoints.campusDetail(id), CampusModel.fromJson);
 
+  Future<Campus> createCampus(Map<String, Object?> payload) => _api.postJson(
+    ApiEndpoints.campusList,
+    body: payload,
+    fromJson: (json) =>
+        CampusModel.fromJson((json as Map).cast<String, dynamic>()),
+  );
+
+  Future<void> updateCampus(String id, Map<String, Object?> payload) =>
+      _discardResponse(_api.put(ApiEndpoints.campusDetail(id), body: payload));
+
+  Future<void> updateCampusLocation(
+    String id,
+    double latitude,
+    double longitude,
+  ) => _discardResponse(
+    _api.patch(
+      '${ApiEndpoints.campusDetail(id)}/location',
+      body: {'latitude': latitude, 'longitude': longitude},
+    ),
+  );
+
+  Future<void> deleteCampus(String id) =>
+      _discardResponse(_api.delete(ApiEndpoints.campusDetail(id)));
+
   // -------------------------------------------------------------
   // BUILDINGS
   // -------------------------------------------------------------
@@ -90,6 +118,33 @@ class CampusRemoteDataSource implements CampusRepository {
   @override
   Future<Building> getBuildingById(String id) =>
       _one(ApiEndpoints.buildingDetail(id), BuildingModel.fromJson);
+
+  Future<Building> createBuilding(Map<String, Object?> payload) =>
+      _api.postJson(
+        ApiEndpoints.campusBuildingsList,
+        body: payload,
+        fromJson: (json) =>
+            BuildingModel.fromJson((json as Map).cast<String, dynamic>()),
+      );
+
+  Future<void> updateBuilding(String id, Map<String, Object?> payload) =>
+      _discardResponse(
+        _api.put(ApiEndpoints.buildingDetail(id), body: payload),
+      );
+
+  Future<void> updateBuildingLocation(
+    String id,
+    double latitude,
+    double longitude,
+  ) => _discardResponse(
+    _api.patch(
+      '${ApiEndpoints.buildingDetail(id)}/location',
+      body: {'latitude': latitude, 'longitude': longitude},
+    ),
+  );
+
+  Future<void> deleteBuilding(String id) =>
+      _discardResponse(_api.delete(ApiEndpoints.buildingDetail(id)));
 
   @override
   Future<List<BuildingLocationDto>> getBuildingLocations({String? campusId}) =>
@@ -110,6 +165,19 @@ class CampusRemoteDataSource implements CampusRepository {
   @override
   Future<Room> getRoomById(String id) =>
       _one(ApiEndpoints.roomDetail(id), RoomModel.fromJson);
+
+  Future<Room> createRoom(Map<String, Object?> payload) => _api.postJson(
+    ApiEndpoints.campusRooms,
+    body: payload,
+    fromJson: (json) =>
+        RoomModel.fromJson((json as Map).cast<String, dynamic>()),
+  );
+
+  Future<void> updateRoom(String id, Map<String, Object?> payload) =>
+      _discardResponse(_api.put(ApiEndpoints.roomDetail(id), body: payload));
+
+  Future<void> deleteRoom(String id) =>
+      _discardResponse(_api.delete(ApiEndpoints.roomDetail(id)));
 
   @override
   Future<List<Room>> searchRooms(String term) => _list(
@@ -150,6 +218,33 @@ class CampusRemoteDataSource implements CampusRepository {
   Future<Structure> getStructureById(String id) =>
       _one(ApiEndpoints.structureDetail(id), StructureModel.fromJson);
 
+  Future<Structure> createStructure(Map<String, Object?> payload) =>
+      _api.postJson(
+        ApiEndpoints.campusStructuresList,
+        body: payload,
+        fromJson: (json) =>
+            StructureModel.fromJson((json as Map).cast<String, dynamic>()),
+      );
+
+  Future<void> updateStructure(String id, Map<String, Object?> payload) =>
+      _discardResponse(
+        _api.put(ApiEndpoints.structureDetail(id), body: payload),
+      );
+
+  Future<void> updateStructureLocation(
+    String id,
+    double latitude,
+    double longitude,
+  ) => _discardResponse(
+    _api.patch(
+      '${ApiEndpoints.structureDetail(id)}/location',
+      body: {'latitude': latitude, 'longitude': longitude},
+    ),
+  );
+
+  Future<void> deleteStructure(String id) =>
+      _discardResponse(_api.delete(ApiEndpoints.structureDetail(id)));
+
   @override
   Future<List<StructureLocationDto>> getStructureLocations({
     String? campusId,
@@ -170,4 +265,25 @@ class CampusRemoteDataSource implements CampusRepository {
   @override
   Future<Category> getCategoryById(String id) =>
       _one(ApiEndpoints.categoryDetail(id), CategoryModel.fromJson);
+
+  Future<Category> createCategory(Map<String, Object?> payload) =>
+      _api.postJson(
+        ApiEndpoints.campusCategories,
+        body: payload,
+        fromJson: (json) =>
+            CategoryModel.fromJson((json as Map).cast<String, dynamic>()),
+      );
+
+  Future<void> updateCategory(String id, Map<String, Object?> payload) =>
+      _discardResponse(
+        _api.put(ApiEndpoints.categoryDetail(id), body: payload),
+      );
+
+  Future<void> reorderCategories(List<Map<String, Object?>> payload) =>
+      _discardResponse(
+        _api.put('${ApiEndpoints.campusCategories}/reorder', body: payload),
+      );
+
+  Future<void> deleteCategory(String id) =>
+      _discardResponse(_api.delete(ApiEndpoints.categoryDetail(id)));
 }
