@@ -38,6 +38,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
   DateTime? _date;
   DateTime? _start;
   bool _sending = false;
+  int _durationMinutes = 30;
   String? _error;
   String? _availabilityError;
   bool _loadingAvailability = true;
@@ -49,7 +50,9 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
     final now = DateTime.now();
     final slots =
         widget.professor.officeHours
-            .expand((hour) => hour.slotsOn(date))
+            .expand(
+              (hour) => hour.slotsOn(date, durationMinutes: _durationMinutes),
+            )
             .where((start) => start.isAfter(now))
             .toSet()
             .toList()
@@ -63,10 +66,10 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
     }
     return _attentionSlots(date)
         .where(
-          (start) => ![
-            ..._busy,
-            ..._rejected,
-          ].any((interval) => interval.overlaps(start)),
+          (start) => ![..._busy, ..._rejected].any(
+            (interval) =>
+                interval.overlaps(start, durationMinutes: _durationMinutes),
+          ),
         )
         .toList();
   }
@@ -139,6 +142,40 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
     }
   }
 
+  Future<void> _changeDuration(int minutes) async {
+    if (_sending || minutes == _durationMinutes) return;
+    _availabilityRequest++;
+    setState(() {
+      _durationMinutes = minutes;
+      _start = null;
+      _busy = [];
+    });
+    DateTime? date = _date;
+    if (date == null || _attentionSlots(date).isEmpty) {
+      date = null;
+      for (var offset = 0; offset <= 60; offset++) {
+        final day = DateTime(
+          _firstDate.year,
+          _firstDate.month,
+          _firstDate.day + offset,
+        );
+        if (_attentionSlots(day).isNotEmpty) {
+          date = day;
+          break;
+        }
+      }
+    }
+    if (date == null) {
+      setState(() {
+        _date = null;
+        _loadingAvailability = false;
+        _availabilityError = null;
+      });
+      return;
+    }
+    await _refreshAvailability(date);
+  }
+
   String _dateLabel(DateTime date) {
     const days = [
       'Lunes',
@@ -180,7 +217,11 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
     }
     final start = _start;
     final hours = widget.professor.officeHours
-        .where((h) => start != null && h.contains(start))
+        .where(
+          (h) =>
+              start != null &&
+              h.contains(start, durationMinutes: _durationMinutes),
+        )
         .toList();
     if (start == null || !start.isAfter(DateTime.now()) || hours.isEmpty) {
       setState(
@@ -198,6 +239,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
         teacherRefId: widget.professor.id,
         structureRefId: hours.first.structureRefId ?? '',
         scheduledAt: start,
+        durationMinutes: _durationMinutes,
       );
       if (!mounted || _session.token != _token) return;
       setState(() => _sending = false);
@@ -209,7 +251,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
         _rejected.add(
           BookingInterval(
             start: start,
-            end: start.add(const Duration(minutes: 30)),
+            end: start.add(Duration(minutes: _durationMinutes)),
           ),
         );
         await _refreshAvailability(
@@ -238,7 +280,9 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
       final date = _date;
       final start = _start;
       final hours = widget.professor.officeHours.where(
-        (h) => start != null && h.contains(start),
+        (h) =>
+            start != null &&
+            h.contains(start, durationMinutes: _durationMinutes),
       );
       final locationId = hours.isEmpty ? null : hours.first.structureRefId;
       final location = widget.locations[locationId] ?? 'Ubicación no informada';
@@ -290,7 +334,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Las consultas duran 30 minutos. La reserva se confirma con el servicio al enviar la solicitud.',
+                          'Selecciona la duración de tu consulta. La reserva se confirma con el servicio al enviar la solicitud.',
                           style: TextStyle(
                             color: Color(0xFFE0EBF5),
                             height: 1.5,
@@ -298,6 +342,30 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: 20),
+                  DropdownButtonFormField<int>(
+                    key: const ValueKey('booking-duration'),
+                    initialValue: _durationMinutes,
+                    isExpanded: true,
+                    isDense: false,
+                    decoration: const InputDecoration(
+                      labelText: 'Duración de la consulta',
+                      prefixIcon: Icon(Icons.schedule),
+                    ),
+                    items: [15, 30, 45, 60]
+                        .map(
+                          (minutes) => DropdownMenuItem(
+                            value: minutes,
+                            child: Text('$minutes minutos'),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: _sending
+                        ? null
+                        : (value) {
+                            if (value != null) _changeDuration(value);
+                          },
                   ),
                   const SizedBox(height: 20),
                   if (date == null)
@@ -477,7 +545,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                                   ),
                                 ),
                                 Chip(
-                                  label: const Text('30 minutos'),
+                                  label: Text('$_durationMinutes minutos'),
                                   labelStyle: theme.textTheme.labelMedium
                                       ?.copyWith(color: AppColors.uctBlue),
                                   backgroundColor: const Color(0xFFE7EEF5),
@@ -488,7 +556,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(start), alwaysUse24HourFormat: true)} – ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(start.add(const Duration(minutes: 30))), alwaysUse24HourFormat: true)}',
+                              '${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(start), alwaysUse24HourFormat: true)} – ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(start.add(Duration(minutes: _durationMinutes))), alwaysUse24HourFormat: true)}',
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.uctBlue,

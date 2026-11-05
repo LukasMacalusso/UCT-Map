@@ -75,6 +75,16 @@ class CustomDrawer extends StatelessWidget {
               'Administrar campus',
               AppRoutes.manageCampus,
             ),
+            (
+              AppPermission.viewObjectHeatmap,
+              'Mapa de calor de objetos',
+              AppRoutes.objectHeatmap,
+            ),
+            (
+              AppPermission.viewReportHeatmap,
+              'Mapa de calor de incidencias',
+              AppRoutes.reportHeatmap,
+            ),
           ])
             if (ApiClientProvider.session.isAuthenticated &&
                 entry.$1.allows(ApiClientProvider.session.currentUser?.role))
@@ -142,20 +152,6 @@ class CustomDrawer extends StatelessWidget {
               final result = await Navigator.pushNamed(
                 context,
                 AppRoutes.professors,
-              );
-              if (result == 0 && context.mounted) {
-                _navigateToTab(context, 0);
-              }
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.bookmark_outline),
-            title: const Text('Lugares Guardados'),
-            onTap: () async {
-              Navigator.pop(context);
-              final result = await Navigator.pushNamed(
-                context,
-                AppRoutes.savedPlaces,
               );
               if (result == 0 && context.mounted) {
                 _navigateToTab(context, 0);

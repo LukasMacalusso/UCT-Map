@@ -1,3 +1,8 @@
+import 'lost_object_detail_screen.dart';
+import '../../../application/campus/location_names.dart';
+import '../../../data/datasources/campus_remote_ds.dart';
+import '../../widgets/campus_filter_dialog.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -20,11 +25,13 @@ import 'widgets/lost_object_status_badge.dart';
 class LostObjectsScreen extends StatefulWidget {
   final LostObjectsRepository repository;
   final bool showAppBar;
+  final bool active;
 
   const LostObjectsScreen({
     super.key,
     required this.repository,
     this.showAppBar = true,
+    this.active = true,
   });
 
   @override
@@ -40,6 +47,25 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
   final _searchController = TextEditingController();
   Timer? _debounceTimer;
 
+  Set<String>? _campusLocationIds;
+  String? _campusLabel;
+  Map<String, String> _locationNames = {};
+  int _fetchRevision = 0;
+
+  Future<void> _chooseLocation() async {
+    final selected = await showCampusFilterDialog(context);
+    if (!mounted || selected == null) return;
+    setState(() {
+      _campusLocationIds = selected.locationId == null
+          ? selected.locationIds
+          : null;
+      _campusLabel = selected.label;
+      _structureIdFilter = selected.locationId;
+      _currentPage = 1;
+    });
+    await _fetchObjects();
+  }
+
   bool _isLoading = true;
   String? _errorMessage;
   PaginatedLostObjectsResponse? _response;
@@ -52,6 +78,15 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
   bool _descending = true;
   int _currentPage = 1;
   static const int _pageSize = 10;
+
+  @override
+  void didUpdateWidget(covariant LostObjectsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.active && !oldWidget.active) {
+      _currentPage = 1;
+      _fetchObjects();
+    }
+  }
 
   @override
   void initState() {
@@ -80,6 +115,20 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
   }
 
   Future<void> _fetchObjects() async {
+    final revision = ++_fetchRevision;
+    final token = ApiClientProvider.session.token;
+    bool current() =>
+        mounted &&
+        revision == _fetchRevision &&
+        ApiClientProvider.session.token == token;
+    final ids = _campusLocationIds;
+    loadLocationNames(CampusRemoteDataSource())
+        .then((names) {
+          if (current()) setState(() => _locationNames = names);
+        })
+        .catchError((Object _) {
+          /* Los registros siguen disponibles sin etiquetas. */
+        });
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -91,20 +140,51 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
       status: _statusFilter,
       sortBy: _sortBy,
       descending: _descending,
-      page: _currentPage,
+      page: ids == null ? _currentPage : 1,
       pageSize: _pageSize,
     );
 
     try {
-      final res = await widget.repository.getLostObjects(filter: filter);
-      if (mounted) {
+      var res = await widget.repository.getLostObjects(filter: filter);
+      if (ids != null) {
+        final values = <LostObject>[];
+        final seen = <String>{};
+        var page = 1;
+        while (true) {
+          if (!current()) return;
+          if (res.page != page || (res.hasNextPage && res.items.isEmpty))
+            throw const FormatException('Paginación inválida.');
+          for (final item in res.items) {
+            if (item.id.isEmpty || !seen.add(item.id))
+              throw const FormatException(
+                'Identificadores de página inválidos.',
+              );
+            if (ids.contains(item.structureId)) values.add(item);
+          }
+          if (!res.hasNextPage) break;
+          res = await widget.repository.getLostObjects(
+            filter: filter.copyWith(page: ++page),
+          );
+        }
+        res = PaginatedLostObjectsResponse(
+          items: values
+              .skip((_currentPage - 1) * _pageSize)
+              .take(_pageSize)
+              .toList(),
+          totalCount: values.length,
+          page: _currentPage,
+          pageSize: _pageSize,
+          totalPages: (values.length / _pageSize).ceil(),
+        );
+      }
+      if (current()) {
         setState(() {
           _response = res;
           _isLoading = false;
         });
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!current()) return;
       String message;
       if (e is ProblemDetailsException) {
         message = e.problemDetails.userMessage;
@@ -424,6 +504,39 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _campusLabel ?? 'Todos los campus',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.uctBlue,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _chooseLocation,
+                tooltip: 'Filtrar ubicación',
+                icon: const Icon(Icons.location_city_outlined),
+              ),
+              if (_campusLabel != null)
+                IconButton(
+                  tooltip: 'Quitar filtro de ubicación',
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    setState(() {
+                      _campusLocationIds = null;
+                      _campusLabel = null;
+                      _structureIdFilter = null;
+                      _currentPage = 1;
+                    });
+                    _fetchObjects();
+                  },
+                ),
+            ],
+          ),
+
           // Barra de búsqueda
           TextField(
             controller: _searchController,
@@ -670,10 +783,11 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Estructura: ${item.structureId}',
+                        _locationNames[item.structureId] ??
+                            'Ubicación no disponible',
                         style: const TextStyle(
                           fontSize: 11.5,
-                          fontFamily: 'monospace',
+
                           color: AppColors.subtitle,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -683,6 +797,27 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                 ),
                 const SizedBox(height: 6),
 
+                TextButton.icon(
+                  onPressed: item.id.isEmpty
+                      ? null
+                      : () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => LostObjectDetailScreen(
+                                objectId: item.id,
+                                repository: widget.repository,
+                              ),
+                            ),
+                          );
+                          if (mounted) {
+                            _currentPage = 1;
+                            _fetchObjects();
+                          }
+                        },
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('Ver detalle'),
+                ),
                 // Fecha
                 if (item.date != null)
                   Row(

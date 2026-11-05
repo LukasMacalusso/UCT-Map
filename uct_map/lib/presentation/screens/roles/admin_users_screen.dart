@@ -1,3 +1,7 @@
+import '../../../application/directory/filter_users.dart';
+import '../../../core/theme/app_colors.dart';
+import 'admin_user_detail_screen.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client_provider.dart';
@@ -33,6 +37,10 @@ class _AdminUsersScreenState extends State<_AdminUsers> {
   late Future<List<ManagedUser>> _users;
   late final _token = ApiClientProvider.session.token;
   bool _busy = false;
+  String _query = '';
+  String? _roleFilter;
+  bool? _suspendedFilter;
+  int _page = 0;
   static const _roles = [
     'Student',
     'Teacher',
@@ -127,10 +135,63 @@ class _AdminUsersScreenState extends State<_AdminUsers> {
     }
   }
 
+  Widget _filters() => Padding(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      children: [
+        TextField(
+          decoration: const InputDecoration(
+            labelText: 'Buscar usuarios',
+            hintText: 'Nombre o correo',
+            prefixIcon: Icon(Icons.search),
+          ),
+          onChanged: (value) => setState(() {
+            _query = value;
+            _page = 0;
+          }),
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String?>(
+          initialValue: _roleFilter,
+          isExpanded: true,
+          decoration: const InputDecoration(labelText: 'Rol'),
+          items: [
+            const DropdownMenuItem<String?>(
+              value: null,
+              child: Text('Todos los roles'),
+            ),
+            ..._roles.map((r) => DropdownMenuItem(value: r, child: Text(r))),
+          ],
+          onChanged: (value) => setState(() {
+            _roleFilter = value;
+            _page = 0;
+          }),
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<bool?>(
+          initialValue: _suspendedFilter,
+          isExpanded: true,
+          decoration: const InputDecoration(labelText: 'Estado de la cuenta'),
+          items: const [
+            DropdownMenuItem<bool?>(value: null, child: Text('Todas')),
+            DropdownMenuItem(value: false, child: Text('Activas')),
+            DropdownMenuItem(value: true, child: Text('Suspendidas')),
+          ],
+          onChanged: (value) => setState(() {
+            _suspendedFilter = value;
+            _page = 0;
+          }),
+        ),
+      ],
+    ),
+  );
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: const Text('Administración de usuarios'),
+      backgroundColor: AppColors.uctBlue,
+      foregroundColor: Colors.white,
       actions: [
         IconButton(
           onPressed: _busy ? null : _reload,
@@ -156,10 +217,48 @@ class _AdminUsersScreenState extends State<_AdminUsers> {
         if (users.isEmpty) {
           return const Center(child: Text('No hay usuarios.'));
         }
+        final filtered = filterUsers(
+          users,
+          query: _query,
+          role: _roleFilter,
+          suspended: _suspendedFilter,
+        );
+        final pages = (filtered.length / 20).ceil();
+        final page = pages == 0 ? 0 : _page.clamp(0, pages - 1);
+        final visible = filtered.skip(page * 20).take(20).toList();
         return ListView.builder(
-          itemCount: users.length,
+          itemCount: visible.length + 2,
           itemBuilder: (context, index) {
-            final user = users[index];
+            if (index == 0) return _filters();
+            if (index == visible.length + 1) {
+              if (filtered.isEmpty)
+                return const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text('No hay cuentas para estos filtros.'),
+                );
+              if (pages < 2) return const SizedBox(height: 16);
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    tooltip: 'Página anterior',
+                    onPressed: page == 0
+                        ? null
+                        : () => setState(() => _page = page - 1),
+                    icon: const Icon(Icons.chevron_left),
+                  ),
+                  Text('${page + 1} de $pages'),
+                  IconButton(
+                    tooltip: 'Página siguiente',
+                    onPressed: page + 1 >= pages
+                        ? null
+                        : () => setState(() => _page = page + 1),
+                    icon: const Icon(Icons.chevron_right),
+                  ),
+                ],
+              );
+            }
+            final user = visible[index - 1];
             final own = user.id == ApiClientProvider.session.currentUser?.id;
             return Card(
               child: Padding(
@@ -172,6 +271,26 @@ class _AdminUsersScreenState extends State<_AdminUsers> {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     Text(user.email),
+                    TextButton.icon(
+                      icon: const Icon(Icons.person_outline),
+                      label: const Text('Ver perfil'),
+                      onPressed: _busy
+                          ? null
+                          : () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (_) => AdminUserDetailScreen(
+                                    userId: user.id,
+                                    repository: _repository,
+                                  ),
+                                ),
+                              );
+                              if (mounted &&
+                                  ApiClientProvider.session.token == _token)
+                                _reload();
+                            },
+                    ),
                     Text(
                       '${user.role} · ${user.isSuspended ? 'Suspendido' : 'Activo'}',
                     ),

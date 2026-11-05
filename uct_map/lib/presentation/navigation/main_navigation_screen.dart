@@ -127,12 +127,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final theme = Theme.of(context);
 
     final List<Widget> screens = [
-      MapScreen(key: _mapScreenKey, selectedCampus: _selectedCampus),
+      MapScreen(
+        key: _mapScreenKey,
+        selectedCampus: _selectedCampus,
+        active: _currentIndex == 0,
+      ),
       SearchScreen(selectedCampus: _selectedCampus),
       _protected(
         LostObjectsScreen(
           repository: LostObjectsRepositoryImpl(),
           showAppBar: false,
+          active: _currentIndex == 2,
         ),
       ),
       _protected(
@@ -144,6 +149,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ),
           ),
           showAppBar: false,
+          active: _currentIndex == 3,
         ),
       ),
       _protected(
@@ -181,15 +187,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         foregroundColor: Colors.white,
         leading: Builder(
           builder: (context) {
-            return InkWell(
-              onTap: () {
-                Scaffold.of(context).openDrawer();
-              },
-              borderRadius: BorderRadius.circular(8),
-              child: const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: UctLogo(height: 36, width: 36),
-              ),
+            return IconButton(
+              tooltip: 'Abrir menú',
+              onPressed: () => Scaffold.of(context).openDrawer(),
+              icon: const UctLogo(height: 36, width: 36),
             );
           },
         ),

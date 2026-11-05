@@ -21,10 +21,11 @@ class ReportsRemoteDataSource {
     String? baseUrl,
     String? Function()? tokenProvider,
     Duration? timeout,
-  })  : _client = client ?? ApiClientProvider.defaultClient,
-        _baseUrl = _normalizeBaseUrl(baseUrl ?? _resolveDefaultBaseUrl()),
-        _tokenProvider = tokenProvider ?? (() => ApiClientProvider.session.token),
-        _timeout = timeout ?? EnvConfig.apiTimeout;
+  }) : _client = client ?? ApiClientProvider.defaultClient,
+       _baseUrl = _normalizeBaseUrl(baseUrl ?? _resolveDefaultBaseUrl()),
+       _tokenProvider =
+           tokenProvider ?? (() => ApiClientProvider.session.token),
+       _timeout = timeout ?? EnvConfig.apiTimeout;
 
   final http.Client _client;
   final String _baseUrl;
@@ -58,9 +59,7 @@ class ReportsRemoteDataSource {
 
   /// Construye los encabezados obligatorios (Authorization: Bearer, Content-Type, Accept).
   Map<String, String> _buildHeaders({bool includeContentType = true}) {
-    final headers = <String, String>{
-      'Accept': 'application/json',
-    };
+    final headers = <String, String>{'Accept': 'application/json'};
     if (includeContentType) {
       headers['Content-Type'] = 'application/json';
     }
@@ -120,38 +119,52 @@ class ReportsRemoteDataSource {
         if (decoded is Map<String, dynamic>) {
           return CreateReportResponse.fromJson(decoded);
         }
-        throw const ApiException('Respuesta de creación en formato inválido.', 201);
+        throw const ApiException(
+          'Respuesta de creación en formato inválido.',
+          201,
+        );
       }
 
       _handleErrorResponse(response);
     } on SocketException catch (e) {
       throw NetworkException('Error de conexión con el servidor: ${e.message}');
     } on http.ClientException catch (e) {
-      throw NetworkException('Fallo al conectar con el API Gateway: ${e.message}');
+      throw NetworkException(
+        'Fallo al conectar con el API Gateway: ${e.message}',
+      );
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al registrar el reporte.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al registrar el reporte.',
+      );
     }
   }
 
   /// GET /api/incident/reports
   ///
   /// Retorna el listado paginado de tickets/reportes según los filtros indicados.
-  Future<PaginatedReportsResponse> getReports({ReportFilterParams? filter}) async {
-    final queryParams = filter?.toQueryParams() ??
-        const ReportFilterParams().toQueryParams();
+  Future<PaginatedReportsResponse> getReports({
+    ReportFilterParams? filter,
+  }) async {
+    final queryParams =
+        filter?.toQueryParams() ?? const ReportFilterParams().toQueryParams();
 
     final uri = _buildUri(ApiEndpoints.incidentReports, queryParams);
     final headers = _buildHeaders(includeContentType: false);
 
     try {
-      final response = await _client.get(uri, headers: headers).timeout(_timeout);
+      final response = await _client
+          .get(uri, headers: headers)
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         if (decoded is Map<String, dynamic>) {
           return PaginatedReportsResponse.fromJson(decoded);
         }
-        throw const ApiException('Respuesta de listado en formato inválido.', 200);
+        throw const ApiException(
+          'Respuesta de listado en formato inválido.',
+          200,
+        );
       }
 
       _handleErrorResponse(response);
@@ -160,7 +173,9 @@ class ReportsRemoteDataSource {
     } on http.ClientException catch (e) {
       throw NetworkException('Fallo al consultar reportes: ${e.message}');
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al consultar reportes.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al consultar reportes.',
+      );
     }
   }
 
@@ -177,23 +192,32 @@ class ReportsRemoteDataSource {
     final headers = _buildHeaders(includeContentType: false);
 
     try {
-      final response = await _client.get(uri, headers: headers).timeout(_timeout);
+      final response = await _client
+          .get(uri, headers: headers)
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         if (decoded is Map<String, dynamic>) {
           return Ticket.fromJson(decoded);
         }
-        throw const ApiException('Detalle del reporte en formato inválido.', 200);
+        throw const ApiException(
+          'Detalle del reporte en formato inválido.',
+          200,
+        );
       }
 
       _handleErrorResponse(response);
     } on SocketException catch (e) {
       throw NetworkException('Error de conexión con el servidor: ${e.message}');
     } on http.ClientException catch (e) {
-      throw NetworkException('Fallo al consultar detalle del reporte: ${e.message}');
+      throw NetworkException(
+        'Fallo al consultar detalle del reporte: ${e.message}',
+      );
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al consultar el reporte.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al consultar el reporte.',
+      );
     }
   }
 
@@ -230,11 +254,44 @@ class ReportsRemoteDataSource {
 
       _handleErrorResponse(response);
     } on SocketException catch (e) {
-      throw NetworkException('Error de conexión al actualizar estado del reporte: ${e.message}');
+      throw NetworkException(
+        'Error de conexión al actualizar estado del reporte: ${e.message}',
+      );
     } on http.ClientException catch (e) {
-      throw NetworkException('Fallo de red al actualizar estado del reporte: ${e.message}');
+      throw NetworkException(
+        'Fallo de red al actualizar estado del reporte: ${e.message}',
+      );
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al actualizar el reporte.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al actualizar el reporte.',
+      );
+    }
+  }
+
+  Future<void> deleteReport(String id) async {
+    if (id.trim().isEmpty) throw ArgumentError('Falta el identificador.');
+    try {
+      final response = await _client
+          .delete(
+            _buildUri(
+              '${ApiEndpoints.incidentReports}/${Uri.encodeComponent(id.trim())}',
+            ),
+            headers: _buildHeaders(includeContentType: false),
+          )
+          .timeout(_timeout);
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        _handleErrorResponse(response);
+      }
+    } on TimeoutException {
+      throw const NetworkException(
+        'No se confirmó el borrado. Actualiza antes de reintentar.',
+      );
+    } on http.ClientException {
+      throw const NetworkException(
+        'No se confirmó el borrado. Actualiza antes de reintentar.',
+      );
+    } on SocketException {
+      throw const NetworkException('No se pudo conectar con el servidor.');
     }
   }
 }

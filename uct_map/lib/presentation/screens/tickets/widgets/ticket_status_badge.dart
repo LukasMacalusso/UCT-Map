@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../../domain/entities/ticket.dart';
 
 /// Badge visual para el estado general del Ticket:

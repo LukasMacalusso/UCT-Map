@@ -91,10 +91,7 @@ class EnvConfig {
   /// Audiencia esperada en los tokens (API Gateway).
   static String get jwtAudience =>
       _get('JWT_AUDIENCE') ??
-      const String.fromEnvironment(
-        'JWT_AUDIENCE',
-        defaultValue: 'api-gateway',
-      );
+      const String.fromEnvironment('JWT_AUDIENCE', defaultValue: 'api-gateway');
 
   /// Clave de API opcional para autenticación contra Gateway o servicios externos.
   static String get apiKey =>

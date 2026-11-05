@@ -1,3 +1,10 @@
+import '../../../application/contributions/object_publication.dart';
+import '../../../data/storage/pending_object_storage.dart';
+import '../../../domain/repositories/reports_repository.dart';
+import '../../../data/repositories/reports_repository_impl.dart';
+import '../../../domain/repositories/campus_repository.dart';
+import '../../widgets/campus_location_picker.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client_provider.dart';
@@ -13,9 +20,22 @@ import '../../../domain/repositories/lost_objects_repository.dart';
 /// Formulario para registrar un nuevo objeto perdido con validaciones en tiempo real
 /// y retroalimentación interactiva conforme al contrato del backend ASP.NET Core.
 class CreateLostObjectScreen extends StatefulWidget {
+  final String? initialLocationId;
+  final String? initialCampusId;
+  final CampusRepository? campusRepository;
   final LostObjectsRepository repository;
+  final ReportsRepository? reportsRepository;
+  final PendingObjectStorage? publicationStorage;
 
-  const CreateLostObjectScreen({super.key, required this.repository});
+  const CreateLostObjectScreen({
+    super.key,
+    required this.repository,
+    this.initialLocationId,
+    this.initialCampusId,
+    this.campusRepository,
+    this.reportsRepository,
+    this.publicationStorage,
+  });
 
   @override
   State<CreateLostObjectScreen> createState() => _CreateLostObjectScreenState();
@@ -33,17 +53,20 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
   bool _isSubmitting = false;
   String? _errorMessage;
   String? _previewUrl;
+  PendingObject? _pending;
+  late final ObjectPublication _publication = ObjectPublication(
+    objects: widget.repository,
+    reports: widget.reportsRepository ?? ReportsRepositoryImpl(),
+    session: ApiClientProvider.session,
+    storage: widget.publicationStorage ?? const SecurePendingObjectStorage(),
+  );
 
   // Estructuras de campus frecuentes de ejemplo para facilitar pruebas y uso
-  static const Map<String, String> _presetStructures = {
-    'Biblioteca Central': 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
-    'Edificio Aulario': 'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e',
-    'Gimnasio Techado': 'c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f',
-  };
 
   @override
   void initState() {
     super.initState();
+    _structureIdController.text = widget.initialLocationId ?? "";
     _photoUrlController.addListener(_onPhotoUrlChanged);
   }
 
@@ -71,6 +94,7 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) return;
     FocusScope.of(context).unfocus();
     setState(() => _errorMessage = null);
 
@@ -93,10 +117,11 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
       structureId: _structureIdController.text.trim(),
     );
 
+    final token = ApiClientProvider.session.token;
     try {
-      final response = await widget.repository.createLostObject(dto);
+      await _publication.publish(dto);
 
-      if (!mounted) return;
+      if (!mounted || ApiClientProvider.session.token != token) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -106,7 +131,7 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Objeto registrado con éxito (ID: ${response.id})',
+                  'Objeto registrado y vinculado a tus reportes',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
@@ -119,8 +144,17 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
       );
 
       Navigator.of(context).pop(true);
+    } on PendingObjectPublication catch (error) {
+      if (!mounted || ApiClientProvider.session.token != token) return;
+      setState(() {
+        _pending = error.item;
+        _isSubmitting = false;
+        _errorMessage = error.item.id == null
+            ? 'No se pudo confirmar el registro. Revisa la lista antes de volver a publicar.'
+            : 'El objeto está registrado. Falta completar su vínculo con tus reportes.';
+      });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || ApiClientProvider.session.token != token) return;
 
       String message;
       if (e is ProblemDetailsException) {
@@ -153,6 +187,24 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
     }
   }
 
+  Future<void> _resume() async {
+    final pending = _pending;
+    if (pending == null || pending.id == null || _isSubmitting) return;
+    final token = ApiClientProvider.session.token;
+    setState(() => _isSubmitting = true);
+    try {
+      await _publication.resume(pending);
+      if (mounted && ApiClientProvider.session.token == token)
+        Navigator.pop(context, true);
+    } catch (_) {
+      if (mounted && ApiClientProvider.session.token == token)
+        setState(() {
+          _isSubmitting = false;
+          _errorMessage = 'No se pudo completar el vínculo. El objeto sigue registrado; puedes reintentar.';
+        });
+    }
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: ApiClientProvider.session,
@@ -180,6 +232,21 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (_errorMessage != null) _buildErrorBanner(),
+                if (_pending != null) ...[
+                  Text(
+                    _pending!.title,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  if (_pending!.id != null)
+                    FilledButton(
+                      onPressed: _isSubmitting ? null : _resume,
+                      child: const Text('Completar vínculo pendiente'),
+                    ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Volver a objetos'),
+                  ),
+                ],
 
                 // Header explicativo
                 Container(
@@ -256,47 +323,12 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
                 ),
                 const SizedBox(height: 18),
 
-                // Structure ID (UUID)
-                _buildFieldLabel('ID de la Estructura / Edificio (UUID) *'),
-                TextFormField(
+                CampusLocationPicker(
                   controller: _structureIdController,
-                  textInputAction: TextInputAction.next,
-                  decoration: _inputDecoration(
-                    hint: 'Ej. a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
-                    prefixIcon: Icons.apartment_rounded,
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'El ID de la estructura es obligatorio.';
-                    }
-                    if (!CreateLostObjectDto.isValidUuid(value)) {
-                      return 'Debe ser un UUID válido (ej. a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d).';
-                    }
-                    return null;
-                  },
+                  repository: widget.campusRepository,
+                  initialCampusId: widget.initialCampusId,
                 ),
-                const SizedBox(height: 8),
-
-                // Chips rápidos para presets de estructuras
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: _presetStructures.entries.map((entry) {
-                    return ActionChip(
-                      avatar: const Icon(Icons.place_outlined, size: 14),
-                      label: Text(
-                        entry.key,
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _structureIdController.text = entry.value;
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 20),
 
                 // URL de la foto
                 _buildFieldLabel('URL Pública de la Foto *'),
@@ -359,11 +391,15 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
                 const SizedBox(height: 30),
 
                 // Botón enviar
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: double.infinity,
+                    minHeight: 50,
+                  ),
                   child: ElevatedButton.icon(
-                    onPressed: _isSubmitting ? null : _submit,
+                    onPressed: _isSubmitting || _pending != null
+                        ? null
+                        : _submit,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.uctBlue,
                       foregroundColor: Colors.white,
@@ -449,11 +485,13 @@ class _CreateLostObjectScreenState extends State<CreateLostObjectScreen> {
                         color: Colors.red.shade400,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        'No se pudo cargar la imagen desde la URL provista.',
-                        style: TextStyle(
-                          color: Colors.red.shade700,
-                          fontSize: 12,
+                      Expanded(
+                        child: Text(
+                          'No se pudo cargar la imagen desde la URL provista.',
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ],

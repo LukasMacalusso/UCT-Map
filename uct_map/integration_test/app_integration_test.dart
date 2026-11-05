@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:uct_map/application/session/session_controller.dart';
@@ -16,12 +17,15 @@ import 'package:uct_map/presentation/screens/login/login_page.dart';
 import 'package:uct_map/presentation/screens/profile/profile_screen.dart';
 import 'package:uct_map/presentation/widgets/custom_drawer.dart';
 import 'package:uct_map/presentation/widgets/uct_logo.dart';
+
 import '../test/helpers/mock_mapbox_platform.dart';
 
 class _MockAuthRepo implements AuthRepository {
   @override
-  Future<AuthLoginResult> login(
-      {required String email, required String password}) async {
+  Future<AuthLoginResult> login({
+    required String email,
+    required String password,
+  }) async {
     return AuthLoginResult(
       userId: 'u-integration-test',
       email: email,
@@ -30,13 +34,14 @@ class _MockAuthRepo implements AuthRepository {
   }
 
   static String generateJwt(String email, {String userId = 'u-test'}) {
-    String b64(Object o) => base64Encode(utf8.encode(jsonEncode(o)))
-        .replaceAll('+', '-')
-        .replaceAll('/', '_')
-        .replaceAll('=', '');
+    String b64(Object o) =>
+        base64Encode(utf8.encode(jsonEncode(o)))
+            .replaceAll('+', '-')
+            .replaceAll('/', '_')
+            .replaceAll('=', '');
     final exp =
         DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
-            1000;
+        1000;
     return "${b64({'alg': 'none'})}.${b64({'sub': userId, 'email': email, 'role': 'estudiante', 'exp': exp, 'iss': EnvConfig.jwtIssuer, 'aud': EnvConfig.jwtAudience})}.x";
   }
 }
@@ -53,19 +58,32 @@ void main() {
     ApiClientProvider.reset();
     session = SessionController();
     await session.ready;
-    ApiClientProvider.initialize(session, innerClient: MockClient((request) async {
-      if (request.method == 'GET' && request.url.path == '/api/campus/campuses') {
-        return http.Response('[]', 200);
-      }
-      if (request.method == 'GET' && const {
-        '/api/incident/reports', '/api/incident/lost-objects',
-      }.contains(request.url.path)) {
-        return http.Response(jsonEncode({
-          'items': [], 'totalCount': 0, 'page': 1, 'pageSize': 10, 'totalPages': 0,
-        }), 200);
-      }
-      return http.Response('', 404);
-    }));
+    ApiClientProvider.initialize(
+      session,
+      innerClient: MockClient((request) async {
+        if (request.method == 'GET' &&
+            request.url.path == '/api/campus/campuses') {
+          return http.Response('[]', 200);
+        }
+        if (request.method == 'GET' &&
+            const {
+              '/api/incident/reports',
+              '/api/incident/lost-objects',
+            }.contains(request.url.path)) {
+          return http.Response(
+            jsonEncode({
+              'items': [],
+              'totalCount': 0,
+              'page': 1,
+              'pageSize': 10,
+              'totalPages': 0,
+            }),
+            200,
+          );
+        }
+        return http.Response('', 404);
+      }),
+    );
   });
   tearDown(() {
     ApiClientProvider.reset();
@@ -73,8 +91,9 @@ void main() {
   });
 
   group('UCT Map Mobile Integration Tests', () {
-    testWidgets('Flujo 1: Inicio de app y navegacion completa entre tabs',
-        (WidgetTester tester) async {
+    testWidgets('Flujo 1: Inicio de app y navegacion completa entre tabs', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(UctMapApp(authRepository: _MockAuthRepo()));
       await tester.pumpAndSettle();
 
@@ -127,77 +146,83 @@ void main() {
       expect(find.text('Mapa del Campus'), findsOneWidget);
     });
 
-    testWidgets('Flujo 2: Menu lateral CustomDrawer e interaccion institucional',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(UctMapApp(authRepository: _MockAuthRepo()));
-      await tester.pumpAndSettle();
-
-      // Abrir el Drawer mediante el logo institucional
-      final logoFinder = find.byType(UctLogo).first;
-      expect(logoFinder, findsOneWidget);
-      await tester.tap(logoFinder);
-      await tester.pumpAndSettle();
-
-      // Validar que el Drawer se despliega correctamente
-      expect(find.byType(CustomDrawer), findsOneWidget);
-      expect(find.text('UCT Map'), findsOneWidget);
-      expect(find.text('Universidad Católica de Temuco'), findsOneWidget);
-      expect(find.text('Inicio y Accesos Rápidos'), findsOneWidget);
-
-      // Cerrar Drawer pulsando fuera o deslizando
-      final scaffoldState = tester.firstState<ScaffoldState>(find.byType(Scaffold));
-      scaffoldState.closeDrawer();
-      await tester.pumpAndSettle();
-
-      expect(find.byType(CustomDrawer), findsNothing);
-    });
-
-    testWidgets('Flujo 3: Proteccion de sesion, navegacion a Login y autenticacion',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(UctMapApp(authRepository: _MockAuthRepo()));
-      await tester.pumpAndSettle();
-
-      // Navegar a Reportes sin sesion
-      await tester.tap(find.text('Reportes'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(SessionRequiredView), findsOneWidget);
-      final loginBtn = find.byKey(const ValueKey('authGateLoginButton'));
-      expect(loginBtn, findsOneWidget);
-
-      // Pulsar Iniciar sesion y validar transicion a LoginPage
-      await tester.tap(loginBtn);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(LoginPage), findsOneWidget);
-      expect(find.text('Inicia Sesión'), findsOneWidget);
-
-      // Regresar a la pantalla anterior
-      final backBtn = find.byTooltip('Volver');
-      if (backBtn.evaluate().isNotEmpty) {
-        await tester.tap(backBtn);
+    testWidgets(
+      'Flujo 2: Menu lateral CustomDrawer e interaccion institucional',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(UctMapApp(authRepository: _MockAuthRepo()));
         await tester.pumpAndSettle();
-      }
 
-      // Autenticar la sesion directamente
-      final mockSession = ApiClientProvider.session;
-      const testEmail = 'estudiante@alu.uct.cl';
-      const testUserId = 'u-e2e';
-      await mockSession.signInReal(
-        AuthLoginResult(
-          userId: testUserId,
-          email: testEmail,
-          token: _MockAuthRepo.generateJwt(testEmail, userId: testUserId),
-        ),
-      );
-      await tester.pumpAndSettle();
+        // Abrir el Drawer mediante el logo institucional
+        final logoFinder = find.byType(UctLogo).first;
+        expect(logoFinder, findsOneWidget);
+        await tester.tap(logoFinder);
+        await tester.pumpAndSettle();
 
-      // Con sesion activa, ya no debe mostrar AuthRequiredView bloqueante
-      expect(find.byType(AuthRequiredView), findsNothing);
+        // Validar que el Drawer se despliega correctamente
+        expect(find.byType(CustomDrawer), findsOneWidget);
+        expect(find.text('UCT Map'), findsOneWidget);
+        expect(find.text('Universidad Católica de Temuco'), findsOneWidget);
+        expect(find.text('Inicio y Accesos Rápidos'), findsOneWidget);
 
-      // Cerrar sesion y limpiar estado
-      await mockSession.signOut();
-      await tester.pumpAndSettle();
-    });
+        // Cerrar Drawer pulsando fuera o deslizando
+        final scaffoldState = tester.firstState<ScaffoldState>(
+          find.byType(Scaffold),
+        );
+        scaffoldState.closeDrawer();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CustomDrawer), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Flujo 3: Proteccion de sesion, navegacion a Login y autenticacion',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(UctMapApp(authRepository: _MockAuthRepo()));
+        await tester.pumpAndSettle();
+
+        // Navegar a Reportes sin sesion
+        await tester.tap(find.text('Reportes'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SessionRequiredView), findsOneWidget);
+        final loginBtn = find.byKey(const ValueKey('authGateLoginButton'));
+        expect(loginBtn, findsOneWidget);
+
+        // Pulsar Iniciar sesion y validar transicion a LoginPage
+        await tester.tap(loginBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(LoginPage), findsOneWidget);
+        expect(find.text('Inicia Sesión'), findsOneWidget);
+
+        // Regresar a la pantalla anterior
+        final backBtn = find.byTooltip('Volver');
+        if (backBtn.evaluate().isNotEmpty) {
+          await tester.tap(backBtn);
+          await tester.pumpAndSettle();
+        }
+
+        // Autenticar la sesion directamente
+        final mockSession = ApiClientProvider.session;
+        const testEmail = 'estudiante@alu.uct.cl';
+        const testUserId = 'u-e2e';
+        await mockSession.signInReal(
+          AuthLoginResult(
+            userId: testUserId,
+            email: testEmail,
+            token: _MockAuthRepo.generateJwt(testEmail, userId: testUserId),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Con sesion activa, ya no debe mostrar AuthRequiredView bloqueante
+        expect(find.byType(AuthRequiredView), findsNothing);
+
+        // Cerrar sesion y limpiar estado
+        await mockSession.signOut();
+        await tester.pumpAndSettle();
+      },
+    );
   });
 }

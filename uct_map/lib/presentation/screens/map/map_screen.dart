@@ -1,3 +1,6 @@
+import 'campuses/campus_area_registry.dart';
+import '../../widgets/report_location_actions.dart';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -18,7 +21,8 @@ import 'widgets/campus_map_view.dart';
 /// Coordina la selección de campus, las consultas y los paneles.
 /// No dibuja teselas ni marcadores: eso corresponde a CampusMapView.
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key, this.selectedCampus});
+  const MapScreen({super.key, this.selectedCampus, this.active = true});
+  final bool active;
   final ValueNotifier<Campus?>? selectedCampus;
 
   @override
@@ -38,6 +42,8 @@ class MapScreenState extends State<MapScreen> {
   String? _structuresError;
   int _structureRequest = 0;
   bool _loading = true;
+  bool _is3D = true;
+  int _campusRequest = 0;
   String? _error;
   bool _loadingBuildings = false;
   int _buildingRequest = 0;
@@ -49,6 +55,12 @@ class MapScreenState extends State<MapScreen> {
   bool _loadingRoute = false;
   bool _locating = false;
   int _routeRequest = 0;
+
+  @override
+  void didUpdateWidget(covariant MapScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.active && !oldWidget.active) _loadCampuses(quiet: true);
+  }
 
   @override
   void dispose() {
@@ -304,16 +316,17 @@ class MapScreenState extends State<MapScreen> {
         .toList();
   }
 
-  Future<void> _loadCampuses() async {
+  Future<void> _loadCampuses({bool quiet = false}) async {
+    final request = ++_campusRequest;
     setState(() {
-      _loading = true;
+      if (!quiet) _loading = true;
       _error = null;
     });
     List<Campus> campuses;
     try {
       campuses = await _fetchCampuses();
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || request != _campusRequest) return;
       debugPrint('[UCT Map] Error al cargar campus: $error');
       setState(() {
         _loading = false;
@@ -321,29 +334,43 @@ class MapScreenState extends State<MapScreen> {
       });
       return;
     }
-    if (!mounted) return;
-    final currentId = widget.selectedCampus?.value?.id;
+    if (!mounted || request != _campusRequest) return;
+    final currentId = widget.selectedCampus?.value?.id ?? _selectedCampus?.id;
     final matches = campuses.where((campus) => campus.id == currentId);
     final selected = matches.isNotEmpty
         ? matches.first
         : (campuses.isNotEmpty ? campuses.first : null);
+    final previous = _selectedCampus;
+    final cameraChanged =
+        previous?.id != selected?.id ||
+        previous?.pitch != selected?.pitch ||
+        previous?.bearing != selected?.bearing ||
+        previous?.zoom != selected?.zoom;
     setState(() {
       _campuses = campuses;
       _selectedCampus = selected;
-      _buildings = [];
+      if (cameraChanged)
+        _is3D =
+            (selected?.pitch ??
+                (selected == null ? 50 : areaForCampus(selected).pitch)) >
+            0;
+      if (!quiet || previous?.id != selected?.id) _buildings = [];
       _loading = false;
     });
     if (selected != null) {
       widget.selectedCampus?.value = selected;
-      _loadStructures(selected.id);
+      _loadStructures(
+        selected.id,
+        preserve: quiet && previous?.id == selected.id,
+      );
       await _loadBuildings(selected.id);
     }
   }
 
-  Future<void> _loadStructures(String campusId) async {
+  Future<void> _loadStructures(String campusId, {bool preserve = false}) async {
     final request = ++_structureRequest;
     setState(() {
-      _structures = [];
+      if (!preserve) _structures = [];
       _structuresError = null;
     });
     try {
@@ -407,6 +434,11 @@ class MapScreenState extends State<MapScreen> {
                   icon: const Icon(Icons.directions_walk),
                   label: const Text('Cómo llegar'),
                 ),
+              ),
+              const SizedBox(height: 12),
+              ReportLocationActions(
+                locationId: structure.id,
+                campusId: structure.campusId,
               ),
             ],
           ),
@@ -473,6 +505,7 @@ class MapScreenState extends State<MapScreen> {
     _clearRoute(restoreCamera: false);
     setState(() {
       _selectedCampus = campus;
+      _is3D = (campus.pitch ?? areaForCampus(campus).pitch) > 0;
       _buildings = [];
     });
     _loadBuildings(campus.id);
@@ -613,13 +646,26 @@ class MapScreenState extends State<MapScreen> {
                 heroTag: 'map_layers',
                 backgroundColor: Colors.white,
                 foregroundColor: _primaryColor,
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Selección de capas de mapa')),
-                  );
+                onPressed: () async {
+                  try {
+                    final is3D = await _mapKey.currentState?.toggleDimension();
+                    if (mounted && is3D != null) setState(() => _is3D = is3D);
+                  } catch (_) {
+                    if (mounted)
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'No se pudo cambiar la vista del mapa. Reintenta.',
+                          ),
+                        ),
+                      );
+                  }
                 },
-                tooltip: 'Capas',
-                child: const Icon(Icons.layers_outlined),
+                tooltip: _is3D ? 'Cambiar a vista 2D' : 'Cambiar a vista 3D',
+                child: Text(
+                  _is3D ? '3D' : '2D',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
               const SizedBox(height: 10),
               FloatingActionButton(

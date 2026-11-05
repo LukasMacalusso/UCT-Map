@@ -14,17 +14,21 @@ import '../../domain/repositories/incident_repository.dart';
 /// Datasource remoto para consumir /api/incident a través del API Gateway.
 class IncidentRemoteDataSource implements IncidentRepository {
   IncidentRemoteDataSource({http.Client? client, ApiConfig? config})
-      : _client = client ?? ApiClientProvider.defaultClient,
-        _config = config ?? ApiConfig();
+    : _client = client ?? ApiClientProvider.defaultClient,
+      _config = config ?? ApiConfig();
 
   final http.Client _client;
   final ApiConfig _config;
 
   @override
-  Future<List<LostItem>> getLostItems({String? campus, String? category}) async {
+  Future<List<LostItem>> getLostItems({
+    String? campus,
+    String? category,
+  }) async {
     final queryParams = <String, dynamic>{};
     if (campus != null && campus != 'Todos') queryParams['campus'] = campus;
-    if (category != null && category != 'Todas') queryParams['category'] = category;
+    if (category != null && category != 'Todas')
+      queryParams['category'] = category;
 
     final uri = _config.uri(ApiEndpoints.incidentLostItems, queryParams);
     try {
@@ -69,7 +73,9 @@ class IncidentRemoteDataSource implements IncidentRepository {
       // Fallback local: devolver el item como creado
       return item;
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al reportar objeto.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al reportar objeto.',
+      );
     }
   }
 
@@ -120,7 +126,9 @@ class IncidentRemoteDataSource implements IncidentRepository {
     } on http.ClientException {
       return report;
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al crear reporte.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al crear reporte.',
+      );
     }
   }
 

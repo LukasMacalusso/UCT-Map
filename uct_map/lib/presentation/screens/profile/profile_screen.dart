@@ -1,3 +1,10 @@
+import '../../../application/contributions/user_reports.dart';
+import '../../../application/contributions/user_objects.dart';
+import '../../../domain/repositories/reports_repository.dart';
+import '../../../domain/repositories/lost_objects_repository.dart';
+import '../../../data/repositories/reports_repository_impl.dart';
+import '../../../data/repositories/lost_objects_repository_impl.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -7,7 +14,6 @@ import '../../../domain/entities/managed_user.dart';
 import '../../../domain/repositories/identity_repository.dart';
 import '../../../data/repositories/identity_repository_impl.dart';
 import '../login/session_required_view.dart';
-import 'saved_places_screen.dart';
 import 'my_reports_screen.dart';
 import 'my_lost_items_screen.dart';
 import 'profile_settings_screen.dart';
@@ -15,6 +21,8 @@ import 'profile_settings_screen.dart';
 class ProfileScreen extends StatefulWidget {
   final SessionController? session;
   final IdentityRepository? repository;
+  final ReportsRepository? reportsRepository;
+  final LostObjectsRepository? objectsRepository;
   final bool active;
   final Function(int)? onNavigateToTab;
   final Future<void> Function()? onLogout;
@@ -26,12 +34,14 @@ class ProfileScreen extends StatefulWidget {
     super.key,
     this.session,
     this.repository,
+    this.reportsRepository,
+    this.objectsRepository,
     this.active = true,
     this.onNavigateToTab,
     this.onLogout,
-    this.savedPlacesCount = 4,
-    this.reportsCount = 3,
-    this.notificationsCount = 1,
+    this.savedPlacesCount = 0,
+    this.reportsCount = 0,
+    this.notificationsCount = 0,
   });
 
   @override
@@ -40,6 +50,9 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   ManagedUser? _profile;
+  int? _reportCount;
+  int? _objectCount;
+  bool _countsFailed = false;
   bool _loadingProfile = false;
   bool _profileFailed = false;
   int _profileRequest = 0;
@@ -68,6 +81,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _profileRequest++;
     setState(() {
       _profile = null;
+      _reportCount = null;
+      _objectCount = null;
       _loadingProfile = false;
       _profileFailed = false;
     });
@@ -96,7 +111,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       _loadingProfile = true;
       _profileFailed = false;
+      _reportCount = null;
+      _objectCount = null;
     });
+    _loadCounts(request);
     try {
       final profile = await (widget.repository ?? IdentityRepositoryImpl())
           .getUserById(id);
@@ -121,135 +139,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Avatar seleccionado (índice para simulación de cambio de foto)
-  int _avatarIndex = 0;
-
-  final List<IconData> _avatarIcons = [
-    Icons.person,
-    Icons.face,
-    Icons.school,
-    Icons.sentiment_very_satisfied,
-  ];
-
-  void _openChangePhotoSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: const BoxDecoration(
-                      color: AppColors.fieldBorder,
-                      borderRadius: BorderRadius.all(Radius.circular(2)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Cambiar Foto de Perfil',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.uctBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt_outlined,
-                      color: AppColors.uctBlue,
-                    ),
-                  ),
-                  title: const Text('Tomar Foto'),
-                  subtitle: const Text('Abrir cámara del dispositivo'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    setState(() {
-                      _avatarIndex = (_avatarIndex + 1) % _avatarIcons.length;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Foto actualizada desde la cámara'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.uctGold.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.photo_library_outlined,
-                      color: AppColors.uctBlue,
-                    ),
-                  ),
-                  title: const Text('Elegir de la Galería'),
-                  subtitle: const Text('Seleccionar una imagen de tu galería'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    setState(() {
-                      _avatarIndex = (_avatarIndex + 2) % _avatarIcons.length;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Foto actualizada desde la galería'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.delete_outline, color: Colors.red),
-                  ),
-                  title: const Text('Eliminar Foto'),
-                  subtitle: const Text('Restablecer al avatar por defecto'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    setState(() {
-                      _avatarIndex = 0;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Foto de perfil restablecida'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+  Future<void> _loadCounts(int request) async {
+    final session = widget.session;
+    if (session == null || !session.isAuthenticated) return;
+    final token = session.token;
+    bool current() =>
+        mounted &&
+        widget.active &&
+        request == _profileRequest &&
+        session.token == token;
+    final reports = widget.reportsRepository ?? ReportsRepositoryImpl();
+    try {
+      final tickets = await loadUserReports(reports, session);
+      if (!current()) return;
+      final objects = await loadUserObjects(
+        reports,
+        widget.objectsRepository ?? LostObjectsRepositoryImpl(),
+        session,
+        loadedReports: tickets,
+      );
+      if (!current()) return;
+      setState(() {
+        _reportCount = tickets.where((r) => r.complaintDetails != null).length;
+        _objectCount = objects.items.length;
+        _countsFailed = false;
+      });
+    } catch (_) {
+      if (current())
+        setState(() {
+          _reportCount = null;
+          _objectCount = null;
+          _countsFailed = true;
+        });
+    }
   }
 
   void _confirmLogout() {
@@ -378,7 +300,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           const SizedBox(height: 8),
 
-          // 1. Imagen del usuario con lápiz para poder cambiarla (según Figma)
+          // Avatar sin edición hasta disponer de una fuente de imágenes real.
           Center(
             child: Stack(
               clipBehavior: Clip.none,
@@ -401,38 +323,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     radius: 48,
                     backgroundColor: const Color(0xFFF1F5F9),
                     child: Icon(
-                      _avatarIcons[_avatarIndex],
+                      Icons.person,
                       size: 56,
                       color: AppColors.uctBlue,
-                    ),
-                  ),
-                ),
-                // Botón de lápiz superpuesto para cambiar la imagen
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: _openChangePhotoSheet,
-                    child: Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: AppColors.uctGold,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.18),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.edit,
-                        size: 17,
-                        color: AppColors.uctBlue,
-                      ),
                     ),
                   ),
                 ),
@@ -518,43 +411,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 12),
           ],
-          // 1) Mis favoritos o guardados
-          _buildMenuButton(
-            title: 'Mis favoritos o guardados',
-            subtitle: 'Lugares y espacios guardados',
-            icon: Icons.bookmark_rounded,
-            iconColor: AppColors.uctBlue,
-            badgeText: widget.savedPlacesCount > 0
-                ? '${widget.savedPlacesCount}'
-                : null,
-            badgeColor: AppColors.uctBlue.withValues(alpha: 0.08),
-            badgeTextColor: AppColors.uctBlue,
-            onTap: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => SavedPlacesScreen(
-                    onNavigateToTab: widget.onNavigateToTab,
-                  ),
-                ),
-              );
-              if (result is int && widget.onNavigateToTab != null) {
-                widget.onNavigateToTab!(result);
-              }
-            },
-          ),
-
-          const SizedBox(height: 12),
-
+          if (_countsFailed)
+            TextButton(
+              onPressed: () => _loadCounts(_profileRequest),
+              child: const Text(
+                'No se pudieron cargar los contadores. Reintentar',
+              ),
+            ),
           // 2) Mis reportes
           _buildMenuButton(
             title: 'Mis reportes',
             subtitle: 'Seguimiento de incidencias',
             icon: Icons.assignment_outlined,
             iconColor: const Color(0xFF0284C7),
-            badgeText: widget.reportsCount > 0
-                ? '${widget.reportsCount}'
-                : null,
+            badgeText: _reportCount == null ? null : '$_reportCount',
             badgeColor: const Color(0xFFE0F2FE),
             badgeTextColor: const Color(0xFF0369A1),
             onTap: () async {
@@ -564,10 +434,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   builder: (_) => SessionRequiredView(
                     builder: (_) => MyReportsScreen(
                       onNavigateToTab: widget.onNavigateToTab,
+                      repository: widget.reportsRepository,
                     ),
                   ),
                 ),
               );
+              if (mounted && widget.active) _loadProfile();
               if (result is int && widget.onNavigateToTab != null) {
                 widget.onNavigateToTab!(result);
               }
@@ -579,12 +451,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // 3) Objetos reportados (solo muestra la cantidad numérica de notificaciones)
           _buildMenuButton(
             title: 'Objetos reportados',
-            subtitle: 'Seguimiento y notificaciones',
+            subtitle: 'Objetos vinculados a tus reportes',
             icon: Icons.inventory_2_outlined,
             iconColor: const Color(0xFF16A34A),
-            badgeText: widget.notificationsCount > 0
-                ? '${widget.notificationsCount}'
-                : null,
+            badgeText: _objectCount == null ? null : '$_objectCount',
             badgeColor: const Color(0xFFDCFCE7),
             badgeTextColor: const Color(0xFF15803D),
             onTap: () async {
@@ -594,10 +464,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   builder: (_) => SessionRequiredView(
                     builder: (_) => MyLostItemsScreen(
                       onNavigateToTab: widget.onNavigateToTab,
+                      reportsRepository: widget.reportsRepository,
+                      objectsRepository: widget.objectsRepository,
                     ),
                   ),
                 ),
               );
+              if (mounted && widget.active) _loadProfile();
               if (result is int && widget.onNavigateToTab != null) {
                 widget.onNavigateToTab!(result);
               }
@@ -609,7 +482,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // 4) Configuración
           _buildMenuButton(
             title: 'Configuración',
-            subtitle: 'Preferencias de la aplicación',
+            subtitle: 'Información de cuenta y acceso',
             icon: Icons.settings_outlined,
             iconColor: const Color(0xFF475569),
             badgeText: null,

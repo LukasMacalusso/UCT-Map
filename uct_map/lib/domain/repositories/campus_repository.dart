@@ -25,7 +25,10 @@ abstract class CampusRepository {
   Future<Category> getCategoryById(String id);
   Future<List<Room>> searchRooms(String term);
   Future<List<Room>> getRoomsFiltered({String? buildingId, String? categoryId});
-  Future<List<Structure>> getStructuresFiltered({String? campusId, String? categoryId});
+  Future<List<Structure>> getStructuresFiltered({
+    String? campusId,
+    String? categoryId,
+  });
   Future<List<BuildingLocationDto>> getBuildingLocations({String? campusId});
   Future<List<StructureLocationDto>> getStructureLocations({String? campusId});
 }

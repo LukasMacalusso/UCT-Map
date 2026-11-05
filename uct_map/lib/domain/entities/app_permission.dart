@@ -7,6 +7,8 @@ enum AppPermission {
   teacherSchedule,
   manageObjects,
   manageReports,
+  viewObjectHeatmap,
+  viewReportHeatmap,
   manageUsers;
 
   bool allows(UserRole? role) => switch (this) {
@@ -21,6 +23,10 @@ enum AppPermission {
     teacherSchedule => role == UserRole.profesor,
     manageObjects => role == UserRole.funcionarioObjetos,
     manageReports => role == UserRole.funcionarioQuejas,
+    viewObjectHeatmap =>
+      role == UserRole.funcionarioObjetos || role == UserRole.administrador,
+    viewReportHeatmap =>
+      role == UserRole.funcionarioQuejas || role == UserRole.administrador,
     manageUsers => role == UserRole.administrador,
   };
 }

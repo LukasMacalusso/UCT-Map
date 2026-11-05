@@ -1,3 +1,5 @@
+import '../../widgets/unsaved_form.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client_provider.dart';
@@ -45,6 +47,7 @@ class _Rooms extends StatefulWidget {
 }
 
 class _RoomsState extends State<_Rooms> {
+  int? _floor;
   final _data = CampusRemoteDataSource();
   late final String? _token = ApiClientProvider.session.token;
   late Future<List<Room>> _rooms = _data.getRooms(widget.buildingId);
@@ -171,7 +174,11 @@ class _RoomsState extends State<_Rooms> {
           icon: const Icon(Icons.arrow_back),
         ),
         actions: [
-          TextButton(onPressed: _close, child: const Text('Listo')),
+          TextButton(
+            onPressed: _close,
+            style: TextButton.styleFrom(foregroundColor: Colors.white),
+            child: const Text('Listo'),
+          ),
           IconButton(
             tooltip: 'Actualizar',
             onPressed: _reload,
@@ -208,9 +215,35 @@ class _RoomsState extends State<_Rooms> {
             groups.putIfAbsent(room.floor, () => []).add(room);
           }
           final floors = groups.keys.toList()..sort();
+          final selectedFloor = floors.contains(_floor) ? _floor : null;
           return ListView(
             children: [
-              for (final floor in floors) ...[
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: DropdownButtonFormField<int>(
+                  key: ValueKey(selectedFloor),
+                  initialValue: selectedFloor,
+                  decoration: const InputDecoration(
+                    labelText: 'Piso',
+                    prefixIcon: Icon(Icons.layers_outlined),
+                  ),
+                  items: [
+                    const DropdownMenuItem<int>(
+                      value: null,
+                      child: Text('Todos los pisos'),
+                    ),
+                    for (final floor in floors)
+                      DropdownMenuItem(
+                        value: floor,
+                        child: Text('Piso $floor'),
+                      ),
+                  ],
+                  onChanged: (value) => setState(() => _floor = value),
+                ),
+              ),
+              for (final floor in floors.where(
+                (f) => selectedFloor == null || f == selectedFloor,
+              )) ...[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 18, 16, 4),
                   child: Text(
@@ -282,8 +315,8 @@ class _RoomFormDialogState extends State<_RoomFormDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     title: Text(widget.room == null ? 'Nueva sala' : 'Editar sala'),
-    content: Form(
-      key: _form,
+    content: UnsavedForm(
+      formKey: _form,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -337,7 +370,7 @@ class _RoomFormDialogState extends State<_RoomFormDialog> {
     ),
     actions: [
       TextButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: () => Navigator.maybePop(context),
         child: const Text('Cancelar'),
       ),
       FilledButton(

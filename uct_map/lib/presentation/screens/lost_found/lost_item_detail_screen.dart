@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/navigation/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/lost_item.dart';
@@ -84,8 +85,18 @@ class LostItemDetailScreen extends StatelessWidget {
 
   String _formatDateTime(DateTime dt) {
     final months = [
-      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
     ];
     final h = dt.hour.toString().padLeft(2, '0');
     final m = dt.minute.toString().padLeft(2, '0');
@@ -96,7 +107,9 @@ class LostItemDetailScreen extends StatelessWidget {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Ubicando "${item.building}" (${item.campus}) en el mapa...'),
+        content: Text(
+          'Ubicando "${item.building}" (${item.campus}) en el mapa...',
+        ),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -155,12 +168,15 @@ class LostItemDetailScreen extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: accentColor.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                              color: accentColor.withValues(alpha: 0.7)),
+                            color: accentColor.withValues(alpha: 0.7),
+                          ),
                         ),
                         child: Text(
                           item.currentStatus.label,
@@ -174,7 +190,9 @@ class LostItemDetailScreen extends StatelessWidget {
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.35),
                           borderRadius: BorderRadius.circular(8),
@@ -199,8 +217,11 @@ class LostItemDetailScreen extends StatelessWidget {
                       CircleAvatar(
                         radius: 22,
                         backgroundColor: catColor.withValues(alpha: 0.2),
-                        child: Icon(_categoryIcon(item.category),
-                            color: catColor, size: 24),
+                        child: Icon(
+                          _categoryIcon(item.category),
+                          color: catColor,
+                          size: 24,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -210,9 +231,10 @@ class LostItemDetailScreen extends StatelessWidget {
                             Text(
                               item.category,
                               style: TextStyle(
-                                  color: catColor,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600),
+                                color: catColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
@@ -232,14 +254,19 @@ class LostItemDetailScreen extends StatelessWidget {
                   // Ubicacion
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined,
-                          color: AppColors.uctYellow, size: 15),
+                      const Icon(
+                        Icons.location_on_outlined,
+                        color: AppColors.uctYellow,
+                        size: 15,
+                      ),
                       const SizedBox(width: 5),
                       Expanded(
                         child: Text(
                           item.building,
                           style: const TextStyle(
-                              color: Colors.white70, fontSize: 13),
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ],
@@ -248,13 +275,18 @@ class LostItemDetailScreen extends StatelessWidget {
                   // Campus
                   Row(
                     children: [
-                      const Icon(Icons.account_balance_outlined,
-                          color: AppColors.uctYellow, size: 15),
+                      const Icon(
+                        Icons.account_balance_outlined,
+                        color: AppColors.uctYellow,
+                        size: 15,
+                      ),
                       const SizedBox(width: 5),
                       Text(
                         item.campus,
                         style: const TextStyle(
-                            color: Colors.white70, fontSize: 13),
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -262,13 +294,18 @@ class LostItemDetailScreen extends StatelessWidget {
                   // Reportado por
                   Row(
                     children: [
-                      const Icon(Icons.person_outline,
-                          color: AppColors.uctYellow, size: 15),
+                      const Icon(
+                        Icons.person_outline,
+                        color: AppColors.uctYellow,
+                        size: 15,
+                      ),
                       const SizedBox(width: 5),
                       Text(
                         'Encontrado por ${item.reportedBy}',
                         style: const TextStyle(
-                            color: Colors.white70, fontSize: 13),
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -279,13 +316,20 @@ class LostItemDetailScreen extends StatelessWidget {
                       onPressed: () => _goToMap(context),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        side: const BorderSide(color: AppColors.uctYellow, width: 1.2),
+                        side: const BorderSide(
+                          color: AppColors.uctYellow,
+                          width: 1.2,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 8),
                       ),
-                      icon: const Icon(Icons.map_outlined, size: 16, color: AppColors.uctYellow),
+                      icon: const Icon(
+                        Icons.map_outlined,
+                        size: 16,
+                        color: AppColors.uctYellow,
+                      ),
                       label: const Text(
                         'Ver ubicación en el Mapa',
                         style: TextStyle(
@@ -305,9 +349,10 @@ class LostItemDetailScreen extends StatelessWidget {
             const Text(
               'Foto del objeto',
               style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 8),
             Container(
@@ -336,9 +381,10 @@ class LostItemDetailScreen extends StatelessWidget {
             const Text(
               'Descripcion del objeto',
               style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 8),
             Container(
@@ -352,7 +398,10 @@ class LostItemDetailScreen extends StatelessWidget {
               child: Text(
                 item.description,
                 style: const TextStyle(
-                    fontSize: 14, color: AppColors.subtitle, height: 1.5),
+                  fontSize: 14,
+                  color: AppColors.subtitle,
+                  height: 1.5,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -362,9 +411,10 @@ class LostItemDetailScreen extends StatelessWidget {
               const Text(
                 'Donde reclamar',
                 style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ink,
+                ),
               ),
               const SizedBox(height: 8),
               Container(
@@ -374,12 +424,16 @@ class LostItemDetailScreen extends StatelessWidget {
                   color: AppColors.uctBlue.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: AppColors.uctBlue.withValues(alpha: 0.2)),
+                    color: AppColors.uctBlue.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline,
-                        color: AppColors.uctBlue, size: 20),
+                    const Icon(
+                      Icons.info_outline,
+                      color: AppColors.uctBlue,
+                      size: 20,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -401,9 +455,10 @@ class LostItemDetailScreen extends StatelessWidget {
             const Text(
               'Historial del objeto',
               style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -416,16 +471,13 @@ class LostItemDetailScreen extends StatelessWidget {
 
               final LostItemStatusEvent? event = item.statusHistory
                   .cast<LostItemStatusEvent?>()
-                  .firstWhere(
-                    (e) => e!.status == status,
-                    orElse: () => null,
-                  );
+                  .firstWhere((e) => e!.status == status, orElse: () => null);
 
               final Color dotColor = isDone
                   ? Colors.green
                   : isCurrent
-                      ? accentColor
-                      : Colors.grey.shade300;
+                  ? accentColor
+                  : Colors.grey.shade300;
 
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,8 +492,8 @@ class LostItemDetailScreen extends StatelessWidget {
                           color: isDone
                               ? Colors.green.withValues(alpha: 0.12)
                               : isCurrent
-                                  ? accentColor.withValues(alpha: 0.12)
-                                  : Colors.grey.shade100,
+                              ? accentColor.withValues(alpha: 0.12)
+                              : Colors.grey.shade100,
                           border: Border.all(
                             color: dotColor,
                             width: isCurrent ? 2.5 : 1.5,
@@ -449,8 +501,11 @@ class LostItemDetailScreen extends StatelessWidget {
                         ),
                         child: Center(
                           child: isDone
-                              ? const Icon(Icons.check,
-                                  size: 16, color: Colors.green)
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 16,
+                                  color: Colors.green,
+                                )
                               : Icon(
                                   _statusIcon(status),
                                   size: 15,
@@ -474,8 +529,9 @@ class LostItemDetailScreen extends StatelessWidget {
                   Expanded(
                     child: Padding(
                       padding: EdgeInsets.only(
-                          top: 4,
-                          bottom: isLast ? 16 : (event?.note != null ? 60 : 48)),
+                        top: 4,
+                        bottom: isLast ? 16 : (event?.note != null ? 60 : 48),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -496,31 +552,39 @@ class LostItemDetailScreen extends StatelessWidget {
                             Text(
                               _formatDateTime(event.at),
                               style: const TextStyle(
-                                  fontSize: 12, color: AppColors.subtitle),
+                                fontSize: 12,
+                                color: AppColors.subtitle,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'Por: ${event.by}',
                               style: const TextStyle(
-                                  fontSize: 12, color: AppColors.hint),
+                                fontSize: 12,
+                                color: AppColors.hint,
+                              ),
                             ),
                             if (event.note != null) ...[
                               const SizedBox(height: 4),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade50,
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                      color: AppColors.fieldBorder),
+                                    color: AppColors.fieldBorder,
+                                  ),
                                 ),
                                 child: Text(
                                   event.note!,
                                   style: const TextStyle(
-                                      fontSize: 11.5,
-                                      color: AppColors.subtitle,
-                                      height: 1.4),
+                                    fontSize: 11.5,
+                                    color: AppColors.subtitle,
+                                    height: 1.4,
+                                  ),
                                 ),
                               ),
                             ],
@@ -529,8 +593,9 @@ class LostItemDetailScreen extends StatelessWidget {
                             Text(
                               'Pendiente',
                               style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade400),
+                                fontSize: 12,
+                                color: Colors.grey.shade400,
+                              ),
                             ),
                           ],
                         ],
@@ -553,7 +618,8 @@ class LostItemDetailScreen extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                            'Contactando punto de entrega para ${item.ticketNumber}...'),
+                          'Contactando punto de entrega para ${item.ticketNumber}...',
+                        ),
                       ),
                     );
                   },
@@ -561,13 +627,13 @@ class LostItemDetailScreen extends StatelessWidget {
                     backgroundColor: AppColors.uctBlue,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   icon: const Icon(Icons.handshake_outlined, size: 20),
                   label: const Text(
                     'Reclamar este objeto',
-                    style:
-                        TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),

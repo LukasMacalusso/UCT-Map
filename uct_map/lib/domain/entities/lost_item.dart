@@ -1,11 +1,6 @@
 // Entidad LostItem: modelo de datos de objetos perdidos/encontrados UCT.
 
-enum LostItemStatus {
-  publicado,
-  enCustodia,
-  entregado,
-  cerrado,
-}
+enum LostItemStatus { publicado, enCustodia, entregado, cerrado }
 
 extension LostItemStatusExt on LostItemStatus {
   String get label {
@@ -58,7 +53,9 @@ class LostItemStatusEvent {
         : DateTime.now();
 
     return LostItemStatusEvent(
-      status: LostItemStatusExt.fromString((json['status'] ?? json['Status'])?.toString()),
+      status: LostItemStatusExt.fromString(
+        (json['status'] ?? json['Status'])?.toString(),
+      ),
       at: parsedAt,
       by: (json['by'] ?? json['By'] ?? '').toString(),
       note: json['note']?.toString() ?? json['Note']?.toString(),
@@ -66,11 +63,11 @@ class LostItemStatusEvent {
   }
 
   Map<String, dynamic> toJson() => {
-        'status': status.name,
-        'at': at.toIso8601String(),
-        'by': by,
-        if (note != null) 'note': note,
-      };
+    'status': status.name,
+    'at': at.toIso8601String(),
+    'by': by,
+    if (note != null) 'note': note,
+  };
 }
 
 class LostItem {
@@ -105,12 +102,18 @@ class LostItem {
   });
 
   factory LostItem.fromJson(Map<String, dynamic> json) {
-    final rawAt = json['reportedAt'] ?? json['ReportedAt'] ?? json['dateReport'] ?? json['createdAt'];
+    final rawAt =
+        json['reportedAt'] ??
+        json['ReportedAt'] ??
+        json['dateReport'] ??
+        json['createdAt'];
     final parsedAt = rawAt is String
         ? (DateTime.tryParse(rawAt) ?? DateTime.now())
         : DateTime.now();
 
-    final rawHistory = (json['statusHistory'] ?? json['StatusHistory']) as List<dynamic>? ?? [];
+    final rawHistory =
+        (json['statusHistory'] ?? json['StatusHistory']) as List<dynamic>? ??
+        [];
     final historyList = rawHistory
         .whereType<Map<String, dynamic>>()
         .map<LostItemStatusEvent>((e) => LostItemStatusEvent.fromJson(e))
@@ -118,36 +121,56 @@ class LostItem {
 
     return LostItem(
       id: (json['id'] ?? json['Id'] ?? json['idTicket'] ?? '').toString(),
-      ticketNumber: (json['ticketNumber'] ?? json['TicketNumber'] ?? 'TK-${json['id'] ?? '001'}').toString(),
+      ticketNumber:
+          (json['ticketNumber'] ??
+                  json['TicketNumber'] ??
+                  'TK-${json['id'] ?? '001'}')
+              .toString(),
       title: (json['title'] ?? json['Title'] ?? '').toString(),
-      description: (json['description'] ?? json['Description'] ?? '').toString(),
+      description: (json['description'] ?? json['Description'] ?? '')
+          .toString(),
       category: (json['category'] ?? json['Category'] ?? 'General').toString(),
-      campus: (json['campus'] ?? json['Campus'] ?? 'Campus San Francisco').toString(),
-      building: (json['building'] ?? json['Building'] ?? json['idStructure'] ?? 'Edificio Central').toString(),
-      reportedBy: (json['reportedBy'] ?? json['ReportedBy'] ?? json['idUsuario'] ?? '').toString(),
+      campus: (json['campus'] ?? json['Campus'] ?? 'Campus San Francisco')
+          .toString(),
+      building:
+          (json['building'] ??
+                  json['Building'] ??
+                  json['idStructure'] ??
+                  'Edificio Central')
+              .toString(),
+      reportedBy:
+          (json['reportedBy'] ?? json['ReportedBy'] ?? json['idUsuario'] ?? '')
+              .toString(),
       reportedAt: parsedAt,
-      currentStatus: LostItemStatusExt.fromString((json['currentStatus'] ?? json['CurrentStatus'] ?? json['status'])?.toString()),
+      currentStatus: LostItemStatusExt.fromString(
+        (json['currentStatus'] ?? json['CurrentStatus'] ?? json['status'])
+            ?.toString(),
+      ),
       statusHistory: historyList,
-      imageUrl: json['imageUrl']?.toString() ?? json['pictureUri']?.toString() ?? json['PictureUri']?.toString(),
-      contactInfo: json['contactInfo']?.toString() ?? json['ContactInfo']?.toString(),
+      imageUrl:
+          json['imageUrl']?.toString() ??
+          json['pictureUri']?.toString() ??
+          json['PictureUri']?.toString(),
+      contactInfo:
+          json['contactInfo']?.toString() ?? json['ContactInfo']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'ticketNumber': ticketNumber,
-        'title': title,
-        'description': description,
-        'category': category,
-        'campus': campus,
-        'building': building,
-        'reportedBy': reportedBy,
-        'reportedAt': reportedAt.toIso8601String(),
-        'currentStatus': currentStatus.name,
-        'statusHistory': statusHistory.map((e) => e.toJson()).toList(),
-        if (imageUrl != null) 'imageUrl': imageUrl,
-        if (contactInfo != null) 'contactInfo': contactInfo,
-      };
+    'id': id,
+    'ticketNumber': ticketNumber,
+    'title': title,
+    'description': description,
+    'category': category,
+    'campus': campus,
+    'building': building,
+    'reportedBy': reportedBy,
+    'reportedAt': reportedAt.toIso8601String(),
+    'currentStatus': currentStatus.name,
+    'statusHistory': statusHistory.map((e) => e.toJson()).toList(),
+    if (imageUrl != null) 'imageUrl': imageUrl,
+    if (contactInfo != null) 'contactInfo': contactInfo,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -158,8 +181,7 @@ final List<LostItem> mockLostItems = [
     id: '1',
     ticketNumber: '#TKT-UCT-0842',
     title: 'Billetera de cuero con carnet y TNE',
-    description:
-        'Billetera de cuero color cafe oscuro. Contiene carnet de identidad, tarjeta TNE, tarjeta de debito y alrededor de \$5.000 en efectivo. Se encontro debajo de la silla del aula C-204.',
+    description: 'Billetera de cuero color cafe oscuro. Contiene carnet de identidad, tarjeta TNE, tarjeta de debito y alrededor de \$5.000 en efectivo. Se encontro debajo de la silla del aula C-204.',
     category: 'Documentos',
     campus: 'Campus San Juan Pablo II',
     building: 'Edificio C - Aula C-204',
@@ -180,8 +202,7 @@ final List<LostItem> mockLostItems = [
     id: '2',
     ticketNumber: '#TKT-UCT-0839',
     title: 'Llavero con 4 llaves y cinta azul UCT',
-    description:
-        'Llavero con anilla metalica, 4 llaves de distintos tamanos y una cinta de tela azul con el logo UCT. Encontrado en la mesa del casino central.',
+    description: 'Llavero con anilla metalica, 4 llaves de distintos tamanos y una cinta de tela azul con el logo UCT. Encontrado en la mesa del casino central.',
     category: 'Llaves',
     campus: 'Campus San Juan Pablo II',
     building: 'Edificio Central - Casino',
@@ -208,8 +229,7 @@ final List<LostItem> mockLostItems = [
     id: '3',
     ticketNumber: '#TKT-UCT-0820',
     title: 'Calculadora Cientifica Casio fx-991LA',
-    description:
-        'Calculadora cientifica Casio fx-991LA PLUS color negro. Tiene el nombre "R. Alarcon" escrito en la parte trasera con marcador. Se encontro en el laboratorio 2 del Edificio A.',
+    description: 'Calculadora cientifica Casio fx-991LA PLUS color negro. Tiene el nombre "R. Alarcon" escrito en la parte trasera con marcador. Se encontro en el laboratorio 2 del Edificio A.',
     category: 'Tecnologia',
     campus: 'Campus San Francisco',
     building: 'Edificio A - Laboratorio 2',
@@ -230,8 +250,7 @@ final List<LostItem> mockLostItems = [
     id: '4',
     ticketNumber: '#TKT-UCT-0811',
     title: 'Poleron azul marino UCT Talla L',
-    description:
-        'Poleron azul marino con el logo UCT bordado en el pecho. Talla L. Se encontro colgado en una silla del gimnasio despues del turno de la tarde.',
+    description: 'Poleron azul marino con el logo UCT bordado en el pecho. Talla L. Se encontro colgado en una silla del gimnasio despues del turno de la tarde.',
     category: 'Ropa',
     campus: 'Campus San Juan Pablo II',
     building: 'Gimnasio / Canchas Deportivas',

@@ -1,3 +1,7 @@
+import '../../../application/campus/location_names.dart';
+import '../../../data/datasources/campus_remote_ds.dart';
+import '../../widgets/campus_filter_dialog.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -22,11 +26,13 @@ import 'widgets/ticket_status_badge.dart';
 class TicketsScreen extends StatefulWidget {
   final ReportsRepository repository;
   final bool showAppBar;
+  final bool active;
 
   const TicketsScreen({
     super.key,
     required this.repository,
     this.showAppBar = true,
+    this.active = true,
   });
 
   @override
@@ -42,6 +48,25 @@ class _TicketsScreenState extends State<TicketsScreen> {
   final _searchController = TextEditingController();
   Timer? _debounceTimer;
 
+  Set<String>? _campusLocationIds;
+  String? _campusLabel;
+  Map<String, String> _locationNames = {};
+  int _fetchRevision = 0;
+
+  Future<void> _chooseLocation() async {
+    final selected = await showCampusFilterDialog(context);
+    if (!mounted || selected == null) return;
+    setState(() {
+      _campusLocationIds = selected.locationId == null
+          ? selected.locationIds
+          : null;
+      _campusLabel = selected.label;
+      _structureRefIdFilter = selected.locationId;
+      _currentPage = 1;
+    });
+    await _fetchTickets();
+  }
+
   bool _isLoading = true;
   String? _errorMessage;
   PaginatedReportsResponse? _response;
@@ -54,6 +79,15 @@ class _TicketsScreenState extends State<TicketsScreen> {
   bool _descending = true;
   int _currentPage = 1;
   static const int _pageSize = 10;
+
+  @override
+  void didUpdateWidget(covariant TicketsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.active && !oldWidget.active) {
+      _currentPage = 1;
+      _fetchTickets();
+    }
+  }
 
   @override
   void initState() {
@@ -82,6 +116,20 @@ class _TicketsScreenState extends State<TicketsScreen> {
   }
 
   Future<void> _fetchTickets() async {
+    final revision = ++_fetchRevision;
+    final token = ApiClientProvider.session.token;
+    bool current() =>
+        mounted &&
+        revision == _fetchRevision &&
+        ApiClientProvider.session.token == token;
+    final ids = _campusLocationIds;
+    loadLocationNames(CampusRemoteDataSource())
+        .then((names) {
+          if (current()) setState(() => _locationNames = names);
+        })
+        .catchError((Object _) {
+          /* Los registros siguen disponibles sin etiquetas. */
+        });
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -93,20 +141,51 @@ class _TicketsScreenState extends State<TicketsScreen> {
       type: _typeFilter,
       sortBy: _sortBy,
       descending: _descending,
-      page: _currentPage,
+      page: ids == null ? _currentPage : 1,
       pageSize: _pageSize,
     );
 
     try {
-      final res = await widget.repository.getReports(filter: filter);
-      if (mounted) {
+      var res = await widget.repository.getReports(filter: filter);
+      if (ids != null) {
+        final values = <Ticket>[];
+        final seen = <String>{};
+        var page = 1;
+        while (true) {
+          if (!current()) return;
+          if (res.page != page || (res.hasNextPage && res.items.isEmpty))
+            throw const FormatException('Paginación inválida.');
+          for (final item in res.items) {
+            if (item.id.isEmpty || !seen.add(item.id))
+              throw const FormatException(
+                'Identificadores de página inválidos.',
+              );
+            if (ids.contains(item.structureRefId)) values.add(item);
+          }
+          if (!res.hasNextPage) break;
+          res = await widget.repository.getReports(
+            filter: filter.copyWith(page: ++page),
+          );
+        }
+        res = PaginatedReportsResponse(
+          items: values
+              .skip((_currentPage - 1) * _pageSize)
+              .take(_pageSize)
+              .toList(),
+          totalCount: values.length,
+          page: _currentPage,
+          pageSize: _pageSize,
+          totalPages: (values.length / _pageSize).ceil(),
+        );
+      }
+      if (current()) {
         setState(() {
           _response = res;
           _isLoading = false;
         });
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!current()) return;
       String message;
       if (e is ProblemDetailsException) {
         message = e.problemDetails.userMessage;
@@ -419,6 +498,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
     );
 
     if (result == true) {
+      _currentPage = 1;
       _fetchTickets();
     }
   }
@@ -436,6 +516,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
     );
 
     if (result == true) {
+      _currentPage = 1;
       _fetchTickets();
     }
   }
@@ -492,6 +573,39 @@ class _TicketsScreenState extends State<TicketsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _campusLabel ?? 'Todos los campus',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.uctBlue,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _chooseLocation,
+                tooltip: 'Filtrar ubicación',
+                icon: const Icon(Icons.location_city_outlined),
+              ),
+              if (_campusLabel != null)
+                IconButton(
+                  tooltip: 'Quitar filtro de ubicación',
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    setState(() {
+                      _campusLocationIds = null;
+                      _campusLabel = null;
+                      _structureRefIdFilter = null;
+                      _currentPage = 1;
+                    });
+                    _fetchTickets();
+                  },
+                ),
+            ],
+          ),
+
           // Buscador
           TextField(
             controller: _searchController,
@@ -696,10 +810,11 @@ class _TicketsScreenState extends State<TicketsScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Estructura: ${ticket.structureRefId}',
+                    _locationNames[ticket.structureRefId] ??
+                        'Ubicación no disponible',
                     style: const TextStyle(
                       fontSize: 11.5,
-                      fontFamily: 'monospace',
+
                       color: AppColors.subtitle,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -749,7 +864,6 @@ class _TicketsScreenState extends State<TicketsScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.blue.shade900,
-                        fontFamily: 'monospace',
                       ),
                     ),
                   ],

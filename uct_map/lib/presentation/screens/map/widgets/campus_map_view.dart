@@ -64,8 +64,8 @@ class CampusMapViewState extends State<CampusMapView> {
       CameraViewportState(
         center: _position(building.longitude, building.latitude),
         zoom: zoom,
-        pitch: area.pitch,
-        bearing: area.bearing,
+        pitch: _pitch(area.pitch),
+        bearing: campus.bearing ?? area.bearing,
       ),
       transition: EasingViewportTransition(
         duration: const Duration(milliseconds: 900),
@@ -75,6 +75,37 @@ class CampusMapViewState extends State<CampusMapView> {
 
   final ViewportController _viewportController = ViewportController();
   MapboxMap? _map;
+  bool? _flatOverride;
+  double _pitch(double fallback) {
+    final configured = widget.campus?.pitch ?? fallback;
+    if (_flatOverride == true) return 0;
+    if (_flatOverride == false && configured == 0)
+      return fallback > 0 ? fallback : 50;
+    return configured;
+  }
+
+  Future<bool?> toggleDimension() async {
+    final map = _map;
+    final campusId = widget.campus?.id;
+    if (map == null) return null;
+    final camera = await map.getCameraState();
+    if (!mounted || _map != map || campusId != widget.campus?.id) return null;
+    _flatOverride = _flatOverride == null ? camera.pitch > 0 : !_flatOverride!;
+    final area = widget.campus == null ? null : areaForCampus(widget.campus!);
+    _viewportController.moveTo(
+      CameraViewportState(
+        center: camera.center,
+        zoom: camera.zoom,
+        pitch: _pitch(area?.pitch ?? 50),
+        bearing: camera.bearing,
+      ),
+      transition: EasingViewportTransition(
+        duration: const Duration(milliseconds: 350),
+      ),
+    );
+    return !_flatOverride!;
+  }
+
   GeoJsonSource? _campusSource;
   GeoJsonSource? _buildingSource;
   GeoJsonSource? _routeSource;
@@ -189,8 +220,8 @@ class CampusMapViewState extends State<CampusMapView> {
           structure.location.latitude,
         ),
         zoom: 18.5.clamp(area.minZoom, area.maxZoom),
-        pitch: area.pitch,
-        bearing: area.bearing,
+        pitch: _pitch(area.pitch),
+        bearing: campus.bearing ?? area.bearing,
       ),
       transition: EasingViewportTransition(
         duration: const Duration(milliseconds: 900),
@@ -240,8 +271,8 @@ class CampusMapViewState extends State<CampusMapView> {
       CameraViewportState(
         center: _position(longitude, latitude),
         zoom: 16,
-        pitch: area?.pitch ?? 50,
-        bearing: area?.bearing ?? -20,
+        pitch: _pitch(area?.pitch ?? 50),
+        bearing: widget.campus?.bearing ?? area?.bearing ?? -20,
       ),
       transition: EasingViewportTransition(
         duration: const Duration(milliseconds: 900),
@@ -257,8 +288,8 @@ class CampusMapViewState extends State<CampusMapView> {
       if (!mounted || revision != _boundsRevision) return;
       final campus = widget.campus;
       final area = campus == null ? null : areaForCampus(campus);
-      final pitch = area?.pitch ?? 50;
-      final bearing = area?.bearing ?? -20;
+      final pitch = _pitch(area?.pitch ?? 50);
+      final bearing = widget.campus?.bearing ?? area?.bearing ?? -20;
       final camera = await map.cameraForCoordinates(
         coordinates.map((p) => _position(p[0], p[1])).toList(),
         MbxEdgeInsets(top: 220, left: 60, bottom: 180, right: 60),
@@ -285,7 +316,13 @@ class CampusMapViewState extends State<CampusMapView> {
   @override
   void didUpdateWidget(covariant CampusMapView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.campus?.id != widget.campus?.id) {
+    if (oldWidget.campus?.id != widget.campus?.id ||
+        oldWidget.campus?.zoom != widget.campus?.zoom ||
+        oldWidget.campus?.pitch != widget.campus?.pitch ||
+        oldWidget.campus?.bearing != widget.campus?.bearing ||
+        oldWidget.campus?.latitude != widget.campus?.latitude ||
+        oldWidget.campus?.longitude != widget.campus?.longitude) {
+      _flatOverride = null;
       final campus = widget.campus;
       if (campus != null) {
         // Se aplica el nuevo límite antes de mover la cámara.
@@ -327,7 +364,7 @@ class CampusMapViewState extends State<CampusMapView> {
           minZoom: area.minZoom,
           maxZoom: area.maxZoom,
           minPitch: 0,
-          maxPitch: 60,
+          maxPitch: 85,
         ),
       );
       if (!mounted ||
@@ -337,9 +374,12 @@ class CampusMapViewState extends State<CampusMapView> {
       _viewportController.moveTo(
         CameraViewportState(
           center: _position(campus.longitude, campus.latitude),
-          zoom: area.initialZoom,
-          pitch: area.pitch,
-          bearing: area.bearing,
+          zoom: (campus.zoom ?? area.initialZoom).clamp(
+            area.minZoom,
+            area.maxZoom,
+          ),
+          pitch: _pitch(area.pitch),
+          bearing: campus.bearing ?? area.bearing,
         ),
         transition: EasingViewportTransition(
           duration: const Duration(milliseconds: 850),
@@ -599,9 +639,12 @@ class CampusMapViewState extends State<CampusMapView> {
         center: campus == null
             ? _position(-72.5904, -38.7359)
             : _position(campus.longitude, campus.latitude),
-        zoom: area?.initialZoom ?? 16.5,
-        pitch: area?.pitch ?? 50,
-        bearing: area?.bearing ?? -20,
+        zoom: (campus?.zoom ?? area?.initialZoom ?? 16.5).clamp(
+          area?.minZoom ?? 0,
+          area?.maxZoom ?? 22,
+        ),
+        pitch: _pitch(area?.pitch ?? 50),
+        bearing: widget.campus?.bearing ?? area?.bearing ?? -20,
       ),
       onMapCreated: _onMapCreated,
       onStyleLoadedListener: (_) => _onStyleLoaded(),

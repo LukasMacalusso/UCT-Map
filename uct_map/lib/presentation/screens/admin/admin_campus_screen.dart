@@ -1,3 +1,6 @@
+import '../../widgets/unsaved_form.dart';
+import '../../../application/heatmaps/load_heatmap.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -7,8 +10,6 @@ import '../../../core/network/api_client_provider.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../data/datasources/campus_remote_ds.dart';
 import '../../../data/models/campus_location_dto.dart';
-import '../../../data/models/report_dto.dart';
-import '../../../data/models/lost_object_dto.dart';
 import '../../../data/repositories/reports_repository_impl.dart';
 import '../../../data/repositories/lost_objects_repository_impl.dart';
 import '../../../domain/entities/app_permission.dart';
@@ -34,16 +35,29 @@ Campus? preferredAdminCampus(List<Campus> campuses, {String? previousId}) =>
 
 /// Gestión de campus disponible exclusivamente en la interfaz de administrador.
 class AdminCampusScreen extends StatelessWidget {
-  const AdminCampusScreen({super.key});
+  const AdminCampusScreen({
+    super.key,
+    this.heatmapOnly = false,
+    this.objectsMode = false,
+  });
+  final bool heatmapOnly;
+  final bool objectsMode;
   @override
   Widget build(BuildContext context) => SessionRequiredView(
-    permission: AppPermission.manageUsers,
-    builder: (_) => const _AdminCampus(),
+    permission: heatmapOnly
+        ? (objectsMode
+              ? AppPermission.viewObjectHeatmap
+              : AppPermission.viewReportHeatmap)
+        : AppPermission.manageUsers,
+    builder: (_) =>
+        _AdminCampus(heatmapOnly: heatmapOnly, objectsMode: objectsMode),
   );
 }
 
 class _AdminCampus extends StatefulWidget {
-  const _AdminCampus();
+  const _AdminCampus({required this.heatmapOnly, required this.objectsMode});
+  final bool heatmapOnly;
+  final bool objectsMode;
   @override
   State<_AdminCampus> createState() => _AdminCampusState();
 }
@@ -58,7 +72,7 @@ class _AdminCampusState extends State<_AdminCampus> {
   Campus? _selected;
   bool _loading = true;
   String? _error;
-  bool _objectsMode = false;
+  late bool _objectsMode = widget.objectsMode;
   List<Map<String, Object>> _points = [];
   int _revision = 0;
   MapboxMap? _map;
@@ -70,7 +84,19 @@ class _AdminCampusState extends State<_AdminCampus> {
       _token != null &&
       _session.token == _token &&
       _session.isAuthenticated &&
+      (widget.heatmapOnly
+          ? (_objectsMode
+                    ? AppPermission.viewObjectHeatmap
+                    : AppPermission.viewReportHeatmap)
+                .allows(_session.currentUser?.role)
+          : AppPermission.manageUsers.allows(_session.currentUser?.role));
+  bool get _canEdit =>
+      _authorized &&
+      !widget.heatmapOnly &&
       AppPermission.manageUsers.allows(_session.currentUser?.role);
+  bool get _bothModes =>
+      AppPermission.viewObjectHeatmap.allows(_session.currentUser?.role) &&
+      AppPermission.viewReportHeatmap.allows(_session.currentUser?.role);
 
   @override
   void initState() {
@@ -119,6 +145,7 @@ class _AdminCampusState extends State<_AdminCampus> {
       _error = null;
       _points = [];
       _map = null;
+      _drawnMaps.clear();
       _styleReady = false;
     });
     try {
@@ -126,36 +153,15 @@ class _AdminCampusState extends State<_AdminCampus> {
       final structures = await _campus.getStructureLocations(
         campusId: campus.id,
       );
-      final counts = <String, int>{};
-      var page = 1;
-      while (true) {
-        if (!_authorized || revision != _revision) return;
-        if (objectsMode) {
-          final batch = await _objects.getLostObjects(
-            filter: LostObjectFilterParams(page: page),
-          );
-          for (final object in batch.items) {
-            counts.update(object.structureId, (v) => v + 1, ifAbsent: () => 1);
-          }
-          if (!batch.hasNextPage) break;
-        } else {
-          final batch = await _reports.getReports(
-            filter: ReportFilterParams(page: page),
-          );
-          // Reportes con queja: excluir tickets creados solo para objetos.
-          for (final ticket in batch.items.where(
-            (t) => t.complaintDetails != null,
-          )) {
-            counts.update(
-              ticket.structureRefId,
-              (v) => v + 1,
-              ifAbsent: () => 1,
-            );
-          }
-          if (!batch.hasNextPage) break;
-        }
-        page++;
-      }
+      final counts = await loadHeatmapCounts(
+        objectsMode: objectsMode,
+        reports: _reports,
+        objects: _objects,
+        checkSession: () {
+          if (!_authorized || revision != _revision)
+            throw StateError('La sesión o el filtro cambió.');
+        },
+      );
       if (!_authorized || revision != _revision) return;
       final points = <Map<String, Object>>[];
       for (final b in buildings) {
@@ -263,7 +269,7 @@ class _AdminCampusState extends State<_AdminCampus> {
 
   Future<void> _edit() async {
     final campus = _selected;
-    if (campus == null || !_authorized) return;
+    if (campus == null || !_canEdit) return;
     try {
       final data = await ApiClientProvider.apiClient
           .getJson<Map<String, dynamic>>('/api/campus/campuses/${campus.id}');
@@ -286,7 +292,7 @@ class _AdminCampusState extends State<_AdminCampus> {
   }
 
   Future<void> _createCampus() async {
-    if (!_authorized) return;
+    if (!_canEdit) return;
     final saved = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
@@ -298,7 +304,7 @@ class _AdminCampusState extends State<_AdminCampus> {
 
   Future<void> _deleteCampus() async {
     final campus = _selected;
-    if (campus == null || !_authorized) return;
+    if (campus == null || !_canEdit) return;
     try {
       final buildings = await _campus.getBuildings(campus.id);
       final structures = await _campus.getStructures(campus.id);
@@ -352,13 +358,20 @@ class _AdminCampusState extends State<_AdminCampus> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Administrar campus'),
+      title: Text(
+        widget.heatmapOnly
+            ? (_objectsMode
+                  ? 'Mapa de calor de objetos'
+                  : 'Mapa de calor de incidencias')
+            : 'Administrar campus',
+      ),
       actions: [
-        IconButton(
-          tooltip: 'Crear campus',
-          onPressed: _loading ? null : _createCampus,
-          icon: const Icon(Icons.add),
-        ),
+        if (_canEdit)
+          IconButton(
+            tooltip: 'Crear campus',
+            onPressed: _loading ? null : _createCampus,
+            icon: const Icon(Icons.add),
+          ),
       ],
     ),
     body: Column(
@@ -393,87 +406,96 @@ class _AdminCampusState extends State<_AdminCampus> {
                         },
                 ),
               ),
-              IconButton(
-                tooltip: 'Editar campus',
-                onPressed: _loading ? null : _edit,
-                icon: const Icon(Icons.edit_outlined),
-              ),
-              IconButton(
-                tooltip: 'Eliminar campus',
-                onPressed: _loading ? null : _deleteCampus,
-                icon: const Icon(Icons.delete_outline),
-              ),
+              if (_canEdit)
+                IconButton(
+                  tooltip: 'Editar campus',
+                  onPressed: _loading ? null : _edit,
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+              if (_canEdit)
+                IconButton(
+                  tooltip: 'Eliminar campus',
+                  onPressed: _loading ? null : _deleteCampus,
+                  icon: const Icon(Icons.delete_outline),
+                ),
             ],
           ),
         ),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 6,
-          children: [
-            TextButton.icon(
-              onPressed: _loading || _selected == null
-                  ? null
-                  : () async {
-                      final selected = _selected!;
-                      await Navigator.push(
+        if (_canEdit)
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 6,
+            children: [
+              TextButton.icon(
+                onPressed: _loading || _selected == null
+                    ? null
+                    : () async {
+                        final selected = _selected!;
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                AdminBuildingsScreen(campus: selected),
+                          ),
+                        );
+                        if (_authorized) await _loadHeatmap();
+                      },
+                icon: const Icon(Icons.apartment),
+                label: const Text('Edificios'),
+              ),
+              TextButton.icon(
+                onPressed: _loading || _selected == null
+                    ? null
+                    : () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                AdminStructuresScreen(campus: _selected!),
+                          ),
+                        );
+                        if (_authorized) await _loadHeatmap();
+                      },
+                icon: const Icon(Icons.place_outlined),
+                label: const Text('Estructuras'),
+              ),
+              TextButton.icon(
+                onPressed: _loading
+                    ? null
+                    : () => Navigator.push(
                         context,
                         MaterialPageRoute<void>(
-                          builder: (_) =>
-                              AdminBuildingsScreen(campus: selected),
+                          builder: (_) => const AdminCategoriesScreen(),
                         ),
-                      );
-                      if (_authorized) await _loadHeatmap();
-                    },
-              icon: const Icon(Icons.apartment),
-              label: const Text('Edificios'),
-            ),
-            TextButton.icon(
-              onPressed: _loading || _selected == null
-                  ? null
-                  : () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) =>
-                              AdminStructuresScreen(campus: _selected!),
-                        ),
-                      );
-                      if (_authorized) await _loadHeatmap();
-                    },
-              icon: const Icon(Icons.place_outlined),
-              label: const Text('Estructuras'),
-            ),
-            TextButton.icon(
-              onPressed: _loading
-                  ? null
-                  : () => Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (_) => const AdminCategoriesScreen(),
                       ),
-                    ),
-              icon: const Icon(Icons.category_outlined),
-              label: const Text('Categorías'),
-            ),
-          ],
-        ),
-        SegmentedButton<bool>(
-          segments: const [
-            ButtonSegment(value: false, label: Text('Reportes')),
-            ButtonSegment(value: true, label: Text('Objetos')),
-          ],
-          selected: {_objectsMode},
-          onSelectionChanged: _loading
-              ? null
-              : (v) {
-                  setState(() => _objectsMode = v.first);
-                  _loadHeatmap();
-                },
-        ),
+                icon: const Icon(Icons.category_outlined),
+                label: const Text('Categorías'),
+              ),
+            ],
+          ),
+        if (_bothModes)
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(value: false, label: Text('Reportes')),
+              ButtonSegment(value: true, label: Text('Objetos')),
+            ],
+            selected: {_objectsMode},
+            onSelectionChanged: _loading
+                ? null
+                : (v) {
+                    setState(() => _objectsMode = v.first);
+                    _loadHeatmap();
+                  },
+          ),
         const Padding(
           padding: EdgeInsets.all(8),
           child: Text('Conteo por ubicación · amarillo: menor · rojo: mayor'),
         ),
+        if (!_loading && _error == null && _selected != null && _points.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(12),
+            child: Text('No hay registros con ubicación en este campus.'),
+          ),
         if (_loading)
           const Expanded(child: Center(child: CircularProgressIndicator()))
         else if (_error != null)
@@ -510,9 +532,14 @@ class _AdminCampusState extends State<_AdminCampus> {
                           _selected!.latitude,
                         ),
                       ),
-                      zoom: areaForCampus(_selected!).initialZoom,
-                      pitch: areaForCampus(_selected!).pitch,
-                      bearing: areaForCampus(_selected!).bearing,
+                      zoom:
+                          _selected!.zoom ??
+                          areaForCampus(_selected!).initialZoom,
+                      pitch:
+                          _selected!.pitch ?? areaForCampus(_selected!).pitch,
+                      bearing:
+                          _selected!.bearing ??
+                          areaForCampus(_selected!).bearing,
                     ),
                     onMapCreated: (map) {
                       _map = map;
@@ -657,8 +684,8 @@ class _EditCampusState extends State<_EditCampus> {
         appBar: AppBar(
           title: Text(widget.data == null ? 'Crear campus' : 'Editar campus'),
         ),
-        body: Form(
-          key: _form,
+        body: UnsavedForm(
+          formKey: _form,
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [

@@ -102,10 +102,8 @@ void main() {
             home: Builder(
               builder: (context) => Scaffold(
                 body: TextButton(
-                  onPressed: () => Navigator.pushNamed(
-                    context,
-                    AppRoutes.manageCampus,
-                  ),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, AppRoutes.manageCampus),
                   child: const Text('Abrir administración de campus'),
                 ),
               ),

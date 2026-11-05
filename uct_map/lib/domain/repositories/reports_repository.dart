@@ -3,6 +3,8 @@ import '../entities/ticket.dart';
 
 /// Contrato del repositorio de Reportes / Tickets (Incident Service / Reports).
 abstract class ReportsRepository {
+  Future<void> deleteReport(String id);
+
   /// Registra un nuevo reporte/ticket (POST /api/incident/reports).
   ///
   /// El usuario autor se asigna automáticamente a partir del JWT Bearer en el backend.

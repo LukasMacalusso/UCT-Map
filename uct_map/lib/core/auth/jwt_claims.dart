@@ -46,9 +46,9 @@ JwtClaims parseJwt(
     if (exp is! num) throw const FormatException('exp');
     // El rol viaja como string único o lista. Identity lo emite en la
     // claim corta `role` o en la URI .NET estándar.
-    final rawRoles = payload['role'] ??
-        payload[
-            'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+    final rawRoles =
+        payload['role'] ??
+        payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
     final roles = switch (rawRoles) {
       final String s => [UserRole.fromString(s)],
       final List l => l.map(UserRole.fromString).toList(),
@@ -71,13 +71,17 @@ JwtClaims parseJwt(
     return JwtClaims(
       subject: sub,
       email: mail,
-      expiresAt:
-          DateTime.fromMillisecondsSinceEpoch((exp * 1000).toInt(), isUtc: true),
+      expiresAt: DateTime.fromMillisecondsSinceEpoch(
+        (exp * 1000).toInt(),
+        isUtc: true,
+      ),
       roles: roles,
       issuer: issuer,
       audience: audience,
     );
   } on FormatException {
-    throw const AuthFailure('Respuesta inesperada del servidor. Intenta de nuevo.');
+    throw const AuthFailure(
+      'Respuesta inesperada del servidor. Intenta de nuevo.',
+    );
   }
 }

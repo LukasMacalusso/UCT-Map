@@ -21,7 +21,8 @@ class Professor {
   });
 
   factory Professor.fromJson(Map<String, dynamic> json) {
-    final rawHours = (json['officeHours'] ?? json['OfficeHours']) as List<dynamic>? ?? [];
+    final rawHours =
+        (json['officeHours'] ?? json['OfficeHours']) as List<dynamic>? ?? [];
     final hoursList = rawHours
         .whereType<Map<String, dynamic>>()
         .map<OfficeHour>((h) => OfficeHour.fromJson(h))
@@ -33,18 +34,20 @@ class Professor {
       department: (json['department'] ?? json['Department'] ?? '').toString(),
       office: (json['office'] ?? json['Office'] ?? '').toString(),
       email: (json['email'] ?? json['Email'] ?? '').toString(),
-      structureRefId: json['structureRefId']?.toString() ?? json['StructureRefId']?.toString(),
+      structureRefId:
+          json['structureRefId']?.toString() ??
+          json['StructureRefId']?.toString(),
       officeHours: hoursList,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'department': department,
-        'office': office,
-        'email': email,
-        if (structureRefId != null) 'structureRefId': structureRefId,
-        'officeHours': officeHours.map((h) => h.toJson()).toList(),
-      };
+    'id': id,
+    'name': name,
+    'department': department,
+    'office': office,
+    'email': email,
+    if (structureRefId != null) 'structureRefId': structureRefId,
+    'officeHours': officeHours.map((h) => h.toJson()).toList(),
+  };
 }

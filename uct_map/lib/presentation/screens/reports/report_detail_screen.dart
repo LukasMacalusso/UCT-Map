@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/navigation/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/report.dart';
@@ -50,8 +51,18 @@ class ReportDetailScreen extends StatelessWidget {
 
   String _formatDateTime(DateTime dt) {
     final months = [
-      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
     ];
     final h = dt.hour.toString().padLeft(2, '0');
     final m = dt.minute.toString().padLeft(2, '0');
@@ -118,11 +129,16 @@ class ReportDetailScreen extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: accentColor.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: accentColor.withValues(alpha: 0.6)),
+                          border: Border.all(
+                            color: accentColor.withValues(alpha: 0.6),
+                          ),
                         ),
                         child: Text(
                           report.currentStatus.label,
@@ -147,14 +163,19 @@ class ReportDetailScreen extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined,
-                          color: AppColors.uctYellow, size: 16),
+                      const Icon(
+                        Icons.location_on_outlined,
+                        color: AppColors.uctYellow,
+                        size: 16,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           report.location,
                           style: const TextStyle(
-                              color: Colors.white70, fontSize: 13),
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ],
@@ -162,26 +183,36 @@ class ReportDetailScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.account_balance_outlined,
-                          color: AppColors.uctYellow, size: 16),
+                      const Icon(
+                        Icons.account_balance_outlined,
+                        color: AppColors.uctYellow,
+                        size: 16,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         report.campus,
                         style: const TextStyle(
-                            color: Colors.white70, fontSize: 13),
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.person_outline,
-                          color: AppColors.uctYellow, size: 16),
+                      const Icon(
+                        Icons.person_outline,
+                        color: AppColors.uctYellow,
+                        size: 16,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Reportado por ${report.reportedBy}',
                         style: const TextStyle(
-                            color: Colors.white70, fontSize: 13),
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -192,13 +223,20 @@ class ReportDetailScreen extends StatelessWidget {
                       onPressed: () => _goToMap(context),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        side: const BorderSide(color: AppColors.uctYellow, width: 1.2),
+                        side: const BorderSide(
+                          color: AppColors.uctYellow,
+                          width: 1.2,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 8),
                       ),
-                      icon: const Icon(Icons.map_outlined, size: 16, color: AppColors.uctYellow),
+                      icon: const Icon(
+                        Icons.map_outlined,
+                        size: 16,
+                        color: AppColors.uctYellow,
+                      ),
                       label: const Text(
                         'Ver ubicación en el Mapa',
                         style: TextStyle(
@@ -218,9 +256,10 @@ class ReportDetailScreen extends StatelessWidget {
             const Text(
               'Descripcion',
               style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 8),
             Container(
@@ -234,7 +273,10 @@ class ReportDetailScreen extends StatelessWidget {
               child: Text(
                 report.description,
                 style: const TextStyle(
-                    fontSize: 14, color: AppColors.subtitle, height: 1.5),
+                  fontSize: 14,
+                  color: AppColors.subtitle,
+                  height: 1.5,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -243,9 +285,10 @@ class ReportDetailScreen extends StatelessWidget {
             const Text(
               'Foto del reporte',
               style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 8),
             Container(
@@ -254,10 +297,7 @@ class ReportDetailScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: AppColors.fieldBorder,
-                  width: 1.5,
-                ),
+                border: Border.all(color: AppColors.fieldBorder, width: 1.5),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(13),
@@ -277,9 +317,10 @@ class ReportDetailScreen extends StatelessWidget {
             const Text(
               'Historial de estados',
               style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -293,16 +334,13 @@ class ReportDetailScreen extends StatelessWidget {
               // Buscar el evento del historial para este estado
               final ReportStatusEvent? event = report.statusHistory
                   .cast<ReportStatusEvent?>()
-                  .firstWhere(
-                    (e) => e!.status == status,
-                    orElse: () => null,
-                  );
+                  .firstWhere((e) => e!.status == status, orElse: () => null);
 
               final Color dotColor = isDone
                   ? Colors.green
                   : isCurrent
-                      ? accentColor
-                      : Colors.grey.shade300;
+                  ? accentColor
+                  : Colors.grey.shade300;
 
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,8 +356,8 @@ class ReportDetailScreen extends StatelessWidget {
                           color: isDone
                               ? Colors.green.withValues(alpha: 0.12)
                               : isCurrent
-                                  ? accentColor.withValues(alpha: 0.12)
-                                  : Colors.grey.shade100,
+                              ? accentColor.withValues(alpha: 0.12)
+                              : Colors.grey.shade100,
                           border: Border.all(
                             color: dotColor,
                             width: isCurrent ? 2.5 : 1.5,
@@ -327,8 +365,11 @@ class ReportDetailScreen extends StatelessWidget {
                         ),
                         child: Center(
                           child: isDone
-                              ? const Icon(Icons.check,
-                                  size: 16, color: Colors.green)
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 16,
+                                  color: Colors.green,
+                                )
                               : Icon(
                                   _statusIcon(status),
                                   size: 16,
@@ -373,20 +414,26 @@ class ReportDetailScreen extends StatelessWidget {
                             Text(
                               _formatDateTime(event.at),
                               style: const TextStyle(
-                                  fontSize: 12, color: AppColors.subtitle),
+                                fontSize: 12,
+                                color: AppColors.subtitle,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'Por: ${event.by}',
                               style: const TextStyle(
-                                  fontSize: 12, color: AppColors.hint),
+                                fontSize: 12,
+                                color: AppColors.hint,
+                              ),
                             ),
                           ] else ...[
                             const SizedBox(height: 2),
                             Text(
                               'Pendiente',
                               style: TextStyle(
-                                  fontSize: 12, color: Colors.grey.shade400),
+                                fontSize: 12,
+                                color: Colors.grey.shade400,
+                              ),
                             ),
                           ],
                         ],
@@ -418,7 +465,9 @@ class _ImagePlaceholder extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            hasError ? Icons.broken_image_outlined : Icons.add_photo_alternate_outlined,
+            hasError
+                ? Icons.broken_image_outlined
+                : Icons.add_photo_alternate_outlined,
             size: 52,
             color: Colors.grey.shade400,
           ),
@@ -436,10 +485,7 @@ class _ImagePlaceholder extends StatelessWidget {
             Text(
               'La foto se agregara al crear o editar el reporte',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade400,
-              ),
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
             ),
           ],
         ],

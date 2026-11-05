@@ -1,3 +1,5 @@
+import '../../../widgets/report_location_actions.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/network/api_client_provider.dart';
@@ -395,6 +397,13 @@ void showBuildingDetailSheet(
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ReportLocationActions(
+                        locationId: building.id,
+                        campusId: building.campusId,
                       ),
                     ),
                     if (onDirections != null || onShowMap != null)

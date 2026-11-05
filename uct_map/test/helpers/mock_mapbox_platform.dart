@@ -31,8 +31,8 @@ base class FakeMapboxMapsPlatform extends MapboxMapsFlutterPlatform {
 void setupMockMapboxPlatform() {
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
-    const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-    (call) async => null,
-  );
+        const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+        (call) async => null,
+      );
   MapboxMapsFlutterPlatform.instance = FakeMapboxMapsPlatform();
 }
