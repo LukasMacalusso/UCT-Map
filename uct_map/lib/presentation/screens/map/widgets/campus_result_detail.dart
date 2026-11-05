@@ -1,3 +1,5 @@
+import '../../../widgets/report_location_actions.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/navigation/app_routes.dart';
@@ -67,6 +69,11 @@ void showCampusResultDetail(BuildContext context, CampusSearchResult result) {
               onPressed: () => openMap(CampusMapTarget.structure(structure.id)),
               icon: const Icon(Icons.map_outlined),
               label: const Text('Ver en mapa'),
+            ),
+            const SizedBox(height: 12),
+            ReportLocationActions(
+              locationId: structure.id,
+              campusId: structure.campusId,
             ),
           ],
         ),

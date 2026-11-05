@@ -19,6 +19,9 @@ class TeacherWorkload {
   final int meetingCount;
   final List<OfficeHour> officeHours;
   final List<ScheduleMeeting> meetings;
+  int get reservedMeetingMinutes => meetings
+      .where((meeting) => meeting.status != MeetingStatus.cancelled)
+      .fold<int>(0, (total, meeting) => total + meeting.durationMinutes);
 
   factory TeacherWorkload.fromJson(Map<String, dynamic> json) {
     final from = DateTime.parse(json['from'] as String);

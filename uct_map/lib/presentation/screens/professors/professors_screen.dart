@@ -1,3 +1,6 @@
+import '../../../application/directory/filter_professors.dart';
+import '../../../domain/entities/campus.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../application/session/session_controller.dart';
@@ -39,6 +42,14 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
   bool _loading = true;
   String _searchQuery = '';
   String? _error;
+  List<Campus> _campuses = [];
+  Map<String, String> _campusByLocation = {};
+  String? _campusFilter;
+  String? _locationFilter;
+  int? _dayFilter;
+  bool? _hoursFilter;
+  bool _campusError = false;
+  int _page = 0;
 
   SessionController get _session => ApiClientProvider.session;
   @override
@@ -63,6 +74,13 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
     setState(() {
       _professors = [];
       _locations = {};
+      _campuses = [];
+      _campusByLocation = {};
+      _campusFilter = null;
+      _locationFilter = null;
+      _dayFilter = null;
+      _hoursFilter = null;
+      _page = 0;
       _locationError = false;
       _error = null;
       _loading = _session.isAuthenticated;
@@ -83,6 +101,7 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
       final list = await _repository.getProfessors();
       if (!current()) return;
       final locations = <String, String>{};
+      final campusByLocation = <String, String>{};
       var locationError = false;
       final ids = list
           .expand((p) => p.officeHours)
@@ -97,6 +116,7 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
           if (!current()) return;
           if (structure.id == id && structure.name.trim().isNotEmpty) {
             locations[id] = structure.name;
+            campusByLocation[id] = structure.campusId;
           } else {
             locationError = true;
           }
@@ -105,8 +125,20 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
           locationError = true;
         }
       }
+      List<Campus> campuses = [];
+      var campusError = false;
+      try {
+        campuses = await _campus.getCampuses();
+      } catch (_) {
+        campusError = true;
+      }
       if (current()) {
         setState(() {
+          _campuses = campuses;
+          if (!campuses.any((c) => c.id == _campusFilter)) _campusFilter = null;
+          if (!locations.containsKey(_locationFilter)) _locationFilter = null;
+          _campusByLocation = campusByLocation;
+          _campusError = campusError;
           _professors = list;
           _locations = locations;
           _locationError = locationError;
@@ -125,17 +157,180 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
     }
   }
 
-  List<Professor> get _filteredProfessors {
-    final base = _professors;
-    if (_searchQuery.trim().isEmpty) return base;
-    final q = _searchQuery.trim().toLowerCase();
-    return base.where((p) {
-      return p.name.toLowerCase().contains(q) ||
-          p.email.toLowerCase().contains(q) ||
-          p.department.toLowerCase().contains(q) ||
-          p.office.toLowerCase().contains(q);
-    }).toList();
-  }
+  List<Professor> get _filteredProfessors => filterProfessors(
+    _professors,
+    query: _searchQuery,
+    campusId: _campusFilter,
+    locationId: _locationFilter,
+    weekday: _dayFilter,
+    hasOfficeHours: _hoursFilter,
+    campusByLocation: _campusByLocation,
+  );
+
+  Widget _filters() => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+    child: Card(
+      color: const Color(0xFFE8F0FA),
+      elevation: 2,
+      shadowColor: AppColors.uctBlue.withValues(alpha: .18),
+      child: ExpansionTile(
+        shape: const Border(),
+        collapsedShape: const Border(),
+        leading: const Icon(Icons.tune, color: AppColors.uctBlue),
+        title: const Text(
+          'Filtrar',
+          style: TextStyle(
+            color: AppColors.uctBlue,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        childrenPadding: const EdgeInsets.all(16),
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * .3,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  if (_campusError)
+                    TextButton(
+                      onPressed: _loadProfessors,
+                      child: const Text(
+                        'No se pudieron cargar los campus. Reintentar',
+                      ),
+                    ),
+                  DropdownButtonFormField<String?>(
+                    key: ValueKey('campus:$_campusFilter'),
+                    initialValue: _campusFilter,
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'Campus'),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('Todos los campus'),
+                      ),
+                      ..._campuses.map(
+                        (c) =>
+                            DropdownMenuItem(value: c.id, child: Text(c.name)),
+                      ),
+                    ],
+                    onChanged: (value) => setState(() {
+                      _campusFilter = value;
+                      _locationFilter = null;
+                      _page = 0;
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String?>(
+                    key: ValueKey('location:$_campusFilter:$_locationFilter'),
+                    initialValue: _locationFilter,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Lugar de atención',
+                    ),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('Todos los lugares'),
+                      ),
+                      ..._locations.entries
+                          .where(
+                            (e) =>
+                                _campusFilter == null ||
+                                _campusByLocation[e.key] == _campusFilter,
+                          )
+                          .map(
+                            (e) => DropdownMenuItem(
+                              value: e.key,
+                              child: Text(e.value),
+                            ),
+                          ),
+                    ],
+                    onChanged: (value) => setState(() {
+                      _locationFilter = value;
+                      _page = 0;
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<int?>(
+                    key: ValueKey('day:$_dayFilter'),
+                    initialValue: _dayFilter,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Día de atención',
+                    ),
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('Todos los días'),
+                      ),
+                      for (final (index, name) in [
+                        'Lunes',
+                        'Martes',
+                        'Miércoles',
+                        'Jueves',
+                        'Viernes',
+                        'Sábado',
+                        'Domingo',
+                      ].indexed)
+                        DropdownMenuItem(value: index + 1, child: Text(name)),
+                    ],
+                    onChanged: (value) => setState(() {
+                      _dayFilter = value;
+                      _page = 0;
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<bool?>(
+                    key: ValueKey('hours:$_hoursFilter'),
+                    initialValue: _hoursFilter,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Horario registrado',
+                    ),
+                    items: const [
+                      DropdownMenuItem<bool?>(
+                        value: null,
+                        child: Text('Todos los profesores'),
+                      ),
+                      DropdownMenuItem(
+                        value: true,
+                        child: Text('Con atención semanal'),
+                      ),
+                      DropdownMenuItem(
+                        value: false,
+                        child: Text('Sin horario registrado'),
+                      ),
+                    ],
+                    onChanged: (value) => setState(() {
+                      _hoursFilter = value;
+                      _page = 0;
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.filter_alt_off),
+                      label: const Text('Limpiar filtros'),
+                      onPressed: () => setState(() {
+                        _campusFilter = null;
+                        _locationFilter = null;
+                        _dayFilter = null;
+                        _hoursFilter = null;
+                        _page = 0;
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 
   Future<void> _showProfessor(Professor professor) async {
     final token = _session.token;
@@ -162,7 +357,10 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
   }
 
   Widget _buildDirectory(BuildContext context) {
-    final list = _filteredProfessors;
+    final filtered = _filteredProfessors;
+    final pages = (filtered.length / 10).ceil();
+    final page = pages == 0 ? 0 : _page.clamp(0, pages - 1);
+    final list = filtered.skip(page * 10).take(10).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -202,7 +400,10 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: TextField(
-                  onChanged: (val) => setState(() => _searchQuery = val),
+                  onChanged: (val) => setState(() {
+                    _searchQuery = val;
+                    _page = 0;
+                  }),
                   decoration: InputDecoration(
                     hintText: 'Buscar profesor...',
                     prefixIcon: const Icon(
@@ -233,6 +434,7 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
                   ),
                 ),
               ),
+              _filters(),
               Expanded(
                 child: _loading
                     ? const Center(child: CircularProgressIndicator())
@@ -292,6 +494,27 @@ class _ProfessorsScreenState extends State<ProfessorsScreen> {
                         },
                       ),
               ),
+              if (pages > 1)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      tooltip: 'Página anterior',
+                      icon: const Icon(Icons.chevron_left),
+                      onPressed: page == 0
+                          ? null
+                          : () => setState(() => _page = page - 1),
+                    ),
+                    Text('${page + 1} de $pages'),
+                    IconButton(
+                      tooltip: 'Página siguiente',
+                      icon: const Icon(Icons.chevron_right),
+                      onPressed: page + 1 >= pages
+                          ? null
+                          : () => setState(() => _page = page + 1),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),

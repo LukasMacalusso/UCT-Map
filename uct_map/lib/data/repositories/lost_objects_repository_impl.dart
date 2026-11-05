@@ -5,11 +5,18 @@ import '../models/lost_object_dto.dart';
 
 /// Implementación del repositorio de Objetos Perdidos según Arquitectura Limpia.
 class LostObjectsRepositoryImpl implements LostObjectsRepository {
+  @override
+  Future<void> deleteLostObject(String id) =>
+      _remoteDataSource.deleteLostObject(id);
+
   final LostObjectsRemoteDataSource _remoteDataSource;
 
-  LostObjectsRepositoryImpl({
-    LostObjectsRemoteDataSource? remoteDataSource,
-  }) : _remoteDataSource = remoteDataSource ?? LostObjectsRemoteDataSource();
+  LostObjectsRepositoryImpl({LostObjectsRemoteDataSource? remoteDataSource})
+    : _remoteDataSource = remoteDataSource ?? LostObjectsRemoteDataSource();
+
+  @override
+  Future<LostObject> getLostObjectById(String id) =>
+      _remoteDataSource.getLostObjectById(id);
 
   @override
   Future<CreateLostObjectResponse> createLostObject(CreateLostObjectDto dto) {

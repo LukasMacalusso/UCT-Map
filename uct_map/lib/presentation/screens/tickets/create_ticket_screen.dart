@@ -1,3 +1,6 @@
+import '../../../domain/repositories/campus_repository.dart';
+import '../../widgets/campus_location_picker.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -20,6 +23,9 @@ import '../lost_objects/widgets/lost_object_status_badge.dart';
 /// Formulario para crear un nuevo Reporte / Ticket con soporte para Quejas/Reclamos
 /// y vinculación interactiva con Objetos Perdidos (mediante selector con buscador o ID manual).
 class CreateTicketScreen extends StatefulWidget {
+  final String? initialLocationId;
+  final String? initialCampusId;
+  final CampusRepository? campusRepository;
   final ReportsRepository repository;
   final LostObjectsRepository? lostObjectsRepository;
   final String? initialLostObjectId;
@@ -27,6 +33,9 @@ class CreateTicketScreen extends StatefulWidget {
   const CreateTicketScreen({
     super.key,
     required this.repository,
+    this.initialLocationId,
+    this.initialCampusId,
+    this.campusRepository,
     this.lostObjectsRepository,
     this.initialLostObjectId,
   });
@@ -55,15 +64,10 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   bool _isSubmitting = false;
   String? _errorMessage;
 
-  static const Map<String, String> _presetStructures = {
-    'Biblioteca Central': 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
-    'Edificio Aulario': 'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e',
-    'Gimnasio Techado': 'c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f',
-  };
-
   @override
   void initState() {
     super.initState();
+    _structureRefIdController.text = widget.initialLocationId ?? "";
     _lostObjectsRepository =
         widget.lostObjectsRepository ?? LostObjectsRepositoryImpl();
 
@@ -269,7 +273,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'El autor del reporte se asignará automáticamente desde tu sesión (Token JWT) por seguridad.',
+                          'El reporte quedará asociado a tu cuenta.',
                           style: TextStyle(
                             fontSize: 12.5,
                             color: AppColors.ink,
@@ -281,47 +285,12 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // ID Estructura
-                _buildFieldLabel('ID de la Estructura / Edificio (UUID) *'),
-                TextFormField(
+                CampusLocationPicker(
                   controller: _structureRefIdController,
-                  textInputAction: TextInputAction.next,
-                  decoration: _inputDecoration(
-                    hint: 'Ej. a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
-                    prefixIcon: Icons.apartment_rounded,
-                  ),
-                  validator: (val) {
-                    if (val == null || val.trim().isEmpty) {
-                      return 'El ID de la estructura es obligatorio.';
-                    }
-                    if (!CreateLostObjectDto.isValidUuid(val)) {
-                      return 'Debe ser un formato UUID válido.';
-                    }
-                    return null;
-                  },
+                  repository: widget.campusRepository,
+                  initialCampusId: widget.initialCampusId,
                 ),
-                const SizedBox(height: 8),
-
-                // Chips de atajos de edificios
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: _presetStructures.entries.map((entry) {
-                    return ActionChip(
-                      avatar: const Icon(Icons.place_outlined, size: 14),
-                      label: Text(
-                        entry.key,
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _structureRefIdController.text = entry.value;
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 20),
 
                 if (AppPermission.manageReports.allows(
                   ApiClientProvider.session.currentUser?.role,
@@ -373,23 +342,21 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Row(
-                            children: [
-                              Icon(
-                                Icons.report_problem_outlined,
-                                color: AppColors.uctBlue,
-                                size: 20,
+                          const Icon(
+                            Icons.report_problem_outlined,
+                            color: AppColors.uctBlue,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Detalles de la Queja / Reclamo',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.ink,
                               ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Detalles de la Queja / Reclamo',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.ink,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                           Switch(
                             value: _includeComplaint,
@@ -483,9 +450,11 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                 const SizedBox(height: 28),
 
                 // Botón Enviar
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: double.infinity,
+                    minHeight: 50,
+                  ),
                   child: ElevatedButton.icon(
                     onPressed: _isSubmitting ? null : _submit,
                     style: ElevatedButton.styleFrom(
@@ -707,24 +676,18 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
           ),
         ),
 
-        // Alternar entrada manual de ID
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            TextButton(
-              onPressed: () =>
-                  setState(() => _isManualIdInput = !_isManualIdInput),
-              child: Text(
-                _isManualIdInput
-                    ? 'Ocultar entrada manual de ID'
-                    : '¿Prefieres ingresar el ID manual?',
-                style: const TextStyle(
-                  fontSize: 11.5,
-                  color: AppColors.subtitle,
-                ),
-              ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () =>
+                setState(() => _isManualIdInput = !_isManualIdInput),
+            child: Text(
+              _isManualIdInput
+                  ? 'Ocultar entrada manual de ID'
+                  : '¿Prefieres ingresar el ID manual?',
+              style: const TextStyle(fontSize: 11.5, color: AppColors.subtitle),
             ),
-          ],
+          ),
         ),
 
         // Campo de texto de respaldo

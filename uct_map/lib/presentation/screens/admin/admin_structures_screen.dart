@@ -1,3 +1,5 @@
+import '../../widgets/unsaved_form.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client_provider.dart';
@@ -297,8 +299,8 @@ class _StructureEditorState extends State<_StructureEditor> {
             widget.structure == null ? 'Nueva estructura' : 'Editar estructura',
           ),
         ),
-        body: Form(
-          key: _form,
+        body: UnsavedForm(
+          formKey: _form,
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [

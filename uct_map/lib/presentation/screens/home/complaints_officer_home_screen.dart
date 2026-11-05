@@ -152,6 +152,12 @@ class _ComplaintsHomeState extends State<_ComplaintsHome> {
                         label: const Text('Gestionar incidentes'),
                       ),
                     ),
+                    TextButton.icon(
+                      onPressed: () =>
+                          Navigator.pushNamed(context, AppRoutes.reportHeatmap),
+                      icon: const Icon(Icons.map_outlined),
+                      label: const Text('Ver mapa de calor'),
+                    ),
                   ],
                 ),
               ),

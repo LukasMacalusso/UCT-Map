@@ -1,3 +1,5 @@
+import '../../widgets/unsaved_form.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client_provider.dart';
@@ -379,8 +381,8 @@ class _BuildingEditorState extends State<_BuildingEditor> {
             widget.detail == null ? 'Crear edificio' : 'Editar edificio',
           ),
         ),
-        body: Form(
-          key: _form,
+        body: UnsavedForm(
+          formKey: _form,
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [

@@ -1,3 +1,5 @@
+import '../../presentation/screens/roles/admin_user_detail_screen.dart';
+import '../../presentation/screens/lost_objects/lost_object_detail_screen.dart';
 import '../../domain/entities/campus_map_target.dart';
 import '../../presentation/screens/map/campus_location_screen.dart';
 
@@ -17,8 +19,6 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../presentation/navigation/main_navigation_screen.dart';
 import '../../presentation/screens/login/login_page.dart';
 import '../../presentation/screens/login/session_required_view.dart';
-import '../../presentation/screens/lost_found/lost_found_screen.dart';
-import '../../presentation/screens/lost_found/lost_item_detail_screen.dart';
 import '../../presentation/screens/lost_objects/create_lost_object_screen.dart';
 import '../../presentation/screens/lost_objects/lost_objects_screen.dart';
 import '../../data/repositories/lost_objects_repository_impl.dart';
@@ -31,8 +31,6 @@ import '../../presentation/screens/profile/my_lost_items_screen.dart';
 import '../../presentation/screens/profile/my_reports_screen.dart';
 import '../../presentation/screens/profile/profile_settings_screen.dart';
 import '../../presentation/screens/profile/saved_places_screen.dart';
-import '../../presentation/screens/reports/report_detail_screen.dart';
-import '../../presentation/screens/reports/reports_screen.dart';
 
 /// Centralized route definitions and generator for the UCT Map app.
 class AppRoutes {
@@ -41,7 +39,10 @@ class AppRoutes {
   static const String myMeetings = '/my-meetings';
   static const String teacherSchedule = '/teacher-schedule';
   static const String manageUsers = '/manage-users';
+  static const String manageUserDetail = '/manage-users/detail';
   static const String manageCampus = '/manage-campus';
+  static const String objectHeatmap = '/heatmaps/objects';
+  static const String reportHeatmap = '/heatmaps/reports';
   static const String manageObjects = '/manage-objects';
   static const String manageReports = '/manage-reports';
 
@@ -57,6 +58,7 @@ class AppRoutes {
   static const String ticketDetail = '/tickets/detail';
   static const String lostFound = '/lost-found';
   static const String lostObjects = '/lost-objects';
+  static const String lostObjectDetail = '/lost-objects/detail';
   static const String createLostObject = '/lost-objects/create';
   static const String lostItemDetail = '/lost-found/detail';
   static const String login = '/login';
@@ -80,8 +82,10 @@ class AppRoutes {
     final rolePermission = switch (settings.name) {
       teacherSchedule => AppPermission.teacherSchedule,
       myMeetings => AppPermission.bookConsultation,
-      manageUsers => AppPermission.manageUsers,
+      manageUsers || manageUserDetail => AppPermission.manageUsers,
       manageCampus => AppPermission.manageUsers,
+      objectHeatmap => AppPermission.viewObjectHeatmap,
+      reportHeatmap => AppPermission.viewReportHeatmap,
       manageObjects => AppPermission.manageObjects,
       manageReports => AppPermission.manageReports,
       _ => null,
@@ -104,6 +108,7 @@ class AppRoutes {
       ticketDetail,
       lostFound,
       lostObjects,
+      lostObjectDetail,
       createLostObject,
       lostItemDetail,
       myReports,
@@ -136,6 +141,26 @@ class AppRoutes {
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => const AdminUsersScreen(),
+        );
+      case manageUserDetail:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => AdminUserDetailScreen(
+            userId: settings.arguments is String
+                ? settings.arguments as String
+                : '',
+          ),
+        );
+      case objectHeatmap:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) =>
+              const AdminCampusScreen(heatmapOnly: true, objectsMode: true),
+        );
+      case reportHeatmap:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const AdminCampusScreen(heatmapOnly: true),
         );
       case manageCampus:
         return MaterialPageRoute(
@@ -214,91 +239,38 @@ class AppRoutes {
       case reports:
         return MaterialPageRoute(
           settings: settings,
-          builder: (context) => ReportsScreen(
-            showAppBar: true,
-            onNavigateToTab: (tabIndex) {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context, tabIndex);
-              } else {
-                Navigator.pushReplacementNamed(
-                  context,
-                  initial,
-                  arguments: tabIndex,
-                );
-              }
-            },
-          ),
+          builder: (_) => TicketsScreen(repository: ReportsRepositoryImpl()),
         );
-
       case reportDetail:
         final report = settings.arguments;
-        if (report is Report) {
-          return MaterialPageRoute(
-            settings: settings,
-            builder: (context) => ReportDetailScreen(
-              report: report,
-              onNavigateToTab: (tabIndex) {
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context, tabIndex);
-                } else {
-                  Navigator.pushReplacementNamed(
-                    context,
-                    initial,
-                    arguments: tabIndex,
-                  );
-                }
-              },
-            ),
-          );
-        }
         return MaterialPageRoute(
           settings: settings,
-          builder: (_) => const ReportsScreen(showAppBar: true),
+          builder: (_) => TicketDetailScreen(
+            ticketId: report is String
+                ? report
+                : report is Report
+                ? report.id
+                : '',
+            repository: ReportsRepositoryImpl(),
+          ),
         );
-
       case lostFound:
         return MaterialPageRoute(
           settings: settings,
-          builder: (context) => LostFoundScreen(
-            showAppBar: true,
-            onNavigateToTab: (tabIndex) {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context, tabIndex);
-              } else {
-                Navigator.pushReplacementNamed(
-                  context,
-                  initial,
-                  arguments: tabIndex,
-                );
-              }
-            },
-          ),
+          builder: (_) =>
+              LostObjectsScreen(repository: LostObjectsRepositoryImpl()),
         );
-
       case lostItemDetail:
         final item = settings.arguments;
-        if (item is LostItem) {
-          return MaterialPageRoute(
-            settings: settings,
-            builder: (context) => LostItemDetailScreen(
-              item: item,
-              onNavigateToTab: (tabIndex) {
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context, tabIndex);
-                } else {
-                  Navigator.pushReplacementNamed(
-                    context,
-                    initial,
-                    arguments: tabIndex,
-                  );
-                }
-              },
-            ),
-          );
-        }
         return MaterialPageRoute(
           settings: settings,
-          builder: (_) => const LostFoundScreen(showAppBar: true),
+          builder: (_) => LostObjectDetailScreen(
+            objectId: item is String
+                ? item
+                : item is LostItem
+                ? item.id
+                : '',
+          ),
         );
 
       case lostObjects:
@@ -310,11 +282,30 @@ class AppRoutes {
           ),
         );
 
-      case createLostObject:
+      case lostObjectDetail:
         return MaterialPageRoute(
           settings: settings,
-          builder: (_) =>
-              CreateLostObjectScreen(repository: LostObjectsRepositoryImpl()),
+          builder: (_) => LostObjectDetailScreen(
+            objectId: settings.arguments is String
+                ? settings.arguments as String
+                : '',
+          ),
+        );
+
+      case createLostObject:
+        final location = settings.arguments;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => CreateLostObjectScreen(
+            repository: LostObjectsRepositoryImpl(),
+            initialCampusId: location is ({String campusId, String locationId})
+                ? location.campusId
+                : null,
+            initialLocationId:
+                location is ({String campusId, String locationId})
+                ? location.locationId
+                : null,
+          ),
         );
 
       case tickets:
@@ -327,10 +318,19 @@ class AppRoutes {
         );
 
       case createTicket:
+        final location = settings.arguments;
         return MaterialPageRoute(
           settings: settings,
-          builder: (_) =>
-              CreateTicketScreen(repository: ReportsRepositoryImpl()),
+          builder: (_) => CreateTicketScreen(
+            repository: ReportsRepositoryImpl(),
+            initialCampusId: location is ({String campusId, String locationId})
+                ? location.campusId
+                : null,
+            initialLocationId:
+                location is ({String campusId, String locationId})
+                ? location.locationId
+                : null,
+          ),
         );
 
       case ticketDetail:

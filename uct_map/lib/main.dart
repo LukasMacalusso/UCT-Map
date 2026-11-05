@@ -57,7 +57,13 @@ class UctMapApp extends StatelessWidget {
           primary: const Color(0xFF003865),
           secondary: const Color(0xFFEAA221), // Tono secundario dorado/cálido
         ),
-        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Color(0xFF003865),
+          foregroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+        ),
       ),
       initialRoute: AppRoutes.initial,
       onGenerateRoute: (settings) => AppRoutes.onGenerateRoute(

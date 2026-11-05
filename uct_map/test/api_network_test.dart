@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -21,11 +22,11 @@ void main() {
       );
       expect(
         config.uri(ApiEndpoints.campusList).toString(),
-        'http://localhost:5052/api/campus',
+        'http://localhost:5052/api/campus/campuses',
       );
       expect(
         config.uri(ApiEndpoints.campusBuildings('c-1')).toString(),
-        'http://localhost:5052/api/campus/c-1/buildings',
+        'http://localhost:5052/api/campus/buildings?campusId=c-1',
       );
       expect(
         config.uri(ApiEndpoints.scheduleProfessors).toString(),
@@ -36,58 +37,68 @@ void main() {
         'http://localhost:5052/api/incident/lost-items',
       );
       expect(
-        config.uri(ApiEndpoints.incidentReports, {'campus': 'San Francisco'}).toString(),
+        config.uri(ApiEndpoints.incidentReports, {
+          'campus': 'San Francisco',
+        }).toString(),
         'http://localhost:5052/api/incident/reports?campus=San+Francisco',
       );
     });
   });
 
   group('AuthenticatedClient Tests', () {
-    test('Inyecta header Authorization: Bearer cuando el token existe', () async {
-      String? capturedAuthHeader;
+    test(
+      'Inyecta header Authorization: Bearer cuando el token existe',
+      () async {
+        String? capturedAuthHeader;
 
-      final mockInner = MockClient((request) async {
-        capturedAuthHeader = request.headers['Authorization'];
-        return http.Response('{"ok": true}', 200);
-      });
+        final mockInner = MockClient((request) async {
+          capturedAuthHeader = request.headers['Authorization'];
+          return http.Response('{"ok": true}', 200);
+        });
 
-      final client = AuthenticatedClient(
-        innerClient: mockInner,
-        tokenProvider: () => 'jwt-test-token-123',
-        enableLogging: false,
-      );
+        final client = AuthenticatedClient(
+          innerClient: mockInner,
+          tokenProvider: () => 'jwt-test-token-123',
+          enableLogging: false,
+        );
 
-      final response = await client.get(Uri.parse('http://localhost:5052/api/campus'));
+        final response = await client.get(
+          Uri.parse('http://localhost:5052/api/campus'),
+        );
 
-      expect(response.statusCode, 200);
-      expect(capturedAuthHeader, 'Bearer jwt-test-token-123');
-    });
+        expect(response.statusCode, 200);
+        expect(capturedAuthHeader, 'Bearer jwt-test-token-123');
+      },
+    );
 
-    test('Inyecta headers estándar Accept, User-Agent, Content-Type y X-Api-Key', () async {
-      Map<String, String>? capturedHeaders;
+    test(
+      'Inyecta headers estándar Accept, User-Agent, Content-Type y X-Api-Key',
+      () async {
+        Map<String, String>? capturedHeaders;
 
-      final mockInner = MockClient((request) async {
-        capturedHeaders = request.headers;
-        return http.Response('{"status": "created"}', 201);
-      });
+        final mockInner = MockClient((request) async {
+          capturedHeaders = request.headers;
+          return http.Response('{"status": "created"}', 201);
+        });
 
-      final client = AuthenticatedClient(
-        innerClient: mockInner,
-        apiKeyProvider: () => 'my-custom-key',
-        enableLogging: false,
-      );
+        final client = AuthenticatedClient(
+          innerClient: mockInner,
+          apiKeyProvider: () => 'my-custom-key',
+          enableLogging: false,
+        );
 
-      final response = await client.post(
-        Uri.parse('http://localhost:5052/api/incident/reports'),
-        body: jsonEncode({'title': 'Incidente'}),
-      );
+        final response = await client.post(
+          Uri.parse('http://localhost:5052/api/incident/reports'),
+          body: jsonEncode({'title': 'Incidente'}),
+        );
 
-      expect(response.statusCode, 201);
-      expect(capturedHeaders?['Accept'], 'application/json');
-      expect(capturedHeaders?['User-Agent'], contains('UCT-Map'));
-      expect(capturedHeaders?['X-Api-Key'], 'my-custom-key');
-      expect(capturedHeaders?['Content-Type'], contains('application/json'));
-    });
+        expect(response.statusCode, 201);
+        expect(capturedHeaders?['Accept'], 'application/json');
+        expect(capturedHeaders?['User-Agent'], contains('UCT-Map'));
+        expect(capturedHeaders?['X-Api-Key'], 'my-custom-key');
+        expect(capturedHeaders?['Content-Type'], contains('application/json'));
+      },
+    );
 
     test('Llama a onUnauthorized cuando el Gateway devuelve 401', () async {
       bool unauthorizedCalled = false;
@@ -105,7 +116,9 @@ void main() {
         enableLogging: false,
       );
 
-      final response = await client.get(Uri.parse('http://localhost:5052/api/schedule/meetings'));
+      final response = await client.get(
+        Uri.parse('http://localhost:5052/api/schedule/meetings'),
+      );
 
       expect(response.statusCode, 401);
       expect(unauthorizedCalled, isTrue);
@@ -115,9 +128,11 @@ void main() {
   group('ApiClient High-Level Client Tests', () {
     test('get y getJson decodifican exitosamente respuesta 200', () async {
       final mockInner = MockClient((request) async {
-        if (request.url.path == '/api/campus') {
+        if (request.url.path.startsWith('/api/campus')) {
           return http.Response(
-            jsonEncode([{'id': 'c-1', 'name': 'Campus San Francisco'}]),
+            jsonEncode([
+              {'id': 'c-1', 'name': 'Campus San Francisco'},
+            ]),
             200,
           );
         }
@@ -129,7 +144,9 @@ void main() {
         config: ApiConfig(baseUrl: 'http://localhost:5052'),
       );
 
-      final list = await apiClient.getJson<List<dynamic>>(ApiEndpoints.campusList);
+      final list = await apiClient.getJson<List<dynamic>>(
+        ApiEndpoints.campusList,
+      );
       expect(list.length, 1);
       expect(list[0]['name'], 'Campus San Francisco');
     });
@@ -180,7 +197,10 @@ void main() {
         config: ApiConfig(baseUrl: 'http://localhost:5052'),
       );
 
-      final patchRes = await apiClient.patch('/api/schedule/meetings/m-1/status', body: {'status': 'Confirmed'});
+      final patchRes = await apiClient.patch(
+        '/api/schedule/meetings/m-1/status',
+        body: {'status': 'Confirmed'},
+      );
       expect(patchRes.statusCode, 204);
       expect(patchMethod, 'PATCH');
 
@@ -208,11 +228,13 @@ void main() {
 
       expect(
         () => apiClient.post(ApiEndpoints.identityLogin, body: {}),
-        throwsA(isA<BadRequestException>().having(
-          (e) => e.message,
-          'message',
-          contains('Email and password are required.'),
-        )),
+        throwsA(
+          isA<BadRequestException>().having(
+            (e) => e.message,
+            'message',
+            contains('Email and password are required.'),
+          ),
+        ),
       );
     });
   });
@@ -241,8 +263,10 @@ void main() {
       expect(serverErr.statusCode, 500);
     });
 
-    test('Parsea ProblemDetails RFC 7807 de ASP.NET Core con title y detail', () {
-      const jsonBody = '''
+    test(
+      'Parsea ProblemDetails RFC 7807 de ASP.NET Core con title y detail',
+      () {
+        const jsonBody = '''
       {
         "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
         "title": "Recurso no encontrado",
@@ -251,13 +275,19 @@ void main() {
       }
       ''';
 
-      final ex = ApiException.fromResponse(404, jsonBody);
-      expect(ex, isA<NotFoundException>());
-      expect(ex.message, 'El profesor con id prof-99 no existe en el sistema.');
-    });
+        final ex = ApiException.fromResponse(404, jsonBody);
+        expect(ex, isA<NotFoundException>());
+        expect(
+          ex.message,
+          'El profesor con id prof-99 no existe en el sistema.',
+        );
+      },
+    );
 
-    test('Parsea ProblemDetails con diccionario errors (validación de ModelState)', () {
-      const jsonBody = '''
+    test(
+      'Parsea ProblemDetails con diccionario errors (validación de ModelState)',
+      () {
+        const jsonBody = '''
       {
         "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
         "title": "One or more validation errors occurred.",
@@ -269,14 +299,18 @@ void main() {
       }
       ''';
 
-      final ex = ApiException.fromResponse(400, jsonBody);
-      expect(ex, isA<BadRequestException>());
-      expect(ex.message, contains('The Email field is required.'));
-      expect(ex.message, contains('Password must be at least 6 characters.'));
-    });
+        final ex = ApiException.fromResponse(400, jsonBody);
+        expect(ex, isA<BadRequestException>());
+        expect(ex.message, contains('The Email field is required.'));
+        expect(ex.message, contains('Password must be at least 6 characters.'));
+      },
+    );
 
     test('Parsea respuesta string plana en BadRequest', () {
-      final ex = ApiException.fromResponse(400, 'Email and password are required.');
+      final ex = ApiException.fromResponse(
+        400,
+        'Email and password are required.',
+      );
       expect(ex, isA<BadRequestException>());
       expect(ex.message, 'Email and password are required.');
     });
@@ -301,7 +335,9 @@ void main() {
 
       ApiClientProvider.reset(mockClient: mock);
 
-      final res = await ApiClientProvider.defaultClient.get(Uri.parse('http://localhost:5052/api/campus'));
+      final res = await ApiClientProvider.defaultClient.get(
+        Uri.parse('http://localhost:5052/api/campus'),
+      );
       expect(res.statusCode, 200);
       expect(requestedPath, '/api/campus');
 
@@ -309,4 +345,3 @@ void main() {
     });
   });
 }
-

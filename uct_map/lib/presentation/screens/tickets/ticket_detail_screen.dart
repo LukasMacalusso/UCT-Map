@@ -1,3 +1,7 @@
+import '../login/session_required_view.dart';
+import '../../widgets/delete_incident_button.dart';
+import '../../widgets/campus_location_label.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client_provider.dart';
@@ -12,22 +16,40 @@ import '../../../core/navigation/app_routes.dart';
 import '../../../domain/repositories/reports_repository.dart';
 import 'widgets/ticket_status_badge.dart';
 
+class TicketDetailScreen extends StatelessWidget {
+  const TicketDetailScreen({
+    super.key,
+    required this.ticketId,
+    required this.repository,
+  });
+  final String ticketId;
+  final ReportsRepository repository;
+  @override
+  Widget build(BuildContext context) => SessionRequiredView(
+    builder: (_) => _TicketDetailBody(
+      key: ValueKey('${ApiClientProvider.session.token}:$ticketId'),
+      ticketId: ticketId,
+      repository: repository,
+    ),
+  );
+}
+
 /// Pantalla de Detalle de un Reporte / Ticket que consume GET /api/incident/reports/{id}.
-class TicketDetailScreen extends StatefulWidget {
+class _TicketDetailBody extends StatefulWidget {
   final String ticketId;
   final ReportsRepository repository;
 
-  const TicketDetailScreen({
+  const _TicketDetailBody({
     super.key,
     required this.ticketId,
     required this.repository,
   });
 
   @override
-  State<TicketDetailScreen> createState() => _TicketDetailScreenState();
+  State<_TicketDetailBody> createState() => _TicketDetailScreenState();
 }
 
-class _TicketDetailScreenState extends State<TicketDetailScreen> {
+class _TicketDetailScreenState extends State<_TicketDetailBody> {
   bool get _canManage =>
       ApiClientProvider.session.isAuthenticated &&
       AppPermission.manageReports.allows(
@@ -326,6 +348,17 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (complaint != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: DeleteIncidentButton(
+                id: ticket.id,
+                title: complaint.title,
+                locationId: ticket.structureRefId,
+                object: false,
+                reports: widget.repository,
+              ),
+            ),
           // Estados (Badges)
           Wrap(
             spacing: 8,
@@ -374,6 +407,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           ],
 
           if (ticket.structureRefId.isNotEmpty) ...[
+            CampusLocationLabel(id: ticket.structureRefId),
+            const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () => Navigator.pushNamed(
                 context,
@@ -386,7 +421,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             const SizedBox(height: 20),
           ],
           const Text(
-            'Información Técnica',
+            'Información del reporte',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,

@@ -155,6 +155,12 @@ class _ObjectsHomeState extends State<_ObjectsHome> {
                         label: const Text('Gestionar objetos'),
                       ),
                     ),
+                    TextButton.icon(
+                      onPressed: () =>
+                          Navigator.pushNamed(context, AppRoutes.objectHeatmap),
+                      icon: const Icon(Icons.map_outlined),
+                      label: const Text('Ver mapa de calor'),
+                    ),
                   ],
                 ),
               ),

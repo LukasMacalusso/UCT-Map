@@ -3,6 +3,10 @@ import '../entities/lost_object.dart';
 
 /// Contrato del repositorio de Objetos Perdidos (Incident Service / Lost Objects).
 abstract class LostObjectsRepository {
+  Future<void> deleteLostObject(String id);
+
+  Future<LostObject> getLostObjectById(String id);
+
   /// Registra un nuevo objeto perdido (POST /api/incident/lost-objects).
   ///
   /// Valida de antemano que [dto.photoUrl] sea una URL pública absoluta y que los campos

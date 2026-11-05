@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:uct_map/data/datasources/schedule_remote_ds.dart';
@@ -12,311 +13,364 @@ import 'package:uct_map/presentation/navigation/main_navigation_screen.dart';
 import 'package:uct_map/presentation/screens/home/home_screen.dart';
 import 'package:uct_map/presentation/screens/login/login_page.dart';
 import 'package:uct_map/presentation/screens/login/session_required_view.dart';
-import 'package:uct_map/presentation/screens/reports/reports_screen.dart';
+import 'package:uct_map/presentation/screens/tickets/tickets_screen.dart';
+import 'package:uct_map/presentation/screens/tickets/ticket_detail_screen.dart';
+import 'package:uct_map/presentation/screens/lost_objects/lost_objects_screen.dart';
+import 'package:uct_map/presentation/screens/lost_objects/lost_object_detail_screen.dart';
 import 'package:uct_map/presentation/screens/profile/saved_places_screen.dart';
 import 'package:uct_map/presentation/screens/profile/profile_settings_screen.dart';
 import 'package:uct_map/presentation/screens/profile/my_reports_screen.dart';
 import 'package:uct_map/presentation/screens/profile/my_lost_items_screen.dart';
-import 'package:uct_map/presentation/screens/lost_found/lost_found_screen.dart';
 import 'package:uct_map/presentation/screens/lost_found/lost_item_detail_screen.dart';
 import 'package:uct_map/presentation/screens/professors/professors_screen.dart';
 import 'package:uct_map/presentation/screens/reports/report_detail_screen.dart';
+
+import 'helpers/mock_mapbox_platform.dart';
+
 import 'package:uct_map/application/session/session_controller.dart';
 import 'package:uct_map/core/network/api_client_provider.dart';
 import 'package:uct_map/data/storage/token_storage.dart';
 import 'package:uct_map/domain/repositories/auth_repository.dart';
 
 void main() {
+  setUpAll(setupMockMapboxPlatform);
+
   group('AppRoutes tests', () {
-    testWidgets('AppRoutes.onGenerateRoute resuelve todas las rutas nombradas',
-        (tester) async {
-      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
-      final BuildContext testContext = tester.element(find.byType(SizedBox));
+    testWidgets(
+      'AppRoutes.onGenerateRoute resuelve todas las rutas nombradas',
+      (tester) async {
+        await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+        final BuildContext testContext = tester.element(find.byType(SizedBox));
 
-      // 1. Ruta / espera la sesión antes de elegir el inicio
-      final mainRoute = AppRoutes.onGenerateRoute(
-        const RouteSettings(name: AppRoutes.initial),
-      ) as MaterialPageRoute;
-      expect(mainRoute.builder(testContext),
-          isA<SessionLandingScreen>());
+        // 1. Ruta / espera la sesión antes de elegir el inicio
+        final mainRoute = AppRoutes.onGenerateRoute(
+          const RouteSettings(name: AppRoutes.initial),
+        ) as MaterialPageRoute;
+        expect(mainRoute.builder(testContext), isA<SessionLandingScreen>());
 
-      // 2. Ruta / con argumentos de pestaña
-      final mainTabRoute = AppRoutes.onGenerateRoute(
-        const RouteSettings(name: AppRoutes.initial, arguments: 2),
-      ) as MaterialPageRoute;
-      final mainTabWidget =
-          mainTabRoute.builder(testContext)
-              as MainNavigationScreen;
-      expect(mainTabWidget.initialIndex, 2);
+        // 2. Ruta / con argumentos de pestaña
+        final mainTabRoute = AppRoutes.onGenerateRoute(
+          const RouteSettings(name: AppRoutes.initial, arguments: 2),
+        ) as MaterialPageRoute;
+        final mainTabWidget =
+            mainTabRoute.builder(testContext) as MainNavigationScreen;
+        expect(mainTabWidget.initialIndex, 2);
 
-      // 3. Ruta /home
-      final homeRoute = AppRoutes.onGenerateRoute(
-        const RouteSettings(name: AppRoutes.home),
-      ) as MaterialPageRoute;
-      expect((homeRoute.builder(testContext) as MainNavigationScreen).initialIndex, 5);
+        // 3. Ruta /home
+        final homeRoute = AppRoutes.onGenerateRoute(
+          const RouteSettings(name: AppRoutes.home),
+        ) as MaterialPageRoute;
+        expect(
+          (homeRoute.builder(testContext) as MainNavigationScreen).initialIndex,
+          5,
+        );
 
-      // 4. Ruta /professors: exige sesión
-      final profRoute = AppRoutes.onGenerateRoute(
-        const RouteSettings(name: AppRoutes.professors),
-      ) as MaterialPageRoute;
-      expect(profRoute.builder(testContext),
-          anyOf(isA<SessionRequiredView>(), isA<ProfessorsScreen>()));
+        // 4. Ruta /professors: exige sesión
+        final profRoute = AppRoutes.onGenerateRoute(
+          const RouteSettings(name: AppRoutes.professors),
+        ) as MaterialPageRoute;
+        expect(
+          profRoute.builder(testContext),
+          anyOf(isA<SessionRequiredView>(), isA<ProfessorsScreen>()),
+        );
 
-      // 5. Ruta /reports (con AppBar)
-      final reportsRoute = AppRoutes.onGenerateRoute(
-        const RouteSettings(name: AppRoutes.reports),
-      ) as MaterialPageRoute;
-      expect(reportsRoute.builder(testContext),
-          anyOf(isA<SessionRequiredView>(), isA<ReportsScreen>()));
+        // 5. Ruta /reports (con AppBar)
+        final reportsRoute = AppRoutes.onGenerateRoute(
+          const RouteSettings(name: AppRoutes.reports),
+        ) as MaterialPageRoute;
+        expect(
+          reportsRoute.builder(testContext),
+          anyOf(isA<SessionRequiredView>(), isA<TicketsScreen>()),
+        );
 
-      // 6. Ruta /reports/detail con entidad Report
-      final sampleReport = mockReports[0];
-      final reportDetailRoute = AppRoutes.onGenerateRoute(
-        RouteSettings(name: AppRoutes.reportDetail, arguments: sampleReport),
-      ) as MaterialPageRoute;
-      expect(reportDetailRoute.builder(testContext),
-          anyOf(isA<SessionRequiredView>(), isA<ReportDetailScreen>()));
+        // 6. Ruta /reports/detail con entidad Report
+        final sampleReport = mockReports[0];
+        final reportDetailRoute = AppRoutes.onGenerateRoute(
+          RouteSettings(name: AppRoutes.reportDetail, arguments: sampleReport),
+        ) as MaterialPageRoute;
+        expect(
+          reportDetailRoute.builder(testContext),
+          anyOf(isA<SessionRequiredView>(), isA<TicketDetailScreen>()),
+        );
 
-      // 7. Ruta /lost-found (con AppBar)
-      final lostRoute = AppRoutes.onGenerateRoute(
-        const RouteSettings(name: AppRoutes.lostFound),
-      ) as MaterialPageRoute;
-      expect(lostRoute.builder(testContext),
-          anyOf(isA<SessionRequiredView>(), isA<LostFoundScreen>()));
+        // 7. Ruta /lost-found (con AppBar)
+        final lostRoute = AppRoutes.onGenerateRoute(
+          const RouteSettings(name: AppRoutes.lostFound),
+        ) as MaterialPageRoute;
+        expect(
+          lostRoute.builder(testContext),
+          anyOf(isA<SessionRequiredView>(), isA<LostObjectsScreen>()),
+        );
 
-      // 8. Ruta /lost-found/detail con entidad LostItem
-      final sampleItem = mockLostItems[0];
-      final lostDetailRoute = AppRoutes.onGenerateRoute(
-        RouteSettings(name: AppRoutes.lostItemDetail, arguments: sampleItem),
-      ) as MaterialPageRoute;
-      expect(lostDetailRoute.builder(testContext),
-          anyOf(isA<SessionRequiredView>(), isA<LostItemDetailScreen>()));
+        // 8. Ruta /lost-found/detail con entidad LostItem
+        final sampleItem = mockLostItems[0];
+        final lostDetailRoute = AppRoutes.onGenerateRoute(
+          RouteSettings(name: AppRoutes.lostItemDetail, arguments: sampleItem),
+        ) as MaterialPageRoute;
+        expect(
+          lostDetailRoute.builder(testContext),
+          anyOf(isA<SessionRequiredView>(), isA<LostObjectDetailScreen>()),
+        );
 
-      // 9. Ruta /saved-places
-      final savedRoute = AppRoutes.onGenerateRoute(
-        const RouteSettings(name: AppRoutes.savedPlaces),
-      ) as MaterialPageRoute;
-      expect(savedRoute.builder(testContext),
-          anyOf(isA<SessionRequiredView>(), isA<SavedPlacesScreen>()));
+        // 9. Ruta /saved-places
+        final savedRoute = AppRoutes.onGenerateRoute(
+          const RouteSettings(name: AppRoutes.savedPlaces),
+        ) as MaterialPageRoute;
+        expect(
+          savedRoute.builder(testContext),
+          anyOf(isA<SessionRequiredView>(), isA<SavedPlacesScreen>()),
+        );
 
-      // 10. Ruta /my-reports
-      final myRepRoute = AppRoutes.onGenerateRoute(
-        const RouteSettings(name: AppRoutes.myReports),
-      ) as MaterialPageRoute;
-      expect(myRepRoute.builder(testContext),
-          anyOf(isA<SessionRequiredView>(), isA<MyReportsScreen>()));
+        // 10. Ruta /my-reports
+        final myRepRoute = AppRoutes.onGenerateRoute(
+          const RouteSettings(name: AppRoutes.myReports),
+        ) as MaterialPageRoute;
+        expect(
+          myRepRoute.builder(testContext),
+          anyOf(isA<SessionRequiredView>(), isA<MyReportsScreen>()),
+        );
 
-      // 11. Ruta /my-lost-items
-      final myLostRoute = AppRoutes.onGenerateRoute(
-        const RouteSettings(name: AppRoutes.myLostItems),
-      ) as MaterialPageRoute;
-      expect(myLostRoute.builder(testContext),
-          anyOf(isA<SessionRequiredView>(), isA<MyLostItemsScreen>()));
+        // 11. Ruta /my-lost-items
+        final myLostRoute = AppRoutes.onGenerateRoute(
+          const RouteSettings(name: AppRoutes.myLostItems),
+        ) as MaterialPageRoute;
+        expect(
+          myLostRoute.builder(testContext),
+          anyOf(isA<SessionRequiredView>(), isA<MyLostItemsScreen>()),
+        );
 
-      // 12. Ruta /profile-settings
-      final settingsRoute = AppRoutes.onGenerateRoute(
-        const RouteSettings(name: AppRoutes.profileSettings),
-      ) as MaterialPageRoute;
-      expect(settingsRoute.builder(testContext),
-          anyOf(isA<SessionRequiredView>(), isA<ProfileSettingsScreen>()));
+        // 12. Ruta /profile-settings
+        final settingsRoute = AppRoutes.onGenerateRoute(
+          const RouteSettings(name: AppRoutes.profileSettings),
+        ) as MaterialPageRoute;
+        expect(
+          settingsRoute.builder(testContext),
+          anyOf(isA<SessionRequiredView>(), isA<ProfileSettingsScreen>()),
+        );
 
-      // 13. Ruta /login
-      final loginRoute = AppRoutes.onGenerateRoute(
-        const RouteSettings(name: AppRoutes.login),
-      ) as MaterialPageRoute;
-      expect(loginRoute.builder(testContext),
-          isA<LoginPage>());
+        // 13. Ruta /login
+        final loginRoute = AppRoutes.onGenerateRoute(
+          const RouteSettings(name: AppRoutes.login),
+        ) as MaterialPageRoute;
+        expect(loginRoute.builder(testContext), isA<LoginPage>());
 
-      // 14. Ruta no reconocida -> fallback
-      final fallbackRoute = AppRoutes.onGenerateRoute(
-        const RouteSettings(name: '/ruta-desconocida'),
-      ) as MaterialPageRoute;
-      expect(fallbackRoute.builder(testContext),
-          isA<MainNavigationScreen>());
-    });
+        // 14. Ruta no reconocida -> fallback
+        final fallbackRoute = AppRoutes.onGenerateRoute(
+          const RouteSettings(name: '/ruta-desconocida'),
+        ) as MaterialPageRoute;
+        expect(fallbackRoute.builder(testContext), isA<MainNavigationScreen>());
+      },
+    );
 
-    testWidgets('CustomDrawer navega a Inicio, Profesores y Vistas secundarias',
-        (tester) async {
-      tester.view.physicalSize = const Size(1080, 1920);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'CustomDrawer navega a Inicio, Profesores y Vistas secundarias',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 1920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const UctMapApp());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(const UctMapApp());
+        await tester.pumpAndSettle();
 
-      // Abrir el drawer usando ScaffoldState
-      tester.state<ScaffoldState>(find.byType(Scaffold).first).openDrawer();
-      await tester.pumpAndSettle();
+        // Abrir el drawer usando ScaffoldState
+        tester.state<ScaffoldState>(find.byType(Scaffold).first).openDrawer();
+        await tester.pumpAndSettle();
 
-      // Verificar que los accesos del Drawer estén presentes
-      expect(find.text('Inicio y Accesos Rápidos'), findsOneWidget);
-      expect(find.text('Directorio de Profesores'), findsOneWidget);
-      expect(find.text('Lugares Guardados'), findsOneWidget);
-      expect(find.text('Mis Reportes'), findsOneWidget);
-      expect(find.text('Objetos Reportados'), findsOneWidget);
-      expect(find.text('Configuración'), findsOneWidget);
+        // Verificar que los accesos del Drawer estén presentes
+        expect(find.text('Inicio y Accesos Rápidos'), findsOneWidget);
+        expect(find.text('Directorio de Profesores'), findsOneWidget);
+        expect(find.text('Lugares Guardados'), findsNothing);
+        expect(find.text('Mis Reportes'), findsOneWidget);
+        expect(find.text('Objetos Reportados'), findsOneWidget);
+        expect(find.text('Configuración'), findsOneWidget);
 
-      // Navegar a Directorio de Profesores desde el Drawer
-      await tester.tap(find.text('Directorio de Profesores'));
-      await tester.pumpAndSettle();
+        // Navegar a Directorio de Profesores desde el Drawer
+        await tester.tap(find.text('Directorio de Profesores'));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(ProfessorsScreen), findsNothing);
-      expect(find.text('Iniciar Sesión'), findsOneWidget);
+        expect(find.byType(ProfessorsScreen), findsNothing);
+        expect(find.text('Iniciar Sesión'), findsOneWidget);
 
-      // Volver atrás
-      await tester.pageBack();
-      await tester.pumpAndSettle();
-      expect(find.byType(MainNavigationScreen), findsOneWidget);
-    });
+        // Volver atrás
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        expect(find.byType(MainNavigationScreen), findsOneWidget);
+      },
+    );
 
-    testWidgets('HomeScreen conecta correctamente a Mapa, Buscar y otras vistas',
-        (tester) async {
-      int navigatedTab = -1;
-      await tester.pumpWidget(MaterialApp(
-        onGenerateRoute: AppRoutes.onGenerateRoute,
-        home: HomeScreen(
-          onNavigateToTab: (index) {
-            navigatedTab = index;
-          },
-        ),
-      ));
-
-      // Tocar 'Mapa'
-      await tester.ensureVisible(find.text('Mapa'));
-      await tester.tap(find.text('Mapa'));
-      await tester.pumpAndSettle();
-      expect(navigatedTab, 0);
-
-      // Tocar 'Buscar'
-      await tester.ensureVisible(find.text('Buscar'));
-      await tester.tap(find.text('Buscar'));
-      await tester.pumpAndSettle();
-      expect(navigatedTab, 1);
-
-      // Tocar 'Objetos Perdidos'
-      await tester.ensureVisible(find.text('Objetos'));
-      await tester.tap(find.text('Objetos'));
-      await tester.pumpAndSettle();
-      expect(navigatedTab, 2);
-
-      // Tocar 'Reportes'
-      await tester.ensureVisible(find.text('Reportes'));
-      await tester.tap(find.text('Reportes'));
-      await tester.pumpAndSettle();
-      expect(navigatedTab, 3);
-
-      // Tocar 'Mi Perfil'
-      await tester.ensureVisible(find.byTooltip('Mi perfil'));
-      await tester.tap(find.byTooltip('Mi perfil'));
-      await tester.pumpAndSettle();
-      expect(navigatedTab, 4);
-    });
-
-    testWidgets('ProfessorsScreen sin ubicación no simula localizar al docente',
-        (tester) async {
-      final session = SessionController(storage: _MemoryStorage());
-      await _signInStudent(session);
-      ApiClientProvider.initialize(session);
-      int targetTab = -1;
-      await tester.pumpWidget(MaterialApp(
-        onGenerateRoute: AppRoutes.onGenerateRoute,
-        home: Scaffold(
-          body: ProfessorsScreen(
-            onNavigateToTab: (tab) => targetTab = tab,
-            scheduleRepository: ScheduleRemoteDataSource(
-              client: MockClient((request) async {
-                if (request.url.path == '/api/identity') {
-                  return http.Response(jsonEncode([{
-                    'userId': 'teacher-fixture',
-                    'name': 'Docente de prueba',
-                    'email': 'teacher.fixture@uct.cl',
-                    'role': 'Teacher',
-                  }]), 200);
-                }
-                expect(request.url.path, '/api/schedule/office-hours');
-                return http.Response('[]', 200);
-              }),
+    testWidgets(
+      'HomeScreen conecta correctamente a Mapa, Buscar y otras vistas',
+      (tester) async {
+        int navigatedTab = -1;
+        await tester.pumpWidget(
+          MaterialApp(
+            onGenerateRoute: AppRoutes.onGenerateRoute,
+            home: HomeScreen(
+              onNavigateToTab: (index) {
+                navigatedTab = index;
+              },
             ),
           ),
-        ),
-      ));
-      await tester.pumpAndSettle();
+        );
 
-      // Expandir el primer profesor
-      await tester.tap(find.text('Docente de prueba'));
-      await tester.pumpAndSettle();
+        // Tocar 'Mapa'
+        await tester.ensureVisible(find.text('Mapa'));
+        await tester.tap(find.text('Mapa'));
+        await tester.pumpAndSettle();
+        expect(navigatedTab, 0);
 
-      // Tocar 'Ver en Mapa'
-      await tester.tap(find.text('Ver en Mapa'));
-      await tester.pumpAndSettle();
+        // Tocar 'Buscar'
+        await tester.ensureVisible(find.text('Buscar'));
+        await tester.tap(find.text('Buscar'));
+        await tester.pumpAndSettle();
+        expect(navigatedTab, 1);
 
-      expect(targetTab, -1);
-      expect(find.text('Este docente no tiene un lugar de atención registrado.'), findsOneWidget);
-      expect(find.textContaining('Ubicando oficina'), findsNothing);
-      await tester.pumpWidget(const SizedBox());
-      session.dispose();
-      ApiClientProvider.reset();
-    });
+        // Tocar 'Objetos Perdidos'
+        await tester.ensureVisible(find.text('Objetos'));
+        await tester.tap(find.text('Objetos'));
+        await tester.pumpAndSettle();
+        expect(navigatedTab, 2);
 
-    testWidgets('ReportDetailScreen botón Ver en Mapa retorna tab 0',
-        (tester) async {
-      int targetTab = -1;
-      await tester.pumpWidget(MaterialApp(
-        onGenerateRoute: AppRoutes.onGenerateRoute,
-        home: ReportDetailScreen(
-          report: mockReports[0],
-          onNavigateToTab: (tab) => targetTab = tab,
-        ),
-      ));
+        // Tocar 'Reportes'
+        await tester.ensureVisible(find.text('Reportes'));
+        await tester.tap(find.text('Reportes'));
+        await tester.pumpAndSettle();
+        expect(navigatedTab, 3);
 
-      // Tocar icono de mapa en el AppBar
-      await tester.tap(find.byIcon(Icons.map_outlined).first);
-      await tester.pumpAndSettle();
+        // Tocar 'Mi Perfil'
+        await tester.ensureVisible(find.byTooltip('Mi perfil'));
+        await tester.tap(find.byTooltip('Mi perfil'));
+        await tester.pumpAndSettle();
+        expect(navigatedTab, 4);
+      },
+    );
 
-      expect(targetTab, 0);
-      expect(find.textContaining('Ubicando'), findsOneWidget);
-    });
-
-    testWidgets('LostItemDetailScreen botón Ver en Mapa retorna tab 0',
-        (tester) async {
-      int targetTab = -1;
-      await tester.pumpWidget(MaterialApp(
-        onGenerateRoute: AppRoutes.onGenerateRoute,
-        home: LostItemDetailScreen(
-          item: mockLostItems[0],
-          onNavigateToTab: (tab) => targetTab = tab,
-        ),
-      ));
-
-      // Tocar icono de mapa en el AppBar
-      await tester.tap(find.byIcon(Icons.map_outlined).first);
-      await tester.pumpAndSettle();
-
-      expect(targetTab, 0);
-      expect(find.textContaining('Ubicando'), findsOneWidget);
-    });
-
-    testWidgets('LoginPage muestra botón Volver si canPop es true',
-        (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: Navigator(
-          onGenerateRoute: (settings) {
-            return MaterialPageRoute(
-              builder: (ctx) => Scaffold(
-                body: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      ctx,
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                    );
-                  },
-                  child: const Text('Go Login'),
+    testWidgets(
+      'ProfessorsScreen sin ubicación no simula localizar al docente',
+      (tester) async {
+        final session = SessionController(storage: _MemoryStorage());
+        await _signInStudent(session);
+        ApiClientProvider.initialize(session);
+        int targetTab = -1;
+        await tester.pumpWidget(
+          MaterialApp(
+            onGenerateRoute: AppRoutes.onGenerateRoute,
+            home: Scaffold(
+              body: ProfessorsScreen(
+                onNavigateToTab: (tab) => targetTab = tab,
+                scheduleRepository: ScheduleRemoteDataSource(
+                  client: MockClient((request) async {
+                    if (request.url.path == '/api/identity') {
+                      return http.Response(
+                        jsonEncode([
+                          {
+                            'userId': 'teacher-fixture',
+                            'name': 'Docente de prueba',
+                            'email': 'teacher.fixture@uct.cl',
+                            'role': 'Teacher',
+                          },
+                        ]),
+                        200,
+                      );
+                    }
+                    expect(request.url.path, '/api/schedule/office-hours');
+                    return http.Response('[]', 200);
+                  }),
                 ),
               ),
-            );
-          },
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Expandir el primer profesor
+        await tester.tap(find.text('Docente de prueba'));
+        await tester.pumpAndSettle();
+
+        // Tocar 'Ver en Mapa'
+        await tester.tap(find.text('Ver en Mapa'));
+        await tester.pumpAndSettle();
+
+        expect(targetTab, -1);
+        expect(
+          find.text('Este docente no tiene un lugar de atención registrado.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Ubicando oficina'), findsNothing);
+        await tester.pumpWidget(const SizedBox());
+        session.dispose();
+        ApiClientProvider.reset();
+      },
+    );
+
+    testWidgets('ReportDetailScreen botón Ver en Mapa retorna tab 0', (
+      tester,
+    ) async {
+      int targetTab = -1;
+      await tester.pumpWidget(
+        MaterialApp(
+          onGenerateRoute: AppRoutes.onGenerateRoute,
+          home: ReportDetailScreen(
+            report: mockReports[0],
+            onNavigateToTab: (tab) => targetTab = tab,
+          ),
         ),
-      ));
+      );
+
+      // Tocar icono de mapa en el AppBar
+      await tester.tap(find.byIcon(Icons.map_outlined).first);
+      await tester.pumpAndSettle();
+
+      expect(targetTab, 0);
+      expect(find.textContaining('Ubicando'), findsOneWidget);
+    });
+
+    testWidgets('LostItemDetailScreen botón Ver en Mapa retorna tab 0', (
+      tester,
+    ) async {
+      int targetTab = -1;
+      await tester.pumpWidget(
+        MaterialApp(
+          onGenerateRoute: AppRoutes.onGenerateRoute,
+          home: LostItemDetailScreen(
+            item: mockLostItems[0],
+            onNavigateToTab: (tab) => targetTab = tab,
+          ),
+        ),
+      );
+
+      // Tocar icono de mapa en el AppBar
+      await tester.tap(find.byIcon(Icons.map_outlined).first);
+      await tester.pumpAndSettle();
+
+      expect(targetTab, 0);
+      expect(find.textContaining('Ubicando'), findsOneWidget);
+    });
+
+    testWidgets('LoginPage muestra botón Volver si canPop es true', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Navigator(
+            onGenerateRoute: (settings) {
+              return MaterialPageRoute(
+                builder: (ctx) => Scaffold(
+                  body: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        ctx,
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
+                      );
+                    },
+                    child: const Text('Go Login'),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
 
       await tester.tap(find.text('Go Login'));
       await tester.pumpAndSettle();

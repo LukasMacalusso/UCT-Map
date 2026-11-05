@@ -21,10 +21,11 @@ class LostObjectsRemoteDataSource {
     String? baseUrl,
     String? Function()? tokenProvider,
     Duration? timeout,
-  })  : _client = client ?? ApiClientProvider.defaultClient,
-        _baseUrl = _normalizeBaseUrl(baseUrl ?? _resolveDefaultBaseUrl()),
-        _tokenProvider = tokenProvider ?? (() => ApiClientProvider.session.token),
-        _timeout = timeout ?? EnvConfig.apiTimeout;
+  }) : _client = client ?? ApiClientProvider.defaultClient,
+       _baseUrl = _normalizeBaseUrl(baseUrl ?? _resolveDefaultBaseUrl()),
+       _tokenProvider =
+           tokenProvider ?? (() => ApiClientProvider.session.token),
+       _timeout = timeout ?? EnvConfig.apiTimeout;
 
   final http.Client _client;
   final String _baseUrl;
@@ -58,9 +59,7 @@ class LostObjectsRemoteDataSource {
 
   /// Construye los encabezados requeridos para la petición.
   Map<String, String> _buildHeaders({bool includeContentType = true}) {
-    final headers = <String, String>{
-      'Accept': 'application/json',
-    };
+    final headers = <String, String>{'Accept': 'application/json'};
     if (includeContentType) {
       headers['Content-Type'] = 'application/json';
     }
@@ -100,10 +99,43 @@ class LostObjectsRemoteDataSource {
     throw ApiException.fromResponse(statusCode, body);
   }
 
+  Future<LostObject> getLostObjectById(String id) async {
+    if (id.trim().isEmpty)
+      throw ArgumentError('Falta el identificador del objeto.');
+    try {
+      final response = await _client
+          .get(
+            _buildUri(
+              '${ApiEndpoints.incidentLostObjects}/${Uri.encodeComponent(id)}',
+            ),
+            headers: _buildHeaders(includeContentType: false),
+          )
+          .timeout(_timeout);
+      if (response.statusCode != 200) _handleErrorResponse(response);
+      final data = jsonDecode(response.body);
+      if (data is! Map<String, dynamic>)
+        throw const FormatException('Objeto inválido.');
+      final item = LostObject.fromJson(data);
+      if (item.id != id)
+        throw const FormatException('El objeto no corresponde a la consulta.');
+      return item;
+    } on TimeoutException {
+      throw const NetworkException(
+        'Tiempo de espera agotado al consultar el objeto.',
+      );
+    } on http.ClientException {
+      throw const NetworkException('No se pudo consultar el objeto.');
+    } on SocketException {
+      throw const NetworkException('No se pudo conectar con el servidor.');
+    }
+  }
+
   /// POST /api/incident/lost-objects
   ///
   /// Crea un nuevo objeto perdido. Valida previamente que [dto.photoUrl] sea una URL absoluta.
-  Future<CreateLostObjectResponse> createLostObject(CreateLostObjectDto dto) async {
+  Future<CreateLostObjectResponse> createLostObject(
+    CreateLostObjectDto dto,
+  ) async {
     // 1. Validaciones previas en cliente
     dto.validate();
 
@@ -121,16 +153,23 @@ class LostObjectsRemoteDataSource {
         if (decoded is Map<String, dynamic>) {
           return CreateLostObjectResponse.fromJson(decoded);
         }
-        throw const ApiException('Respuesta de creación en formato inválido.', 201);
+        throw const ApiException(
+          'Respuesta de creación en formato inválido.',
+          201,
+        );
       }
 
       _handleErrorResponse(response);
     } on SocketException catch (e) {
       throw NetworkException('Error de conexión con el servidor: ${e.message}');
     } on http.ClientException catch (e) {
-      throw NetworkException('Fallo al conectar con el API Gateway: ${e.message}');
+      throw NetworkException(
+        'Fallo al conectar con el API Gateway: ${e.message}',
+      );
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al registrar el objeto perdido.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al registrar el objeto perdido.',
+      );
     }
   }
 
@@ -140,30 +179,40 @@ class LostObjectsRemoteDataSource {
   Future<PaginatedLostObjectsResponse> getLostObjects({
     LostObjectFilterParams? filter,
   }) async {
-    final queryParams = filter?.toQueryParams() ??
+    final queryParams =
+        filter?.toQueryParams() ??
         const LostObjectFilterParams().toQueryParams();
 
     final uri = _buildUri(ApiEndpoints.incidentLostObjects, queryParams);
     final headers = _buildHeaders(includeContentType: false);
 
     try {
-      final response = await _client.get(uri, headers: headers).timeout(_timeout);
+      final response = await _client
+          .get(uri, headers: headers)
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         if (decoded is Map<String, dynamic>) {
           return PaginatedLostObjectsResponse.fromJson(decoded);
         }
-        throw const ApiException('Respuesta de listado en formato inválido.', 200);
+        throw const ApiException(
+          'Respuesta de listado en formato inválido.',
+          200,
+        );
       }
 
       _handleErrorResponse(response);
     } on SocketException catch (e) {
       throw NetworkException('Error de conexión con el servidor: ${e.message}');
     } on http.ClientException catch (e) {
-      throw NetworkException('Fallo al consultar objetos perdidos: ${e.message}');
+      throw NetworkException(
+        'Fallo al consultar objetos perdidos: ${e.message}',
+      );
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al consultar objetos perdidos.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al consultar objetos perdidos.',
+      );
     }
   }
 
@@ -191,11 +240,42 @@ class LostObjectsRemoteDataSource {
 
       _handleErrorResponse(response);
     } on SocketException catch (e) {
-      throw NetworkException('Error de conexión al actualizar estado: ${e.message}');
+      throw NetworkException(
+        'Error de conexión al actualizar estado: ${e.message}',
+      );
     } on http.ClientException catch (e) {
       throw NetworkException('Fallo de red al actualizar estado: ${e.message}');
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al actualizar el estado del objeto.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al actualizar el estado del objeto.',
+      );
+    }
+  }
+
+  Future<void> deleteLostObject(String id) async {
+    if (id.trim().isEmpty) throw ArgumentError('Falta el identificador.');
+    try {
+      final response = await _client
+          .delete(
+            _buildUri(
+              '${ApiEndpoints.incidentLostObjects}/${Uri.encodeComponent(id.trim())}',
+            ),
+            headers: _buildHeaders(includeContentType: false),
+          )
+          .timeout(_timeout);
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        _handleErrorResponse(response);
+      }
+    } on TimeoutException {
+      throw const NetworkException(
+        'No se confirmó el borrado. Actualiza antes de reintentar.',
+      );
+    } on http.ClientException {
+      throw const NetworkException(
+        'No se confirmó el borrado. Actualiza antes de reintentar.',
+      );
+    } on SocketException {
+      throw const NetworkException('No se pudo conectar con el servidor.');
     }
   }
 }

@@ -8,6 +8,9 @@ class CampusModel extends Campus {
     required super.address,
     required super.latitude,
     required super.longitude,
+    super.zoom,
+    super.pitch,
+    super.bearing,
     super.buildings,
     super.structures,
   });
@@ -22,6 +25,9 @@ class CampusModel extends Campus {
       address: (json['address'] ?? json['Address'] ?? '').toString(),
       latitude: (json['latitude'] ?? json['Latitude'] ?? 0.0).toDouble(),
       longitude: (json['longitude'] ?? json['Longitude'] ?? 0.0).toDouble(),
+      zoom: Campus.cameraValue(json, 'zoom', 0, 22),
+      pitch: Campus.cameraValue(json, 'pitch', 0, 85),
+      bearing: Campus.cameraValue(json, 'bearing', -180, 180),
       buildings: rawBuildings
           .whereType<Map<String, dynamic>>()
           .map((building) => BuildingModel.fromJson(building))

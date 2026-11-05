@@ -1,7 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
-import 'package:flutter_map/flutter_map.dart';
+import 'package:uct_map/presentation/screens/map/map_screen.dart';
+
+import 'helpers/mock_mapbox_platform.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uct_map/core/network/api_client_provider.dart';
 import 'package:uct_map/domain/repositories/auth_repository.dart';
@@ -9,19 +12,24 @@ import 'package:uct_map/main.dart';
 
 class _OkRepo implements AuthRepository {
   @override
-  Future<AuthLoginResult> login(
-      {required String email, required String password}) async {
+  Future<AuthLoginResult> login({
+    required String email,
+    required String password,
+  }) async {
     return AuthLoginResult(userId: 'u-test', email: email, token: jwt(email));
   }
 
   static String jwt(String email) {
-    String b64(Object o) => base64Encode(utf8.encode(jsonEncode(o)))
-        .replaceAll('+', '-')
-        .replaceAll('/', '_')
-        .replaceAll('=', '');
+    String b64(Object o) =>
+        base64Encode(utf8.encode(jsonEncode(o)))
+            .replaceAll('+', '-')
+            .replaceAll('/', '_')
+            .replaceAll('=', '');
     final exp =
-        DateTime.now().add(const Duration(minutes: 30)).millisecondsSinceEpoch ~/
-            1000;
+        DateTime.now()
+            .add(const Duration(minutes: 30))
+            .millisecondsSinceEpoch ~/
+        1000;
     return "${b64({'alg': 'none'})}.${b64({'sub': 'u-test', 'email': email, 'exp': exp, 'iss': 'https://identity-api', 'aud': 'api-gateway'})}.x";
   }
 }
@@ -29,13 +37,16 @@ class _OkRepo implements AuthRepository {
 void _mockSecureStorage() {
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
-    const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-    (call) async => null,
-  );
+        const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+        (call) async => null,
+      );
 }
 
 void main() {
-  testWidgets('Smoke test de inicio de la aplicación UCT Map', (WidgetTester tester) async {
+  testWidgets('Smoke test de inicio de la aplicación UCT Map', (
+    WidgetTester tester,
+  ) async {
+    setupMockMapboxPlatform();
     _mockSecureStorage();
     await tester.pumpWidget(UctMapApp(authRepository: _OkRepo()));
     await tester.pump();
@@ -52,13 +63,14 @@ void main() {
     // Con sesión, el mapa interactivo se muestra.
     await ApiClientProvider.session.signInReal(
       AuthLoginResult(
-          userId: 'u-test',
-          email: 'test@alu.uct.cl',
-          token: _OkRepo.jwt('test@alu.uct.cl')),
+        userId: 'u-test',
+        email: 'test@alu.uct.cl',
+        token: _OkRepo.jwt('test@alu.uct.cl'),
+      ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.byType(MapScreen), findsOneWidget);
 
     await ApiClientProvider.session.signOut();
   });

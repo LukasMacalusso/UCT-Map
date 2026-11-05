@@ -1,4 +1,7 @@
+import '../../core/network/api_exception.dart';
+
 import 'package:flutter/material.dart';
+
 import '../../data/datasources/campus_remote_ds.dart';
 
 class CampusLocationLabel extends StatefulWidget {
@@ -20,23 +23,37 @@ class _CampusLocationLabelState extends State<CampusLocationLabel> {
   Future<String> _resolve() async {
     final campus = CampusRemoteDataSource();
     Future<String> display(String name, String campusId) async {
-      try { return '$name · ${(await campus.getCampusById(campusId)).name}'; }
-      catch (_) { return name; }
+      try {
+        return '$name · ${(await campus.getCampusById(campusId)).name}';
+      } catch (_) {
+        return name;
+      }
     }
+
     try {
       final place = await campus.getStructureById(widget.id);
       return await display(place.name, place.campusId);
-    } catch (_) {
+    } on ApiException catch (error) {
+      if (error.statusCode != 404) rethrow;
       try {
         final place = await campus.getBuildingById(widget.id);
         return await display(place.name, place.campusId);
-      } catch (_) { return 'Ubicación no disponible'; }
+      } on ApiException catch (error) {
+        if (error.statusCode != 404) rethrow;
+        return 'Ubicación no disponible';
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) => FutureBuilder<String>(
     future: _label,
-    builder: (context, snapshot) => Text(snapshot.data ?? 'Cargando ubicación…', style: widget.style, overflow: TextOverflow.ellipsis),
+    builder: (context, snapshot) => Text(
+      snapshot.hasError
+          ? 'No se pudo cargar la ubicación'
+          : snapshot.data ?? 'Cargando ubicación…',
+      style: widget.style,
+      overflow: TextOverflow.ellipsis,
+    ),
   );
 }

@@ -1,3 +1,5 @@
+import '../../widgets/unsaved_form.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client_provider.dart';
@@ -247,8 +249,8 @@ class _CategoryDialogState extends State<_CategoryDialog> {
     title: Text(
       widget.category == null ? 'Nueva categoría' : 'Editar categoría',
     ),
-    content: Form(
-      key: _form,
+    content: UnsavedForm(
+      formKey: _form,
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -289,7 +291,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
     ),
     actions: [
       TextButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: () => Navigator.maybePop(context),
         child: const Text('Cancelar'),
       ),
       FilledButton(

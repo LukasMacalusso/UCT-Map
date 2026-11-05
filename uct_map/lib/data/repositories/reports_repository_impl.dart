@@ -5,11 +5,13 @@ import '../models/report_dto.dart';
 
 /// Implementación del repositorio de Reportes según Clean Architecture.
 class ReportsRepositoryImpl implements ReportsRepository {
+  @override
+  Future<void> deleteReport(String id) => _remoteDataSource.deleteReport(id);
+
   final ReportsRemoteDataSource _remoteDataSource;
 
-  ReportsRepositoryImpl({
-    ReportsRemoteDataSource? remoteDataSource,
-  }) : _remoteDataSource = remoteDataSource ?? ReportsRemoteDataSource();
+  ReportsRepositoryImpl({ReportsRemoteDataSource? remoteDataSource})
+    : _remoteDataSource = remoteDataSource ?? ReportsRemoteDataSource();
 
   @override
   Future<CreateReportResponse> createReport(CreateReportDto dto) {
