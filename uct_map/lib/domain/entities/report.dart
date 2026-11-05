@@ -1,11 +1,6 @@
 // Entidad Report: modelo de datos de reportes de incidencias del campus UCT.
 
-enum ReportStatus {
-  reportado,
-  enRevision,
-  enProceso,
-  resuelto,
-}
+enum ReportStatus { reportado, enRevision, enProceso, resuelto }
 
 extension ReportStatusExt on ReportStatus {
   String get label {
@@ -58,17 +53,19 @@ class ReportStatusEvent {
         : DateTime.now();
 
     return ReportStatusEvent(
-      status: ReportStatusExt.fromString((json['status'] ?? json['Status'])?.toString()),
+      status: ReportStatusExt.fromString(
+        (json['status'] ?? json['Status'])?.toString(),
+      ),
       at: parsedAt,
       by: (json['by'] ?? json['By'] ?? '').toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'status': status.name,
-        'at': at.toIso8601String(),
-        'by': by,
-      };
+    'status': status.name,
+    'at': at.toIso8601String(),
+    'by': by,
+  };
 }
 
 class Report {
@@ -97,12 +94,18 @@ class Report {
   });
 
   factory Report.fromJson(Map<String, dynamic> json) {
-    final rawAt = json['reportedAt'] ?? json['ReportedAt'] ?? json['dateReport'] ?? json['createdAt'];
+    final rawAt =
+        json['reportedAt'] ??
+        json['ReportedAt'] ??
+        json['dateReport'] ??
+        json['createdAt'];
     final parsedAt = rawAt is String
         ? (DateTime.tryParse(rawAt) ?? DateTime.now())
         : DateTime.now();
 
-    final rawHistory = (json['statusHistory'] ?? json['StatusHistory']) as List<dynamic>? ?? [];
+    final rawHistory =
+        (json['statusHistory'] ?? json['StatusHistory']) as List<dynamic>? ??
+        [];
     final historyList = rawHistory
         .whereType<Map<String, dynamic>>()
         .map<ReportStatusEvent>((e) => ReportStatusEvent.fromJson(e))
@@ -111,37 +114,48 @@ class Report {
     return Report(
       id: (json['id'] ?? json['Id'] ?? json['idTicket'] ?? '').toString(),
       title: (json['title'] ?? json['Title'] ?? '').toString(),
-      description: (json['description'] ?? json['Description'] ?? '').toString(),
-      location: (json['location'] ?? json['Location'] ?? json['idStructure'] ?? '').toString(),
-      campus: (json['campus'] ?? json['Campus'] ?? 'Campus San Francisco').toString(),
-      reportedBy: (json['reportedBy'] ?? json['ReportedBy'] ?? json['idUsuario'] ?? '').toString(),
+      description: (json['description'] ?? json['Description'] ?? '')
+          .toString(),
+      location:
+          (json['location'] ?? json['Location'] ?? json['idStructure'] ?? '')
+              .toString(),
+      campus: (json['campus'] ?? json['Campus'] ?? 'Campus San Francisco')
+          .toString(),
+      reportedBy:
+          (json['reportedBy'] ?? json['ReportedBy'] ?? json['idUsuario'] ?? '')
+              .toString(),
       reportedAt: parsedAt,
-      currentStatus: ReportStatusExt.fromString((json['currentStatus'] ?? json['CurrentStatus'] ?? json['status'])?.toString()),
+      currentStatus: ReportStatusExt.fromString(
+        (json['currentStatus'] ?? json['CurrentStatus'] ?? json['status'])
+            ?.toString(),
+      ),
       statusHistory: historyList,
-      imageUrl: json['imageUrl']?.toString() ?? json['pictureUri']?.toString() ?? json['PictureUri']?.toString(),
+      imageUrl:
+          json['imageUrl']?.toString() ??
+          json['pictureUri']?.toString() ??
+          json['PictureUri']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'description': description,
-        'location': location,
-        'campus': campus,
-        'reportedBy': reportedBy,
-        'reportedAt': reportedAt.toIso8601String(),
-        'currentStatus': currentStatus.name,
-        'statusHistory': statusHistory.map((e) => e.toJson()).toList(),
-        if (imageUrl != null) 'imageUrl': imageUrl,
-      };
+    'id': id,
+    'title': title,
+    'description': description,
+    'location': location,
+    'campus': campus,
+    'reportedBy': reportedBy,
+    'reportedAt': reportedAt.toIso8601String(),
+    'currentStatus': currentStatus.name,
+    'statusHistory': statusHistory.map((e) => e.toJson()).toList(),
+    if (imageUrl != null) 'imageUrl': imageUrl,
+  };
 }
 
 final List<Report> mockReports = [
   Report(
     id: '1',
     title: 'Bano con cadena rota',
-    description:
-        'Se rompio la cadena del bano del primer piso. El inodoro no para de botar agua, lo que genera una perdida constante de agua. Se solicita revision urgente.',
+    description: 'Se rompio la cadena del bano del primer piso. El inodoro no para de botar agua, lo que genera una perdida constante de agua. Se solicita revision urgente.',
     location: 'Bano Primer Piso',
     campus: 'Campus San Francisco',
     reportedBy: 'Juan Perez',
@@ -163,8 +177,7 @@ final List<Report> mockReports = [
   Report(
     id: '2',
     title: 'Proyector con falla tecnica',
-    description:
-        'El proyector de la Sala C-201 no enciende. Se probo con distintos cables HDMI y el problema persiste. Afecta las clases de la manana.',
+    description: 'El proyector de la Sala C-201 no enciende. Se probo con distintos cables HDMI y el problema persiste. Afecta las clases de la manana.',
     location: 'Sala C-201, Edificio C',
     campus: 'Campus San Francisco',
     reportedBy: 'Prof. Ana Morales',
@@ -191,8 +204,7 @@ final List<Report> mockReports = [
   Report(
     id: '3',
     title: 'Luz intermitente en pasillo',
-    description:
-        'Las luces del pasillo del segundo piso parpadean constantemente desde hace una semana. Genera molestias visuales y posible riesgo electrico.',
+    description: 'Las luces del pasillo del segundo piso parpadean constantemente desde hace una semana. Genera molestias visuales y posible riesgo electrico.',
     location: 'Pasillo Piso 2',
     campus: 'Campus San Francisco',
     reportedBy: 'Carlos Fernandez',
@@ -224,8 +236,7 @@ final List<Report> mockReports = [
   Report(
     id: '4',
     title: 'Ascensor fuera de servicio',
-    description:
-        'El ascensor del Edificio D se queda trabado entre pisos. Ya ocurrio 3 veces esta semana. Afecta a estudiantes con movilidad reducida.',
+    description: 'El ascensor del Edificio D se queda trabado entre pisos. Ya ocurrio 3 veces esta semana. Afecta a estudiantes con movilidad reducida.',
     location: 'Ascensor, Edificio D',
     campus: 'Campus San Francisco',
     reportedBy: 'Maria Gonzalez',
@@ -242,8 +253,7 @@ final List<Report> mockReports = [
   Report(
     id: '5',
     title: 'Filtracion de agua en techo',
-    description:
-        'Hay una filtracion de agua en el techo de la biblioteca, sector de mesas grupales. Cuando llueve cae agua sobre las mesas y los enchufes.',
+    description: 'Hay una filtracion de agua en el techo de la biblioteca, sector de mesas grupales. Cuando llueve cae agua sobre las mesas y los enchufes.',
     location: 'Biblioteca, Sector Grupal',
     campus: 'Campus Norte',
     reportedBy: 'Diego Rojas',
@@ -270,8 +280,7 @@ final List<Report> mockReports = [
   Report(
     id: '6',
     title: 'Puerta de acceso sin seguro',
-    description:
-        'La puerta principal del laboratorio de computacion no cierra con llave. Se puede abrir desde afuera sin tarjeta de acceso, lo que representa un riesgo para los equipos.',
+    description: 'La puerta principal del laboratorio de computacion no cierra con llave. Se puede abrir desde afuera sin tarjeta de acceso, lo que representa un riesgo para los equipos.',
     location: 'Laboratorio Computacion, Piso 3',
     campus: 'Campus Norte',
     reportedBy: 'Sofia Castro',

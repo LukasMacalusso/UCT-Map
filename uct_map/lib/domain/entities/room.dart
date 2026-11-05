@@ -28,11 +28,11 @@ class Room {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'buildingId': buildingId,
-        'categoryId': categoryId,
-        'name': name,
-        'floor': floor,
-        if (number != null) 'number': number,
-      };
+    'id': id,
+    'buildingId': buildingId,
+    'categoryId': categoryId,
+    'name': name,
+    'floor': floor,
+    if (number != null) 'number': number,
+  };
 }

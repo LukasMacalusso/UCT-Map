@@ -17,8 +17,8 @@ import 'api_exception.dart';
 /// - Conversión de errores de conectividad y timeout a [NetworkException].
 class ApiClient {
   ApiClient({http.Client? client, ApiConfig? config})
-      : _client = client ?? ApiClientProvider.defaultClient,
-        _config = config ?? ApiConfig();
+    : _client = client ?? ApiClientProvider.defaultClient,
+      _config = config ?? ApiConfig();
 
   final http.Client _client;
   final ApiConfig _config;
@@ -48,7 +48,9 @@ class ApiClient {
     } on http.ClientException {
       throw const NetworkException();
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al conectar con el servidor.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al conectar con el servidor.',
+      );
     }
   }
 
@@ -82,11 +84,10 @@ class ApiClient {
     Duration? timeout,
   }) async {
     final uri = _buildUri(path, queryParameters);
-    final effectiveHeaders = {
-      'Content-Type': 'application/json',
-      ...?headers,
-    };
-    final encodedBody = body != null && body is! String ? jsonEncode(body) : body;
+    final effectiveHeaders = {'Content-Type': 'application/json', ...?headers};
+    final encodedBody = body != null && body is! String
+        ? jsonEncode(body)
+        : body;
 
     try {
       final res = await _client
@@ -97,7 +98,9 @@ class ApiClient {
     } on http.ClientException {
       throw const NetworkException();
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al conectar con el servidor.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al conectar con el servidor.',
+      );
     }
   }
 
@@ -133,11 +136,10 @@ class ApiClient {
     Duration? timeout,
   }) async {
     final uri = _buildUri(path, queryParameters);
-    final effectiveHeaders = {
-      'Content-Type': 'application/json',
-      ...?headers,
-    };
-    final encodedBody = body != null && body is! String ? jsonEncode(body) : body;
+    final effectiveHeaders = {'Content-Type': 'application/json', ...?headers};
+    final encodedBody = body != null && body is! String
+        ? jsonEncode(body)
+        : body;
 
     try {
       final res = await _client
@@ -148,7 +150,9 @@ class ApiClient {
     } on http.ClientException {
       throw const NetworkException();
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al conectar con el servidor.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al conectar con el servidor.',
+      );
     }
   }
 
@@ -161,11 +165,10 @@ class ApiClient {
     Duration? timeout,
   }) async {
     final uri = _buildUri(path, queryParameters);
-    final effectiveHeaders = {
-      'Content-Type': 'application/json',
-      ...?headers,
-    };
-    final encodedBody = body != null && body is! String ? jsonEncode(body) : body;
+    final effectiveHeaders = {'Content-Type': 'application/json', ...?headers};
+    final encodedBody = body != null && body is! String
+        ? jsonEncode(body)
+        : body;
 
     try {
       final res = await _client
@@ -176,7 +179,9 @@ class ApiClient {
     } on http.ClientException {
       throw const NetworkException();
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al conectar con el servidor.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al conectar con el servidor.',
+      );
     }
   }
 
@@ -193,7 +198,9 @@ class ApiClient {
       if (body != null) 'Content-Type': 'application/json',
       ...?headers,
     };
-    final encodedBody = body != null && body is! String ? jsonEncode(body) : body;
+    final encodedBody = body != null && body is! String
+        ? jsonEncode(body)
+        : body;
 
     try {
       final res = await _client
@@ -204,7 +211,9 @@ class ApiClient {
     } on http.ClientException {
       throw const NetworkException();
     } on TimeoutException {
-      throw const NetworkException('Tiempo de espera agotado al conectar con el servidor.');
+      throw const NetworkException(
+        'Tiempo de espera agotado al conectar con el servidor.',
+      );
     }
   }
 

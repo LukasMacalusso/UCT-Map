@@ -63,9 +63,7 @@ void main() {
     });
 
     test('ApiConfig permite sobreescribir valores explícitamente', () {
-      EnvConfig.testInit({
-        'API_BASE_URL': 'http://localhost:5052',
-      });
+      EnvConfig.testInit({'API_BASE_URL': 'http://localhost:5052'});
 
       final customConfig = ApiConfig(
         baseUrl: 'https://staging.uct.cl',

@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'api_exception.dart';
 
 /// Representación del estándar RFC 7807 (Problem Details for HTTP APIs).
@@ -38,7 +39,14 @@ class ProblemDetails {
     }
 
     final extensions = <String, dynamic>{};
-    const standardKeys = {'type', 'title', 'status', 'detail', 'instance', 'errors'};
+    const standardKeys = {
+      'type',
+      'title',
+      'status',
+      'detail',
+      'instance',
+      'errors',
+    };
     json.forEach((key, value) {
       if (!standardKeys.contains(key.toLowerCase())) {
         extensions[key] = value;
@@ -116,14 +124,14 @@ class ProblemDetails {
   }
 
   Map<String, dynamic> toJson() => {
-        if (type != null) 'type': type,
-        if (title != null) 'title': title,
-        if (status != null) 'status': status,
-        if (detail != null) 'detail': detail,
-        if (instance != null) 'instance': instance,
-        if (errors != null) 'errors': errors,
-        ...extensions,
-      };
+    if (type != null) 'type': type,
+    if (title != null) 'title': title,
+    if (status != null) 'status': status,
+    if (detail != null) 'detail': detail,
+    if (instance != null) 'instance': instance,
+    if (errors != null) 'errors': errors,
+    ...extensions,
+  };
 
   @override
   String toString() =>
@@ -133,12 +141,12 @@ class ProblemDetails {
 /// Excepción especializada para errores RFC 7807.
 class ProblemDetailsException extends ApiException {
   ProblemDetailsException(ProblemDetails problemDetails)
-      : super(
-          problemDetails.userMessage,
-          problemDetails.status,
-          problemDetails.toJson(),
-          problemDetails,
-        );
+    : super(
+        problemDetails.userMessage,
+        problemDetails.status,
+        problemDetails.toJson(),
+        problemDetails,
+      );
 
   @override
   ProblemDetails get problemDetails => super.problemDetails!;

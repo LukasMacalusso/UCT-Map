@@ -33,7 +33,10 @@ enum TicketStatus {
       }
     }
 
-    final normalized = str.toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
+    final normalized = str
+        .toLowerCase()
+        .replaceAll('-', '_')
+        .replaceAll(' ', '_');
     switch (normalized) {
       case 'in_process':
       case 'inprocess':
@@ -91,7 +94,10 @@ enum ComplaintStatus {
       }
     }
 
-    final normalized = str.toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
+    final normalized = str
+        .toLowerCase()
+        .replaceAll('-', '_')
+        .replaceAll(' ', '_');
     switch (normalized) {
       case 'found':
       case 'hallazgo':
@@ -126,16 +132,17 @@ class ComplaintDetails {
   factory ComplaintDetails.fromJson(Map<String, dynamic> json) {
     return ComplaintDetails(
       title: (json['title'] ?? json['Title'] ?? '').toString(),
-      description: (json['description'] ?? json['Description'] ?? '').toString(),
+      description: (json['description'] ?? json['Description'] ?? '')
+          .toString(),
       status: ComplaintStatus.fromValue(json['status'] ?? json['Status']),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'title': title,
-        'description': description,
-        'status': status.value,
-      };
+    'title': title,
+    'description': description,
+    'status': status.value,
+  };
 
   ComplaintDetails copyWith({
     String? title,
@@ -202,15 +209,20 @@ class Ticket {
   /// }
   factory Ticket.fromJson(Map<String, dynamic> json) {
     DateTime parsedDate;
-    final rawDate = json['reportedAt'] ?? json['ReportedAt'] ?? json['dateReport'];
+    final rawDate =
+        json['reportedAt'] ?? json['ReportedAt'] ?? json['dateReport'];
     if (rawDate != null) {
-      parsedDate = DateTime.tryParse(rawDate.toString())?.toLocal() ?? DateTime.now();
+      parsedDate =
+          DateTime.tryParse(rawDate.toString())?.toLocal() ?? DateTime.now();
     } else {
       parsedDate = DateTime.now();
     }
 
     ComplaintDetails? parsedComplaint;
-    final rawComplaint = json['complaintDetails'] ?? json['complaint'] ?? json['ComplaintDetails'];
+    final rawComplaint =
+        json['complaintDetails'] ??
+        json['complaint'] ??
+        json['ComplaintDetails'];
     if (rawComplaint is Map<String, dynamic>) {
       parsedComplaint = ComplaintDetails.fromJson(rawComplaint);
     }
@@ -218,8 +230,11 @@ class Ticket {
     return Ticket(
       id: (json['id'] ?? json['_id'] ?? '').toString(),
       userRefId: json['userRefId']?.toString(),
-      structureRefId: (json['structureRefId'] ?? json['StructureRefId'] ?? '').toString(),
-      ticketType: TicketStatus.fromValue(json['ticketType'] ?? json['type'] ?? json['TicketType']),
+      structureRefId: (json['structureRefId'] ?? json['StructureRefId'] ?? '')
+          .toString(),
+      ticketType: TicketStatus.fromValue(
+        json['ticketType'] ?? json['type'] ?? json['TicketType'],
+      ),
       isActive: (json['isActive'] ?? json['IsActive'] ?? true) as bool,
       reportedAt: parsedDate,
       complaintDetails: parsedComplaint,
@@ -228,15 +243,17 @@ class Ticket {
   }
 
   Map<String, dynamic> toJson() => {
-        if (id.isNotEmpty) 'id': id,
-        if (userRefId != null) 'userRefId': userRefId,
-        'structureRefId': structureRefId,
-        'ticketType': ticketType.value,
-        'isActive': isActive,
-        'reportedAt': reportedAt.toUtc().toIso8601String(),
-        if (complaintDetails != null) 'complaintDetails': complaintDetails!.toJson(),
-        if (lostObjectId != null && lostObjectId!.isNotEmpty) 'lostObjectId': lostObjectId,
-      };
+    if (id.isNotEmpty) 'id': id,
+    if (userRefId != null) 'userRefId': userRefId,
+    'structureRefId': structureRefId,
+    'ticketType': ticketType.value,
+    'isActive': isActive,
+    'reportedAt': reportedAt.toUtc().toIso8601String(),
+    if (complaintDetails != null)
+      'complaintDetails': complaintDetails!.toJson(),
+    if (lostObjectId != null && lostObjectId!.isNotEmpty)
+      'lostObjectId': lostObjectId,
+  };
 
   Ticket copyWith({
     String? id,

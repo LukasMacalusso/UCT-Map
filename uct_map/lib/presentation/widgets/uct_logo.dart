@@ -4,11 +4,7 @@ class UctLogo extends StatelessWidget {
   final double height;
   final double width;
 
-  const UctLogo({
-    super.key,
-    this.height = 36,
-    this.width = 36,
-  });
+  const UctLogo({super.key, this.height = 36, this.width = 36});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +21,10 @@ class UctLogo extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF003865), // Azul UCT
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFEAA221), width: 1.5), // Dorado UCT
+            border: Border.all(
+              color: const Color(0xFFEAA221),
+              width: 1.5,
+            ), // Dorado UCT
             boxShadow: const [
               BoxShadow(
                 color: Colors.black12,

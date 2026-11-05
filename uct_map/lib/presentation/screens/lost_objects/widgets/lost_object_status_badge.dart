@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../../domain/entities/lost_object.dart';
 
 /// Componente visual tipo badge/tag de color según el estado del objeto perdido:
@@ -33,11 +34,7 @@ class LostObjectStatusBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            config.icon,
-            size: isCompact ? 12 : 14,
-            color: config.textColor,
-          ),
+          Icon(config.icon, size: isCompact ? 12 : 14, color: config.textColor),
           const SizedBox(width: 5),
           Text(
             status.label,

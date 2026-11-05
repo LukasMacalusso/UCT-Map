@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -48,46 +49,60 @@ void main() {
       expect(item.currentStatus, LostItemStatus.publicado);
     });
 
-    test('IncidentRemoteDataSource obtiene lista de reportes con filtro', () async {
-      final mockResponse = [
-        {
-          'id': 'rep-1',
-          'title': 'Luz quemada',
-          'description': 'Pasillo oscuro',
-          'location': 'Piso 2',
-          'campus': 'Campus San Francisco',
-          'reportedBy': 'Juan',
-          'reportedAt': '2026-09-21T10:00:00.000Z',
-          'currentStatus': 'reportado',
-          'statusHistory': [],
-        }
-      ];
+    test(
+      'IncidentRemoteDataSource obtiene lista de reportes con filtro',
+      () async {
+        final mockResponse = [
+          {
+            'id': 'rep-1',
+            'title': 'Luz quemada',
+            'description': 'Pasillo oscuro',
+            'location': 'Piso 2',
+            'campus': 'Campus San Francisco',
+            'reportedBy': 'Juan',
+            'reportedAt': '2026-09-21T10:00:00.000Z',
+            'currentStatus': 'reportado',
+            'statusHistory': [],
+          },
+        ];
 
-      final mockClient = MockClient((request) async {
-        expect(request.url.queryParameters['campus'], 'Campus San Francisco');
-        return http.Response(jsonEncode(mockResponse), 200);
-      });
+        final mockClient = MockClient((request) async {
+          expect(request.url.queryParameters['campus'], 'Campus San Francisco');
+          return http.Response(jsonEncode(mockResponse), 200);
+        });
 
-      final ds = IncidentRemoteDataSource(
-        client: mockClient,
-        config: ApiConfig(baseUrl: 'http://localhost:5052'),
-      );
+        final ds = IncidentRemoteDataSource(
+          client: mockClient,
+          config: ApiConfig(baseUrl: 'http://localhost:5052'),
+        );
 
-      final reports = await ds.getReports(campus: 'Campus San Francisco');
-      expect(reports.length, 1);
-      expect(reports.first.title, 'Luz quemada');
-    });
+        final reports = await ds.getReports(campus: 'Campus San Francisco');
+        expect(reports.length, 1);
+        expect(reports.first.title, 'Luz quemada');
+      },
+    );
 
-    test('IncidentRemoteDataSource activa fallback ante error de red', () async {
-      final mockClient = MockClient((request) async {
-        throw http.ClientException('Gateway down');
-      });
+    test(
+      'IncidentRemoteDataSource activa fallback ante error de red',
+      () async {
+        final mockClient = MockClient((request) async {
+          throw http.ClientException('Gateway down');
+        });
 
-      final ds = IncidentRemoteDataSource(client: mockClient);
-      final items = await ds.getLostItems();
+        final ds = IncidentRemoteDataSource(client: mockClient);
+        final items = await ds.getLostItems();
 
-      expect(items.isNotEmpty, isTrue);
-      expect(items.any((i) => i.title.contains('Calculadora') || i.title.contains('Audífonos') || i.title.contains('Tarjeta')), isTrue);
-    });
+        expect(items.isNotEmpty, isTrue);
+        expect(
+          items.any(
+            (i) =>
+                i.title.contains('Calculadora') ||
+                i.title.contains('Audífonos') ||
+                i.title.contains('Tarjeta'),
+          ),
+          isTrue,
+        );
+      },
+    );
   });
 }

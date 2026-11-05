@@ -36,7 +36,11 @@ class ApiClientProvider {
         _session != session || innerClient != null || _defaultClient == null;
     _session = session;
     if (rebuild) {
-      _defaultClient = create(session, innerClient: innerClient, config: _config);
+      _defaultClient = create(
+        session,
+        innerClient: innerClient,
+        config: _config,
+      );
       _apiClient = ApiClient(client: _defaultClient, config: _config);
     }
   }

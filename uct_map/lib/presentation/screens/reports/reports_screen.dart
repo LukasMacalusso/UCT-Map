@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../data/datasources/incident_remote_ds.dart';
 import '../../../domain/entities/report.dart';
@@ -93,13 +94,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   List<Report> get _filteredReports {
-    List<Report> result = _reports.isNotEmpty ? List.from(_reports) : List.from(mockReports);
+    List<Report> result = _reports.isNotEmpty
+        ? List.from(_reports)
+        : List.from(mockReports);
     if (_selectedCampus != 'Todos') {
       result = result.where((r) => r.campus == _selectedCampus).toList();
     }
-    result.sort((a, b) => _newerFirst
-        ? b.reportedAt.compareTo(a.reportedAt)
-        : a.reportedAt.compareTo(b.reportedAt));
+    result.sort(
+      (a, b) => _newerFirst
+          ? b.reportedAt.compareTo(a.reportedAt)
+          : a.reportedAt.compareTo(b.reportedAt),
+    );
     return result;
   }
 
@@ -146,31 +151,37 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             value: _selectedCampus,
-                            icon: const Icon(Icons.keyboard_arrow_down,
-                                color: AppColors.subtitle),
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down,
+                              color: AppColors.subtitle,
+                            ),
                             style: const TextStyle(
-                                color: AppColors.ink,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600),
+                              color: AppColors.ink,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                             onChanged: (val) {
                               if (val != null) {
                                 setState(() => _selectedCampus = val);
                               }
                             },
                             items: campusList
-                                .map((c) => DropdownMenuItem(
-                                      value: c,
-                                      child: Row(
-                                        children: [
-                                          const Icon(
-                                              Icons.account_balance_outlined,
-                                              size: 15,
-                                              color: AppColors.subtitle),
-                                          const SizedBox(width: 6),
-                                          Text(c),
-                                        ],
-                                      ),
-                                    ))
+                                .map(
+                                  (c) => DropdownMenuItem(
+                                    value: c,
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.account_balance_outlined,
+                                          size: 15,
+                                          color: AppColors.subtitle,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(c),
+                                      ],
+                                    ),
+                                  ),
+                                )
                                 .toList(),
                           ),
                         ),
@@ -179,11 +190,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     const SizedBox(width: 10),
                     // Ordenar button
                     GestureDetector(
-                      onTap: () =>
-                          setState(() => _newerFirst = !_newerFirst),
+                      onTap: () => setState(() => _newerFirst = !_newerFirst),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 9),
+                          horizontal: 12,
+                          vertical: 9,
+                        ),
                         decoration: BoxDecoration(
                           border: Border.all(color: AppColors.fieldBorder),
                           borderRadius: BorderRadius.circular(10),
@@ -203,9 +215,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             Text(
                               _newerFirst ? 'Reciente' : 'Antiguo',
                               style: const TextStyle(
-                                  color: AppColors.uctBlue,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700),
+                                color: AppColors.uctBlue,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ],
                         ),
@@ -216,8 +229,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 const SizedBox(height: 10),
                 // Fila 2: Switch mapa de calor
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
                     color: _heatmapEnabled
@@ -253,14 +268,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       Switch.adaptive(
                         value: _heatmapEnabled,
                         activeThumbColor: Colors.deepOrange,
-                        activeTrackColor: Colors.deepOrange.withValues(alpha: 0.4),
+                        activeTrackColor: Colors.deepOrange.withValues(
+                          alpha: 0.4,
+                        ),
                         onChanged: (val) {
                           setState(() => _heatmapEnabled = val);
                           if (val) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                    'Mapa de calor activado (proximamente disponible)'),
+                                  'Mapa de calor activado (proximamente disponible)',
+                                ),
                                 duration: Duration(seconds: 2),
                               ),
                             );
@@ -279,24 +297,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : reports.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No hay reportes para este campus.',
-                          style:
-                              TextStyle(color: AppColors.subtitle, fontSize: 14),
-                        ),
-                      )
-                    : ListView.builder(
+                ? const Center(
+                    child: Text(
+                      'No hay reportes para este campus.',
+                      style: TextStyle(color: AppColors.subtitle, fontSize: 14),
+                    ),
+                  )
+                : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
                     itemCount: reports.length,
-                    itemBuilder: (ctx, i) =>
-                        _ReportCard(
-                          report: reports[i],
-                          statusColor: _statusColor(reports[i].currentStatus),
-                          statusIcon: _statusIcon(reports[i].currentStatus),
-                          timeAgo: _timeAgo(reports[i].reportedAt),
-                          onNavigateToTab: widget.onNavigateToTab,
-                        ),
+                    itemBuilder: (ctx, i) => _ReportCard(
+                      report: reports[i],
+                      statusColor: _statusColor(reports[i].currentStatus),
+                      statusIcon: _statusIcon(reports[i].currentStatus),
+                      timeAgo: _timeAgo(reports[i].reportedAt),
+                      onNavigateToTab: widget.onNavigateToTab,
+                    ),
                   ),
           ),
         ],
@@ -311,8 +327,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
         backgroundColor: AppColors.uctBlue,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_alert_outlined),
-        label: const Text('Nuevo Reporte',
-            style: TextStyle(fontWeight: FontWeight.w700)),
+        label: const Text(
+          'Nuevo Reporte',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
       ),
     );
   }
@@ -355,8 +373,11 @@ class _ReportCard extends StatelessWidget {
                 Expanded(
                   child: Row(
                     children: [
-                      const Icon(Icons.location_on,
-                          size: 13, color: AppColors.subtitle),
+                      const Icon(
+                        Icons.location_on,
+                        size: 13,
+                        color: AppColors.subtitle,
+                      ),
                       const SizedBox(width: 3),
                       Expanded(
                         child: Text(
@@ -375,13 +396,16 @@ class _ReportCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 // Estado chip
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border:
-                        Border.all(color: statusColor.withValues(alpha: 0.4)),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.4),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -423,9 +447,10 @@ class _ReportCard extends StatelessWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontSize: 12.5,
-                        color: AppColors.subtitle,
-                        height: 1.4),
+                      fontSize: 12.5,
+                      color: AppColors.subtitle,
+                      height: 1.4,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -440,7 +465,8 @@ class _ReportCard extends StatelessWidget {
                         ? Image.network(
                             report.imageUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, e, s) => const _CardImagePlaceholder(),
+                            errorBuilder: (_, e, s) =>
+                                const _CardImagePlaceholder(),
                           )
                         : const _CardImagePlaceholder(),
                   ),
@@ -451,14 +477,16 @@ class _ReportCard extends StatelessWidget {
             // Fila inferior: reportado por + tiempo + boton
             Row(
               children: [
-                const Icon(Icons.person_outline,
-                    size: 13, color: AppColors.hint),
+                const Icon(
+                  Icons.person_outline,
+                  size: 13,
+                  color: AppColors.hint,
+                ),
                 const SizedBox(width: 3),
                 Expanded(
                   child: Text(
                     '${report.reportedBy} · $timeAgo',
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.hint),
+                    style: const TextStyle(fontSize: 11, color: AppColors.hint),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -480,7 +508,9 @@ class _ReportCard extends StatelessWidget {
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 5),
+                      horizontal: 12,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.uctBlue,
                       borderRadius: BorderRadius.circular(20),

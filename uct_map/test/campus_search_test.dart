@@ -5,9 +5,30 @@ import 'package:uct_map/domain/entities/building.dart';
 import 'package:uct_map/presentation/screens/map/widgets/campus_search_sheet.dart';
 
 void main() {
-  testWidgets('al pulsar una categoría dos veces se ocultan los resultados', (tester) async {
-    const building = Building(id: 'b', campusId: 'c', name: 'Biblioteca', floorsCount: 1, latitude: 1, longitude: 2);
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: CampusSearchSheet(buildings: const [building], structures: const [], embedded: true, searchRooms: (_) async => [], loadCategories: () async => []))));
+  testWidgets('al pulsar una categoría dos veces se ocultan los resultados', (
+    tester,
+  ) async {
+    const building = Building(
+      id: 'b',
+      campusId: 'c',
+      name: 'Biblioteca',
+      floorsCount: 1,
+      latitude: 1,
+      longitude: 2,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CampusSearchSheet(
+            buildings: const [building],
+            structures: const [],
+            embedded: true,
+            searchRooms: (_) async => [],
+            loadCategories: () async => [],
+          ),
+        ),
+      ),
+    );
     await tester.pump();
     await tester.enterText(find.byType(TextField), 'Biblioteca');
     await tester.pump(const Duration(milliseconds: 350));
@@ -17,7 +38,11 @@ void main() {
     await tester.tap(find.text('Edificios'));
     await tester.pump();
     await tester.pump();
-    await tester.scrollUntilVisible(find.widgetWithText(ListTile, 'Biblioteca'), 120, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.widgetWithText(ListTile, 'Biblioteca'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.widgetWithText(ListTile, 'Biblioteca'), findsOneWidget);
     await tester.ensureVisible(find.text('Edificios'));
     await tester.pumpAndSettle();
@@ -76,7 +101,11 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Servicio');
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pump();
-    await tester.scrollUntilVisible(find.text('Servicio de prueba'), 120, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.text('Servicio de prueba'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Servicio de prueba'), findsOneWidget);
     final second = tester.widget<TextField>(find.byType(TextField).last);
     expect(second.controller!.text, isEmpty);
@@ -109,14 +138,26 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Biblioteca');
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pump();
-    await tester.scrollUntilVisible(find.widgetWithText(ListTile, 'Biblioteca'), 120, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.widgetWithText(ListTile, 'Biblioteca'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.widgetWithText(ListTile, 'Biblioteca'), findsOneWidget);
-    await tester.scrollUntilVisible(find.byType(TextField), -120, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.byType(TextField),
+      -120,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'inexistente');
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pump();
-    await tester.scrollUntilVisible(find.text('No se encontraron resultados.'), 120, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.text('No se encontraron resultados.'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('No se encontraron resultados.'), findsOneWidget);
   });
 }

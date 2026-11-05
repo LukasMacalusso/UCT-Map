@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../data/datasources/incident_remote_ds.dart';
 import '../../../domain/entities/lost_item.dart';
@@ -119,28 +120,32 @@ class _LostFoundScreenState extends State<LostFoundScreen> {
 
   List<LostItem> get _filtered {
     final query = _searchController.text.trim().toLowerCase();
-    List<LostItem> result =
-        _items.isNotEmpty ? List.from(_items) : List.from(mockLostItems);
+    List<LostItem> result = _items.isNotEmpty
+        ? List.from(_items)
+        : List.from(mockLostItems);
 
     if (_selectedCampus != 'Todos los campus') {
       result = result.where((i) => i.campus == _selectedCampus).toList();
     }
     if (_selectedCategory != 'Todos') {
-      result =
-          result.where((i) => i.category == _selectedCategory).toList();
+      result = result.where((i) => i.category == _selectedCategory).toList();
     }
     if (query.isNotEmpty) {
       result = result
-          .where((i) =>
-              i.title.toLowerCase().contains(query) ||
-              i.building.toLowerCase().contains(query) ||
-              i.ticketNumber.toLowerCase().contains(query) ||
-              i.reportedBy.toLowerCase().contains(query))
+          .where(
+            (i) =>
+                i.title.toLowerCase().contains(query) ||
+                i.building.toLowerCase().contains(query) ||
+                i.ticketNumber.toLowerCase().contains(query) ||
+                i.reportedBy.toLowerCase().contains(query),
+          )
           .toList();
     }
-    result.sort((a, b) => _newerFirst
-        ? b.reportedAt.compareTo(a.reportedAt)
-        : a.reportedAt.compareTo(b.reportedAt));
+    result.sort(
+      (a, b) => _newerFirst
+          ? b.reportedAt.compareTo(a.reportedAt)
+          : a.reportedAt.compareTo(b.reportedAt),
+    );
     return result;
   }
 
@@ -174,8 +179,10 @@ class _LostFoundScreenState extends State<LostFoundScreen> {
               children: [
                 // Buscador
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     border: Border.all(color: AppColors.fieldBorder),
                     borderRadius: BorderRadius.circular(12),
@@ -183,8 +190,11 @@ class _LostFoundScreenState extends State<LostFoundScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.search,
-                          color: AppColors.uctBlue, size: 20),
+                      const Icon(
+                        Icons.search,
+                        color: AppColors.uctBlue,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
@@ -192,8 +202,10 @@ class _LostFoundScreenState extends State<LostFoundScreen> {
                           decoration: const InputDecoration(
                             hintText: 'Buscar por nombre, ticket o lugar...',
                             border: InputBorder.none,
-                            hintStyle:
-                                TextStyle(color: AppColors.hint, fontSize: 13),
+                            hintStyle: TextStyle(
+                              color: AppColors.hint,
+                              fontSize: 13,
+                            ),
                           ),
                           onChanged: (_) => setState(() {}),
                         ),
@@ -202,8 +214,11 @@ class _LostFoundScreenState extends State<LostFoundScreen> {
                         GestureDetector(
                           onTap: () =>
                               setState(() => _searchController.clear()),
-                          child: const Icon(Icons.clear,
-                              size: 18, color: AppColors.hint),
+                          child: const Icon(
+                            Icons.clear,
+                            size: 18,
+                            color: AppColors.hint,
+                          ),
                         ),
                     ],
                   ),
@@ -215,8 +230,7 @@ class _LostFoundScreenState extends State<LostFoundScreen> {
                   children: [
                     Expanded(
                       child: Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
                           border: Border.all(color: AppColors.fieldBorder),
                           borderRadius: BorderRadius.circular(10),
@@ -226,29 +240,37 @@ class _LostFoundScreenState extends State<LostFoundScreen> {
                           child: DropdownButton<String>(
                             value: _selectedCampus,
                             isExpanded: true,
-                            icon: const Icon(Icons.keyboard_arrow_down,
-                                color: AppColors.subtitle),
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down,
+                              color: AppColors.subtitle,
+                            ),
                             style: const TextStyle(
-                                color: AppColors.ink,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600),
+                              color: AppColors.ink,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
                             items: lostItemCampusList
-                                .map((c) => DropdownMenuItem(
-                                      value: c,
-                                      child: Row(
-                                        children: [
-                                          const Icon(
-                                              Icons.location_on_outlined,
-                                              size: 14,
-                                              color: AppColors.subtitle),
-                                          const SizedBox(width: 5),
-                                          Expanded(
-                                              child: Text(c,
-                                                  overflow:
-                                                      TextOverflow.ellipsis)),
-                                        ],
-                                      ),
-                                    ))
+                                .map(
+                                  (c) => DropdownMenuItem(
+                                    value: c,
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.location_on_outlined,
+                                          size: 14,
+                                          color: AppColors.subtitle,
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Expanded(
+                                          child: Text(
+                                            c,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (val) {
                               if (val != null) {
@@ -261,11 +283,12 @@ class _LostFoundScreenState extends State<LostFoundScreen> {
                     ),
                     const SizedBox(width: 10),
                     GestureDetector(
-                      onTap: () =>
-                          setState(() => _newerFirst = !_newerFirst),
+                      onTap: () => setState(() => _newerFirst = !_newerFirst),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 9),
+                          horizontal: 12,
+                          vertical: 9,
+                        ),
                         decoration: BoxDecoration(
                           border: Border.all(color: AppColors.fieldBorder),
                           borderRadius: BorderRadius.circular(10),
@@ -285,9 +308,10 @@ class _LostFoundScreenState extends State<LostFoundScreen> {
                             Text(
                               _newerFirst ? 'Reciente' : 'Antiguo',
                               style: const TextStyle(
-                                  color: AppColors.uctBlue,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700),
+                                color: AppColors.uctBlue,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ],
                         ),
@@ -309,8 +333,9 @@ class _LostFoundScreenState extends State<LostFoundScreen> {
                         child: FilterChip(
                           label: Text(cat),
                           selected: isSelected,
-                          selectedColor:
-                              AppColors.uctBlue.withValues(alpha: 0.15),
+                          selectedColor: AppColors.uctBlue.withValues(
+                            alpha: 0.15,
+                          ),
                           checkmarkColor: AppColors.uctBlue,
                           labelStyle: TextStyle(
                             color: isSelected
@@ -340,22 +365,27 @@ class _LostFoundScreenState extends State<LostFoundScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : items.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.inventory_2_outlined,
-                                size: 60, color: Colors.grey.shade400),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'No hay objetos con estos filtros.',
-                              style: TextStyle(
-                                  color: AppColors.subtitle, fontSize: 14),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 60,
+                          color: Colors.grey.shade400,
                         ),
-                      )
-                    : ListView.builder(
+                        const SizedBox(height: 12),
+                        const Text(
+                          'No hay objetos con estos filtros.',
+                          style: TextStyle(
+                            color: AppColors.subtitle,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
                     itemCount: items.length,
                     itemBuilder: (ctx, i) => _LostItemCard(
@@ -375,14 +405,17 @@ class _LostFoundScreenState extends State<LostFoundScreen> {
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-                content: Text('Formulario para publicar objeto perdido')),
+              content: Text('Formulario para publicar objeto perdido'),
+            ),
           );
         },
         backgroundColor: AppColors.uctBlue,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_box_outlined),
-        label: const Text('Publicar objeto',
-            style: TextStyle(fontWeight: FontWeight.w700)),
+        label: const Text(
+          'Publicar objeto',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
       ),
     );
   }
@@ -428,8 +461,11 @@ class _LostItemCard extends StatelessWidget {
                       height: 140,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, e, s) =>
-                          _CardImageBanner(color: categoryColor, icon: categoryIcon, category: item.category),
+                      errorBuilder: (_, e, s) => _CardImageBanner(
+                        color: categoryColor,
+                        icon: categoryIcon,
+                        category: item.category,
+                      ),
                     )
                   : _CardImageBanner(
                       color: categoryColor,
@@ -441,16 +477,19 @@ class _LostItemCard extends StatelessWidget {
                 top: 10,
                 left: 10,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor,
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: const [
                       BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 4,
-                          offset: Offset(0, 2))
+                        color: Colors.black26,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
                     ],
                   ),
                   child: Text(
@@ -469,8 +508,10 @@ class _LostItemCard extends StatelessWidget {
                 top: 10,
                 right: 10,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(8),
@@ -548,16 +589,21 @@ class _LostItemCard extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.uctBlue,
                       side: const BorderSide(
-                          color: AppColors.uctBlue, width: 1.5),
+                        color: AppColors.uctBlue,
+                        width: 1.5,
+                      ),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
                     icon: const Icon(Icons.info_outline, size: 18),
                     label: const Text(
                       'Ver detalle y reclamar',
                       style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 13),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ),
@@ -611,8 +657,11 @@ class _CardImageBanner extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.photo_camera_outlined,
-                  size: 12, color: color.withValues(alpha: 0.5)),
+              Icon(
+                Icons.photo_camera_outlined,
+                size: 12,
+                color: color.withValues(alpha: 0.5),
+              ),
               const SizedBox(width: 4),
               Text(
                 category,
@@ -662,8 +711,7 @@ class _InfoRow extends StatelessWidget {
               fontSize: 13,
               color: isSubtle ? AppColors.hint : AppColors.subtitle,
               fontStyle: isSubtle ? FontStyle.italic : FontStyle.normal,
-              fontWeight:
-                  isSubtle ? FontWeight.normal : FontWeight.w500,
+              fontWeight: isSubtle ? FontWeight.normal : FontWeight.w500,
             ),
           ),
         ),

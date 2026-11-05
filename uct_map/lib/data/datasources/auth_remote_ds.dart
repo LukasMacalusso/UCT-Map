@@ -11,8 +11,8 @@ import '../../domain/repositories/auth_repository.dart';
 /// {userId, email, token}. La contraseña solo viaja en el body del POST.
 class AuthRemoteDataSource implements AuthRepository {
   AuthRemoteDataSource({http.Client? client, ApiConfig? config})
-      : _client = client ?? ApiClientProvider.defaultClient,
-        _config = config ?? ApiConfig();
+    : _client = client ?? ApiClientProvider.defaultClient,
+      _config = config ?? ApiConfig();
 
   final http.Client _client;
   final ApiConfig _config;
@@ -28,19 +28,21 @@ class AuthRemoteDataSource implements AuthRepository {
           .post(
             _config.loginUri,
             headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode(
-                {'email': email.trim(), 'password': password}),
+            body: jsonEncode({'email': email.trim(), 'password': password}),
           )
           .timeout(_config.timeout);
     } on TimeoutException {
       throw const AuthFailure(
-          'El servidor no responde. Revisa tu conexión e intenta de nuevo.');
+        'El servidor no responde. Revisa tu conexión e intenta de nuevo.',
+      );
     } on http.ClientException {
       throw const AuthFailure(
-          'Sin conexión con el servidor. Revisa tu conexión e intenta de nuevo.');
+        'Sin conexión con el servidor. Revisa tu conexión e intenta de nuevo.',
+      );
     } on FormatException {
       throw const AuthFailure(
-          'Respuesta inesperada del servidor. Intenta de nuevo.');
+        'Respuesta inesperada del servidor. Intenta de nuevo.',
+      );
     }
     return _parse(res.statusCode, res.body);
   }
@@ -60,15 +62,15 @@ class AuthRemoteDataSource implements AuthRepository {
               mail.isNotEmpty &&
               token is String &&
               token.isNotEmpty) {
-            return AuthLoginResult(
-                userId: userId, email: mail, token: token);
+            return AuthLoginResult(userId: userId, email: mail, token: token);
           }
         }
       } on FormatException {
         // Respuesta con JSON inválido: se reporta abajo como inesperada.
       }
       throw const AuthFailure(
-          'Respuesta inesperada del servidor. Intenta de nuevo.');
+        'Respuesta inesperada del servidor. Intenta de nuevo.',
+      );
     }
     if (status == 400) {
       throw const AuthFailure('Faltan el correo o la contraseña.');

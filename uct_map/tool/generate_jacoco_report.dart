@@ -58,7 +58,9 @@ void main(List<String> args) {
 
   final xml = StringBuffer();
   xml.writeln('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>');
-  xml.writeln('<!DOCTYPE report PUBLIC "-//JACOCO//DTD Report 1.1//EN" "report.dtd">');
+  xml.writeln(
+    '<!DOCTYPE report PUBLIC "-//JACOCO//DTD Report 1.1//EN" "report.dtd">',
+  );
   xml.writeln('<report name="uct_map">');
 
   for (final entry in packages.entries) {
@@ -80,23 +82,35 @@ void main(List<String> args) {
       final fileMissed = f.linesFound - f.linesHit;
 
       xml.writeln('    <class name="$className" sourcefilename="$fileName">');
-      xml.writeln('      <counter type="LINE" missed="$fileMissed" covered="${f.linesHit}"/>');
+      xml.writeln(
+        '      <counter type="LINE" missed="$fileMissed" covered="${f.linesHit}"/>',
+      );
       xml.writeln('    </class>');
       xml.writeln('    <sourcefile name="$fileName">');
       final sortedLines = f.lines.keys.toList()..sort();
       for (final nr in sortedLines) {
         final hit = f.lines[nr]! > 0;
-        xml.writeln('      <line nr="$nr" mi="${hit ? 0 : 1}" ci="${hit ? 1 : 0}"/>');
+        xml.writeln(
+          '      <line nr="$nr" mi="${hit ? 0 : 1}" ci="${hit ? 1 : 0}"/>',
+        );
       }
-      xml.writeln('      <counter type="LINE" missed="$fileMissed" covered="${f.linesHit}"/>');
+      xml.writeln(
+        '      <counter type="LINE" missed="$fileMissed" covered="${f.linesHit}"/>',
+      );
       xml.writeln('    </sourcefile>');
     }
-    xml.writeln('    <counter type="LINE" missed="$pkgMissed" covered="$pkgHit"/>');
+    xml.writeln(
+      '    <counter type="LINE" missed="$pkgMissed" covered="$pkgHit"/>',
+    );
     xml.writeln('  </package>');
   }
 
-  xml.writeln('  <counter type="INSTRUCTION" missed="$totalMissed" covered="$totalHit"/>');
-  xml.writeln('  <counter type="LINE" missed="$totalMissed" covered="$totalHit"/>');
+  xml.writeln(
+    '  <counter type="INSTRUCTION" missed="$totalMissed" covered="$totalHit"/>',
+  );
+  xml.writeln(
+    '  <counter type="LINE" missed="$totalMissed" covered="$totalHit"/>',
+  );
   xml.writeln('</report>');
 
   outputFile.writeAsStringSync(xml.toString());
@@ -114,9 +128,13 @@ void main(List<String> args) {
   if (coveragePct >= targetThreshold) {
     print('✅ Cobertura cumple con el umbral del $targetThreshold%');
   } else {
-    print('⚠️ Cobertura actual (${coveragePct.toStringAsFixed(2)}%) inferior al umbral del $targetThreshold%');
+    print(
+      '⚠️ Cobertura actual (${coveragePct.toStringAsFixed(2)}%) inferior al umbral del $targetThreshold%',
+    );
     if (failUnder) {
-      stderr.writeln('Fallo por umbral mínimo de cobertura de JaCoCo (< $targetThreshold%).');
+      stderr.writeln(
+        'Fallo por umbral mínimo de cobertura de JaCoCo (< $targetThreshold%).',
+      );
       exit(1);
     }
   }

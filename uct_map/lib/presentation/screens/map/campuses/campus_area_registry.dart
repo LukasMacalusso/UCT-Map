@@ -10,7 +10,8 @@ import 'sergio_contreras_map.dart';
 /// Estos archivos solo definen la zona navegable de cada uno.
 CampusMapArea areaForCampus(Campus campus) {
   final name = campus.name.toLowerCase();
-  if (campus.id == '855f802e-311d-418e-b1a3-80cc2c360625' || name.contains('juan pablo')) {
+  if (campus.id == '855f802e-311d-418e-b1a3-80cc2c360625' ||
+      name.contains('juan pablo')) {
     return sanJuanPabloIIArea;
   }
   if (name.contains('san francisco')) return sanFranciscoArea;

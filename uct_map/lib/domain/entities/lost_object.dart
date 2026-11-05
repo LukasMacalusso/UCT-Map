@@ -33,7 +33,10 @@ enum LostObjectStatus {
       }
     }
 
-    final normalized = str.toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
+    final normalized = str
+        .toLowerCase()
+        .replaceAll('-', '_')
+        .replaceAll(' ', '_');
     switch (normalized) {
       case 'in_process':
       case 'inprocess':
@@ -96,23 +99,25 @@ class LostObject {
     return LostObject(
       id: (json['lostObjectId'] ?? json['id'] ?? json['_id'] ?? '').toString(),
       title: (json['title'] ?? json['Title'] ?? '').toString(),
-      description: (json['description'] ?? json['Description'] ?? '').toString(),
+      description: (json['description'] ?? json['Description'] ?? '')
+          .toString(),
       date: parsedDate,
       status: LostObjectStatus.fromValue(json['status'] ?? json['Status']),
       photoUrl: (json['photoUrl'] ?? json['PhotoUrl'] ?? '').toString(),
-      structureId: (json['structureId'] ?? json['StructureId'] ?? '').toString(),
+      structureId: (json['structureId'] ?? json['StructureId'] ?? '')
+          .toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        if (id.isNotEmpty) 'id': id,
-        'title': title,
-        'description': description,
-        if (date != null) 'date': date!.toIso8601String(),
-        'status': status.apiName,
-        'photoUrl': photoUrl,
-        'structureId': structureId,
-      };
+    if (id.isNotEmpty) 'id': id,
+    'title': title,
+    'description': description,
+    if (date != null) 'date': date!.toIso8601String(),
+    'status': status.apiName,
+    'photoUrl': photoUrl,
+    'structureId': structureId,
+  };
 
   LostObject copyWith({
     String? id,

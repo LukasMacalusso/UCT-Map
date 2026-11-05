@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'problem_details.dart';
 
 /// Jerarquía de excepciones de red y API para la aplicación UCT Map.
@@ -38,7 +39,9 @@ class ApiException implements Exception {
               final errorMessages = <String>[];
               for (final entry in errors.entries) {
                 if (entry.value is List) {
-                  errorMessages.addAll((entry.value as List).map((e) => e.toString()));
+                  errorMessages.addAll(
+                    (entry.value as List).map((e) => e.toString()),
+                  );
                 } else if (entry.value != null) {
                   errorMessages.add('${entry.key}: ${entry.value}');
                 }
@@ -46,11 +49,14 @@ class ApiException implements Exception {
               if (errorMessages.isNotEmpty) {
                 message = errorMessages.join('\n');
               }
-            } else if (decoded['detail'] != null && decoded['detail'].toString().trim().isNotEmpty) {
+            } else if (decoded['detail'] != null &&
+                decoded['detail'].toString().trim().isNotEmpty) {
               message = decoded['detail'].toString().trim();
-            } else if (decoded['title'] != null && decoded['title'].toString().trim().isNotEmpty) {
+            } else if (decoded['title'] != null &&
+                decoded['title'].toString().trim().isNotEmpty) {
               message = decoded['title'].toString().trim();
-            } else if (decoded['message'] != null && decoded['message'].toString().trim().isNotEmpty) {
+            } else if (decoded['message'] != null &&
+                decoded['message'].toString().trim().isNotEmpty) {
               message = decoded['message'].toString().trim();
             }
           } else if (decoded is String && decoded.trim().isNotEmpty) {
@@ -84,8 +90,9 @@ class ApiException implements Exception {
   }
 
   @override
-  String toString() =>
-      statusCode != null ? 'ApiException($statusCode): $message' : 'ApiException: $message';
+  String toString() => statusCode != null
+      ? 'ApiException($statusCode): $message'
+      : 'ApiException: $message';
 }
 
 /// Error 400 Bad Request: parámetros o cuerpo inválido.
@@ -131,7 +138,9 @@ class ConflictException extends ApiException {
 
 /// Error de conectividad de red o timeout.
 class NetworkException extends ApiException {
-  const NetworkException([super.message = 'Sin conexión con el servidor. Revisa tu red.']);
+  const NetworkException([
+    super.message = 'Sin conexión con el servidor. Revisa tu red.',
+  ]);
 }
 
 /// Error 500+ Internal Server Error.

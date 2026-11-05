@@ -16,15 +16,17 @@ class AuthRequiredView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.lock_outlined,
-                color: AppColors.uctBlue, size: 56),
+            const Icon(Icons.lock_outlined, color: AppColors.uctBlue, size: 56),
             const SizedBox(height: 16),
-            const Text('Para acceder a este contenido inicia sesión',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink)),
+            const Text(
+              'Para acceder a este contenido inicia sesión',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: AppColors.ink,
+              ),
+            ),
             const SizedBox(height: 24),
             SizedBox(
               height: 50,
@@ -39,9 +41,10 @@ class AuthRequiredView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text('Iniciar Sesión',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                child: const Text(
+                  'Iniciar Sesión',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
               ),
             ),
           ],
