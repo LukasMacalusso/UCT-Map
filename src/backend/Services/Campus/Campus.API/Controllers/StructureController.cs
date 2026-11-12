@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Campus.Application.DTOs;
 using Campus.Application.Handlers;
 using System.Threading;
@@ -47,6 +48,7 @@ public class StructureController : ControllerBase
         return Ok(dto);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<ActionResult<StructureDto>> Create([FromBody] CreateStructureDto request, CancellationToken cancellationToken)
     {
@@ -64,6 +66,7 @@ public class StructureController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = dto!.Id }, dto);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateStructureDto request, CancellationToken cancellationToken)
     {
@@ -82,6 +85,7 @@ public class StructureController : ControllerBase
         return NoContent();
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPatch("{id:guid}/location")]
     public async Task<IActionResult> UpdateLocation(Guid id, [FromBody] UpdateLocationDto request, CancellationToken cancellationToken)
     {
@@ -94,6 +98,7 @@ public class StructureController : ControllerBase
         return NoContent();
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {

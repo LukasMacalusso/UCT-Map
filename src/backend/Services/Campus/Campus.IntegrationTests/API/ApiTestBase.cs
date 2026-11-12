@@ -1,4 +1,5 @@
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -26,7 +27,7 @@ public abstract class ApiTestBase : IAsyncLifetime
         if (_fixture.IsAvailable)
         {
             Factory = new CampusApiFactory(_fixture);
-            Http = Factory.CreateClient();
+            Http = CreateClientWithRole("Admin");
         }
         return Task.CompletedTask;
     }
@@ -37,6 +38,19 @@ public abstract class ApiTestBase : IAsyncLifetime
         if (Factory is not null)
             await Factory.DisposeAsync();
     }
+
+    protected HttpClient CreateClientWithRole(string? role)
+    {
+        var client = Factory.CreateClient();
+        if (!string.IsNullOrEmpty(role))
+        {
+            var token = TestJwtGenerator.GenerateToken(role);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+        return client;
+    }
+
+    protected HttpClient CreateUnauthenticatedClient() => Factory.CreateClient();
 
     protected static Task<T?> ReadJsonAsync<T>(HttpResponseMessage response) =>
         response.Content.ReadFromJsonAsync<T>(Json);

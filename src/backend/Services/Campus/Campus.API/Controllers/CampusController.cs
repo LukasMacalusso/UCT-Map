@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Campus.Application.DTOs;
 using Campus.Application.Handlers;
 using System.Threading;
@@ -44,6 +45,7 @@ public class CampusController : ControllerBase
         return Ok(dto);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<ActionResult<CampusDto>> Create([FromBody] CreateCampusDto request, CancellationToken cancellationToken)
     {
@@ -60,6 +62,7 @@ public class CampusController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = responseDto.Id }, responseDto);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCampusDto request, CancellationToken cancellationToken)
     {
@@ -78,6 +81,7 @@ public class CampusController : ControllerBase
         return NoContent();
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPatch("{id:guid}/location")]
     public async Task<IActionResult> UpdateLocation(Guid id, [FromBody] UpdateLocationDto request, CancellationToken cancellationToken)
     {
@@ -90,6 +94,7 @@ public class CampusController : ControllerBase
         return NoContent();
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
