@@ -7,9 +7,10 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 ---
 
 ## Global Authentication
-- **Mechanism**: JWT (JSON Web Token), validated by the API Gateway.
+- **Mechanism**: JWT (JSON Web Token) issued by Identity. It is validated by the API Gateway and again by this service (signature, issuer, audience and expiration), so calling the service directly also requires a valid token.
 - **Header Format**: `Authorization: Bearer <token>`
-- **Note**: Unless explicitly marked as `[Public]`, all endpoints require a valid JWT. No endpoint is restricted to a specific role.
+- **User identification**: the user is the `sub` claim of the token, and administrators are users with the `Admin` value in the `role` claim.
+- **Note**: Unless explicitly marked as `[Public]`, all endpoints require a valid JWT and return `401 Unauthorized` without it. Endpoints marked as owner-only compare the `sub` claim with the requested id to prevent Insecure Direct Object Reference (IDOR); other users receive `403 Forbidden`.
 
 ## Conventions
 - References to other microservices are plain ids: `teacherRefId` and `studentRefId` (Identity), `structureRefId` (Campus).
@@ -75,7 +76,7 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 ### 1.3 Create Office Hour
 - **Route**: `POST /api/schedule/office-hours`
-- **Access**: Any authenticated user
+- **Access**: The teacher of the block (`teacherRefId` must match the user) or an administrator
 - **Description**: Registers a weekly office hour block for a teacher.
 
 **Request Payload (`application/json`)**
@@ -93,6 +94,7 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 **Error Responses**
 - **`400 Bad Request`**: If `endTime` is not later than `startTime`.
+- **`403 Forbidden`**: If the user is not the teacher of the block and is not an administrator.
 
 ---
 
@@ -102,7 +104,7 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 ### 2.1 Get All Meetings
 - **Route**: `GET /api/schedule/meetings`
 - **Access**: Any authenticated user
-- **Description**: Returns every meeting ordered by date. When `teacherId` is provided, returns only that teacher's meetings inside the `[from, to)` range, and both dates become required.
+- **Description**: Without `teacherId`, administrators get every meeting and any other user gets only the meetings where they are the student or the teacher, ordered by date. When `teacherId` is provided, returns that teacher's meetings inside the `[from, to)` range for any authenticated user (students use it to see the busy slots before booking), and both dates become required.
 
 **Query Parameters**
 | Parameter | Type | Required | Default | Description |
@@ -133,19 +135,20 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 ### 2.2 Get Meeting By Id
 - **Route**: `GET /api/schedule/meetings/{id}`
-- **Access**: Any authenticated user
+- **Access**: The student or the teacher of the meeting, or an administrator
 - **Description**: Returns a single meeting.
 
 **Success Response (200 OK)**: same object as in 2.1.
 
 **Error Responses**
+- **`403 Forbidden`**: If the user is neither the student nor the teacher of the meeting and is not an administrator.
 - **`404 Not Found`**: If no meeting exists with that id.
 
 ---
 
 ### 2.3 Create Meeting
 - **Route**: `POST /api/schedule/meetings`
-- **Access**: Any authenticated user
+- **Access**: The student or the teacher of the meeting (`studentRefId` or `teacherRefId` must match the user), or an administrator
 - **Description**: Schedules a meeting. It always starts in `Pending` status. The meeting is rejected if, during its time range, the same teacher, the same student or the same room already has an active meeting. Cancelled meetings do not block a slot. A meeting may start exactly when another one ends. The check and the insert run in a single serializable transaction, so two simultaneous requests cannot book the same slot.
 
 **Request Payload (`application/json`)**
@@ -163,6 +166,7 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 **Error Responses**
 - **`400 Bad Request`**: If `durationMinutes` is not greater than 0.
+- **`403 Forbidden`**: If the user is neither the student nor the teacher of the meeting and is not an administrator.
 - **`409 Conflict`**: If the teacher, the student or the room already has a meeting in that time range, or if another request booked the slot at the same moment. The `message` states which one is busy (e.g., `"The teacher already has a meeting at that time."`).
 
 ---
@@ -189,7 +193,7 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 **Error Responses**
 - **`400 Bad Request`**: If `status` is missing or is not `Confirmed`, `Cancelled` or `Completed`.
-- **`401 Unauthorized`**: If the `Authorization` header is missing or the token has no valid user id.
+- **`401 Unauthorized`**: If the token is missing or invalid, or has no valid user id.
 - **`403 Forbidden`**: If the user is neither the student nor the teacher of the meeting, or if the student tries to confirm or complete it.
 - **`404 Not Found`**: If no meeting exists with that id.
 - **`409 Conflict`**: If the meeting's current status does not allow the change.
@@ -201,7 +205,7 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 ### 3.1 Get Teacher Workload
 - **Route**: `GET /api/schedule/teachers/{teacherId}/workload`
-- **Access**: Any authenticated user
+- **Access**: The teacher (`teacherId` must match the user) or an administrator
 - **Description**: Returns the teacher's office hours, the total weekly office hour minutes, and the meetings inside the `[from, to)` range.
 
 **Query Parameters**
@@ -225,6 +229,7 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 **Error Responses**
 - **`400 Bad Request`**: If `teacherId` is an empty uuid or `to` is not later than `from`.
+- **`403 Forbidden`**: If the user is not that teacher and is not an administrator.
 
 ---
 
@@ -250,7 +255,7 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 ### 4.1 Get Student Meetings
 - **Route**: `GET /api/schedule/students/{studentId}/meetings`
-- **Access**: Any authenticated user
+- **Access**: The student (`studentId` must match the user) or an administrator
 - **Description**: Returns the student's meetings inside the `[from, to)` range, ordered by date.
 
 **Query Parameters**
@@ -272,6 +277,7 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 **Error Responses**
 - **`400 Bad Request`**: If `studentId` is an empty uuid or `to` is not later than `from`.
+- **`403 Forbidden`**: If the user is not that student and is not an administrator.
 
 ---
 
