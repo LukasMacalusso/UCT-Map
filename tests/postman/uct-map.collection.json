@@ -27,6 +27,7 @@
           "    }, function (err, res) {",
           "        if (!err && res.code === 200) {",
           "            pm.environment.set('jwt_token', res.json().token);",
+          "            pm.environment.set('e2e_user_id', res.json().userId);",
           "        }",
           "    });",
           "}"
@@ -225,6 +226,7 @@
                   "    var data = pm.response.json();",
                   "    pm.expect(data.token).to.be.a('string');",
                   "    pm.environment.set(\"jwt_token\", data.token);",
+                  "    pm.environment.set(\"e2e_user_id\", data.userId);",
                   "});"
                 ]
               }
@@ -470,7 +472,47 @@
       },
       "item": [
         {
-          "name": "Get Student Meetings (Validation Check)",
+          "name": "Get Own Student Meetings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/students/{{e2e_user_id}}/meetings?from={{schedule_from}}&to={{schedule_to}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "students", "{{e2e_user_id}}", "meetings"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{schedule_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{schedule_to}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Schedule responds via Gateway with 200 or 400 validation\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Another Student's Meetings (IDOR, Expect 403)",
           "request": {
             "method": "GET",
             "header": [
@@ -501,8 +543,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Schedule responds via Gateway with 200 or 400 validation\", function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "pm.test(\"Schedule rejects reading another student's meetings with 403\", function () {",
+                  "    pm.response.to.have.status(403);",
                   "});"
                 ]
               }
