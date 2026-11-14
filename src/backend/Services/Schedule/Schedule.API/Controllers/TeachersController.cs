@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Schedule.API.Common;
 using Schedule.Application.DTOs;
 using Schedule.Application.Handlers;
 
@@ -18,8 +19,11 @@ public class TeachersController : ControllerBase
     public async Task<ActionResult<TeacherWorkloadDto>> GetWorkload(Guid teacherId, [FromQuery] DateTime from, [FromQuery] DateTime to, CancellationToken cancellationToken)
     {
         if (teacherId == Guid.Empty) return BadRequest(new { message = "The 'teacherId' path parameter is required." });
-        var result = await _handler.GetWorkloadAsync(teacherId, from, to, cancellationToken);
-        if (result.IsError) return BadRequest(new { message = result.FirstError.Description });
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+        var result = await _handler.GetWorkloadAsync(teacherId, from, to, requester, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
         return Ok(result.Value);
     }
 

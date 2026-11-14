@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ErrorOr;
+using Schedule.Application.Common;
 using Schedule.Application.DTOs;
 using Schedule.Domain.Interfaces;
 
@@ -16,8 +17,9 @@ public class TeacherHandler
 
     public TeacherHandler(IOfficeHourRepository officeHourRepository, IMeetingRepository meetingRepository) { _officeHourRepository = officeHourRepository; _meetingRepository = meetingRepository; }
 
-    public async Task<ErrorOr<TeacherWorkloadDto>> GetWorkloadAsync(Guid teacherRefId, DateTime from, DateTime to, CancellationToken cancellationToken)
+    public async Task<ErrorOr<TeacherWorkloadDto>> GetWorkloadAsync(Guid teacherRefId, DateTime from, DateTime to, Requester requester, CancellationToken cancellationToken)
     {
+        if (!requester.CanAccess(teacherRefId)) return Error.Forbidden(description: "Only the teacher or an administrator can see this workload.");
         if (to <= from) return Error.Validation(description: "The 'to' parameter must be later than 'from'.");
         var officeHours = await _officeHourRepository.GetByTeacherAsync(teacherRefId, cancellationToken);
         var meetings = await _meetingRepository.GetByTeacherAsync(teacherRefId, from, to, cancellationToken);

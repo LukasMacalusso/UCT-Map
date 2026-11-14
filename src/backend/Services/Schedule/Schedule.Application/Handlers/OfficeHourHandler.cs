@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ErrorOr;
+using Schedule.Application.Common;
 using Schedule.Application.DTOs;
 using Schedule.Domain.Entities;
 using Schedule.Domain.Interfaces;
@@ -35,8 +36,11 @@ public class OfficeHourHandler
         return ErrorOrFactory.From(officeHours.Select(OfficeHourDto.FromEntity));
     }
 
-    public async Task<ErrorOr<OfficeHourDto>> CreateAsync(CreateOfficeHourRequest request, CancellationToken cancellationToken)
+    public async Task<ErrorOr<OfficeHourDto>> CreateAsync(CreateOfficeHourRequest request, Requester requester, CancellationToken cancellationToken)
     {
+        if (!requester.CanAccess(request.TeacherRefId))
+            return Error.Forbidden(description: "Only the teacher or an administrator can create office hours for this teacher.");
+
         OfficeHour officeHour;
         try
         {

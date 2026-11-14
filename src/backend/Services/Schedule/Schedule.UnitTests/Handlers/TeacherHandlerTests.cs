@@ -1,4 +1,5 @@
 using ErrorOr;
+using Schedule.Application.Common;
 using Schedule.Application.Handlers;
 using Schedule.Domain.Entities;
 using Schedule.UnitTests.Fakes;
@@ -7,6 +8,8 @@ namespace Schedule.UnitTests.Handlers;
 
 public class TeacherHandlerTests
 {
+    private static readonly Requester Admin = new(Guid.NewGuid(), IsAdmin: true);
+
     private static readonly DateTime From = new(2026, 10, 12);
     private static readonly DateTime To = new(2026, 10, 19);
 
@@ -22,7 +25,7 @@ public class TeacherHandlerTests
     [Fact]
     public async Task GetWorkloadAsync_WhenToIsNotAfterFrom_ReturnsValidationError()
     {
-        var result = await _handler.GetWorkloadAsync(Guid.NewGuid(), To, From, CancellationToken.None);
+        var result = await _handler.GetWorkloadAsync(Guid.NewGuid(), To, From, Admin, CancellationToken.None);
 
         Assert.True(result.IsError);
         Assert.Equal(ErrorType.Validation, result.FirstError.Type);
@@ -37,7 +40,7 @@ public class TeacherHandlerTests
         _meetings.Items.Add(new Meeting(teacherId, Guid.NewGuid(), null, From.AddHours(9), 30));
         _meetings.Items.Add(new Meeting(teacherId, Guid.NewGuid(), null, To.AddDays(3), 30));
 
-        var result = await _handler.GetWorkloadAsync(teacherId, From, To, CancellationToken.None);
+        var result = await _handler.GetWorkloadAsync(teacherId, From, To, Admin, CancellationToken.None);
 
         Assert.False(result.IsError);
         Assert.Equal(165, result.Value.WeeklyOfficeHourMinutes);
@@ -49,7 +52,7 @@ public class TeacherHandlerTests
     [Fact]
     public async Task GetWorkloadAsync_WhenTeacherHasNoData_ReturnsEmptyWorkload()
     {
-        var result = await _handler.GetWorkloadAsync(Guid.NewGuid(), From, To, CancellationToken.None);
+        var result = await _handler.GetWorkloadAsync(Guid.NewGuid(), From, To, Admin, CancellationToken.None);
 
         Assert.False(result.IsError);
         Assert.Equal(0, result.Value.WeeklyOfficeHourMinutes);
@@ -69,5 +72,25 @@ public class TeacherHandlerTests
         Assert.False(result.IsError);
         Assert.Equal(teacherId, result.Value.TeacherRefId);
         Assert.Single(result.Value.AvailableBlocks);
+    }
+
+    [Fact]
+    public async Task GetWorkloadAsync_WhenRequesterIsTheTeacher_ReturnsWorkload()
+    {
+        var teacherId = Guid.NewGuid();
+
+        var result = await _handler.GetWorkloadAsync(teacherId, From, To, new Requester(teacherId, IsAdmin: false), CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(teacherId, result.Value.TeacherRefId);
+    }
+
+    [Fact]
+    public async Task GetWorkloadAsync_WhenRequesterIsAnotherUser_ReturnsForbidden()
+    {
+        var result = await _handler.GetWorkloadAsync(
+            Guid.NewGuid(), From, To, new Requester(Guid.NewGuid(), IsAdmin: false), CancellationToken.None);
+
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
     }
 }
