@@ -14,7 +14,7 @@ public class RoomsEndpointsTests(ScheduleApiFactory factory) : IClassFixture<Sch
     private const string MondayTenToEleven = "from=2026-11-02T10:00:00&to=2026-11-02T11:00:00";
     private static readonly DateTime MondayTen = new(2026, 11, 2, 10, 0, 0);
 
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateAdminClient();
 
     [Fact]
     public async Task GetAvailability_CrossesMeetingsAndOfficeHours()

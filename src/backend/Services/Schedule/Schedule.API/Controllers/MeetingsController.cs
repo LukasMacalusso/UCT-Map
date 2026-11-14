@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 using Schedule.Application.Common;
@@ -7,6 +8,7 @@ using Schedule.Application.Handlers;
 namespace Schedule.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/schedule/meetings")]
 public class MeetingsController : ControllerBase
 {

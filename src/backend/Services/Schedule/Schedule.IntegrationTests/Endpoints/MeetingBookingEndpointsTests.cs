@@ -14,7 +14,7 @@ public class MeetingBookingEndpointsTests(ScheduleApiFactory factory) : IClassFi
     private const string Route = "/api/schedule/meetings";
     private static readonly DateTime TenAm = new(2026, 11, 16, 10, 0, 0);
 
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateAdminClient();
 
     [Fact]
     public async Task Create_WhenTeacherIsBusy_Returns409()

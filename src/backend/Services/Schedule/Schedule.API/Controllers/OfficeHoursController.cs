@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Schedule.Application.DTOs;
 using Schedule.Application.Handlers;
@@ -5,6 +6,7 @@ using Schedule.Application.Handlers;
 namespace Schedule.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/schedule/office-hours")]
 public class OfficeHoursController : ControllerBase
 {
