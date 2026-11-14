@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Authorization;
 using ErrorOr;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Schedule.Application.Common;
+using Schedule.API.Common;
 using Schedule.Application.DTOs;
 using Schedule.Application.Handlers;
 
@@ -57,10 +57,10 @@ public class MeetingsController : ControllerBase
     [HttpPatch("{id:guid}/status")]
     public async Task<ActionResult<MeetingDto>> UpdateStatus(Guid id, [FromBody] UpdateMeetingStatusRequest request, CancellationToken cancellationToken)
     {
-        var requesterRefId = JwtUserIdReader.GetUserId(Request.Headers.Authorization.ToString());
-        if (requesterRefId is null) return Unauthorized(new { message = "A valid token with the user id is required." });
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = "A valid token with the user id is required." });
 
-        var result = await _handler.UpdateStatusAsync(id, request.Status, requesterRefId.Value, cancellationToken);
+        var result = await _handler.UpdateStatusAsync(id, request.Status, requester.UserId, cancellationToken);
         if (result.IsError)
         {
             var body = new { message = result.FirstError.Description };
