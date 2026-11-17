@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Campus.Application.DTOs;
 using Campus.Application.Handlers;
 using ErrorOr;
@@ -39,6 +40,7 @@ public class CategoryController : ControllerBase
         );
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateCategoryDto request, CancellationToken cancellationToken)
     {
@@ -55,6 +57,7 @@ public class CategoryController : ControllerBase
         );
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCategoryDto request, CancellationToken cancellationToken)
     {
@@ -76,6 +79,7 @@ public class CategoryController : ControllerBase
         );
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("reorder")]
     public async Task<IActionResult> Reorder([FromBody] IEnumerable<ReorderItemDto> items, CancellationToken cancellationToken)
     {
@@ -88,6 +92,7 @@ public class CategoryController : ControllerBase
         );
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {

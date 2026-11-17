@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Campus.Application.DTOs;
 using Campus.Application.Handlers;
 using System.Threading;
@@ -56,6 +57,7 @@ public class RoomController : ControllerBase
         );
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateRoomDto request, CancellationToken cancellationToken)
     {
@@ -78,6 +80,7 @@ public class RoomController : ControllerBase
         );
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRoomDto request, CancellationToken cancellationToken)
     {
@@ -100,6 +103,7 @@ public class RoomController : ControllerBase
         );
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
