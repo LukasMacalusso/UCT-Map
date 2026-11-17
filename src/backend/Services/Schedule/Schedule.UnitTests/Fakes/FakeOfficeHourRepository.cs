@@ -52,6 +52,22 @@ public class FakeOfficeHourRepository : IOfficeHourRepository
         return Task.FromResult(result);
     }
 
+    public Task<IReadOnlyList<OfficeHour>> GetOverlappingAsync(
+        Guid teacherRefId,
+        Guid? structureRefId,
+        DayOfWeek dayOfWeek,
+        TimeOnly start,
+        TimeOnly end,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<OfficeHour> result = Items
+            .Where(o => o.TeacherRefId == teacherRefId || (structureRefId != null && o.StructureRefId == structureRefId))
+            .Where(o => o.Overlaps(dayOfWeek, start, end))
+            .ToList();
+
+        return Task.FromResult(result);
+    }
+
     public Task AddAsync(OfficeHour officeHour, CancellationToken cancellationToken = default)
     {
         Items.Add(officeHour);

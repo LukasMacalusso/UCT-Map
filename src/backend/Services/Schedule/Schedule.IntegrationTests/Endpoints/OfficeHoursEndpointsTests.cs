@@ -39,6 +39,31 @@ public class OfficeHoursEndpointsTests(ScheduleApiFactory factory) : IClassFixtu
     }
 
     [Fact]
+    public async Task Create_WhenTeacherAlreadyHasAnOverlappingBlock_Returns409()
+    {
+        var teacherId = Guid.NewGuid();
+        await CreateAsync(teacherId, DayOfWeek.Monday);
+
+        var response = await _client.PostAsJsonAsync(Route,
+            new CreateOfficeHourRequest(teacherId, null, DayOfWeek.Monday, new TimeOnly(10, 0), new TimeOnly(12, 0)));
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WhenRoomAlreadyHasAnOverlappingBlock_Returns409()
+    {
+        var roomId = Guid.NewGuid();
+        await _client.PostAsJsonAsync(Route,
+            new CreateOfficeHourRequest(Guid.NewGuid(), roomId, DayOfWeek.Monday, new TimeOnly(9, 0), new TimeOnly(11, 0)));
+
+        var response = await _client.PostAsJsonAsync(Route,
+            new CreateOfficeHourRequest(Guid.NewGuid(), roomId, DayOfWeek.Monday, new TimeOnly(10, 0), new TimeOnly(12, 0)));
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetById_WhenOfficeHourExists_Returns200()
     {
         var created = await CreateAsync(Guid.NewGuid(), DayOfWeek.Tuesday);

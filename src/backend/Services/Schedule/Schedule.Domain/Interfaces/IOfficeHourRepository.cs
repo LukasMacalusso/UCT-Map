@@ -23,5 +23,14 @@ public interface IOfficeHourRepository
         TimeOnly end,
         CancellationToken cancellationToken = default);
 
+    // Blocks on that weekday that overlap the range and belong to the same teacher or room.
+    Task<IReadOnlyList<OfficeHour>> GetOverlappingAsync(
+        Guid teacherRefId,
+        Guid? structureRefId,
+        DayOfWeek dayOfWeek,
+        TimeOnly start,
+        TimeOnly end,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(OfficeHour officeHour, CancellationToken cancellationToken = default);
 }

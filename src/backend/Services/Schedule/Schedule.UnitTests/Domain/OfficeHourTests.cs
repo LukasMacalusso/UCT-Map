@@ -54,4 +54,28 @@ public class OfficeHourTests
 
         Assert.NotEqual(first.Id, second.Id);
     }
+
+    [Theory]
+    [InlineData(DayOfWeek.Monday, 9, 30, 10, 30, true)]
+    [InlineData(DayOfWeek.Monday, 8, 0, 9, 0, false)]
+    [InlineData(DayOfWeek.Monday, 10, 0, 11, 0, false)]
+    [InlineData(DayOfWeek.Tuesday, 9, 30, 10, 30, false)]
+    public void Overlaps_ComparesDayAndHours(DayOfWeek day, int startHour, int startMinute, int endHour, int endMinute, bool expected)
+    {
+        var officeHour = new OfficeHour(Guid.NewGuid(), null, DayOfWeek.Monday, new TimeOnly(9, 0), new TimeOnly(10, 0));
+
+        Assert.Equal(expected, officeHour.Overlaps(day, new TimeOnly(startHour, startMinute), new TimeOnly(endHour, endMinute)));
+    }
+
+    [Theory]
+    [InlineData(DayOfWeek.Monday, 9, 0, 10, 0, true)]
+    [InlineData(DayOfWeek.Monday, 9, 15, 9, 45, true)]
+    [InlineData(DayOfWeek.Monday, 9, 45, 10, 15, false)]
+    [InlineData(DayOfWeek.Tuesday, 9, 0, 10, 0, false)]
+    public void Contains_RequiresTheWholeRangeOnTheSameDay(DayOfWeek day, int startHour, int startMinute, int endHour, int endMinute, bool expected)
+    {
+        var officeHour = new OfficeHour(Guid.NewGuid(), null, DayOfWeek.Monday, new TimeOnly(9, 0), new TimeOnly(10, 0));
+
+        Assert.Equal(expected, officeHour.Contains(day, new TimeOnly(startHour, startMinute), new TimeOnly(endHour, endMinute)));
+    }
 }
