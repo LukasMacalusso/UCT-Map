@@ -34,6 +34,13 @@ public class OfficeHour
         this.EndTime = endTime;
     }
 
+    // Blocks that only touch (one ends when the other starts) do not overlap.
+    public bool Overlaps(DayOfWeek dayOfWeek, TimeOnly startTime, TimeOnly endTime) =>
+        this.DayOfWeek == dayOfWeek && startTime < this.EndTime && endTime > this.StartTime;
+
+    public bool Contains(DayOfWeek dayOfWeek, TimeOnly startTime, TimeOnly endTime) =>
+        this.DayOfWeek == dayOfWeek && startTime >= this.StartTime && endTime <= this.EndTime;
+
     protected OfficeHour() { }
 }
 

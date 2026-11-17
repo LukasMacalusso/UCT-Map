@@ -9,7 +9,7 @@ public class StudentsEndpointsTests(ScheduleApiFactory factory) : IClassFixture<
 {
     private const string WeekRange = "from=2026-10-12T00:00:00&to=2026-10-19T00:00:00";
 
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateAdminClient();
 
     [Fact]
     public async Task GetMeetings_ReturnsOnlyThatStudentsMeetingsInRange()
@@ -48,7 +48,7 @@ public class StudentsEndpointsTests(ScheduleApiFactory factory) : IClassFixture<
     private async Task CreateMeetingAsync(Guid studentId, DateTime scheduledAt)
     {
         var response = await _client.PostAsJsonAsync(
-            "/api/schedule/meetings", new CreateMeetingRequest(Guid.NewGuid(), studentId, null, scheduledAt, 30));
+            "/api/schedule/meetings", new CreateMeetingRequest(await factory.OpenTeacherDayAsync(scheduledAt), studentId, null, scheduledAt, 30));
         response.EnsureSuccessStatusCode();
     }
 }

@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Schedule.API.Common;
 using Schedule.Application.DTOs;
 using Schedule.Application.Handlers;
 
 namespace Schedule.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/schedule/office-hours")]
 public class OfficeHoursController : ControllerBase
 {
@@ -34,8 +37,11 @@ public class OfficeHoursController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<OfficeHourDto>> Create([FromBody] CreateOfficeHourRequest request, CancellationToken cancellationToken)
     {
-        var result = await _handler.CreateAsync(request, cancellationToken);
-        if (result.IsError) return BadRequest(new { message = result.FirstError.Description });
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+        var result = await _handler.CreateAsync(request, requester, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
         return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
     }
 }

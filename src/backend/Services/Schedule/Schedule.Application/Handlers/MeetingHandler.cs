@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ErrorOr;
+using Schedule.Application.Common;
 using Schedule.Application.DTOs;
 using Schedule.Domain.Entities;
 using Schedule.Domain.Enums;
@@ -15,42 +16,62 @@ namespace Schedule.Application.Handlers;
 public class MeetingHandler
 {
     private readonly IMeetingRepository _repository;
+    private readonly IOfficeHourRepository _officeHourRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly CampusTimeZone _timeZone;
 
-    public MeetingHandler(IMeetingRepository repository, IUnitOfWork unitOfWork)
+    public MeetingHandler(
+        IMeetingRepository repository,
+        IOfficeHourRepository officeHourRepository,
+        IUnitOfWork unitOfWork,
+        CampusTimeZone timeZone)
     {
         _repository = repository;
+        _officeHourRepository = officeHourRepository;
         _unitOfWork = unitOfWork;
+        _timeZone = timeZone;
     }
 
-    public async Task<ErrorOr<MeetingDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ErrorOr<MeetingDto>> GetByIdAsync(Guid id, Requester requester, CancellationToken cancellationToken)
     {
         var meeting = await _repository.GetByIdAsync(id, cancellationToken);
         if (meeting is null) return Error.NotFound(description: $"Meeting '{id}' not found.");
+        if (!IsParticipantOrAdmin(requester, meeting.TeacherRefId, meeting.StudentRefId))
+            return Error.Forbidden(description: "Only the student, the teacher of the meeting or an administrator can see it.");
         return MeetingDto.FromEntity(meeting);
     }
 
-    public async Task<ErrorOr<IEnumerable<MeetingDto>>> GetAllAsync(CancellationToken cancellationToken)
+    // Administrators get every meeting; anyone else only the meetings they take part in.
+    public async Task<ErrorOr<IEnumerable<MeetingDto>>> GetAllAsync(Requester requester, CancellationToken cancellationToken)
     {
-        var meetings = await _repository.GetAllAsync(cancellationToken);
+        var meetings = requester.IsAdmin
+            ? await _repository.GetAllAsync(cancellationToken)
+            : await _repository.GetByParticipantAsync(requester.UserId, cancellationToken);
         return ErrorOrFactory.From(meetings.Select(MeetingDto.FromEntity));
     }
 
     public async Task<ErrorOr<IEnumerable<MeetingDto>>> GetByTeacherAsync(Guid teacherRefId, DateTime from, DateTime to, CancellationToken cancellationToken)
     {
+        (from, to) = (ScheduleTime.ToUtc(from), ScheduleTime.ToUtc(to));
         if (to <= from) return Error.Validation(description: "The 'to' parameter must be later than 'from'.");
         var meetings = await _repository.GetByTeacherAsync(teacherRefId, from, to, cancellationToken);
         return ErrorOrFactory.From(meetings.Select(MeetingDto.FromEntity));
     }
 
-    public async Task<ErrorOr<MeetingDto>> CreateAsync(CreateMeetingRequest request, CancellationToken cancellationToken)
+    public async Task<ErrorOr<MeetingDto>> CreateAsync(CreateMeetingRequest request, Requester requester, CancellationToken cancellationToken)
     {
+        if (!IsParticipantOrAdmin(requester, request.TeacherRefId, request.StudentRefId))
+            return Error.Forbidden(description: "Only the student, the teacher of the meeting or an administrator can book it.");
+
         Meeting meeting;
         try
         {
-            meeting = new Meeting(request.TeacherRefId, request.StudentRefId, request.StructureRefId, request.ScheduledAt, request.DurationMinutes);
+            meeting = new Meeting(request.TeacherRefId, request.StudentRefId, request.StructureRefId, ScheduleTime.ToUtc(request.ScheduledAt), request.DurationMinutes);
         }
         catch (ArgumentException ex) { return Error.Validation(description: ex.Message); }
+
+        if (!await IsInsideOfficeHoursAsync(meeting, cancellationToken))
+            return Error.Validation(description: "The meeting must be inside one of the teacher's office hours.");
 
         try
         {
@@ -97,6 +118,20 @@ public class MeetingHandler
         await _repository.UpdateAsync(meeting, cancellationToken);
         return MeetingDto.FromEntity(meeting);
     }
+
+    // The meeting is stored in UTC and office hours are campus times, so it is compared in campus time.
+    private async Task<bool> IsInsideOfficeHoursAsync(Meeting meeting, CancellationToken cancellationToken)
+    {
+        var start = _timeZone.ToLocal(meeting.ScheduledAt);
+        var end = _timeZone.ToLocal(meeting.EndsAt);
+        if (end.Date != start.Date) return false;
+
+        var officeHours = await _officeHourRepository.GetByTeacherAsync(meeting.TeacherRefId, cancellationToken);
+        return officeHours.Any(o => o.Contains(start.DayOfWeek, TimeOnly.FromDateTime(start), TimeOnly.FromDateTime(end)));
+    }
+
+    private static bool IsParticipantOrAdmin(Requester requester, Guid teacherRefId, Guid studentRefId) =>
+        requester.CanAccess(teacherRefId) || requester.CanAccess(studentRefId);
 
     private static MeetingStatus? ParseTargetStatus(string status) => status.ToLowerInvariant() switch
     {

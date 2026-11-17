@@ -12,6 +12,8 @@ public interface IMeetingRepository
 
     Task<IReadOnlyList<Meeting>> GetAllAsync(CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Meeting>> GetByParticipantAsync(Guid userRefId, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Meeting>> GetByTeacherAsync(
         Guid teacherRefId,
         DateTime from,

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Schedule.Application.Common;
 using Schedule.Application.Handlers;
 using Schedule.Domain.Interfaces;
 using Schedule.Infrastructure.Persistence;
@@ -25,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<IOfficeHourRepository, OfficeHourRepository>();
         services.AddScoped<IMeetingRepository, MeetingRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddSingleton(CampusTimeZone.FromId(configuration["Schedule:TimeZone"]));
 
         services.AddScoped<OfficeHourHandler>();
         services.AddScoped<MeetingHandler>();

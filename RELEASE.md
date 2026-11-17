@@ -3,7 +3,7 @@
 Before deploying this project to a production environment, ensure the following technical debt and security configurations are resolved:
 
 ### Security & Identity
-- [ ] **Microservice Authorization (IDOR)**: The Schedule API currently relies entirely on the API Gateway for authentication but lacks its own fine-grained authorization. Add JWT Bearer authentication to the microservice and verify User.Identity against the requested resource IDs (e.g., studentId) to prevent Insecure Direct Object Reference (IDOR) vulnerabilities.
+- [x] **Microservice Authorization (IDOR)**: The Schedule API validates the JWT itself and compares the `sub` claim with the requested resource ids (studentId, teacherId, meeting participants), allowing administrators. Other users receive `403 Forbidden`. The `JwtConfig__*` variables must be set for the Schedule service in every environment.
 - [ ] **Database Credentials**: Change the default `rootpassword` for both **PostgreSQL** and **MongoDB** in `docker-compose.yml` to use secure, injected environment variables.
 - [ ] **JWT Secrets**: The JWT Secret Key (`JwtConfig__Key`) is currently hardcoded. Move this to a secure environment variable or a Secret Manager (like Azure Key Vault).
 
