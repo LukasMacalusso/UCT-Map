@@ -1,4 +1,5 @@
 using ErrorOr;
+using Schedule.Application.Common;
 using Schedule.Application.DTOs;
 using Schedule.Application.Handlers;
 using Schedule.Domain.Entities;
@@ -9,6 +10,8 @@ namespace Schedule.UnitTests.Handlers;
 
 public class MeetingHandlerTests
 {
+    private static readonly Requester Admin = new(Guid.NewGuid(), IsAdmin: true);
+
     private static readonly DateTime From = new(2026, 10, 12);
     private static readonly DateTime To = new(2026, 10, 19);
 
@@ -29,7 +32,7 @@ public class MeetingHandlerTests
         var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, From.AddHours(10), 30);
         _repository.Items.Add(meeting);
 
-        var result = await _handler.GetByIdAsync(meeting.Id, CancellationToken.None);
+        var result = await _handler.GetByIdAsync(meeting.Id, Admin, CancellationToken.None);
 
         Assert.False(result.IsError);
         Assert.Equal(meeting.Id, result.Value.Id);
@@ -39,7 +42,7 @@ public class MeetingHandlerTests
     [Fact]
     public async Task GetByIdAsync_WhenMeetingDoesNotExist_ReturnsNotFound()
     {
-        var result = await _handler.GetByIdAsync(Guid.NewGuid(), CancellationToken.None);
+        var result = await _handler.GetByIdAsync(Guid.NewGuid(), Admin, CancellationToken.None);
 
         Assert.True(result.IsError);
         Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
@@ -51,7 +54,7 @@ public class MeetingHandlerTests
         _repository.Items.Add(new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, From.AddDays(3), 30));
         _repository.Items.Add(new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, From.AddDays(1), 30));
 
-        var result = await _handler.GetAllAsync(CancellationToken.None);
+        var result = await _handler.GetAllAsync(Admin, CancellationToken.None);
 
         Assert.False(result.IsError);
         var meetings = result.Value.ToList();
@@ -89,7 +92,7 @@ public class MeetingHandlerTests
     {
         var request = new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), From.AddHours(9), 45);
 
-        var result = await _handler.CreateAsync(request, CancellationToken.None);
+        var result = await _handler.CreateAsync(request, Admin, CancellationToken.None);
 
         Assert.False(result.IsError);
         Assert.Single(_repository.Items);
@@ -102,7 +105,7 @@ public class MeetingHandlerTests
     {
         var request = new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 0);
 
-        var result = await _handler.CreateAsync(request, CancellationToken.None);
+        var result = await _handler.CreateAsync(request, Admin, CancellationToken.None);
 
         Assert.True(result.IsError);
         Assert.Equal(ErrorType.Validation, result.FirstError.Type);
@@ -116,7 +119,7 @@ public class MeetingHandlerTests
         _repository.Items.Add(new Meeting(teacherId, Guid.NewGuid(), null, TenAm, 30));
 
         var result = await _handler.CreateAsync(
-            new CreateMeetingRequest(teacherId, Guid.NewGuid(), null, TenAm.AddMinutes(15), 30), CancellationToken.None);
+            new CreateMeetingRequest(teacherId, Guid.NewGuid(), null, TenAm.AddMinutes(15), 30), Admin, CancellationToken.None);
 
         Assert.True(result.IsError);
         Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
@@ -131,7 +134,7 @@ public class MeetingHandlerTests
         _repository.Items.Add(new Meeting(Guid.NewGuid(), studentId, null, TenAm, 60));
 
         var result = await _handler.CreateAsync(
-            new CreateMeetingRequest(Guid.NewGuid(), studentId, null, TenAm.AddMinutes(30), 30), CancellationToken.None);
+            new CreateMeetingRequest(Guid.NewGuid(), studentId, null, TenAm.AddMinutes(30), 30), Admin, CancellationToken.None);
 
         Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
         Assert.Contains("student", result.FirstError.Description);
@@ -144,7 +147,7 @@ public class MeetingHandlerTests
         _repository.Items.Add(new Meeting(Guid.NewGuid(), Guid.NewGuid(), roomId, TenAm, 30));
 
         var result = await _handler.CreateAsync(
-            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), roomId, TenAm, 30), CancellationToken.None);
+            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), roomId, TenAm, 30), Admin, CancellationToken.None);
 
         Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
         Assert.Contains("room", result.FirstError.Description);
@@ -157,7 +160,7 @@ public class MeetingHandlerTests
         _repository.Items.Add(new Meeting(teacherId, Guid.NewGuid(), null, TenAm, 30));
 
         var result = await _handler.CreateAsync(
-            new CreateMeetingRequest(teacherId, Guid.NewGuid(), null, TenAm.AddMinutes(30), 30), CancellationToken.None);
+            new CreateMeetingRequest(teacherId, Guid.NewGuid(), null, TenAm.AddMinutes(30), 30), Admin, CancellationToken.None);
 
         Assert.False(result.IsError);
         Assert.Equal(2, _repository.Items.Count);
@@ -169,7 +172,7 @@ public class MeetingHandlerTests
         _repository.Items.Add(new Meeting(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TenAm, 30));
 
         var result = await _handler.CreateAsync(
-            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30), CancellationToken.None);
+            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30), Admin, CancellationToken.None);
 
         Assert.False(result.IsError);
     }
@@ -180,7 +183,7 @@ public class MeetingHandlerTests
         _unitOfWork.SimulateConcurrencyConflict = true;
 
         var result = await _handler.CreateAsync(
-            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30), CancellationToken.None);
+            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30), Admin, CancellationToken.None);
 
         Assert.True(result.IsError);
         Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
@@ -301,6 +304,64 @@ public class MeetingHandlerTests
         Assert.True(result.IsError);
         Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
         Assert.Empty(_repository.UpdatedIds);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_WhenRequesterIsTheStudent_ReturnsDto()
+    {
+        var meeting = AddMeeting();
+
+        var result = await _handler.GetByIdAsync(meeting.Id, new Requester(meeting.StudentRefId, IsAdmin: false), CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(meeting.Id, result.Value.Id);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_WhenRequesterIsNotAParticipant_ReturnsForbidden()
+    {
+        var meeting = AddMeeting();
+
+        var result = await _handler.GetByIdAsync(meeting.Id, new Requester(Guid.NewGuid(), IsAdmin: false), CancellationToken.None);
+
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WhenRequesterIsNotAdmin_ReturnsOnlyTheMeetingsTheyTakePartIn()
+    {
+        var userId = Guid.NewGuid();
+        _repository.Items.Add(new Meeting(Guid.NewGuid(), userId, null, TenAm, 30));
+        _repository.Items.Add(new Meeting(userId, Guid.NewGuid(), null, TenAm.AddHours(1), 30));
+        _repository.Items.Add(new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30));
+
+        var result = await _handler.GetAllAsync(new Requester(userId, IsAdmin: false), CancellationToken.None);
+
+        Assert.Equal(2, result.Value.Count());
+        Assert.All(result.Value, m => Assert.True(m.StudentRefId == userId || m.TeacherRefId == userId));
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenStudentBooksForThemselves_IsAccepted()
+    {
+        var studentId = Guid.NewGuid();
+        var request = new CreateMeetingRequest(Guid.NewGuid(), studentId, null, TenAm, 30);
+
+        var result = await _handler.CreateAsync(request, new Requester(studentId, IsAdmin: false), CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Single(_repository.Items);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenRequesterIsNotAParticipant_ReturnsForbiddenAndDoesNotPersist()
+    {
+        var request = new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30);
+
+        var result = await _handler.CreateAsync(request, new Requester(Guid.NewGuid(), IsAdmin: false), CancellationToken.None);
+
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
+        Assert.Empty(_repository.Items);
     }
 
     private Meeting AddMeeting()

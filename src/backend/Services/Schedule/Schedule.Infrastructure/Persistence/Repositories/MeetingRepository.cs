@@ -22,6 +22,15 @@ public class MeetingRepository(ScheduleDbContext dbContext) : IMeetingRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Meeting>> GetByParticipantAsync(Guid userRefId, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Meetings
+            .AsNoTracking()
+            .Where(m => m.TeacherRefId == userRefId || m.StudentRefId == userRefId)
+            .OrderBy(m => m.ScheduledAt)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Meeting>> GetByTeacherAsync(
         Guid teacherRefId,
         DateTime from,

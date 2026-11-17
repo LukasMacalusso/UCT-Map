@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ErrorOr;
+using Schedule.Application.Common;
 using Schedule.Application.DTOs;
 using Schedule.Domain.Interfaces;
 
@@ -31,6 +32,7 @@ public class RoomHandler
     {
         if (roomIds.Count == 0) return Error.Validation(description: "At least one 'roomIds' value is required.");
         if (roomIds.Contains(Guid.Empty)) return Error.Validation(description: "The 'roomIds' values cannot be empty.");
+        (from, to) = (ScheduleTime.ToUtc(from), ScheduleTime.ToUtc(to));
         if (to <= from) return Error.Validation(description: "The 'to' parameter must be later than 'from'.");
         if (to.Date != from.Date) return Error.Validation(description: "The 'from' and 'to' parameters must be on the same day.");
 

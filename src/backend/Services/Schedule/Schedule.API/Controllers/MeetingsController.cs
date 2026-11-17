@@ -1,12 +1,13 @@
-using ErrorOr;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Schedule.Application.Common;
+using Schedule.API.Common;
 using Schedule.Application.DTOs;
 using Schedule.Application.Handlers;
 
 namespace Schedule.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/schedule/meetings")]
 public class MeetingsController : ControllerBase
 {
@@ -17,8 +18,11 @@ public class MeetingsController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<MeetingDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _handler.GetByIdAsync(id, cancellationToken);
-        if (result.IsError) return NotFound(new { message = result.FirstError.Description });
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+        var result = await _handler.GetByIdAsync(id, requester, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
         return Ok(result.Value);
     }
 
@@ -27,7 +31,10 @@ public class MeetingsController : ControllerBase
     {
         if (teacherId is null)
         {
-            var all = await _handler.GetAllAsync(cancellationToken);
+            var requester = User.ToRequester();
+            if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+            var all = await _handler.GetAllAsync(requester, cancellationToken);
             return Ok(all.Value);
         }
 
@@ -41,36 +48,22 @@ public class MeetingsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<MeetingDto>> Create([FromBody] CreateMeetingRequest request, CancellationToken cancellationToken)
     {
-        var result = await _handler.CreateAsync(request, cancellationToken);
-        if (result.IsError)
-        {
-            return result.FirstError.Type == ErrorType.Conflict
-                ? Conflict(new { message = result.FirstError.Description })
-                : BadRequest(new { message = result.FirstError.Description });
-        }
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
 
+        var result = await _handler.CreateAsync(request, requester, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
         return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
     }
 
     [HttpPatch("{id:guid}/status")]
     public async Task<ActionResult<MeetingDto>> UpdateStatus(Guid id, [FromBody] UpdateMeetingStatusRequest request, CancellationToken cancellationToken)
     {
-        var requesterRefId = JwtUserIdReader.GetUserId(Request.Headers.Authorization.ToString());
-        if (requesterRefId is null) return Unauthorized(new { message = "A valid token with the user id is required." });
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
 
-        var result = await _handler.UpdateStatusAsync(id, request.Status, requesterRefId.Value, cancellationToken);
-        if (result.IsError)
-        {
-            var body = new { message = result.FirstError.Description };
-            return result.FirstError.Type switch
-            {
-                ErrorType.Validation => BadRequest(body),
-                ErrorType.NotFound => NotFound(body),
-                ErrorType.Forbidden => StatusCode(StatusCodes.Status403Forbidden, body),
-                _ => Conflict(body)
-            };
-        }
-
+        var result = await _handler.UpdateStatusAsync(id, request.Status, requester.UserId, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
         return Ok(result.Value);
     }
 }

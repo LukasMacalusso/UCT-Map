@@ -1,10 +1,6 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Security.Claims;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
 using Schedule.Application.DTOs;
 using Schedule.IntegrationTests.Infrastructure;
 
@@ -15,7 +11,7 @@ public class MeetingStatusEndpointsTests(ScheduleApiFactory factory) : IClassFix
     private const string Route = "/api/schedule/meetings";
     private static readonly DateTime TenAm = new(2026, 11, 23, 10, 0, 0);
 
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateAdminClient();
 
     [Fact]
     public async Task UpdateStatus_WhenStudentCancels_Returns200AndPersists()
@@ -92,7 +88,8 @@ public class MeetingStatusEndpointsTests(ScheduleApiFactory factory) : IClassFix
     {
         var meeting = await BookAsync();
 
-        var response = await _client.PatchAsJsonAsync($"{Route}/{meeting.Id}/status", new UpdateMeetingStatusRequest("Cancelled"));
+        var anonymousClient = factory.CreateClient();
+        var response = await anonymousClient.PatchAsJsonAsync($"{Route}/{meeting.Id}/status", new UpdateMeetingStatusRequest("Cancelled"));
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -152,7 +149,8 @@ public class MeetingStatusEndpointsTests(ScheduleApiFactory factory) : IClassFix
         {
             Content = JsonContent.Create(new UpdateMeetingStatusRequest(status))
         };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", CreateToken(requesterId));
+        request.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer", ScheduleApiFactory.CreateToken(requesterId, ScheduleApiFactory.StudentRole));
         return _client.SendAsync(request);
     }
 
@@ -160,16 +158,5 @@ public class MeetingStatusEndpointsTests(ScheduleApiFactory factory) : IClassFix
     {
         var stored = await _client.GetFromJsonAsync<MeetingDto>($"{Route}/{meetingId}");
         return stored!.Status;
-    }
-
-    // Same claim Identity puts in its tokens. Schedule does not check the signature (the gateway does).
-    private static string CreateToken(Guid userId)
-    {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("test-signing-key-0123456789abcdef"));
-        var token = new JwtSecurityToken(
-            claims: [new Claim(JwtRegisteredClaimNames.Sub, userId.ToString())],
-            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

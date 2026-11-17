@@ -10,7 +10,7 @@ public class MeetingsEndpointsTests(ScheduleApiFactory factory) : IClassFixture<
     private const string Route = "/api/schedule/meetings";
     private const string WeekRange = "from=2026-10-12T00:00:00&to=2026-10-19T00:00:00";
 
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateAdminClient();
 
     [Fact]
     public async Task Create_WithValidRequest_Returns201InPendingStatus()

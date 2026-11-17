@@ -9,7 +9,7 @@ public class OfficeHoursEndpointsTests(ScheduleApiFactory factory) : IClassFixtu
 {
     private const string Route = "/api/schedule/office-hours";
 
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateAdminClient();
 
     [Fact]
     public async Task Create_WithValidRequest_Returns201WithLocation()
