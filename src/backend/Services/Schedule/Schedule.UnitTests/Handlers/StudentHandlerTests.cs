@@ -31,6 +31,16 @@ public class StudentHandlerTests
     }
 
     [Fact]
+    public async Task GetMeetingsAsync_WhenDatesAreUtc_StoresThemWithoutKind()
+    {
+        var result = await _handler.GetMeetingsAsync(Guid.NewGuid(),
+            DateTime.SpecifyKind(From, DateTimeKind.Utc), DateTime.SpecifyKind(To, DateTimeKind.Utc), Admin, CancellationToken.None);
+
+        Assert.Equal(DateTimeKind.Unspecified, result.Value.From.Kind);
+        Assert.Equal(DateTimeKind.Unspecified, result.Value.To.Kind);
+    }
+
+    [Fact]
     public async Task GetMeetingsAsync_ReturnsOnlyThatStudentsMeetingsInRange()
     {
         var studentId = Guid.NewGuid();

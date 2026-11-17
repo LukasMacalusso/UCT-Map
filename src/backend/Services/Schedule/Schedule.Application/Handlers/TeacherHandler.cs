@@ -20,6 +20,7 @@ public class TeacherHandler
     public async Task<ErrorOr<TeacherWorkloadDto>> GetWorkloadAsync(Guid teacherRefId, DateTime from, DateTime to, Requester requester, CancellationToken cancellationToken)
     {
         if (!requester.CanAccess(teacherRefId)) return Error.Forbidden(description: "Only the teacher or an administrator can see this workload.");
+        (from, to) = (ScheduleTime.ToUtc(from), ScheduleTime.ToUtc(to));
         if (to <= from) return Error.Validation(description: "The 'to' parameter must be later than 'from'.");
         var officeHours = await _officeHourRepository.GetByTeacherAsync(teacherRefId, cancellationToken);
         var meetings = await _meetingRepository.GetByTeacherAsync(teacherRefId, from, to, cancellationToken);

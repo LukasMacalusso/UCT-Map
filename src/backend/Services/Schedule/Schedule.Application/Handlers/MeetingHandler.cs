@@ -44,6 +44,7 @@ public class MeetingHandler
 
     public async Task<ErrorOr<IEnumerable<MeetingDto>>> GetByTeacherAsync(Guid teacherRefId, DateTime from, DateTime to, CancellationToken cancellationToken)
     {
+        (from, to) = (ScheduleTime.ToUtc(from), ScheduleTime.ToUtc(to));
         if (to <= from) return Error.Validation(description: "The 'to' parameter must be later than 'from'.");
         var meetings = await _repository.GetByTeacherAsync(teacherRefId, from, to, cancellationToken);
         return ErrorOrFactory.From(meetings.Select(MeetingDto.FromEntity));
@@ -57,7 +58,7 @@ public class MeetingHandler
         Meeting meeting;
         try
         {
-            meeting = new Meeting(request.TeacherRefId, request.StudentRefId, request.StructureRefId, request.ScheduledAt, request.DurationMinutes);
+            meeting = new Meeting(request.TeacherRefId, request.StudentRefId, request.StructureRefId, ScheduleTime.ToUtc(request.ScheduledAt), request.DurationMinutes);
         }
         catch (ArgumentException ex) { return Error.Validation(description: ex.Message); }
 

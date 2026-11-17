@@ -18,6 +18,7 @@ public class StudentHandler
     public async Task<ErrorOr<StudentMeetingsDto>> GetMeetingsAsync(Guid studentRefId, DateTime from, DateTime to, Requester requester, CancellationToken cancellationToken)
     {
         if (!requester.CanAccess(studentRefId)) return Error.Forbidden(description: "Only the student or an administrator can see these meetings.");
+        (from, to) = (ScheduleTime.ToUtc(from), ScheduleTime.ToUtc(to));
         if (to <= from) return Error.Validation(description: "The 'to' parameter must be later than 'from'.");
         var meetings = await _meetingRepository.GetByStudentAsync(studentRefId, from, to, cancellationToken);
         var dto = new StudentMeetingsDto(studentRefId, from, to, meetings.Count, meetings.Select(MeetingDto.FromEntity).ToList());
