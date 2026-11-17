@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Schedule.Domain.Entities;
 using Schedule.Infrastructure.Persistence;
 
 namespace Schedule.IntegrationTests.Infrastructure;
@@ -48,6 +49,21 @@ public class ScheduleApiFactory : WebApplicationFactory<Program>
 
     public HttpClient CreateAdminClient() => CreateClientAs(Guid.NewGuid(), AdminRole);
 
+    // Meetings must be inside an office hour; this opens the teacher's whole day so a test can book any time.
+    public async Task<Guid> OpenTeacherDayAsync(DateTime day, Guid? teacherId = null)
+    {
+        var id = teacherId ?? Guid.NewGuid();
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ScheduleDbContext>();
+        if (!db.OfficeHours.Any(o => o.TeacherRefId == id && o.DayOfWeek == day.DayOfWeek))
+        {
+            db.OfficeHours.Add(new OfficeHour(id, null, day.DayOfWeek, TimeOnly.MinValue, TimeOnly.MaxValue));
+            await db.SaveChangesAsync();
+        }
+
+        return id;
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -55,6 +71,7 @@ public class ScheduleApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("JwtConfig:Issuer", JwtIssuer);
         builder.UseSetting("JwtConfig:Audience", JwtAudience);
         builder.UseSetting("JwtConfig:Key", JwtKey);
+        builder.UseSetting("Schedule:TimeZone", "UTC");
 
         builder.ConfigureTestServices(services =>
         {

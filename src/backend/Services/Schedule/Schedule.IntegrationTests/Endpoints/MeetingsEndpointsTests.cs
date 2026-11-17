@@ -15,8 +15,9 @@ public class MeetingsEndpointsTests(ScheduleApiFactory factory) : IClassFixture<
     [Fact]
     public async Task Create_WithValidRequest_Returns201InPendingStatus()
     {
+        var scheduledAt = new DateTime(2026, 10, 13, 10, 0, 0);
         var request = new CreateMeetingRequest(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), new DateTime(2026, 10, 13, 10, 0, 0), 30);
+            await factory.OpenTeacherDayAsync(scheduledAt), Guid.NewGuid(), Guid.NewGuid(), scheduledAt, 30);
 
         var response = await _client.PostAsJsonAsync(Route, request);
 
@@ -97,6 +98,7 @@ public class MeetingsEndpointsTests(ScheduleApiFactory factory) : IClassFixture<
 
     private async Task<MeetingDto> CreateAsync(Guid teacherId, DateTime scheduledAt)
     {
+        await factory.OpenTeacherDayAsync(scheduledAt, teacherId);
         var request = new CreateMeetingRequest(teacherId, Guid.NewGuid(), null, scheduledAt, 30);
         var response = await _client.PostAsJsonAsync(Route, request);
         response.EnsureSuccessStatusCode();

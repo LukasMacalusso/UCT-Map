@@ -19,7 +19,7 @@ public class MeetingBookingEndpointsTests(ScheduleApiFactory factory) : IClassFi
     [Fact]
     public async Task Create_WhenTeacherIsBusy_Returns409()
     {
-        var teacherId = Guid.NewGuid();
+        var teacherId = await factory.OpenTeacherDayAsync(TenAm);
         await BookAsync(teacherId, Guid.NewGuid(), null, TenAm, 30);
 
         var response = await _client.PostAsJsonAsync(Route,
@@ -32,10 +32,10 @@ public class MeetingBookingEndpointsTests(ScheduleApiFactory factory) : IClassFi
     public async Task Create_WhenStudentIsBusy_Returns409()
     {
         var studentId = Guid.NewGuid();
-        await BookAsync(Guid.NewGuid(), studentId, null, TenAm, 60);
+        await BookAsync(await factory.OpenTeacherDayAsync(TenAm), studentId, null, TenAm, 60);
 
         var response = await _client.PostAsJsonAsync(Route,
-            new CreateMeetingRequest(Guid.NewGuid(), studentId, null, TenAm.AddMinutes(45), 30));
+            new CreateMeetingRequest(await factory.OpenTeacherDayAsync(TenAm), studentId, null, TenAm.AddMinutes(45), 30));
 
         await AssertConflictAsync(response, "student");
     }
@@ -44,10 +44,10 @@ public class MeetingBookingEndpointsTests(ScheduleApiFactory factory) : IClassFi
     public async Task Create_WhenRoomIsBusy_Returns409()
     {
         var roomId = Guid.NewGuid();
-        await BookAsync(Guid.NewGuid(), Guid.NewGuid(), roomId, TenAm, 30);
+        await BookAsync(await factory.OpenTeacherDayAsync(TenAm), Guid.NewGuid(), roomId, TenAm, 30);
 
         var response = await _client.PostAsJsonAsync(Route,
-            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), roomId, TenAm, 30));
+            new CreateMeetingRequest(await factory.OpenTeacherDayAsync(TenAm), Guid.NewGuid(), roomId, TenAm, 30));
 
         await AssertConflictAsync(response, "room");
     }
@@ -55,7 +55,7 @@ public class MeetingBookingEndpointsTests(ScheduleApiFactory factory) : IClassFi
     [Fact]
     public async Task Create_WhenMeetingStartsExactlyWhenAnotherEnds_Returns201()
     {
-        var teacherId = Guid.NewGuid();
+        var teacherId = await factory.OpenTeacherDayAsync(TenAm);
         await BookAsync(teacherId, Guid.NewGuid(), null, TenAm, 30);
 
         var response = await _client.PostAsJsonAsync(Route,
@@ -67,12 +67,38 @@ public class MeetingBookingEndpointsTests(ScheduleApiFactory factory) : IClassFi
     [Fact]
     public async Task Create_WhenOverlappingMeetingWasCancelled_Returns201()
     {
-        var teacherId = Guid.NewGuid();
+        var teacherId = await factory.OpenTeacherDayAsync(TenAm);
         var cancelled = await BookAsync(teacherId, Guid.NewGuid(), null, TenAm, 30);
         await CancelAsync(cancelled.Id);
 
         var response = await _client.PostAsJsonAsync(Route,
             new CreateMeetingRequest(teacherId, Guid.NewGuid(), null, TenAm, 30));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WhenOutsideTheTeachersOfficeHours_Returns400()
+    {
+        var teacherId = Guid.NewGuid();
+        await _client.PostAsJsonAsync("/api/schedule/office-hours",
+            new CreateOfficeHourRequest(teacherId, null, TenAm.DayOfWeek, new TimeOnly(9, 0), new TimeOnly(10, 0)));
+
+        var response = await _client.PostAsJsonAsync(Route,
+            new CreateMeetingRequest(teacherId, Guid.NewGuid(), null, TenAm, 30));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WhenInsideTheTeachersOfficeHours_Returns201()
+    {
+        var teacherId = Guid.NewGuid();
+        await _client.PostAsJsonAsync("/api/schedule/office-hours",
+            new CreateOfficeHourRequest(teacherId, null, TenAm.DayOfWeek, new TimeOnly(9, 0), new TimeOnly(11, 0)));
+
+        var response = await _client.PostAsJsonAsync(Route,
+            new CreateMeetingRequest(teacherId, Guid.NewGuid(), null, TenAm, 60));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }

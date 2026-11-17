@@ -70,7 +70,7 @@ public class RoomsEndpointsTests(ScheduleApiFactory factory) : IClassFixture<Sch
     private async Task<MeetingDto> CreateMeetingAsync(Guid roomId, DateTime start)
     {
         var response = await _client.PostAsJsonAsync("/api/schedule/meetings",
-            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), roomId, start, 30));
+            new CreateMeetingRequest(await factory.OpenTeacherDayAsync(start), Guid.NewGuid(), roomId, start, 30));
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<MeetingDto>())!;
     }

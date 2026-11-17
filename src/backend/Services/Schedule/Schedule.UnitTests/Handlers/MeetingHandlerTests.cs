@@ -18,12 +18,13 @@ public class MeetingHandlerTests
     private static readonly DateTime TenAm = new(2026, 10, 12, 10, 0, 0);
 
     private readonly FakeMeetingRepository _repository = new();
+    private readonly FakeOfficeHourRepository _officeHours = new();
     private readonly FakeUnitOfWork _unitOfWork = new();
     private readonly MeetingHandler _handler;
 
     public MeetingHandlerTests()
     {
-        _handler = new MeetingHandler(_repository, _unitOfWork);
+        _handler = new MeetingHandler(_repository, _officeHours, _unitOfWork, new CampusTimeZone(TimeZoneInfo.Utc));
     }
 
     [Fact]
@@ -90,7 +91,7 @@ public class MeetingHandlerTests
     [Fact]
     public async Task CreateAsync_PersistsMeetingInPendingStatus()
     {
-        var request = new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), From.AddHours(9), 45);
+        var request = new CreateMeetingRequest(TeacherWithOpenHours(), Guid.NewGuid(), Guid.NewGuid(), From.AddHours(9), 45);
 
         var result = await _handler.CreateAsync(request, Admin, CancellationToken.None);
 
@@ -103,7 +104,7 @@ public class MeetingHandlerTests
     [Fact]
     public async Task CreateAsync_WhenDurationIsNotPositive_ReturnsValidationErrorAndDoesNotPersist()
     {
-        var request = new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 0);
+        var request = new CreateMeetingRequest(TeacherWithOpenHours(), Guid.NewGuid(), null, TenAm, 0);
 
         var result = await _handler.CreateAsync(request, Admin, CancellationToken.None);
 
@@ -115,7 +116,7 @@ public class MeetingHandlerTests
     [Fact]
     public async Task CreateAsync_WhenTeacherHasOverlappingMeeting_ReturnsConflict()
     {
-        var teacherId = Guid.NewGuid();
+        var teacherId = TeacherWithOpenHours();
         _repository.Items.Add(new Meeting(teacherId, Guid.NewGuid(), null, TenAm, 30));
 
         var result = await _handler.CreateAsync(
@@ -134,7 +135,7 @@ public class MeetingHandlerTests
         _repository.Items.Add(new Meeting(Guid.NewGuid(), studentId, null, TenAm, 60));
 
         var result = await _handler.CreateAsync(
-            new CreateMeetingRequest(Guid.NewGuid(), studentId, null, TenAm.AddMinutes(30), 30), Admin, CancellationToken.None);
+            new CreateMeetingRequest(TeacherWithOpenHours(), studentId, null, TenAm.AddMinutes(30), 30), Admin, CancellationToken.None);
 
         Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
         Assert.Contains("student", result.FirstError.Description);
@@ -147,7 +148,7 @@ public class MeetingHandlerTests
         _repository.Items.Add(new Meeting(Guid.NewGuid(), Guid.NewGuid(), roomId, TenAm, 30));
 
         var result = await _handler.CreateAsync(
-            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), roomId, TenAm, 30), Admin, CancellationToken.None);
+            new CreateMeetingRequest(TeacherWithOpenHours(), Guid.NewGuid(), roomId, TenAm, 30), Admin, CancellationToken.None);
 
         Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
         Assert.Contains("room", result.FirstError.Description);
@@ -156,7 +157,7 @@ public class MeetingHandlerTests
     [Fact]
     public async Task CreateAsync_WhenMeetingStartsExactlyWhenAnotherEnds_IsAccepted()
     {
-        var teacherId = Guid.NewGuid();
+        var teacherId = TeacherWithOpenHours();
         _repository.Items.Add(new Meeting(teacherId, Guid.NewGuid(), null, TenAm, 30));
 
         var result = await _handler.CreateAsync(
@@ -172,7 +173,7 @@ public class MeetingHandlerTests
         _repository.Items.Add(new Meeting(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TenAm, 30));
 
         var result = await _handler.CreateAsync(
-            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30), Admin, CancellationToken.None);
+            new CreateMeetingRequest(TeacherWithOpenHours(), Guid.NewGuid(), null, TenAm, 30), Admin, CancellationToken.None);
 
         Assert.False(result.IsError);
     }
@@ -183,7 +184,7 @@ public class MeetingHandlerTests
         _unitOfWork.SimulateConcurrencyConflict = true;
 
         var result = await _handler.CreateAsync(
-            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30), Admin, CancellationToken.None);
+            new CreateMeetingRequest(TeacherWithOpenHours(), Guid.NewGuid(), null, TenAm, 30), Admin, CancellationToken.None);
 
         Assert.True(result.IsError);
         Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
@@ -345,7 +346,7 @@ public class MeetingHandlerTests
     public async Task CreateAsync_WhenStudentBooksForThemselves_IsAccepted()
     {
         var studentId = Guid.NewGuid();
-        var request = new CreateMeetingRequest(Guid.NewGuid(), studentId, null, TenAm, 30);
+        var request = new CreateMeetingRequest(TeacherWithOpenHours(), studentId, null, TenAm, 30);
 
         var result = await _handler.CreateAsync(request, new Requester(studentId, IsAdmin: false), CancellationToken.None);
 
@@ -356,12 +357,77 @@ public class MeetingHandlerTests
     [Fact]
     public async Task CreateAsync_WhenRequesterIsNotAParticipant_ReturnsForbiddenAndDoesNotPersist()
     {
-        var request = new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30);
+        var request = new CreateMeetingRequest(TeacherWithOpenHours(), Guid.NewGuid(), null, TenAm, 30);
 
         var result = await _handler.CreateAsync(request, new Requester(Guid.NewGuid(), IsAdmin: false), CancellationToken.None);
 
         Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
         Assert.Empty(_repository.Items);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenTeacherHasNoOfficeHours_ReturnsValidationErrorAndDoesNotPersist()
+    {
+        var result = await _handler.CreateAsync(
+            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30), Admin, CancellationToken.None);
+
+        Assert.Equal(ErrorType.Validation, result.FirstError.Type);
+        Assert.Contains("office hours", result.FirstError.Description);
+        Assert.Empty(_repository.Items);
+    }
+
+    [Theory]
+    [InlineData(9, 0, 60, true)]
+    [InlineData(9, 15, 30, true)]
+    [InlineData(9, 45, 30, false)]
+    [InlineData(8, 45, 30, false)]
+    [InlineData(10, 0, 30, false)]
+    public async Task CreateAsync_RequiresTheMeetingInsideAnOfficeHourOfThatDay(int hour, int minute, int duration, bool accepted)
+    {
+        var teacherId = Guid.NewGuid();
+        _officeHours.Items.Add(new OfficeHour(teacherId, null, TenAm.DayOfWeek, new TimeOnly(9, 0), new TimeOnly(10, 0)));
+
+        var result = await _handler.CreateAsync(
+            new CreateMeetingRequest(teacherId, Guid.NewGuid(), null, TenAm.Date.AddHours(hour).AddMinutes(minute), duration),
+            Admin, CancellationToken.None);
+
+        Assert.Equal(accepted, !result.IsError);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenMeetingCrossesMidnight_ReturnsValidationError()
+    {
+        var result = await _handler.CreateAsync(
+            new CreateMeetingRequest(TeacherWithOpenHours(), Guid.NewGuid(), null, TenAm.Date.AddHours(23).AddMinutes(45), 30),
+            Admin, CancellationToken.None);
+
+        Assert.Equal(ErrorType.Validation, result.FirstError.Type);
+    }
+
+    [Theory]
+    [InlineData(13, true)]
+    [InlineData(10, false)]
+    public async Task CreateAsync_ComparesTheUtcMeetingWithOfficeHoursInCampusTime(int utcHour, bool accepted)
+    {
+        // Tuesday 2026-11-17: Santiago is UTC-3, so 13:00 UTC is 10:00 on campus.
+        var handler = new MeetingHandler(_repository, _officeHours, _unitOfWork, CampusTimeZone.FromId("America/Santiago"));
+        var teacherId = Guid.NewGuid();
+        _officeHours.Items.Add(new OfficeHour(teacherId, null, DayOfWeek.Tuesday, new TimeOnly(10, 0), new TimeOnly(11, 0)));
+
+        var result = await handler.CreateAsync(
+            new CreateMeetingRequest(teacherId, Guid.NewGuid(), null, new DateTime(2026, 11, 17, utcHour, 0, 0), 30),
+            Admin, CancellationToken.None);
+
+        Assert.Equal(accepted, !result.IsError);
+    }
+
+    // Gives the teacher an office hour covering every day, so only the rule under test can reject the meeting.
+    private Guid TeacherWithOpenHours()
+    {
+        var teacherId = Guid.NewGuid();
+        foreach (var day in Enum.GetValues<DayOfWeek>())
+            _officeHours.Items.Add(new OfficeHour(teacherId, null, day, TimeOnly.MinValue, TimeOnly.MaxValue));
+        return teacherId;
     }
 
     private Meeting AddMeeting()
