@@ -34,6 +34,8 @@ public class GlobalErrorHandlingMiddleware(
 
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/problem+json";
+        // Clear any Content-Length header copied by YARP from an empty downstream error response.
+        context.Response.ContentLength = null;
 
         var problemDetails = new ProblemDetails
         {

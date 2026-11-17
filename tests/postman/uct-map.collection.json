@@ -391,8 +391,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Create campus returned 200 or 201\", function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "pm.test(\"Create campus returns 403 for non-admin user\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(403);",
                   "});"
                 ]
               }
