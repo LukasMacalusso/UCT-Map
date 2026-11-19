@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Campus.Domain.Entities;
 using Campus.Domain.Interfaces;
 using Campus.Domain.ValueObjects;
 using Campus.Application.DTOs;
 using Campus.Application.Mappers;
+using ErrorOr;
 using CampusEntity = Campus.Domain.Entities.Campus;
 
 namespace Campus.Application.Handlers;
@@ -14,10 +16,17 @@ namespace Campus.Application.Handlers;
 public class CampusHandler
 {
     private readonly ICampusRepository _repository;
+    private readonly IGenericRepository<Building>? _buildingRepository;
+    private readonly IGenericRepository<Structure>? _structureRepository;
 
-    public CampusHandler(ICampusRepository repository)
+    public CampusHandler(
+        ICampusRepository repository,
+        IGenericRepository<Building>? buildingRepository = null,
+        IGenericRepository<Structure>? structureRepository = null)
     {
         _repository = repository;
+        _buildingRepository = buildingRepository;
+        _structureRepository = structureRepository;
     }
 
     public async Task<IEnumerable<CampusDto>> GetAllAsync(CancellationToken cancellationToken)
@@ -74,11 +83,31 @@ public class CampusHandler
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var campus = await _repository.GetByIdAsync(id, cancellationToken);
-        if (campus == null) return false;
+        var result = await DeleteWithIntegrityAsync(id, cancellationToken);
+        return !result.IsError;
+    }
 
-        _repository.Delete(campus);
-        await _repository.SaveChangesAsync(cancellationToken);
-        return true;
+    public async Task<ErrorOr<Success>> DeleteWithIntegrityAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var campus = await _repository.GetByIdAsync(id, cancellationToken);
+        if (campus == null)
+            return Error.NotFound("Campus.NotFound", $"Campus with ID '{id}' was not found.");
+
+        if (_buildingRepository != null && await _buildingRepository.ExistsAsync(b => b.CampusId == id, cancellationToken))
+            return Error.Conflict("Campus.HasBuildings", $"Cannot delete campus '{campus.Name}' because it has associated buildings.");
+
+        if (_structureRepository != null && await _structureRepository.ExistsAsync(s => s.CampusId == id, cancellationToken))
+            return Error.Conflict("Campus.HasStructures", $"Cannot delete campus '{campus.Name}' because it has associated structures.");
+
+        try
+        {
+            _repository.Delete(campus);
+            await _repository.SaveChangesAsync(cancellationToken);
+            return Result.Success;
+        }
+        catch (Exception ex) when (ex.GetType().Name == "DbUpdateException")
+        {
+            return Error.Conflict("Campus.Conflict", "Cannot delete campus due to existing database constraints.");
+        }
     }
 }

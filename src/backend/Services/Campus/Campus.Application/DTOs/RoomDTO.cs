@@ -6,7 +6,6 @@ namespace Campus.Application.DTOs;
 public record RoomDto(
     Guid Id,
     Guid BuildingId,
-    Guid? CategoryId,
     string Name,
     int Floor
 );
@@ -14,8 +13,6 @@ public record RoomDto(
 public record CreateRoomDto(
     [Required(ErrorMessage = "BuildingId is required.")]
     Guid BuildingId,
-
-    Guid? CategoryId,
 
     [Required(ErrorMessage = "Name is required.")]
     [StringLength(20, ErrorMessage = "Room name cannot exceed 20 characters.")]
@@ -28,8 +25,6 @@ public record CreateRoomDto(
 public record UpdateRoomDto(
     [Required(ErrorMessage = "BuildingId is required.")]
     Guid BuildingId,
-
-    Guid? CategoryId,
 
     [Required(ErrorMessage = "Name is required.")]
     [StringLength(20, ErrorMessage = "Room name cannot exceed 20 characters.")]

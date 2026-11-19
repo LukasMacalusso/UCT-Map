@@ -126,31 +126,4 @@ public class CategoryEndpointsTests : ApiTestBase
         Assert.NotNull(structureAfterDelete);
         Assert.Null(structureAfterDelete.CategoryId);
     }
-
-    [DockerFact]
-    public async Task Delete_WhenCategoryHasRooms_DeletesCategoryAndSetsRoomCategoryToNull()
-    {
-        var campusRes = await Http.PostAsync("/api/campus/campuses", JsonBody(new CreateCampusDto("Campus For Null Room FK", "Dir", 0, 0)));
-        var campus = await ReadJsonAsync<CampusDto>(campusRes);
-
-        var bldRes = await Http.PostAsync("/api/campus/buildings", JsonBody(new CreateBuildingDto(campus!.Id, "Edificio For Null Room", 3, 0, 0)));
-        var bld = await ReadJsonAsync<BuildingDto>(bldRes);
-
-        var catRes = await Http.PostAsync(Endpoint, JsonBody(new CreateCategoryDto("Cat Con Rooms", "icon", "desc")));
-        var cat = await ReadJsonAsync<CategoryDto>(catRes);
-
-        var roomRes = await Http.PostAsync("/api/campus/rooms", JsonBody(new CreateRoomDto(bld!.Id, cat!.Id, "Sala En Categoria", 1)));
-        var room = await ReadJsonAsync<RoomDto>(roomRes);
-        Assert.NotNull(room);
-        Assert.Equal(cat.Id, room.CategoryId);
-
-        var deleteRes = await Http.DeleteAsync($"{Endpoint}/{cat.Id}");
-        Assert.Equal(HttpStatusCode.NoContent, deleteRes.StatusCode);
-
-        var getRoomRes = await Http.GetAsync($"/api/campus/rooms/{room.Id}");
-        Assert.Equal(HttpStatusCode.OK, getRoomRes.StatusCode);
-        var roomAfterDelete = await ReadJsonAsync<RoomDto>(getRoomRes);
-        Assert.NotNull(roomAfterDelete);
-        Assert.Null(roomAfterDelete.CategoryId);
-    }
 }

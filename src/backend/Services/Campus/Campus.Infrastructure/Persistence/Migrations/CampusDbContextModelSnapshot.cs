@@ -48,6 +48,10 @@ namespace Campus.Infrastructure.Migrations
                     b.Property<TimeOnly?>("OpenTime")
                         .HasColumnType("time");
 
+                    b.Property<string>("PhotoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<string>("Services")
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
@@ -133,9 +137,6 @@ namespace Campus.Infrastructure.Migrations
                     b.Property<Guid>("BuildingId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CategoryId")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("Floor")
                         .HasColumnType("integer");
 
@@ -147,8 +148,6 @@ namespace Campus.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BuildingId");
-
-                    b.HasIndex("CategoryId");
 
                     b.ToTable("Rooms");
                 });
@@ -252,14 +251,7 @@ namespace Campus.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Campus.Domain.Entities.Category", "Category")
-                        .WithMany("Rooms")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.Navigation("Building");
-
-                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("Campus.Domain.Entities.Structure", b =>
@@ -317,8 +309,6 @@ namespace Campus.Infrastructure.Migrations
             modelBuilder.Entity("Campus.Domain.Entities.Category", b =>
                 {
                     b.Navigation("Buildings");
-
-                    b.Navigation("Rooms");
 
                     b.Navigation("Structures");
                 });

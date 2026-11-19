@@ -25,7 +25,7 @@ public static class GeoLocationMapper
             campus.Bearing
         );
 
-    public static BuildingDto ToDto(this Building building) =>
+    public static BuildingDto ToDto(this Building building, string? categoryName = null, string? categoryIcon = null) =>
         new(
             building.Id,
             building.CampusId,
@@ -36,7 +36,10 @@ public static class GeoLocationMapper
             building.CategoryId,
             building.OpenTime,
             building.CloseTime,
-            building.Services
+            building.Services,
+            building.PhotoUrl,
+            categoryName ?? building.Category?.Name,
+            categoryIcon ?? building.Category?.Icon
         );
 
     public static StructureDto ToDto(this Structure structure) =>
@@ -49,7 +52,7 @@ public static class GeoLocationMapper
             structure.Coordinates.Longitude
         );
 
-    public static BuildingLocationDto ToLocationDto(this Building building) =>
+    public static BuildingLocationDto ToLocationDto(this Building building, string? categoryName = null, string? categoryIcon = null) =>
         new(
             building.Id,
             building.Name,
@@ -59,7 +62,10 @@ public static class GeoLocationMapper
                 building.FloorsCount,
                 FormatSchedule(building.OpenTime, building.CloseTime),
                 ParseServices(building.Services),
-                building.CategoryId
+                building.CategoryId,
+                building.PhotoUrl,
+                categoryName ?? building.Category?.Name ?? string.Empty,
+                categoryIcon ?? building.Category?.Icon ?? string.Empty
             ),
             building.CategoryId
         );
@@ -88,7 +94,10 @@ public static class GeoLocationMapper
                 campus.Pitch,
                 campus.Bearing
             ),
-            campus.Buildings.Select(b => b.ToLocationDto()).ToArray(),
+            campus.Buildings.Select(b => b.ToLocationDto(
+                b.Category?.Name ?? string.Empty,
+                b.Category?.Icon ?? string.Empty
+            )).ToArray(),
             campus.Structures.Select(s => s.ToLocationDto(
                 s.Category?.Name ?? string.Empty,
                 s.Category?.Icon ?? string.Empty

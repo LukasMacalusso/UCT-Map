@@ -9,6 +9,7 @@ using Campus.Application.Handlers;
 using Campus.Domain.Entities;
 using Campus.Domain.Interfaces;
 using Campus.Domain.ValueObjects;
+using ErrorOr;
 using NSubstitute;
 using Xunit;
 using CampusEntity = Campus.Domain.Entities.Campus;
@@ -231,5 +232,44 @@ public class CampusHandlerTests
         Assert.Equal("users", result.Structures[0].Metadata.CategoryIcon);
         Assert.Equal(string.Empty, result.Structures[1].Metadata.CategoryName);
         Assert.Equal(string.Empty, result.Structures[1].Metadata.CategoryIcon);
+    }
+
+    [Fact]
+    public async Task DeleteWithIntegrityAsync_WhenCampusHasBuildings_ShouldReturnConflict()
+    {
+        var buildingRepo = Substitute.For<IGenericRepository<Building>>();
+        var structureRepo = Substitute.For<IGenericRepository<Structure>>();
+        var handler = new CampusHandler(_repository, buildingRepo, structureRepo);
+        var campus = new CampusEntity("Campus Con Edificios", "Dir", new Coordinate(0, 0));
+
+        _repository.GetByIdAsync(campus.Id, Arg.Any<CancellationToken>()).Returns(campus);
+        buildingRepo.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await handler.DeleteWithIntegrityAsync(campus.Id, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Equal("Campus.HasBuildings", result.FirstError.Code);
+        _repository.DidNotReceive().Delete(Arg.Any<CampusEntity>());
+    }
+
+    [Fact]
+    public async Task DeleteWithIntegrityAsync_WhenCampusHasStructures_ShouldReturnConflict()
+    {
+        var buildingRepo = Substitute.For<IGenericRepository<Building>>();
+        var structureRepo = Substitute.For<IGenericRepository<Structure>>();
+        var handler = new CampusHandler(_repository, buildingRepo, structureRepo);
+        var campus = new CampusEntity("Campus Con Estructuras", "Dir", new Coordinate(0, 0));
+
+        _repository.GetByIdAsync(campus.Id, Arg.Any<CancellationToken>()).Returns(campus);
+        buildingRepo.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>()).Returns(false);
+        structureRepo.ExistsAsync(Arg.Any<Expression<Func<Structure, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await handler.DeleteWithIntegrityAsync(campus.Id, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Equal("Campus.HasStructures", result.FirstError.Code);
+        _repository.DidNotReceive().Delete(Arg.Any<CampusEntity>());
     }
 }

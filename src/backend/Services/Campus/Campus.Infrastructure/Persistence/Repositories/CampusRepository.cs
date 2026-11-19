@@ -19,6 +19,7 @@ public class CampusRepository : GenericRepository<CampusEntity>, ICampusReposito
             .AsNoTracking()
             .AsSplitQuery()
             .Include(c => c.Buildings)
+                .ThenInclude(b => b.Category)
             .Include(c => c.Structures)
                 .ThenInclude(s => s.Category)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);

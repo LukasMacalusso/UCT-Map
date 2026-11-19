@@ -278,4 +278,66 @@ public class BuildingHandlerTests
         _repository.Received(1).Delete(building);
         await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task GetAllLocationsAsync_ShouldIncludeCategoryMetadataAndPhotoUrl()
+    {
+        var categoryRepo = Substitute.For<IGenericRepository<Category>>();
+        var handler = new BuildingHandler(_repository, _campusRepository, categoryRepo);
+        var category = new Category("Edificio Docente", "school", "Docencia", 1);
+        var building = new Building("Edificio A", 4, new Coordinate(-38.73, -72.59), Guid.NewGuid(), TimeOnly.Parse("08:00"), TimeOnly.Parse("20:00"), "WiFi, Ascensor", category.Id, "https://uct.cl/edificio-a.jpg");
+
+        _repository.GetAllAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Building> { building });
+        categoryRepo.GetAllAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Category> { category });
+
+        var result = (await handler.GetAllLocationsAsync(null, CancellationToken.None)).ToList();
+
+        var dto = Assert.Single(result);
+        Assert.Equal(category.Id, dto.CategoryId);
+        Assert.Equal("Edificio Docente", dto.Metadata.CategoryName);
+        Assert.Equal("school", dto.Metadata.CategoryIcon);
+        Assert.Equal("https://uct.cl/edificio-a.jpg", dto.Metadata.PhotoUrl);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithCategoryAndPhotoUrl_ShouldPersistAndReturnFullDto()
+    {
+        var categoryRepo = Substitute.For<IGenericRepository<Category>>();
+        var handler = new BuildingHandler(_repository, _campusRepository, categoryRepo);
+        var campusId = Guid.NewGuid();
+        var category = new Category("Biblioteca", "book", "Biblioteca Central", 2);
+        var request = new CreateBuildingDto(campusId, "Biblioteca", 3, -38.73, -72.59, null, null, "Salas de estudio", category.Id, "https://uct.cl/biblio.jpg");
+
+        _campusRepository.ExistsAsync(Arg.Any<Expression<Func<CampusEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+        categoryRepo.GetByIdAsync(category.Id, Arg.Any<CancellationToken>())
+            .Returns(category);
+
+        var result = await handler.CreateAsync(request, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal("https://uct.cl/biblio.jpg", result.Value.PhotoUrl);
+        Assert.Equal("Biblioteca", result.Value.CategoryName);
+        Assert.Equal("book", result.Value.CategoryIcon);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenBuildingHasRooms_ShouldReturnConflict()
+    {
+        var roomRepo = Substitute.For<IGenericRepository<Room>>();
+        var handler = new BuildingHandler(_repository, _campusRepository, roomRepository: roomRepo);
+        var building = new Building("Edificio Con Salas", 2, new Coordinate(0, 0), Guid.NewGuid());
+
+        _repository.GetByIdAsync(building.Id, Arg.Any<CancellationToken>()).Returns(building);
+        roomRepo.ExistsAsync(Arg.Any<Expression<Func<Room, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await handler.DeleteAsync(building.Id, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Equal("Building.HasRooms", result.FirstError.Code);
+        _repository.DidNotReceive().Delete(Arg.Any<Building>());
+    }
 }

@@ -97,7 +97,6 @@ public class EntityTests
         Assert.Equal("Salas de clases regulares", category.Description);
         Assert.Equal(3, category.Order);
         Assert.Empty(category.Buildings);
-        Assert.Empty(category.Rooms);
         Assert.Empty(category.Structures);
 
         category.Update("Laboratorios", "lab-icon", "Laboratorios de computación", 7);
@@ -116,46 +115,27 @@ public class EntityTests
         var coords = new Coordinate(-38.73, -72.59);
         var campus = new CampusEntity("Campus Norte", "Dir 1", coords);
         var building = new Building("Edificio A", 3, coords, campus);
-        var category = new Category("Auditorios", "aud-icon", "Auditorios");
 
         // Constructor with entities
-        var room1 = new Room("AM-101", 1, building, category);
+        var room1 = new Room("AM-101", 1, building);
         Assert.NotEqual(Guid.Empty, room1.Id);
         Assert.Equal("AM-101", room1.Name);
         Assert.Equal(1, room1.Floor);
         Assert.Equal(building.Id, room1.BuildingId);
-        Assert.Equal(category.Id, room1.CategoryId);
         Assert.Equal(building, room1.Building);
-        Assert.Equal(category, room1.Category);
 
         // Constructor with Guids
-        var room2 = new Room("S-102", 2, building.Id, category.Id);
+        var room2 = new Room("S-102", 2, building.Id);
         Assert.NotEqual(Guid.Empty, room2.Id);
         Assert.Equal("S-102", room2.Name);
         Assert.Equal(2, room2.Floor);
 
         // Update
         var newBuildingId = Guid.NewGuid();
-        var newCatId = Guid.NewGuid();
-        room2.Update("S-204", 3, newBuildingId, newCatId);
+        room2.Update("S-204", 3, newBuildingId);
         Assert.Equal("S-204", room2.Name);
         Assert.Equal(3, room2.Floor);
         Assert.Equal(newBuildingId, room2.BuildingId);
-        Assert.Equal(newCatId, room2.CategoryId);
-
-        // Nullable category support
-        var roomWithoutCategory = new Room("S-SinCat", 1, building);
-        Assert.Null(roomWithoutCategory.CategoryId);
-        Assert.Null(roomWithoutCategory.Category);
-
-        roomWithoutCategory.AssignCategory(newCatId);
-        Assert.Equal(newCatId, roomWithoutCategory.CategoryId);
-
-        roomWithoutCategory.AssignCategory(null);
-        Assert.Null(roomWithoutCategory.CategoryId);
-
-        room2.Update("S-SinCat2", 2, newBuildingId, null);
-        Assert.Null(room2.CategoryId);
     }
 
     [Fact]
