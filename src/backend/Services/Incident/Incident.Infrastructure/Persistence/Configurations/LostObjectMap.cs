@@ -4,7 +4,9 @@ using MongoDB.Bson.Serialization.Serializers;
 using Incident.Domain.Entities;
 using MongoDB.Bson.Serialization.IdGenerators;
 namespace Incident.Infrastructure.Persistence.Configurations;
-public class LostObjectMap : BsonClassMap<LostObject> {
+
+public class LostObjectMap : BsonClassMap<LostObject>
+{
     public LostObjectMap()
     {
         AutoMap();
@@ -29,7 +31,7 @@ public class LostObjectMap : BsonClassMap<LostObject> {
         MapMember(x => x.Status)
                     .SetElementName("status")
                     .SetSerializer(
-                        new  EnumSerializer<Objectenum>(BsonType.String)
+                        new EnumSerializer<Objectenum>(BsonType.String)
                     );
 
         MapMember(x => x.ReportedAt)

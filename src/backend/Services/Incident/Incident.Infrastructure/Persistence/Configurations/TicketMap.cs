@@ -5,6 +5,7 @@ using MongoDB.Bson.Serialization.Serializers;
 using Incident.Domain.Entities;
 using MongoDB.Bson.Serialization.IdGenerators;
 namespace Incident.Infrastructure.Persistence.Configurations;
+
 public class TicketMap : BsonClassMap<Ticket>
 {
     public TicketMap()
