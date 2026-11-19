@@ -33,10 +33,5 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
                .WithOne(b => b.Category)
                .HasForeignKey(b => b.CategoryId)
                .OnDelete(DeleteBehavior.SetNull);
-
-        builder.HasMany(c => c.Rooms)
-               .WithOne(r => r.Category)
-               .HasForeignKey(r => r.CategoryId)
-               .OnDelete(DeleteBehavior.SetNull);
     }
 }

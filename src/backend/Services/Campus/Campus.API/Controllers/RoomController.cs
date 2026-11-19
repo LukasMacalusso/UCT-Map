@@ -24,12 +24,11 @@ public class RoomController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<RoomDto>>> GetAll([FromQuery] Guid? buildingId, [FromQuery] Guid? categoryId, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<RoomDto>>> GetAll([FromQuery] Guid? buildingId, CancellationToken cancellationToken)
     {
         if (buildingId == Guid.Empty) return BadRequest(new { message = "The 'buildingId' query parameter cannot be empty." });
-        if (categoryId == Guid.Empty) return BadRequest(new { message = "The 'categoryId' query parameter cannot be empty." });
 
-        var rooms = await _handler.GetAllAsync(buildingId, categoryId, cancellationToken);
+        var rooms = await _handler.GetAllAsync(buildingId, cancellationToken);
         return Ok(rooms);
     }
 
@@ -62,8 +61,6 @@ public class RoomController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateRoomDto request, CancellationToken cancellationToken)
     {
         if (request.BuildingId == Guid.Empty) return BadRequest(new { message = "The 'buildingId' parameter cannot be empty." });
-        if (request.CategoryId.HasValue && request.CategoryId.Value == Guid.Empty)
-            return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is required." });
         if (request.Name.Length > 20) return BadRequest(new { message = "Room name cannot exceed 20 characters." });
         if (request.Floor < 1) return BadRequest(new { message = "Floor must be at least 1." });
@@ -85,8 +82,6 @@ public class RoomController : ControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRoomDto request, CancellationToken cancellationToken)
     {
         if (request.BuildingId == Guid.Empty) return BadRequest(new { message = "The 'buildingId' parameter cannot be empty." });
-        if (request.CategoryId.HasValue && request.CategoryId.Value == Guid.Empty)
-            return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is required." });
         if (request.Name.Length > 20) return BadRequest(new { message = "Room name cannot exceed 20 characters." });
         if (request.Floor < 1) return BadRequest(new { message = "Floor must be at least 1." });

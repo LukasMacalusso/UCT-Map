@@ -128,7 +128,7 @@ public class SecurityEndpointsTests : ApiTestBase
     public async Task Room_WriteEndpoints_RequireAdminRole()
     {
         var client = CreateClientWithRole("Student");
-        var body = new CreateRoomDto(Guid.NewGuid(), null, "Sala 101", 1);
+        var body = new CreateRoomDto(Guid.NewGuid(), "Sala 101", 1);
 
         var postResponse = await client.PostAsync("/api/campus/rooms", JsonBody(body));
         Assert.Equal(HttpStatusCode.Forbidden, postResponse.StatusCode);

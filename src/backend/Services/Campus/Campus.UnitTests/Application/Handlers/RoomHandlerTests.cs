@@ -18,32 +18,29 @@ public class RoomHandlerTests
 {
     private readonly IGenericRepository<Room> _repository;
     private readonly IGenericRepository<Building> _buildingRepository;
-    private readonly IGenericRepository<Category> _categoryRepository;
     private readonly RoomHandler _handler;
 
     public RoomHandlerTests()
     {
         _repository = Substitute.For<IGenericRepository<Room>>();
         _buildingRepository = Substitute.For<IGenericRepository<Building>>();
-        _categoryRepository = Substitute.For<IGenericRepository<Category>>();
-        _handler = new RoomHandler(_repository, _buildingRepository, _categoryRepository);
+        _handler = new RoomHandler(_repository, _buildingRepository);
     }
 
     [Fact]
     public async Task GetAllAsync_ShouldFilterByPredicate()
     {
         var buildingId = Guid.NewGuid();
-        var categoryId = Guid.NewGuid();
         var rooms = new List<Room>
         {
-            new("S-1", 1, buildingId, categoryId),
-            new("S-2", 2, buildingId, categoryId)
+            new("S-1", 1, buildingId),
+            new("S-2", 2, buildingId)
         };
 
         _repository.GetAllAsync(Arg.Any<Expression<Func<Room, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(rooms);
 
-        var result = await _handler.GetAllAsync(buildingId, categoryId, CancellationToken.None);
+        var result = await _handler.GetAllAsync(buildingId, CancellationToken.None);
 
         var list = result.ToList();
         Assert.Equal(2, list.Count);
@@ -55,7 +52,7 @@ public class RoomHandlerTests
     {
         var rooms = new List<Room>
         {
-            new("LAB-1", 1, Guid.NewGuid(), Guid.NewGuid())
+            new("LAB-1", 1, Guid.NewGuid())
         };
 
         _repository.GetAllAsync(Arg.Any<Expression<Func<Room, bool>>>(), Arg.Any<CancellationToken>())
@@ -73,7 +70,7 @@ public class RoomHandlerTests
         var buildingId = Guid.NewGuid();
         var rooms = new List<Room>
         {
-            new("101", 1, buildingId, Guid.NewGuid())
+            new("101", 1, buildingId)
         };
 
         _repository.GetAllAsync(Arg.Any<Expression<Func<Room, bool>>>(), Arg.Any<CancellationToken>())
@@ -88,7 +85,7 @@ public class RoomHandlerTests
     [Fact]
     public async Task GetByIdAsync_WhenExists_ShouldReturnRoomDto()
     {
-        var room = new Room("102", 1, Guid.NewGuid(), Guid.NewGuid());
+        var room = new Room("102", 1, Guid.NewGuid());
         _repository.GetByIdAsync(room.Id, Arg.Any<CancellationToken>())
             .Returns(room);
 
@@ -116,8 +113,7 @@ public class RoomHandlerTests
     public async Task CreateAsync_WhenBuildingNotFound_ShouldReturnBuildingNotFoundError()
     {
         var buildingId = Guid.NewGuid();
-        var categoryId = Guid.NewGuid();
-        var request = new CreateRoomDto(buildingId, categoryId, "103", 1);
+        var request = new CreateRoomDto(buildingId, "103", 1);
 
         _buildingRepository.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(false);
@@ -129,33 +125,12 @@ public class RoomHandlerTests
     }
 
     [Fact]
-    public async Task CreateAsync_WhenCategoryNotFound_ShouldReturnCategoryNotFoundError()
-    {
-        var buildingId = Guid.NewGuid();
-        var categoryId = Guid.NewGuid();
-        var request = new CreateRoomDto(buildingId, categoryId, "103", 1);
-
-        _buildingRepository.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
-        _categoryRepository.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(false);
-
-        var result = await _handler.CreateAsync(request, CancellationToken.None);
-
-        Assert.True(result.IsError);
-        Assert.Equal("Category.NotFound", result.FirstError.Code);
-    }
-
-    [Fact]
     public async Task CreateAsync_WhenValid_ShouldPersistAndReturnDto()
     {
         var buildingId = Guid.NewGuid();
-        var categoryId = Guid.NewGuid();
-        var request = new CreateRoomDto(buildingId, categoryId, "103", 1);
+        var request = new CreateRoomDto(buildingId, "103", 1);
 
         _buildingRepository.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
-        _categoryRepository.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(true);
 
         var result = await _handler.CreateAsync(request, CancellationToken.None);
@@ -163,7 +138,6 @@ public class RoomHandlerTests
         Assert.False(result.IsError);
         Assert.Equal("103", result.Value.Name);
         Assert.Equal(buildingId, result.Value.BuildingId);
-        Assert.Equal(categoryId, result.Value.CategoryId);
 
         await _repository.Received(1).AddAsync(Arg.Is<Room>(r => r.Name == "103"), Arg.Any<CancellationToken>());
         await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -176,7 +150,7 @@ public class RoomHandlerTests
         _repository.GetByIdAsync(id, Arg.Any<CancellationToken>())
             .Returns((Room?)null);
 
-        var request = new UpdateRoomDto(Guid.NewGuid(), Guid.NewGuid(), "200", 2);
+        var request = new UpdateRoomDto(Guid.NewGuid(), "200", 2);
 
         var result = await _handler.UpdateAsync(id, request, CancellationToken.None);
 
@@ -187,14 +161,14 @@ public class RoomHandlerTests
     [Fact]
     public async Task UpdateAsync_WhenBuildingNotFound_ShouldReturnBuildingNotFoundError()
     {
-        var room = new Room("100", 1, Guid.NewGuid(), Guid.NewGuid());
+        var room = new Room("100", 1, Guid.NewGuid());
         _repository.GetByIdAsync(room.Id, Arg.Any<CancellationToken>())
             .Returns(room);
 
         _buildingRepository.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(false);
 
-        var request = new UpdateRoomDto(Guid.NewGuid(), Guid.NewGuid(), "200", 2);
+        var request = new UpdateRoomDto(Guid.NewGuid(), "200", 2);
 
         var result = await _handler.UpdateAsync(room.Id, request, CancellationToken.None);
 
@@ -203,40 +177,17 @@ public class RoomHandlerTests
     }
 
     [Fact]
-    public async Task UpdateAsync_WhenCategoryNotFound_ShouldReturnCategoryNotFoundError()
-    {
-        var room = new Room("100", 1, Guid.NewGuid(), Guid.NewGuid());
-        _repository.GetByIdAsync(room.Id, Arg.Any<CancellationToken>())
-            .Returns(room);
-
-        _buildingRepository.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
-        _categoryRepository.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(false);
-
-        var request = new UpdateRoomDto(Guid.NewGuid(), Guid.NewGuid(), "200", 2);
-
-        var result = await _handler.UpdateAsync(room.Id, request, CancellationToken.None);
-
-        Assert.True(result.IsError);
-        Assert.Equal("Category.NotFound", result.FirstError.Code);
-    }
-
-    [Fact]
     public async Task UpdateAsync_WhenValid_ShouldUpdateAndReturnSuccess()
     {
         var buildingId = Guid.NewGuid();
-        var categoryId = Guid.NewGuid();
-        var room = new Room("100", 1, buildingId, categoryId);
+        var room = new Room("100", 1, buildingId);
         _repository.GetByIdAsync(room.Id, Arg.Any<CancellationToken>())
             .Returns(room);
 
         _buildingRepository.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(true);
-        _categoryRepository.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
 
-        var request = new UpdateRoomDto(buildingId, categoryId, "305", 3);
+        var request = new UpdateRoomDto(buildingId, "305", 3);
 
         var result = await _handler.UpdateAsync(room.Id, request, CancellationToken.None);
 
@@ -246,51 +197,6 @@ public class RoomHandlerTests
         Assert.Equal(3, room.Floor);
         _repository.Received(1).Update(room);
         await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task CreateAsync_WhenCategoryIdIsNull_ShouldPersistAndReturnDto()
-    {
-        var buildingId = Guid.NewGuid();
-        var request = new CreateRoomDto(buildingId, null, "104", 1);
-
-        _buildingRepository.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
-
-        var result = await _handler.CreateAsync(request, CancellationToken.None);
-
-        Assert.False(result.IsError);
-        Assert.Equal("104", result.Value.Name);
-        Assert.Equal(buildingId, result.Value.BuildingId);
-        Assert.Null(result.Value.CategoryId);
-
-        await _repository.Received(1).AddAsync(Arg.Is<Room>(r => r.Name == "104" && r.CategoryId == null), Arg.Any<CancellationToken>());
-        await _repository.SaveChangesAsync(Arg.Any<CancellationToken>());
-        await _categoryRepository.DidNotReceive().ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task UpdateAsync_WhenCategoryIdIsNull_ShouldPersistAndReturnSuccess()
-    {
-        var buildingId = Guid.NewGuid();
-        var room = new Room("100", 1, buildingId, Guid.NewGuid());
-        _repository.GetByIdAsync(room.Id, Arg.Any<CancellationToken>())
-            .Returns(room);
-
-        _buildingRepository.ExistsAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
-
-        var request = new UpdateRoomDto(buildingId, null, "306", 3);
-
-        var result = await _handler.UpdateAsync(room.Id, request, CancellationToken.None);
-
-        Assert.False(result.IsError);
-        Assert.Equal(Result.Success, result.Value);
-        Assert.Equal("306", room.Name);
-        Assert.Null(room.CategoryId);
-        _repository.Received(1).Update(room);
-        await _repository.SaveChangesAsync(Arg.Any<CancellationToken>());
-        await _categoryRepository.DidNotReceive().ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -309,7 +215,7 @@ public class RoomHandlerTests
     [Fact]
     public async Task DeleteAsync_WhenFound_ShouldDeleteAndReturnSuccess()
     {
-        var room = new Room("Para Borrar", 1, Guid.NewGuid(), Guid.NewGuid());
+        var room = new Room("Para Borrar", 1, Guid.NewGuid());
         _repository.GetByIdAsync(room.Id, Arg.Any<CancellationToken>())
             .Returns(room);
 

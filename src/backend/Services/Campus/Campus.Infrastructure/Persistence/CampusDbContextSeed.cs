@@ -229,15 +229,15 @@ public static class CampusDbContextSeed
 
         var rooms = new List<Room>();
 
-        void AddRooms(Building building, Category category, params (string Name, int Floor)[] definitions)
+        void AddRooms(Building building, params (string Name, int Floor)[] definitions)
         {
             foreach (var (name, floor) in definitions)
             {
-                rooms.Add(new Room(name, floor, building, category));
+                rooms.Add(new Room(name, floor, building));
             }
         }
 
-        AddRooms(ricardoFerrando, catAula,
+        AddRooms(ricardoFerrando,
             ("CJP07_101", 1), ("CJP07_103", 1), ("CJP07_107", 1), ("CJP07_117", 1),
             ("CJP07_132", 1), ("CJP07_134", 1), ("CJP07_175", 1), ("CJP07_201", 2),
             ("CJP07_203", 2), ("CJP07_215", 2), ("CJP07_217", 2), ("CJP07_232", 2),
@@ -249,25 +249,25 @@ public static class CampusDbContextSeed
             ("CJP07_465", 4), ("CJP07_475", 4), ("CJP07_590", 5)
         );
 
-        AddRooms(faad, catAula,
+        AddRooms(faad,
             ("CJP01_115", 1), ("CJP01_120", 1), ("CJP01_125", 1), ("CJP01_130", 1),
             ("CJP01_135", 1), ("CJP01_150", 1), ("CJP01_310", 3), ("CJP01_330", 3),
             ("CJP01_350", 3), ("CJP01_410", 4), ("CJP01_420", 4), ("CJP01_430", 4),
             ("CJP01_450", 4), ("CJP01_510", 5), ("CJP01_550", 5)
         );
 
-        AddRooms(diseno, catAula,
+        AddRooms(diseno,
             ("CJP02_105", 1), ("CJP02_110", 1), ("CJP02_115", 1), ("CJP02_120", 1),
             ("CJP02_125", 1), ("CJP02_130", 1), ("CJP02_150", 1), ("CJP02_210", 2),
             ("CJP02_212", 2), ("CJP02_214", 2), ("CJP02_216", 2), ("CJP02_218", 2)
         );
 
-        AddRooms(agustinaHidalgo, catAula,
+        AddRooms(agustinaHidalgo,
             ("CJP03_103", 1), ("CJP03_105", 1), ("CJP03_107", 1), ("CJP03_109", 1),
             ("CJP03_301", 3), ("CJP03_302", 3), ("CJP03_303", 3), ("CJP03_304", 3)
         );
 
-        AddRooms(adalbertoSalas, catAula,
+        AddRooms(adalbertoSalas,
             ("CJP08_102", 1), ("CJP08_105", 1), ("CJP08_108", 1), ("CJP08_125", 1),
             ("CJP08_135", 1), ("CJP08_136", 1), ("CJP08_139", 1), ("CJP08_146", 1),
             ("CJP08_162", 1), ("CJP08_165", 1), ("CJP08_170", 1), ("CJP08_175", 1),
@@ -280,7 +280,7 @@ public static class CampusDbContextSeed
             ("CJP08_485", 4), ("CJP08_490", 4)
         );
 
-        AddRooms(waldoMerchant, catAula,
+        AddRooms(waldoMerchant,
             ("CJP10_110", 1), ("CJP10_120", 1), ("CJP10_125", 1), ("CJP10_155", 1),
             ("CJP10_165", 1), ("CJP10_203", 2), ("CJP10_205", 2), ("CJP10_210", 2),
             ("CJP10_225", 2), ("CJP10_230", 2), ("CJP10_305", 3), ("CJP10_307", 3),
@@ -290,7 +290,7 @@ public static class CampusDbContextSeed
             ("CJP10_435", 4)
         );
 
-        AddRooms(complejoDeportivo, catAula,
+        AddRooms(complejoDeportivo,
             ("CJP12_100", 1), ("CJP12_150", 1), ("CJP12_155", 1), ("CJP12_160", 1),
             ("CJP12_165", 1), ("CJP12_180", 1), ("CJP12_190", 1), ("CJP12_205", 2),
             ("CJP12_210", 2), ("CJP12_215", 2), ("CJP12_220", 2), ("CJP12_225", 2),
@@ -300,7 +300,7 @@ public static class CampusDbContextSeed
 
         foreach (var testBuilding in new[] { sfPrueba1, sfPrueba2, lrPrueba1, lrPrueba2, mlPrueba1, mlPrueba2, cnPrueba1, cnPrueba2 })
         {
-            AddRooms(testBuilding, catSalaPrueba, ("Prueba 101", 1), ("Prueba 102", 2));
+            AddRooms(testBuilding, ("Prueba 101", 1), ("Prueba 102", 2));
         }
 
         await context.Rooms.AddRangeAsync(rooms);

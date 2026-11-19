@@ -12,7 +12,6 @@ public class Category
     public int Order { get; private set; }
 
     public ICollection<Building> Buildings { get; private set; } = new List<Building>();
-    public ICollection<Room> Rooms { get; private set; } = new List<Room>();
     public ICollection<Structure> Structures { get; private set; } = new List<Structure>();
 
     public Category(string name, string icon, string? description, int order = 0)
