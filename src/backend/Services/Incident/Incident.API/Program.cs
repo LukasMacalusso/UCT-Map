@@ -1,5 +1,6 @@
 using Incident.Infrastructure;
-
+using Incident.Infrastructure.Persistence;
+MongoDbConfiguration.RegisterClassMaps();
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -26,5 +27,3 @@ app.Run();
 public partial class Program
 {
 }
-
-

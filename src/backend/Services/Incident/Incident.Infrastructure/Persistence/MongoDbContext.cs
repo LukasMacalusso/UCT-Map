@@ -1,5 +1,4 @@
 using MongoDB.Driver;
-
 namespace Incident.Infrastructure.Persistence;
 
 public interface IMongoDbContext
@@ -11,7 +10,10 @@ public interface IMongoDbContext
 public class MongoDbContext : IMongoDbContext
 {
     private readonly IMongoDatabase _database;
-
+    static MongoDbContext()
+    {
+        MongoDbConfiguration.RegisterClassMaps();
+    }
     public MongoDbContext(IMongoClient client, string databaseName)
     {
         _database = client.GetDatabase(databaseName);

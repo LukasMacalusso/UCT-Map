@@ -12,7 +12,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-
+        MongoDbConfiguration.RegisterClassMaps();
         var connectionString = configuration["MongoDB:ConnectionString"]
                                ?? "mongodb://root:rootpassword@mongodb:27017/?authSource=admin";
 
