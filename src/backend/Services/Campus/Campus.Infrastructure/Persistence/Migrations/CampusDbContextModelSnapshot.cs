@@ -52,10 +52,6 @@ namespace Campus.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<string>("Services")
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CampusId");

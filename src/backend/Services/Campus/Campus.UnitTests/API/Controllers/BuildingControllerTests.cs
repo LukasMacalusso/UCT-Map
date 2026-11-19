@@ -301,23 +301,6 @@ public class BuildingControllerTests
     }
 
     [Fact]
-    public async Task Create_WhenServicesExceeds150Characters_ShouldReturnBadRequest()
-    {
-        var request = new CreateBuildingDto(
-            Guid.NewGuid(),
-            "Edificio A",
-            3,
-            -38.7,
-            -72.6,
-            Services: new string('S', 151)
-        );
-
-        var result = await _controller.Create(request, CancellationToken.None);
-
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    [Fact]
     public async Task UpdateLocation_WhenCoordinatesOutOfRange_ShouldReturnBadRequest()
     {
         var request = new UpdateLocationDto(100.0, -72.6);

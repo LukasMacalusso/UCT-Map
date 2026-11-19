@@ -23,10 +23,6 @@ public class BuildingConfiguration : IEntityTypeConfiguration<Building>
                .HasColumnType("time")
                .IsRequired(false);
 
-        builder.Property(b => b.Services)
-               .IsRequired(false)
-               .HasMaxLength(150);
-
         builder.Property(b => b.PhotoUrl)
                .IsRequired(false)
                .HasMaxLength(500);

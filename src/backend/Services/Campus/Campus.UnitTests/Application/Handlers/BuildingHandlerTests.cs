@@ -78,8 +78,7 @@ public class BuildingHandlerTests
                 new Coordinate(-38.73, -72.59),
                 campusId,
                 openTime: new TimeOnly(8, 0),
-                closeTime: new TimeOnly(20, 30),
-                services: "Wifi,  Baños , Biblioteca"
+                closeTime: new TimeOnly(20, 30)
             ),
             new(
                 "Edificio Abierto",
@@ -87,8 +86,7 @@ public class BuildingHandlerTests
                 new Coordinate(-38.74, -72.60),
                 campusId,
                 openTime: new TimeOnly(7, 30),
-                closeTime: null,
-                services: "   "
+                closeTime: null
             ),
             new(
                 "Edificio Cierre",
@@ -96,8 +94,7 @@ public class BuildingHandlerTests
                 new Coordinate(-38.75, -72.61),
                 campusId,
                 openTime: null,
-                closeTime: new TimeOnly(22, 0),
-                services: null
+                closeTime: new TimeOnly(22, 0)
             ),
             new(
                 "Edificio Sin Horario",
@@ -120,16 +117,10 @@ public class BuildingHandlerTests
         Assert.Equal(campusId, result[0].Metadata.CampusId);
         Assert.Equal(5, result[0].Metadata.FloorsCount);
         Assert.Equal("08:00 - 20:30", result[0].Metadata.Schedule);
-        Assert.Equal(new[] { "Wifi", "Baños", "Biblioteca" }, result[0].Metadata.Services);
 
         Assert.Equal("07:30", result[1].Metadata.Schedule);
-        Assert.Empty(result[1].Metadata.Services);
-
         Assert.Equal("22:00", result[2].Metadata.Schedule);
-        Assert.Empty(result[2].Metadata.Services);
-
         Assert.Null(result[3].Metadata.Schedule);
-        Assert.Empty(result[3].Metadata.Services);
     }
 
     [Fact]
@@ -285,7 +276,7 @@ public class BuildingHandlerTests
         var categoryRepo = Substitute.For<IGenericRepository<Category>>();
         var handler = new BuildingHandler(_repository, _campusRepository, categoryRepo);
         var category = new Category("Edificio Docente", "school", "Docencia", 1);
-        var building = new Building("Edificio A", 4, new Coordinate(-38.73, -72.59), Guid.NewGuid(), TimeOnly.Parse("08:00"), TimeOnly.Parse("20:00"), "WiFi, Ascensor", category.Id, "https://uct.cl/edificio-a.jpg");
+        var building = new Building("Edificio A", 4, new Coordinate(-38.73, -72.59), Guid.NewGuid(), TimeOnly.Parse("08:00"), TimeOnly.Parse("20:00"), category.Id, "https://uct.cl/edificio-a.jpg");
 
         _repository.GetAllAsync(Arg.Any<Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(new List<Building> { building });
@@ -308,7 +299,7 @@ public class BuildingHandlerTests
         var handler = new BuildingHandler(_repository, _campusRepository, categoryRepo);
         var campusId = Guid.NewGuid();
         var category = new Category("Biblioteca", "book", "Biblioteca Central", 2);
-        var request = new CreateBuildingDto(campusId, "Biblioteca", 3, -38.73, -72.59, null, null, "Salas de estudio", category.Id, "https://uct.cl/biblio.jpg");
+        var request = new CreateBuildingDto(campusId, "Biblioteca", 3, -38.73, -72.59, null, null, category.Id, "https://uct.cl/biblio.jpg");
 
         _campusRepository.ExistsAsync(Arg.Any<Expression<Func<CampusEntity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(true);

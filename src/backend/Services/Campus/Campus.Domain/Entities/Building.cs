@@ -13,7 +13,6 @@ public class Building
     public int FloorsCount { get; private set; }
     public TimeOnly? OpenTime { get; private set; }
     public TimeOnly? CloseTime { get; private set; }
-    public string? Services { get; private set; }
     public string? PhotoUrl { get; private set; }
 
     public Coordinate Coordinates { get; private set; } = null!;
@@ -22,7 +21,7 @@ public class Building
     public Category? Category { get; private set; }
     public ICollection<Room> Rooms { get; private set; } = new List<Room>();
 
-    public Building(string name, int floorsCount, Coordinate coordinates, Campus campus, TimeOnly? openTime = null, TimeOnly? closeTime = null, string? services = null, Guid? categoryId = null, string? photoUrl = null)
+    public Building(string name, int floorsCount, Coordinate coordinates, Campus campus, TimeOnly? openTime = null, TimeOnly? closeTime = null, Guid? categoryId = null, string? photoUrl = null)
     {
         this.Id = Guid.NewGuid();
         this.Name = name;
@@ -30,7 +29,6 @@ public class Building
         this.Coordinates = coordinates;
         this.OpenTime = openTime;
         this.CloseTime = closeTime;
-        this.Services = services;
         this.CategoryId = categoryId;
         this.PhotoUrl = photoUrl;
 
@@ -38,13 +36,13 @@ public class Building
         this.CampusId = campus.Id;
     }
 
-    public Building(string name, int floorsCount, Coordinate coordinates, Campus campus, Category? category, TimeOnly? openTime = null, TimeOnly? closeTime = null, string? services = null, string? photoUrl = null)
-        : this(name, floorsCount, coordinates, campus, openTime, closeTime, services, category?.Id, photoUrl)
+    public Building(string name, int floorsCount, Coordinate coordinates, Campus campus, Category? category, TimeOnly? openTime = null, TimeOnly? closeTime = null, string? photoUrl = null)
+        : this(name, floorsCount, coordinates, campus, openTime, closeTime, category?.Id, photoUrl)
     {
         this.Category = category;
     }
 
-    public Building(string name, int floorsCount, Coordinate coordinates, Guid campusId, TimeOnly? openTime = null, TimeOnly? closeTime = null, string? services = null, Guid? categoryId = null, string? photoUrl = null)
+    public Building(string name, int floorsCount, Coordinate coordinates, Guid campusId, TimeOnly? openTime = null, TimeOnly? closeTime = null, Guid? categoryId = null, string? photoUrl = null)
     {
         this.Id = Guid.NewGuid();
         this.Name = name;
@@ -53,17 +51,16 @@ public class Building
         this.CampusId = campusId;
         this.OpenTime = openTime;
         this.CloseTime = closeTime;
-        this.Services = services;
         this.CategoryId = categoryId;
         this.PhotoUrl = photoUrl;
     }
 
-    public Building(string name, int floorsCount, Coordinate coordinates, Guid campusId, Guid? categoryId, TimeOnly? openTime = null, TimeOnly? closeTime = null, string? services = null, string? photoUrl = null)
-        : this(name, floorsCount, coordinates, campusId, openTime, closeTime, services, categoryId, photoUrl)
+    public Building(string name, int floorsCount, Coordinate coordinates, Guid campusId, Guid? categoryId, TimeOnly? openTime = null, TimeOnly? closeTime = null, string? photoUrl = null)
+        : this(name, floorsCount, coordinates, campusId, openTime, closeTime, categoryId, photoUrl)
     {
     }
 
-    public void Update(string name, int floorsCount, Coordinate coordinates, Guid campusId, TimeOnly? openTime = null, TimeOnly? closeTime = null, string? services = null, Guid? categoryId = null, string? photoUrl = null)
+    public void Update(string name, int floorsCount, Coordinate coordinates, Guid campusId, TimeOnly? openTime = null, TimeOnly? closeTime = null, Guid? categoryId = null, string? photoUrl = null)
     {
         this.Name = name;
         this.FloorsCount = floorsCount;
@@ -71,14 +68,13 @@ public class Building
         this.CampusId = campusId;
         this.OpenTime = openTime;
         this.CloseTime = closeTime;
-        this.Services = services;
         this.CategoryId = categoryId;
         this.PhotoUrl = photoUrl;
     }
 
-    public void Update(string name, int floorsCount, Coordinate coordinates, Guid campusId, Guid? categoryId, TimeOnly? openTime = null, TimeOnly? closeTime = null, string? services = null, string? photoUrl = null)
+    public void Update(string name, int floorsCount, Coordinate coordinates, Guid campusId, Guid? categoryId, TimeOnly? openTime = null, TimeOnly? closeTime = null, string? photoUrl = null)
     {
-        Update(name, floorsCount, coordinates, campusId, openTime, closeTime, services, categoryId, photoUrl);
+        Update(name, floorsCount, coordinates, campusId, openTime, closeTime, categoryId, photoUrl);
     }
 
     public void AssignCategory(Guid? categoryId)
