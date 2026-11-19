@@ -33,7 +33,7 @@ public class RoomController : ControllerBase
     }
 
     [HttpGet("search")]
-    public async Task<ActionResult<IEnumerable<RoomDto>>> Search([FromQuery] string term, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<RoomDto>>> Search([FromQuery] string? term = null, CancellationToken cancellationToken = default)
     {
         var rooms = await _handler.SearchRoomsAsync(term ?? string.Empty, cancellationToken);
         return Ok(rooms);

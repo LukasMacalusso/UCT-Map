@@ -284,4 +284,14 @@ public class CampusControllerTests
         Assert.Equal("Campus Central", dto.Name);
         Assert.Equal(16m, dto.Camera.Zoom);
     }
+
+    [Fact]
+    public async Task UpdateLocation_WhenCoordinatesAreNaN_ShouldReturnBadRequest()
+    {
+        var request = new UpdateLocationDto(double.NaN, -72.60);
+
+        var result = await _controller.UpdateLocation(Guid.NewGuid(), request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
 }

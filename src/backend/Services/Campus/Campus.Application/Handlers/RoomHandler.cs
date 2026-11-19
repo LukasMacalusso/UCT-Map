@@ -29,7 +29,11 @@ public class RoomHandler
 
     public async Task<IEnumerable<RoomDto>> SearchRoomsAsync(string term, CancellationToken cancellationToken)
     {
-        var rooms = await _repository.GetAllAsync(r => r.Name.Contains(term), cancellationToken);
+        if (string.IsNullOrWhiteSpace(term))
+            return Array.Empty<RoomDto>();
+
+        var normalizedTerm = term.Trim().ToLowerInvariant();
+        var rooms = await _repository.GetAllAsync(r => r.Name.ToLower().Contains(normalizedTerm), cancellationToken);
         return rooms.Select(r => new RoomDto(r.Id, r.BuildingId, r.Name, r.Floor));
     }
 

@@ -55,7 +55,7 @@ public class CampusController : ControllerBase
         if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
         if (string.IsNullOrWhiteSpace(request.Address)) return BadRequest(new { message = "Address is mandatory." });
         if (request.Address.Length > 100) return BadRequest(new { message = "Address cannot exceed 100 characters." });
-        if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
+        if (!double.IsFinite(request.Latitude) || !double.IsFinite(request.Longitude) || request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
             return BadRequest(new { message = "Coordinates out of valid range." });
         if (request.Zoom < 0 || request.Zoom > 22 || request.Pitch < 0 || request.Pitch > 85 || request.Bearing < -180 || request.Bearing > 180)
             return BadRequest(new { message = "Camera parameters out of valid range." });
@@ -72,7 +72,7 @@ public class CampusController : ControllerBase
         if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
         if (string.IsNullOrWhiteSpace(request.Address)) return BadRequest(new { message = "Address is mandatory." });
         if (request.Address.Length > 100) return BadRequest(new { message = "Address cannot exceed 100 characters." });
-        if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
+        if (!double.IsFinite(request.Latitude) || !double.IsFinite(request.Longitude) || request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
             return BadRequest(new { message = "Coordinates out of valid range." });
         if (request.Zoom < 0 || request.Zoom > 22 || request.Pitch < 0 || request.Pitch > 85 || request.Bearing < -180 || request.Bearing > 180)
             return BadRequest(new { message = "Camera parameters out of valid range." });
@@ -87,7 +87,7 @@ public class CampusController : ControllerBase
     [HttpPatch("{id:guid}/location")]
     public async Task<IActionResult> UpdateLocation(Guid id, [FromBody] UpdateLocationDto request, CancellationToken cancellationToken)
     {
-        if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
+        if (!double.IsFinite(request.Latitude) || !double.IsFinite(request.Longitude) || request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
             return BadRequest(new { message = "Coordinates out of valid range." });
 
         var success = await _handler.UpdateLocationAsync(id, request, cancellationToken);

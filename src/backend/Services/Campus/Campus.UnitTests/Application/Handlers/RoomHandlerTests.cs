@@ -226,4 +226,31 @@ public class RoomHandlerTests
         _repository.Received(1).Delete(room);
         await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task SearchRoomsAsync_WhenTermIsWhitespace_ShouldReturnEmptyWithoutQuerying()
+    {
+        var result = await _handler.SearchRoomsAsync("   ", CancellationToken.None);
+
+        Assert.Empty(result);
+        await _repository.DidNotReceive().GetAllAsync(Arg.Any<Expression<Func<Room, bool>>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SearchRoomsAsync_ShouldMatchCaseInsensitively()
+    {
+        var room = new Room("CJP07_101", 1, Guid.NewGuid());
+        Expression<Func<Room, bool>>? capturedPredicate = null;
+
+        _repository.GetAllAsync(
+            Arg.Do<Expression<Func<Room, bool>>>(expr => capturedPredicate = expr),
+            Arg.Any<CancellationToken>())
+            .Returns(new List<Room> { room });
+
+        var result = await _handler.SearchRoomsAsync("  cjp07  ", CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.NotNull(capturedPredicate);
+        Assert.True(capturedPredicate!.Compile()(room));
+    }
 }
