@@ -17,22 +17,30 @@ public class BuildingHandler
     private readonly IGenericRepository<Building> _repository;
     private readonly IGenericRepository<Campus.Domain.Entities.Campus> _campusRepository;
     private readonly IGenericRepository<Category>? _categoryRepository;
+    private readonly IGenericRepository<Room>? _roomRepository;
 
     public BuildingHandler(
         IGenericRepository<Building> repository,
         IGenericRepository<Campus.Domain.Entities.Campus> campusRepository,
-        IGenericRepository<Category>? categoryRepository = null)
+        IGenericRepository<Category>? categoryRepository = null,
+        IGenericRepository<Room>? roomRepository = null)
     {
         _repository = repository;
         _campusRepository = campusRepository;
         _categoryRepository = categoryRepository;
+        _roomRepository = roomRepository;
     }
 
     public async Task<IEnumerable<BuildingDto>> GetAllAsync(Guid? campusId, Guid? categoryId, CancellationToken cancellationToken)
     {
         var predicate = BuildFilterPredicate(campusId, categoryId);
-        var buildings = await _repository.GetAllAsync(predicate, cancellationToken);
-        return buildings.Select(b => b.ToDto());
+        var buildings = (await _repository.GetAllAsync(predicate, cancellationToken)).ToList();
+        var categories = await LoadCategoriesAsync(buildings, cancellationToken);
+
+        return buildings.Select(b =>
+            b.CategoryId.HasValue && categories.TryGetValue(b.CategoryId.Value, out var category)
+                ? b.ToDto(category.Name, category.Icon)
+                : b.ToDto());
     }
 
     public Task<IEnumerable<BuildingDto>> GetAllAsync(Guid? campusId, CancellationToken cancellationToken) =>
@@ -41,8 +49,31 @@ public class BuildingHandler
     public async Task<IEnumerable<BuildingLocationDto>> GetAllLocationsAsync(Guid? campusId, Guid? categoryId, CancellationToken cancellationToken)
     {
         var predicate = BuildFilterPredicate(campusId, categoryId);
-        var buildings = await _repository.GetAllAsync(predicate, cancellationToken);
-        return buildings.Select(b => b.ToLocationDto());
+        var buildings = (await _repository.GetAllAsync(predicate, cancellationToken)).ToList();
+        var categories = await LoadCategoriesAsync(buildings, cancellationToken);
+
+        return buildings.Select(b =>
+            b.CategoryId.HasValue && categories.TryGetValue(b.CategoryId.Value, out var category)
+                ? b.ToLocationDto(category.Name, category.Icon)
+                : b.ToLocationDto(string.Empty, string.Empty));
+    }
+
+    private async Task<Dictionary<Guid, Category>> LoadCategoriesAsync(IEnumerable<Building> buildings, CancellationToken cancellationToken)
+    {
+        if (_categoryRepository == null)
+            return new Dictionary<Guid, Category>();
+
+        var categoryIds = buildings
+            .Where(b => b.CategoryId.HasValue && b.CategoryId.Value != Guid.Empty)
+            .Select(b => b.CategoryId!.Value)
+            .Distinct()
+            .ToHashSet();
+
+        if (categoryIds.Count == 0)
+            return new Dictionary<Guid, Category>();
+
+        var categories = await _categoryRepository.GetAllAsync(c => categoryIds.Contains(c.Id), cancellationToken);
+        return categories.ToDictionary(c => c.Id);
     }
 
     public Task<IEnumerable<BuildingLocationDto>> GetAllLocationsAsync(Guid? campusId, CancellationToken cancellationToken) =>
@@ -61,7 +92,11 @@ public class BuildingHandler
         if (building == null)
             return Error.NotFound("Building.NotFound", $"Building with ID '{id}' was not found.");
 
-        return building.ToDto();
+        Category? category = null;
+        if (building.CategoryId.HasValue && building.CategoryId.Value != Guid.Empty && _categoryRepository != null)
+            category = await _categoryRepository.GetByIdAsync(building.CategoryId.Value, cancellationToken);
+
+        return building.ToDto(category?.Name, category?.Icon);
     }
 
     public async Task<ErrorOr<BuildingDto>> CreateAsync(CreateBuildingDto request, CancellationToken cancellationToken)
@@ -69,19 +104,24 @@ public class BuildingHandler
         if (!await _campusRepository.ExistsAsync(c => c.Id == request.CampusId, cancellationToken))
             return Error.NotFound("Campus.NotFound", $"Campus with ID '{request.CampusId}' does not exist.");
 
+        Category? category = null;
         if (request.CategoryId.HasValue && _categoryRepository != null)
         {
-            if (request.CategoryId.Value == Guid.Empty || !await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId.Value, cancellationToken))
+            if (request.CategoryId.Value == Guid.Empty)
+                return Error.NotFound("Category.NotFound", $"Category with ID '{request.CategoryId.Value}' does not exist.");
+
+            category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value, cancellationToken);
+            if (category == null && !await _categoryRepository.ExistsAsync(c => c.Id == request.CategoryId.Value, cancellationToken))
                 return Error.NotFound("Category.NotFound", $"Category with ID '{request.CategoryId.Value}' does not exist.");
         }
 
         var coordinates = new Coordinate(request.Latitude, request.Longitude);
-        var building = new Building(request.Name, request.FloorsCount, coordinates, request.CampusId, request.OpenTime, request.CloseTime, request.Services, request.CategoryId);
+        var building = new Building(request.Name, request.FloorsCount, coordinates, request.CampusId, request.OpenTime, request.CloseTime, request.Services, request.CategoryId, request.PhotoUrl);
 
         await _repository.AddAsync(building, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
 
-        return building.ToDto();
+        return building.ToDto(category?.Name, category?.Icon);
     }
 
     public async Task<ErrorOr<Success>> UpdateAsync(Guid id, UpdateBuildingDto request, CancellationToken cancellationToken)
@@ -100,7 +140,7 @@ public class BuildingHandler
         }
 
         var coordinates = new Coordinate(request.Latitude, request.Longitude);
-        building.Update(request.Name, request.FloorsCount, coordinates, request.CampusId, request.OpenTime, request.CloseTime, request.Services, request.CategoryId);
+        building.Update(request.Name, request.FloorsCount, coordinates, request.CampusId, request.OpenTime, request.CloseTime, request.Services, request.CategoryId, request.PhotoUrl);
 
         _repository.Update(building);
         await _repository.SaveChangesAsync(cancellationToken);
@@ -127,8 +167,18 @@ public class BuildingHandler
         if (building == null)
             return Error.NotFound("Building.NotFound", $"Building with ID '{id}' was not found.");
 
-        _repository.Delete(building);
-        await _repository.SaveChangesAsync(cancellationToken);
-        return Result.Success;
+        if (_roomRepository != null && await _roomRepository.ExistsAsync(r => r.BuildingId == id, cancellationToken))
+            return Error.Conflict("Building.HasRooms", $"Cannot delete building '{building.Name}' because it has associated rooms.");
+
+        try
+        {
+            _repository.Delete(building);
+            await _repository.SaveChangesAsync(cancellationToken);
+            return Result.Success;
+        }
+        catch (Exception ex) when (ex.GetType().Name == "DbUpdateException")
+        {
+            return Error.Conflict("Building.Conflict", "Cannot delete building due to existing database constraints.");
+        }
     }
 }

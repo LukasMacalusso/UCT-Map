@@ -27,6 +27,10 @@ public class BuildingConfiguration : IEntityTypeConfiguration<Building>
                .IsRequired(false)
                .HasMaxLength(150);
 
+        builder.Property(b => b.PhotoUrl)
+               .IsRequired(false)
+               .HasMaxLength(500);
+
         builder.HasMany(b => b.Rooms)
                .WithOne(r => r.Building)
                .HasForeignKey(r => r.BuildingId)

@@ -14,7 +14,10 @@ public record BuildingDto(
     Guid? CategoryId = null,
     TimeOnly? OpenTime = null,
     TimeOnly? CloseTime = null,
-    string? Services = null
+    string? Services = null,
+    string? PhotoUrl = null,
+    string? CategoryName = null,
+    string? CategoryIcon = null
 );
 
 public record CreateBuildingDto(
@@ -40,7 +43,10 @@ public record CreateBuildingDto(
     [MaxLength(150, ErrorMessage = "Services cannot exceed 150 characters.")]
     string? Services = null,
 
-    Guid? CategoryId = null
+    Guid? CategoryId = null,
+
+    [MaxLength(500, ErrorMessage = "PhotoUrl cannot exceed 500 characters.")]
+    string? PhotoUrl = null
 );
 
 public record UpdateBuildingDto(
@@ -66,7 +72,10 @@ public record UpdateBuildingDto(
     [MaxLength(150, ErrorMessage = "Services cannot exceed 150 characters.")]
     string? Services = null,
 
-    Guid? CategoryId = null
+    Guid? CategoryId = null,
+
+    [MaxLength(500, ErrorMessage = "PhotoUrl cannot exceed 500 characters.")]
+    string? PhotoUrl = null
 );
 
 public record BuildingMetadataDto(
@@ -74,7 +83,10 @@ public record BuildingMetadataDto(
     int FloorsCount,
     string? Schedule,
     IReadOnlyList<string> Services,
-    Guid? CategoryId = null
+    Guid? CategoryId = null,
+    string? PhotoUrl = null,
+    string CategoryName = "",
+    string CategoryIcon = ""
 );
 
 public record BuildingLocationDto(

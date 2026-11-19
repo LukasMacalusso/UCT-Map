@@ -6,6 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
+using System.Linq;
+using ErrorOr;
 
 namespace Campus.API.Controllers;
 
@@ -98,9 +100,16 @@ public class CampusController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var success = await _handler.DeleteAsync(id, cancellationToken);
-        if (!success) return NotFound(new { message = $"Campus with ID '{id}' was not found." });
-
-        return NoContent();
+        var result = await _handler.DeleteWithIntegrityAsync(id, cancellationToken);
+        return result.Match(
+            _ => (IActionResult)NoContent(),
+            errors =>
+            {
+                var firstError = errors.First();
+                return firstError.Type == ErrorType.Conflict
+                    ? Conflict(new { message = firstError.Description })
+                    : NotFound(new { message = firstError.Description });
+            }
+        );
     }
 }

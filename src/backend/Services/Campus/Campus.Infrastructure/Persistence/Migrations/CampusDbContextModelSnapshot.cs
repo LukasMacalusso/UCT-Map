@@ -48,6 +48,10 @@ namespace Campus.Infrastructure.Migrations
                     b.Property<TimeOnly?>("OpenTime")
                         .HasColumnType("time");
 
+                    b.Property<string>("PhotoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<string>("Services")
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");

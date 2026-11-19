@@ -76,6 +76,8 @@ public class BuildingController : ControllerBase
             return BadRequest(new { message = "OpenTime must be earlier than CloseTime." });
         if (request.Services != null && request.Services.Length > 150)
             return BadRequest(new { message = "Services cannot exceed 150 characters." });
+        if (request.PhotoUrl != null && request.PhotoUrl.Length > 500)
+            return BadRequest(new { message = "PhotoUrl cannot exceed 500 characters." });
 
         var result = await _handler.CreateAsync(request, cancellationToken);
 
@@ -105,6 +107,8 @@ public class BuildingController : ControllerBase
             return BadRequest(new { message = "OpenTime must be earlier than CloseTime." });
         if (request.Services != null && request.Services.Length > 150)
             return BadRequest(new { message = "Services cannot exceed 150 characters." });
+        if (request.PhotoUrl != null && request.PhotoUrl.Length > 500)
+            return BadRequest(new { message = "PhotoUrl cannot exceed 500 characters." });
 
         var result = await _handler.UpdateAsync(id, request, cancellationToken);
 
@@ -142,7 +146,12 @@ public class BuildingController : ControllerBase
 
         return result.Match(
             success => (IActionResult)NoContent(),
-            errors => Problem(statusCode: StatusCodes.Status404NotFound, title: errors.First().Description)
+            errors =>
+            {
+                var firstError = errors.First();
+                var statusCode = firstError.Type == ErrorType.Conflict ? StatusCodes.Status409Conflict : StatusCodes.Status404NotFound;
+                return Problem(statusCode: statusCode, title: firstError.Description);
+            }
         );
     }
 }
