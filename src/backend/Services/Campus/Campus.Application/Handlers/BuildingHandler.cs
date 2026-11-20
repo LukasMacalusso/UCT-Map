@@ -116,7 +116,7 @@ public class BuildingHandler
         }
 
         var coordinates = new Coordinate(request.Latitude, request.Longitude);
-        var building = new Building(request.Name, request.FloorsCount, coordinates, request.CampusId, request.OpenTime, request.CloseTime, request.Services, request.CategoryId, request.PhotoUrl);
+        var building = new Building(request.Name, request.FloorsCount, coordinates, request.CampusId, request.OpenTime, request.CloseTime, request.CategoryId, request.PhotoUrl);
 
         await _repository.AddAsync(building, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
@@ -140,7 +140,7 @@ public class BuildingHandler
         }
 
         var coordinates = new Coordinate(request.Latitude, request.Longitude);
-        building.Update(request.Name, request.FloorsCount, coordinates, request.CampusId, request.OpenTime, request.CloseTime, request.Services, request.CategoryId, request.PhotoUrl);
+        building.Update(request.Name, request.FloorsCount, coordinates, request.CampusId, request.OpenTime, request.CloseTime, request.CategoryId, request.PhotoUrl);
 
         _repository.Update(building);
         await _repository.SaveChangesAsync(cancellationToken);

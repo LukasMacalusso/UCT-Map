@@ -57,7 +57,7 @@ public class StructureController : ControllerBase
             return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is Required." });
         if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
-        if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
+        if (!double.IsFinite(request.Latitude) || !double.IsFinite(request.Longitude) || request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
             return BadRequest(new { message = "Coordinates out of valid range." });
 
         var (dto, error) = await _handler.CreateAsync(request, cancellationToken);
@@ -75,7 +75,7 @@ public class StructureController : ControllerBase
             return BadRequest(new { message = "The 'categoryId' parameter cannot be empty." });
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Name is Required." });
         if (request.Name.Length > 100) return BadRequest(new { message = "Name cannot exceed 100 characters." });
-        if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
+        if (!double.IsFinite(request.Latitude) || !double.IsFinite(request.Longitude) || request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
             return BadRequest(new { message = "Coordinates out of valid range." });
 
         var (success, error) = await _handler.UpdateAsync(id, request, cancellationToken);
@@ -89,7 +89,7 @@ public class StructureController : ControllerBase
     [HttpPatch("{id:guid}/location")]
     public async Task<IActionResult> UpdateLocation(Guid id, [FromBody] UpdateLocationDto request, CancellationToken cancellationToken)
     {
-        if (request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
+        if (!double.IsFinite(request.Latitude) || !double.IsFinite(request.Longitude) || request.Latitude < -90.0 || request.Latitude > 90.0 || request.Longitude < -180.0 || request.Longitude > 180.0)
             return BadRequest(new { message = "Coordinates out of valid range." });
 
         var success = await _handler.UpdateLocationAsync(id, request, cancellationToken);

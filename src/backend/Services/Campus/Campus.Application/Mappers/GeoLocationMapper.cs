@@ -36,7 +36,6 @@ public static class GeoLocationMapper
             building.CategoryId,
             building.OpenTime,
             building.CloseTime,
-            building.Services,
             building.PhotoUrl,
             categoryName ?? building.Category?.Name,
             categoryIcon ?? building.Category?.Icon
@@ -61,7 +60,6 @@ public static class GeoLocationMapper
                 building.CampusId,
                 building.FloorsCount,
                 FormatSchedule(building.OpenTime, building.CloseTime),
-                ParseServices(building.Services),
                 building.CategoryId,
                 building.PhotoUrl,
                 categoryName ?? building.Category?.Name ?? string.Empty,
@@ -112,9 +110,4 @@ public static class GeoLocationMapper
             (null, { } close) => close.ToString("HH:mm", CultureInfo.InvariantCulture),
             _ => null
         };
-
-    private static string[] ParseServices(string? services) =>
-        string.IsNullOrWhiteSpace(services)
-            ? Array.Empty<string>()
-            : services.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }

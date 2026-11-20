@@ -22,7 +22,10 @@ public class CategoryHandler
     public async Task<IEnumerable<CategoryDto>> GetAllAsync(CancellationToken cancellationToken)
     {
         var categories = await _repository.GetAllAsync(null, cancellationToken);
-        return categories.OrderBy(c => c.Order).Select(c => new CategoryDto(c.Id, c.Name, c.Icon, c.Description, c.Order));
+        return categories
+            .OrderBy(c => c.Order)
+            .ThenBy(c => c.Name)
+            .Select(c => new CategoryDto(c.Id, c.Name, c.Icon, c.Description, c.Order));
     }
 
     public async Task<ErrorOr<CategoryDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
@@ -76,7 +79,16 @@ public class CategoryHandler
         var itemsList = items?.ToList() ?? new List<ReorderItemDto>();
         if (itemsList.Count == 0) return Result.Success;
 
+        if (itemsList.Any(i => i.Id == Guid.Empty))
+            return Error.Validation("Category.ReorderInvalid", "Category IDs cannot be empty.");
+
+        if (itemsList.Any(i => i.Order < 0))
+            return Error.Validation("Category.ReorderInvalid", "Category order cannot be negative.");
+
         var ids = itemsList.Select(i => i.Id).Distinct().ToHashSet();
+        if (ids.Count != itemsList.Count)
+            return Error.Validation("Category.ReorderInvalid", "Duplicate category IDs are not allowed.");
+
         var categories = (await _repository.GetAllAsync(c => ids.Contains(c.Id), cancellationToken)).ToDictionary(c => c.Id);
 
         if (categories.Count != ids.Count) return Error.Validation("Category.ReorderInvalid", "Failed to reorder categories. Some items may not exist.");

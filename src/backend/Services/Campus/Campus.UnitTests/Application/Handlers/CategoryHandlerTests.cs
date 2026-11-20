@@ -233,4 +233,19 @@ public class CategoryHandlerTests
         Assert.Equal(ErrorType.Validation, result.FirstError.Type);
         await _repository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task ReorderAsync_WhenContainsEmptyIdOrNegativeOrderOrDuplicates_ShouldReturnValidationError()
+    {
+        var id = Guid.NewGuid();
+
+        var emptyIdResult = await _handler.ReorderAsync(new[] { new ReorderItemDto(Guid.Empty, 1) }, CancellationToken.None);
+        var negativeOrderResult = await _handler.ReorderAsync(new[] { new ReorderItemDto(id, -1) }, CancellationToken.None);
+        var duplicateIdResult = await _handler.ReorderAsync(new[] { new ReorderItemDto(id, 1), new ReorderItemDto(id, 2) }, CancellationToken.None);
+
+        Assert.Equal(ErrorType.Validation, emptyIdResult.FirstError.Type);
+        Assert.Equal(ErrorType.Validation, negativeOrderResult.FirstError.Type);
+        Assert.Equal(ErrorType.Validation, duplicateIdResult.FirstError.Type);
+        await _repository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
 }

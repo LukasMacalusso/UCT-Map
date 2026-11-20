@@ -142,8 +142,7 @@ public static class CampusDbContextSeed
             2,
             new Coordinate(-38.73713052947173, -72.60140753875339),
             campusSanFrancisco,
-            catSalaPrueba,
-            services: "Datos simulados"
+            catSalaPrueba
         );
 
         var sfPrueba2 = new Building(
@@ -151,8 +150,7 @@ public static class CampusDbContextSeed
             2,
             new Coordinate(-38.73703052947173, -72.60130753875339),
             campusSanFrancisco,
-            catSalaPrueba,
-            services: "Datos simulados"
+            catSalaPrueba
         );
 
         var lrPrueba1 = new Building(
@@ -160,8 +158,7 @@ public static class CampusDbContextSeed
             2,
             new Coordinate(-38.69799592114325, -72.54593098119483),
             campusLuisRivas,
-            catSalaPrueba,
-            services: "Datos simulados"
+            catSalaPrueba
         );
 
         var lrPrueba2 = new Building(
@@ -169,8 +166,7 @@ public static class CampusDbContextSeed
             2,
             new Coordinate(-38.69789592114326, -72.54583098119483),
             campusLuisRivas,
-            catSalaPrueba,
-            services: "Datos simulados"
+            catSalaPrueba
         );
 
         var mlPrueba1 = new Building(
@@ -178,8 +174,7 @@ public static class CampusDbContextSeed
             2,
             new Coordinate(-38.73587754126472, -72.60743510927254),
             campusMenchacaLira,
-            catSalaPrueba,
-            services: "Datos simulados"
+            catSalaPrueba
         );
 
         var mlPrueba2 = new Building(
@@ -187,8 +182,7 @@ public static class CampusDbContextSeed
             2,
             new Coordinate(-38.735777541264724, -72.60733510927254),
             campusMenchacaLira,
-            catSalaPrueba,
-            services: "Datos simulados"
+            catSalaPrueba
         );
 
         var cnPrueba1 = new Building(
@@ -196,8 +190,7 @@ public static class CampusDbContextSeed
             2,
             new Coordinate(-38.7358880430736, -72.60435793831945),
             campusContrerasNavia,
-            catSalaPrueba,
-            services: "Datos simulados"
+            catSalaPrueba
         );
 
         var cnPrueba2 = new Building(
@@ -205,8 +198,7 @@ public static class CampusDbContextSeed
             2,
             new Coordinate(-38.735788043073605, -72.60425793831945),
             campusContrerasNavia,
-            catSalaPrueba,
-            services: "Datos simulados"
+            catSalaPrueba
         );
 
         await context.Buildings.AddRangeAsync(

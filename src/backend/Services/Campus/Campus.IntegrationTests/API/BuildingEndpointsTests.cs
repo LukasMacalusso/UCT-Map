@@ -53,8 +53,7 @@ public class BuildingEndpointsTests : ApiTestBase
             -38.736,
             -72.596,
             new TimeOnly(8, 0),
-            new TimeOnly(20, 0),
-            "Wifi, Biblioteca"
+            new TimeOnly(20, 0)
         );
         await Http.PostAsync(Endpoint, JsonBody(body));
 
@@ -65,7 +64,6 @@ public class BuildingEndpointsTests : ApiTestBase
         Assert.NotNull(list);
         var building = Assert.Single(list);
         Assert.Equal("08:00 - 20:00", building.Metadata.Schedule);
-        Assert.Equal(new[] { "Wifi", "Biblioteca" }, building.Metadata.Services);
     }
 
     [DockerFact]

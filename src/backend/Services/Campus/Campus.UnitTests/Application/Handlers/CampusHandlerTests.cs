@@ -188,8 +188,7 @@ public class CampusHandlerTests
             new Coordinate(-38.7336, -72.6021),
             campus,
             openTime: new TimeOnly(8, 0),
-            closeTime: new TimeOnly(21, 0),
-            services: "Wifi, Baños, Calefacción"
+            closeTime: new TimeOnly(21, 0)
         );
         var structureWithCategory = new Structure(
             "Punto de Estudio",
@@ -225,7 +224,6 @@ public class CampusHandlerTests
         var mappedBuilding = Assert.Single(result.Buildings);
         Assert.Equal("Edificio 16", mappedBuilding.Name);
         Assert.Equal("08:00 - 21:00", mappedBuilding.Metadata.Schedule);
-        Assert.Equal(new[] { "Wifi", "Baños", "Calefacción" }, mappedBuilding.Metadata.Services);
 
         Assert.Equal(2, result.Structures.Count);
         Assert.Equal("Sala de Estudio", result.Structures[0].Metadata.CategoryName);

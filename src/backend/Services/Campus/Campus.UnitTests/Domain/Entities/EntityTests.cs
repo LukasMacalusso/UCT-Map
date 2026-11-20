@@ -55,13 +55,12 @@ public class EntityTests
         var closeTime = new TimeOnly(20, 0);
 
         // Constructor with Campus instance
-        var building1 = new Building("Edificio A", 4, coords, campus, openTime, closeTime, "Cafetería, Wi-Fi");
+        var building1 = new Building("Edificio A", 4, coords, campus, openTime, closeTime);
         Assert.NotEqual(Guid.Empty, building1.Id);
         Assert.Equal("Edificio A", building1.Name);
         Assert.Equal(4, building1.FloorsCount);
         Assert.Equal(openTime, building1.OpenTime);
         Assert.Equal(closeTime, building1.CloseTime);
-        Assert.Equal("Cafetería, Wi-Fi", building1.Services);
         Assert.Equal(campus.Id, building1.CampusId);
         Assert.Equal(campus, building1.Campus);
         Assert.Empty(building1.Rooms);
@@ -76,14 +75,13 @@ public class EntityTests
         // Update
         var newCampusId = Guid.NewGuid();
         var newCoords = new Coordinate(-38.75, -72.61);
-        building2.Update("Edificio Renovado", 5, newCoords, newCampusId, new TimeOnly(9, 0), new TimeOnly(18, 0), "Biblioteca");
+        building2.Update("Edificio Renovado", 5, newCoords, newCampusId, new TimeOnly(9, 0), new TimeOnly(18, 0));
         Assert.Equal("Edificio Renovado", building2.Name);
         Assert.Equal(5, building2.FloorsCount);
         Assert.Equal(newCoords, building2.Coordinates);
         Assert.Equal(newCampusId, building2.CampusId);
         Assert.Equal(new TimeOnly(9, 0), building2.OpenTime);
         Assert.Equal(new TimeOnly(18, 0), building2.CloseTime);
-        Assert.Equal("Biblioteca", building2.Services);
     }
 
     [Fact]

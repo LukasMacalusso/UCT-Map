@@ -117,8 +117,7 @@ public class CampusEndpointsTests : ApiTestBase
                 -38.7336,
                 -72.6021,
                 new TimeOnly(8, 0),
-                new TimeOnly(21, 0),
-                "Wifi, Baños"
+                new TimeOnly(21, 0)
             ))
         );
 
@@ -143,7 +142,6 @@ public class CampusEndpointsTests : ApiTestBase
         var building = Assert.Single(map.Buildings);
         Assert.Equal("Edificio 16", building.Name);
         Assert.Equal("08:00 - 21:00", building.Metadata.Schedule);
-        Assert.Equal(new[] { "Wifi", "Baños" }, building.Metadata.Services);
 
         var structure = Assert.Single(map.Structures);
         Assert.Equal("Estacionamiento Norte", structure.Name);
