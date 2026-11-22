@@ -83,7 +83,7 @@ class AuthenticatedClient extends http.BaseClient {
     final sw = Stopwatch()..start();
 
     if (enableLogging) {
-      debugPrint('[HTTP] --> ${request.method} ${request.url}');
+      debugPrint('[HTTP] --> ${request.method}');
     }
 
     try {
@@ -92,7 +92,7 @@ class AuthenticatedClient extends http.BaseClient {
 
       if (enableLogging) {
         debugPrint(
-          '[HTTP] <-- ${response.statusCode} ${request.method} ${request.url} (${sw.elapsedMilliseconds}ms)',
+          '[HTTP] <-- ${response.statusCode} ${request.method} (${sw.elapsedMilliseconds}ms)',
         );
       }
 
@@ -102,11 +102,11 @@ class AuthenticatedClient extends http.BaseClient {
       }
 
       return response;
-    } catch (e) {
+    } catch (_) {
       sw.stop();
       if (enableLogging) {
         debugPrint(
-          '[HTTP] xxx ${request.method} ${request.url} FAILED (${sw.elapsedMilliseconds}ms): $e',
+          '[HTTP] xxx ${request.method} FAILED (${sw.elapsedMilliseconds}ms)',
         );
       }
       rethrow;
