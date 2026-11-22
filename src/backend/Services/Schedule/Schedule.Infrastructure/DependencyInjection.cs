@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IMeetingRepository, MeetingRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddSingleton(CampusTimeZone.FromId(configuration["Schedule:TimeZone"]));
+        services.AddSingleton(TimeProvider.System);
 
         services.AddScoped<OfficeHourHandler>();
         services.AddScoped<MeetingHandler>();

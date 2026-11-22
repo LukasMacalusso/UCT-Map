@@ -40,6 +40,12 @@ public interface IMeetingRepository
         DateTime end,
         CancellationToken cancellationToken = default);
 
+    // Pending or confirmed meetings of the teacher that start at or after the given moment.
+    Task<IReadOnlyList<Meeting>> GetUpcomingByTeacherAsync(
+        Guid teacherRefId,
+        DateTime from,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(Meeting meeting, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(Meeting meeting, CancellationToken cancellationToken = default);

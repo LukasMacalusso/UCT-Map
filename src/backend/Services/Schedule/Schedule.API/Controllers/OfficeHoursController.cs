@@ -44,4 +44,26 @@ public class OfficeHoursController : ControllerBase
         if (result.IsError) return this.ToActionResult(result.FirstError);
         return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
     }
+
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<OfficeHourDto>> Update(Guid id, [FromBody] UpdateOfficeHourRequest request, CancellationToken cancellationToken)
+    {
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+        var result = await _handler.UpdateAsync(id, request, requester, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
+        return Ok(result.Value);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+        var result = await _handler.DeleteAsync(id, requester, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
+        return NoContent();
+    }
 }

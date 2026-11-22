@@ -33,4 +33,8 @@ public interface IOfficeHourRepository
         CancellationToken cancellationToken = default);
 
     Task AddAsync(OfficeHour officeHour, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(OfficeHour officeHour, CancellationToken cancellationToken = default);
+
+    Task RemoveAsync(OfficeHour officeHour, CancellationToken cancellationToken = default);
 }
