@@ -93,7 +93,7 @@ public class OwnershipEndpointsTests(ScheduleApiFactory factory) : IClassFixture
         var studentId = Guid.NewGuid();
 
         var response = await StudentClient(studentId).PostAsJsonAsync("/api/schedule/meetings",
-            new CreateMeetingRequest(Guid.NewGuid(), studentId, null, TenAm, 30));
+            new CreateMeetingRequest(await factory.OpenTeacherDayAsync(TenAm), studentId, null, TenAm, 30));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
@@ -145,7 +145,7 @@ public class OwnershipEndpointsTests(ScheduleApiFactory factory) : IClassFixture
     private async Task<MeetingDto> BookAsync()
     {
         var response = await factory.CreateAdminClient().PostAsJsonAsync("/api/schedule/meetings",
-            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30));
+            new CreateMeetingRequest(await factory.OpenTeacherDayAsync(TenAm), Guid.NewGuid(), null, TenAm, 30));
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<MeetingDto>())!;
     }

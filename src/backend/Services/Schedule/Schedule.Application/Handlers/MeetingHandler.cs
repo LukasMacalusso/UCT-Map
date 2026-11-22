@@ -16,12 +16,20 @@ namespace Schedule.Application.Handlers;
 public class MeetingHandler
 {
     private readonly IMeetingRepository _repository;
+    private readonly IOfficeHourRepository _officeHourRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly CampusTimeZone _timeZone;
 
-    public MeetingHandler(IMeetingRepository repository, IUnitOfWork unitOfWork)
+    public MeetingHandler(
+        IMeetingRepository repository,
+        IOfficeHourRepository officeHourRepository,
+        IUnitOfWork unitOfWork,
+        CampusTimeZone timeZone)
     {
         _repository = repository;
+        _officeHourRepository = officeHourRepository;
         _unitOfWork = unitOfWork;
+        _timeZone = timeZone;
     }
 
     public async Task<ErrorOr<MeetingDto>> GetByIdAsync(Guid id, Requester requester, CancellationToken cancellationToken)
@@ -61,6 +69,9 @@ public class MeetingHandler
             meeting = new Meeting(request.TeacherRefId, request.StudentRefId, request.StructureRefId, ScheduleTime.ToUtc(request.ScheduledAt), request.DurationMinutes);
         }
         catch (ArgumentException ex) { return Error.Validation(description: ex.Message); }
+
+        if (!await IsInsideOfficeHoursAsync(meeting, cancellationToken))
+            return Error.Validation(description: "The meeting must be inside one of the teacher's office hours.");
 
         try
         {
@@ -106,6 +117,17 @@ public class MeetingHandler
 
         await _repository.UpdateAsync(meeting, cancellationToken);
         return MeetingDto.FromEntity(meeting);
+    }
+
+    // The meeting is stored in UTC and office hours are campus times, so it is compared in campus time.
+    private async Task<bool> IsInsideOfficeHoursAsync(Meeting meeting, CancellationToken cancellationToken)
+    {
+        var start = _timeZone.ToLocal(meeting.ScheduledAt);
+        var end = _timeZone.ToLocal(meeting.EndsAt);
+        if (end.Date != start.Date) return false;
+
+        var officeHours = await _officeHourRepository.GetByTeacherAsync(meeting.TeacherRefId, cancellationToken);
+        return officeHours.Any(o => o.Contains(start.DayOfWeek, TimeOnly.FromDateTime(start), TimeOnly.FromDateTime(end)));
     }
 
     private static bool IsParticipantOrAdmin(Requester requester, Guid teacherRefId, Guid studentRefId) =>

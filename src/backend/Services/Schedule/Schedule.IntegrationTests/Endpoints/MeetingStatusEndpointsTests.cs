@@ -138,7 +138,7 @@ public class MeetingStatusEndpointsTests(ScheduleApiFactory factory) : IClassFix
     private async Task<MeetingDto> BookAsync()
     {
         var response = await _client.PostAsJsonAsync(Route,
-            new CreateMeetingRequest(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30));
+            new CreateMeetingRequest(await factory.OpenTeacherDayAsync(TenAm), Guid.NewGuid(), null, TenAm, 30));
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<MeetingDto>())!;
     }

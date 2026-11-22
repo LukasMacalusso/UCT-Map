@@ -56,6 +56,21 @@ public class OfficeHourRepository(ScheduleDbContext dbContext) : IOfficeHourRepo
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<OfficeHour>> GetOverlappingAsync(
+        Guid teacherRefId,
+        Guid? structureRefId,
+        DayOfWeek dayOfWeek,
+        TimeOnly start,
+        TimeOnly end,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.OfficeHours
+            .AsNoTracking()
+            .Where(o => o.TeacherRefId == teacherRefId || (structureRefId != null && o.StructureRefId == structureRefId))
+            .Where(o => o.DayOfWeek == dayOfWeek && o.StartTime < end && o.EndTime > start)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(OfficeHour officeHour, CancellationToken cancellationToken = default)
     {
         await dbContext.OfficeHours.AddAsync(officeHour, cancellationToken);

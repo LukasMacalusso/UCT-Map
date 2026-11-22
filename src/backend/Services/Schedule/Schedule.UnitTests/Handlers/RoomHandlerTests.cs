@@ -1,4 +1,5 @@
 using ErrorOr;
+using Schedule.Application.Common;
 using Schedule.Application.Handlers;
 using Schedule.Domain.Entities;
 using Schedule.UnitTests.Fakes;
@@ -17,7 +18,7 @@ public class RoomHandlerTests
 
     public RoomHandlerTests()
     {
-        _handler = new RoomHandler(_meetings, _officeHours);
+        _handler = new RoomHandler(_meetings, _officeHours, new CampusTimeZone(TimeZoneInfo.Utc));
     }
 
     [Fact]
@@ -127,5 +128,32 @@ public class RoomHandlerTests
         var result = await _handler.GetAvailabilityAsync([Guid.NewGuid()], TenAm, TenAm.AddDays(1), CancellationToken.None);
 
         Assert.Equal(ErrorType.Validation, result.FirstError.Type);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ComparesOfficeHoursInCampusTimeAndReturnsThemInUtc()
+    {
+        // Monday 2026-11-02: Santiago is UTC-3, so 13:00-14:00 UTC is 10:00-11:00 on campus.
+        var handler = new RoomHandler(_meetings, _officeHours, CampusTimeZone.FromId("America/Santiago"));
+        var room = Guid.NewGuid();
+        _officeHours.Items.Add(new OfficeHour(Guid.NewGuid(), room, DayOfWeek.Monday, new TimeOnly(10, 0), new TimeOnly(11, 0)));
+
+        var result = await handler.GetAvailabilityAsync([room], Monday.AddHours(13), Monday.AddHours(14), CancellationToken.None);
+
+        var occupancy = Assert.Single(result.Value.Occupancies);
+        Assert.Equal(Monday.AddHours(13), occupancy.OccupiedFrom);
+        Assert.Equal(Monday.AddHours(14), occupancy.OccupiedUntil);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_WhenUtcRangeIsTheSameCampusDay_IsAccepted()
+    {
+        // 02:00 UTC on Tuesday is still Monday 23:00 on campus.
+        var handler = new RoomHandler(_meetings, _officeHours, CampusTimeZone.FromId("America/Santiago"));
+
+        var result = await handler.GetAvailabilityAsync(
+            [Guid.NewGuid()], Monday.AddHours(22), Monday.AddDays(1).AddHours(2), CancellationToken.None);
+
+        Assert.False(result.IsError);
     }
 }

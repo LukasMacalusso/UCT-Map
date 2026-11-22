@@ -48,7 +48,7 @@ public class StudentsEndpointsTests(ScheduleApiFactory factory) : IClassFixture<
     private async Task CreateMeetingAsync(Guid studentId, DateTime scheduledAt)
     {
         var response = await _client.PostAsJsonAsync(
-            "/api/schedule/meetings", new CreateMeetingRequest(Guid.NewGuid(), studentId, null, scheduledAt, 30));
+            "/api/schedule/meetings", new CreateMeetingRequest(await factory.OpenTeacherDayAsync(scheduledAt), studentId, null, scheduledAt, 30));
         response.EnsureSuccessStatusCode();
     }
 }
