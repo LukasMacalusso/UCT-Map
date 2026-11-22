@@ -62,14 +62,16 @@ public sealed class HandlersUnitTests
     public async Task Login_WhenCredentialsAreValid_ReturnsTokenFromGenerator()
     {
         var controller = CreateController(
-            authenticator: new StubAuthenticator(new LoginResult("1", "a@uct.cl")));
+            authenticator: new StubAuthenticator(new LoginResult("1", "a@uct.cl", "Ana Torres")));
 
         var result = await controller.Login(
             new LoginRequest("a@uct.cl", "Password123!"),
             CancellationToken.None);
 
         var response = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("token", Assert.IsType<LoginResult>(response.Value).Token);
+        var loginResult = Assert.IsType<LoginResult>(response.Value);
+        Assert.Equal("token", loginResult.Token);
+        Assert.Equal("Ana Torres", loginResult.Name);
     }
 
     [Fact]

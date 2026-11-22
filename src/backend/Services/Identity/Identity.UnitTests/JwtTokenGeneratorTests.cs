@@ -25,11 +25,26 @@ public sealed class JwtTokenGeneratorTests
         await userManager.AddToRoleAsync(user, Role.Student);
 
         var token = await CreateGenerator(userManager).GenerateAsync(
-            new LoginResult(user.Id, user.Email!));
+            new LoginResult(user.Id, user.Email!, user.Name));
         var claims = new JwtSecurityTokenHandler().ReadJwtToken(token).Claims.ToList();
 
         Assert.Contains(claims, claim => claim.Type == "role" && claim.Value == Role.Student);
         Assert.Contains(claims, claim => claim.Type == ClaimTypes.Role && claim.Value == Role.Student);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_WhenUserIsAuthenticated_IncludesRealNameClaim()
+    {
+        using var provider = CreateIdentityServices();
+        var userManager = provider.GetRequiredService<UserManager<User>>();
+        var user = await CreateUserAsync(userManager, "ana.torres@uct.cl");
+
+        var token = await CreateGenerator(userManager).GenerateAsync(
+            new LoginResult(user.Id, user.Email!, user.Name));
+        var claims = new JwtSecurityTokenHandler().ReadJwtToken(token).Claims.ToList();
+
+        Assert.Contains(claims, claim => claim.Type == JwtRegisteredClaimNames.Name && claim.Value == "Test User");
+        Assert.Contains(claims, claim => claim.Type == ClaimTypes.Name && claim.Value == "Test User");
     }
 
     [Fact]
@@ -56,7 +71,7 @@ public sealed class JwtTokenGeneratorTests
         await userManager.AddToRolesAsync(user, expectedRoles);
 
         var token = await CreateGenerator(userManager).GenerateAsync(
-            new LoginResult(user.Id, user.Email!));
+            new LoginResult(user.Id, user.Email!, user.Name));
         var roleClaims = new JwtSecurityTokenHandler()
             .ReadJwtToken(token)
             .Claims
