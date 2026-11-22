@@ -9,7 +9,7 @@ public class TeachersEndpointsTests(ScheduleApiFactory factory) : IClassFixture<
 {
     private const string WeekRange = "from=2026-10-12T00:00:00&to=2026-10-19T00:00:00";
 
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateAdminClient();
 
     [Fact]
     public async Task GetWorkload_SumsOfficeHoursAndCountsMeetingsInRange()

@@ -1,4 +1,5 @@
 using ErrorOr;
+using Schedule.Application.Common;
 using Schedule.Application.DTOs;
 using Schedule.Application.Handlers;
 using Schedule.Domain.Entities;
@@ -8,6 +9,8 @@ namespace Schedule.UnitTests.Handlers;
 
 public class OfficeHourHandlerTests
 {
+    private static readonly Requester Admin = new(Guid.NewGuid(), IsAdmin: true);
+
     private readonly FakeOfficeHourRepository _repository = new();
     private readonly OfficeHourHandler _handler;
 
@@ -82,7 +85,7 @@ public class OfficeHourHandlerTests
         var request = new CreateOfficeHourRequest(
             Guid.NewGuid(), Guid.NewGuid(), DayOfWeek.Tuesday, new TimeOnly(10, 0), new TimeOnly(12, 0));
 
-        var result = await _handler.CreateAsync(request, CancellationToken.None);
+        var result = await _handler.CreateAsync(request, Admin, CancellationToken.None);
 
         Assert.False(result.IsError);
         Assert.Single(_repository.Items);
@@ -96,10 +99,33 @@ public class OfficeHourHandlerTests
         var request = new CreateOfficeHourRequest(
             Guid.NewGuid(), null, DayOfWeek.Tuesday, new TimeOnly(12, 0), new TimeOnly(10, 0));
 
-        var result = await _handler.CreateAsync(request, CancellationToken.None);
+        var result = await _handler.CreateAsync(request, Admin, CancellationToken.None);
 
         Assert.True(result.IsError);
         Assert.Equal(ErrorType.Validation, result.FirstError.Type);
+        Assert.Empty(_repository.Items);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenTeacherCreatesTheirOwnBlock_Persists()
+    {
+        var teacherId = Guid.NewGuid();
+        var request = new CreateOfficeHourRequest(teacherId, null, DayOfWeek.Monday, new TimeOnly(9, 0), new TimeOnly(10, 0));
+
+        var result = await _handler.CreateAsync(request, new Requester(teacherId, IsAdmin: false), CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Single(_repository.Items);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenRequesterIsAnotherUser_ReturnsForbiddenAndDoesNotPersist()
+    {
+        var request = new CreateOfficeHourRequest(Guid.NewGuid(), null, DayOfWeek.Monday, new TimeOnly(9, 0), new TimeOnly(10, 0));
+
+        var result = await _handler.CreateAsync(request, new Requester(Guid.NewGuid(), IsAdmin: false), CancellationToken.None);
+
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
         Assert.Empty(_repository.Items);
     }
 }
