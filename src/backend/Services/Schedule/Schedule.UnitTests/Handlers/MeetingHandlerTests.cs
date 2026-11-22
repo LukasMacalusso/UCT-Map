@@ -421,6 +421,163 @@ public class MeetingHandlerTests
         Assert.Equal(accepted, !result.IsError);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RescheduleAsync_WhenAParticipantMovesTheMeeting_SavesTheNewSlot(bool byTeacher)
+    {
+        var meeting = AddMeetingWithOpenHours();
+        var roomId = Guid.NewGuid();
+
+        var result = await _handler.RescheduleAsync(meeting.Id, new RescheduleMeetingRequest(roomId, TenAm.AddHours(2), 45),
+            byTeacher ? meeting.TeacherRefId : meeting.StudentRefId, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(TenAm.AddHours(2), meeting.ScheduledAt);
+        Assert.Equal(45, meeting.DurationMinutes);
+        Assert.Equal(roomId, meeting.StructureRefId);
+        Assert.Contains(meeting.Id, _repository.UpdatedIds);
+    }
+
+    [Fact]
+    public async Task RescheduleAsync_WhenTheNewSlotOverlapsOnlyItsOldSlot_Succeeds()
+    {
+        var meeting = AddMeetingWithOpenHours();
+
+        var result = await _handler.RescheduleAsync(meeting.Id, new RescheduleMeetingRequest(null, TenAm.AddMinutes(15), 30),
+            meeting.StudentRefId, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(TenAm.AddMinutes(15), meeting.ScheduledAt);
+    }
+
+    [Fact]
+    public async Task RescheduleAsync_WhenRequesterIsNotAParticipant_ReturnsForbiddenAndKeepsTheMeeting()
+    {
+        var meeting = AddMeetingWithOpenHours();
+
+        var result = await _handler.RescheduleAsync(meeting.Id, new RescheduleMeetingRequest(null, TenAm.AddHours(2), 30),
+            Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
+        Assert.Equal(TenAm, meeting.ScheduledAt);
+    }
+
+    [Fact]
+    public async Task RescheduleAsync_WhenMeetingDoesNotExist_ReturnsNotFound()
+    {
+        var result = await _handler.RescheduleAsync(Guid.NewGuid(), new RescheduleMeetingRequest(null, TenAm, 30),
+            Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
+    }
+
+    [Fact]
+    public async Task RescheduleAsync_WhenMeetingIsCancelled_ReturnsConflict()
+    {
+        var meeting = AddMeetingWithOpenHours();
+        meeting.Cancel();
+
+        var result = await _handler.RescheduleAsync(meeting.Id, new RescheduleMeetingRequest(null, TenAm.AddHours(2), 30),
+            meeting.StudentRefId, CancellationToken.None);
+
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Equal(TenAm, meeting.ScheduledAt);
+    }
+
+    [Fact]
+    public async Task RescheduleAsync_WhenDurationIsNotPositive_ReturnsValidationErrorAndKeepsTheMeeting()
+    {
+        var meeting = AddMeetingWithOpenHours();
+
+        var result = await _handler.RescheduleAsync(meeting.Id, new RescheduleMeetingRequest(null, TenAm.AddHours(2), 0),
+            meeting.StudentRefId, CancellationToken.None);
+
+        Assert.Equal(ErrorType.Validation, result.FirstError.Type);
+        Assert.Equal(30, meeting.DurationMinutes);
+    }
+
+    [Fact]
+    public async Task RescheduleAsync_WhenOutsideTheTeachersOfficeHours_ReturnsValidationErrorAndKeepsTheMeeting()
+    {
+        var teacherId = Guid.NewGuid();
+        _officeHours.Items.Add(new OfficeHour(teacherId, null, TenAm.DayOfWeek, new TimeOnly(9, 0), new TimeOnly(11, 0)));
+        var meeting = AddMeeting(teacherId);
+
+        var result = await _handler.RescheduleAsync(meeting.Id, new RescheduleMeetingRequest(null, TenAm.AddHours(2), 30),
+            meeting.StudentRefId, CancellationToken.None);
+
+        Assert.Equal(ErrorType.Validation, result.FirstError.Type);
+        Assert.Equal(TenAm, meeting.ScheduledAt);
+    }
+
+    [Fact]
+    public async Task RescheduleAsync_WhenTheTeacherIsBusyAtTheNewTime_ReturnsConflictAndKeepsTheMeeting()
+    {
+        var meeting = AddMeetingWithOpenHours();
+        _repository.Items.Add(new Meeting(meeting.TeacherRefId, Guid.NewGuid(), null, TenAm.AddHours(2), 30));
+
+        var result = await _handler.RescheduleAsync(meeting.Id, new RescheduleMeetingRequest(null, TenAm.AddHours(2), 30),
+            meeting.StudentRefId, CancellationToken.None);
+
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Equal(TenAm, meeting.ScheduledAt);
+    }
+
+    [Fact]
+    public async Task RescheduleAsync_WhenTransactionHitsAConcurrentWrite_ReturnsConflict()
+    {
+        var meeting = AddMeetingWithOpenHours();
+        _unitOfWork.SimulateConcurrencyConflict = true;
+
+        var result = await _handler.RescheduleAsync(meeting.Id, new RescheduleMeetingRequest(null, TenAm.AddHours(2), 30),
+            meeting.StudentRefId, CancellationToken.None);
+
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+    }
+
+    [Fact]
+    public async Task CancelAsync_WhenAParticipantCancels_KeepsTheMeetingAsCancelled()
+    {
+        var meeting = AddMeeting();
+
+        var result = await _handler.CancelAsync(meeting.Id, meeting.StudentRefId, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(MeetingStatus.Cancelled, meeting.Status);
+        Assert.Contains(meeting, _repository.Items);
+    }
+
+    [Fact]
+    public async Task CancelAsync_WhenRequesterIsNotAParticipant_ReturnsForbidden()
+    {
+        var meeting = AddMeeting();
+
+        var result = await _handler.CancelAsync(meeting.Id, Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
+        Assert.Equal(MeetingStatus.Pending, meeting.Status);
+    }
+
+    [Fact]
+    public async Task CancelAsync_WhenAlreadyCancelled_ReturnsConflict()
+    {
+        var meeting = AddMeeting();
+        meeting.Cancel();
+
+        var result = await _handler.CancelAsync(meeting.Id, meeting.TeacherRefId, CancellationToken.None);
+
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+    }
+
+    [Fact]
+    public async Task CancelAsync_WhenMeetingDoesNotExist_ReturnsNotFound()
+    {
+        var result = await _handler.CancelAsync(Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
+    }
+
     // Gives the teacher an office hour covering every day, so only the rule under test can reject the meeting.
     private Guid TeacherWithOpenHours()
     {
@@ -430,10 +587,12 @@ public class MeetingHandlerTests
         return teacherId;
     }
 
-    private Meeting AddMeeting()
+    private Meeting AddMeeting(Guid? teacherId = null)
     {
-        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30);
+        var meeting = new Meeting(teacherId ?? Guid.NewGuid(), Guid.NewGuid(), null, TenAm, 30);
         _repository.Items.Add(meeting);
         return meeting;
     }
+
+    private Meeting AddMeetingWithOpenHours() => AddMeeting(TeacherWithOpenHours());
 }

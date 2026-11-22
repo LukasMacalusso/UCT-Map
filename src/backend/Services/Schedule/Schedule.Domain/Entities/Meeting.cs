@@ -15,6 +15,8 @@ public class Meeting
 
     public DateTime EndsAt => ScheduledAt.AddMinutes(DurationMinutes);
 
+    public bool IsActive => Status is MeetingStatus.Pending or MeetingStatus.Confirmed;
+
     public Meeting(
         Guid teacherRefId,
         Guid studentRefId,
@@ -35,6 +37,25 @@ public class Meeting
         this.ScheduledAt = scheduledAt;
         this.DurationMinutes = durationMinutes;
         this.Status = MeetingStatus.Pending;
+    }
+
+    // Moves the meeting to another time, length or room; the teacher and the student stay the same.
+    public void Reschedule(Guid? structureRefId, DateTime scheduledAt, int durationMinutes)
+    {
+        if (durationMinutes <= 0)
+        {
+            throw new ArgumentException(
+                "Duration must be greater than zero minutes", nameof(durationMinutes));
+        }
+
+        if (!this.IsActive)
+        {
+            throw new InvalidOperationException("Only a pending or confirmed meeting can be rescheduled.");
+        }
+
+        this.StructureRefId = structureRefId;
+        this.ScheduledAt = scheduledAt;
+        this.DurationMinutes = durationMinutes;
     }
 
     public void Confirm()

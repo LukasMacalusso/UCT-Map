@@ -66,4 +66,26 @@ public class MeetingsController : ControllerBase
         if (result.IsError) return this.ToActionResult(result.FirstError);
         return Ok(result.Value);
     }
+
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<MeetingDto>> Reschedule(Guid id, [FromBody] RescheduleMeetingRequest request, CancellationToken cancellationToken)
+    {
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+        var result = await _handler.RescheduleAsync(id, request, requester.UserId, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
+        return Ok(result.Value);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken)
+    {
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+        var result = await _handler.CancelAsync(id, requester.UserId, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
+        return NoContent();
+    }
 }

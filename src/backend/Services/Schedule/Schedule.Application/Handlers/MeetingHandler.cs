@@ -98,7 +98,60 @@ public class MeetingHandler
     {
         var target = ParseTargetStatus(status);
         if (target is null) return Error.Validation(description: "The status must be Confirmed, Cancelled or Completed.");
+        return await ChangeStatusAsync(id, target.Value, requesterRefId, cancellationToken);
+    }
 
+    // Deleting a meeting cancels it: it is kept with Cancelled status and its slot is freed.
+    public async Task<ErrorOr<Deleted>> CancelAsync(Guid id, Guid requesterRefId, CancellationToken cancellationToken)
+    {
+        var result = await ChangeStatusAsync(id, MeetingStatus.Cancelled, requesterRefId, cancellationToken);
+        return result.IsError ? result.Errors : Result.Deleted;
+    }
+
+    public async Task<ErrorOr<MeetingDto>> RescheduleAsync(Guid id, RescheduleMeetingRequest request, Guid requesterRefId, CancellationToken cancellationToken)
+    {
+        var meeting = await _repository.GetByIdAsync(id, cancellationToken);
+        if (meeting is null) return Error.NotFound(description: $"Meeting '{id}' not found.");
+        if (requesterRefId != meeting.TeacherRefId && requesterRefId != meeting.StudentRefId)
+            return Error.Forbidden(description: "Only the student or the teacher of the meeting can reschedule it.");
+        if (!meeting.IsActive)
+            return Error.Conflict(description: "Only a pending or confirmed meeting can be rescheduled.");
+
+        // The new slot is checked on a copy so the meeting is only changed once every rule passes.
+        Meeting candidate;
+        try
+        {
+            candidate = new Meeting(meeting.TeacherRefId, meeting.StudentRefId, request.StructureRefId, ScheduleTime.ToUtc(request.ScheduledAt), request.DurationMinutes);
+        }
+        catch (ArgumentException ex) { return Error.Validation(description: ex.Message); }
+
+        if (!await IsInsideOfficeHoursAsync(candidate, cancellationToken))
+            return Error.Validation(description: "The meeting must be inside one of the teacher's office hours.");
+
+        try
+        {
+            return await _unitOfWork.ExecuteInTransactionAsync<ErrorOr<MeetingDto>>(async () =>
+            {
+                var overlapping = await _repository.GetActiveOverlappingAsync(
+                    candidate.TeacherRefId, candidate.StudentRefId, candidate.StructureRefId,
+                    candidate.ScheduledAt, candidate.EndsAt, cancellationToken);
+
+                var conflict = DescribeConflict(candidate, overlapping.Where(m => m.Id != meeting.Id).ToList());
+                if (conflict is not null) return Error.Conflict(description: conflict);
+
+                meeting.Reschedule(candidate.StructureRefId, candidate.ScheduledAt, candidate.DurationMinutes);
+                await _repository.UpdateAsync(meeting, cancellationToken);
+                return MeetingDto.FromEntity(meeting);
+            }, cancellationToken);
+        }
+        catch (ConcurrencyConflictException)
+        {
+            return Error.Conflict(description: "The time slot was just booked by another request. Please try again.");
+        }
+    }
+
+    private async Task<ErrorOr<MeetingDto>> ChangeStatusAsync(Guid id, MeetingStatus target, Guid requesterRefId, CancellationToken cancellationToken)
+    {
         var meeting = await _repository.GetByIdAsync(id, cancellationToken);
         if (meeting is null) return Error.NotFound(description: $"Meeting '{id}' not found.");
 
@@ -111,7 +164,7 @@ public class MeetingHandler
 
         try
         {
-            ApplyStatus(meeting, target.Value);
+            ApplyStatus(meeting, target);
         }
         catch (InvalidOperationException ex) { return Error.Conflict(description: ex.Message); }
 
