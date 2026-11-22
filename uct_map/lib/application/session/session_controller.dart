@@ -22,6 +22,7 @@ class SessionController extends ChangeNotifier {
   /// recuperar una sesión que el usuario ya cerró.
   int _generation = 0;
 
+  bool _restoreBlocked = false;
   Future<void>? _ready;
   Future<void> _storageOperation = Future.value();
 
@@ -62,6 +63,7 @@ class SessionController extends ChangeNotifier {
       if (generation != _generation) {
         throw const AuthFailure('El inicio de sesión fue cancelado.');
       }
+      _restoreBlocked = false;
       _session = AuthSession(
         user: User.fromLogin(
           userId: result.userId,
@@ -92,6 +94,7 @@ class SessionController extends ChangeNotifier {
   Future<bool> restore() async {
     final generation = _generation;
     return _withStorage(() async {
+      if (_restoreBlocked) return false;
       final token = await _storage.read();
       if (generation != _generation || token == null || token.isEmpty) {
         return false;
@@ -130,8 +133,17 @@ class SessionController extends ChangeNotifier {
     _generation++;
     _expiryTimer?.cancel();
     _session = null;
+    _restoreBlocked = true;
+    final clear = _withStorage(() async {
+      try {
+        await _storage.clear();
+      } catch (_) {
+        // Una escritura vacía invalida el valor si la plataforma rechaza borrar.
+        await _storage.save('');
+      }
+    });
     notifyListeners();
-    await _withStorage(_storage.clear);
+    await clear;
   }
 
   /// Cierra la sesión solo si el rechazo corresponde al token vigente:
