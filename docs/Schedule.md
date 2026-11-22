@@ -9,7 +9,7 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 ## Global Authentication
 - **Mechanism**: JWT (JSON Web Token) issued by Identity. It is validated by the API Gateway and again by this service (signature, issuer, audience and expiration), so calling the service directly also requires a valid token.
 - **Header Format**: `Authorization: Bearer <token>`
-- **User identification**: the user is the `sub` claim of the token, and administrators are users with the `Admin` value in the `role` claim.
+- **User identification**: the user is the `sub` claim of the token, administrators are users with the `Admin` value in the `role` claim and teachers have the `Teacher` value. Creating, editing or deleting office hours requires the `Teacher` or `Admin` role.
 - **Note**: Unless explicitly marked as `[Public]`, all endpoints require a valid JWT and return `401 Unauthorized` without it. Endpoints marked as owner-only compare the `sub` claim with the requested id to prevent Insecure Direct Object Reference (IDOR); other users receive `403 Forbidden`.
 
 ## Conventions
@@ -77,7 +77,7 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 ### 1.3 Create Office Hour
 - **Route**: `POST /api/schedule/office-hours`
-- **Access**: The teacher of the block (`teacherRefId` must match the user) or an administrator
+- **Access**: A user with the `Teacher` role who is the teacher of the block (`teacherRefId` must match the user), or an administrator
 - **Description**: Registers a weekly office hour block for a teacher. The block is rejected if, on the same weekday, it overlaps another block of the same teacher or, when `structureRefId` is sent, another block in the same room. A block may start exactly when another one ends. The check and the insert run in a single serializable transaction.
 
 **Request Payload (`application/json`)**
@@ -95,14 +95,14 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 **Error Responses**
 - **`400 Bad Request`**: If `endTime` is not later than `startTime`.
-- **`403 Forbidden`**: If the user is not the teacher of the block and is not an administrator.
+- **`403 Forbidden`**: If the user does not have the `Teacher` or `Admin` role, or is not the teacher of the block and is not an administrator.
 - **`409 Conflict`**: If the teacher or the room already has an overlapping block that day, or if another request took the slot at the same moment (e.g., `"The teacher already has an office hour at that time."`).
 
 ---
 
 ### 1.4 Update Office Hour
 - **Route**: `PUT /api/schedule/office-hours/{id}`
-- **Access**: The teacher of the block or an administrator
+- **Access**: A user with the `Teacher` role who is the teacher of the block, or an administrator
 - **Description**: Changes the room, weekday and hours of a block. The teacher of a block cannot be changed. The same overlap rules as 1.3 apply, ignoring the block itself. Upcoming `Pending` or `Confirmed` meetings that were inside the block and no longer fit any office hour of the teacher are cancelled in the same transaction. Past meetings are not changed.
 
 **Request Payload (`application/json`)**
@@ -119,7 +119,7 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 **Error Responses**
 - **`400 Bad Request`**: If `endTime` is not later than `startTime`.
-- **`403 Forbidden`**: If the user is not the teacher of the block and is not an administrator.
+- **`403 Forbidden`**: If the user does not have the `Teacher` or `Admin` role, or is not the teacher of the block and is not an administrator.
 - **`404 Not Found`**: If the block does not exist.
 - **`409 Conflict`**: If the new hours overlap another block of the teacher or the room that day, or if another request changed it at the same moment.
 
@@ -127,13 +127,13 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 ### 1.5 Delete Office Hour
 - **Route**: `DELETE /api/schedule/office-hours/{id}`
-- **Access**: The teacher of the block or an administrator
+- **Access**: A user with the `Teacher` role who is the teacher of the block, or an administrator
 - **Description**: Deletes a block. Its upcoming `Pending` or `Confirmed` meetings are cancelled in cascade (they are kept with `Cancelled` status, not deleted). Past meetings are not changed. To move a meeting, cancel it and book a new one.
 
 **Success Response (204 No Content)**: empty body.
 
 **Error Responses**
-- **`403 Forbidden`**: If the user is not the teacher of the block and is not an administrator.
+- **`403 Forbidden`**: If the user does not have the `Teacher` or `Admin` role, or is not the teacher of the block and is not an administrator.
 - **`404 Not Found`**: If the block does not exist.
 - **`409 Conflict`**: If another request changed the block at the same moment.
 
@@ -235,7 +235,7 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 **Error Responses**
 - **`400 Bad Request`**: If `status` is missing or is not `Confirmed`, `Cancelled` or `Completed`.
 - **`401 Unauthorized`**: If the token is missing or invalid, or has no valid user id.
-- **`403 Forbidden`**: If the user is neither the student nor the teacher of the meeting, or if the student tries to confirm or complete it.
+- **`403 Forbidden`**: If the user is neither the student nor the teacher of the meeting (administrators included), or if the student tries to confirm or complete it.
 - **`404 Not Found`**: If no meeting exists with that id.
 - **`409 Conflict`**: If the meeting's current status does not allow the change.
 
