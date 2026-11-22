@@ -90,6 +90,19 @@ public class MeetingRepository(ScheduleDbContext dbContext) : IMeetingRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Meeting>> GetUpcomingByTeacherAsync(
+        Guid teacherRefId,
+        DateTime from,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Meetings
+            .AsNoTracking()
+            .Where(m => m.TeacherRefId == teacherRefId && m.ScheduledAt >= from)
+            .Where(m => m.Status == MeetingStatus.Pending || m.Status == MeetingStatus.Confirmed)
+            .OrderBy(m => m.ScheduledAt)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(Meeting meeting, CancellationToken cancellationToken = default)
     {
         await dbContext.Meetings.AddAsync(meeting, cancellationToken);

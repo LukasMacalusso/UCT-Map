@@ -83,6 +83,20 @@ public class FakeMeetingRepository : IMeetingRepository
         return Task.FromResult(result);
     }
 
+    public Task<IReadOnlyList<Meeting>> GetUpcomingByTeacherAsync(
+        Guid teacherRefId,
+        DateTime from,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<Meeting> result = Items
+            .Where(m => m.TeacherRefId == teacherRefId && m.ScheduledAt >= from)
+            .Where(m => m.Status is MeetingStatus.Pending or MeetingStatus.Confirmed)
+            .OrderBy(m => m.ScheduledAt)
+            .ToList();
+
+        return Task.FromResult(result);
+    }
+
     public Task AddAsync(Meeting meeting, CancellationToken cancellationToken = default)
     {
         Items.Add(meeting);

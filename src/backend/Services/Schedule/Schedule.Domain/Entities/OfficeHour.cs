@@ -20,14 +20,20 @@ public class OfficeHour
         TimeOnly startTime,
         TimeOnly endTime)
     {
+        this.Id = Guid.NewGuid();
+        this.TeacherRefId = teacherRefId;
+        this.Update(structureRefId, dayOfWeek, startTime, endTime);
+    }
+
+    // The teacher of a block never changes; everything else can be edited.
+    public void Update(Guid? structureRefId, DayOfWeek dayOfWeek, TimeOnly startTime, TimeOnly endTime)
+    {
         if (endTime <= startTime)
         {
             throw new ArgumentException(
                 "End Hour must be later than Start Hour", nameof(endTime));
         }
 
-        this.Id = Guid.NewGuid();
-        this.TeacherRefId = teacherRefId;
         this.StructureRefId = structureRefId;
         this.DayOfWeek = dayOfWeek;
         this.StartTime = startTime;

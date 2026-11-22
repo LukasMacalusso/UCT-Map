@@ -119,15 +119,10 @@ public class MeetingHandler
         return MeetingDto.FromEntity(meeting);
     }
 
-    // The meeting is stored in UTC and office hours are campus times, so it is compared in campus time.
     private async Task<bool> IsInsideOfficeHoursAsync(Meeting meeting, CancellationToken cancellationToken)
     {
-        var start = _timeZone.ToLocal(meeting.ScheduledAt);
-        var end = _timeZone.ToLocal(meeting.EndsAt);
-        if (end.Date != start.Date) return false;
-
         var officeHours = await _officeHourRepository.GetByTeacherAsync(meeting.TeacherRefId, cancellationToken);
-        return officeHours.Any(o => o.Contains(start.DayOfWeek, TimeOnly.FromDateTime(start), TimeOnly.FromDateTime(end)));
+        return OfficeHourCoverage.Covers(officeHours, meeting, _timeZone);
     }
 
     private static bool IsParticipantOrAdmin(Requester requester, Guid teacherRefId, Guid studentRefId) =>

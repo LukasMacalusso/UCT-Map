@@ -100,6 +100,45 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 ---
 
+### 1.4 Update Office Hour
+- **Route**: `PUT /api/schedule/office-hours/{id}`
+- **Access**: The teacher of the block or an administrator
+- **Description**: Changes the room, weekday and hours of a block. The teacher of a block cannot be changed. The same overlap rules as 1.3 apply, ignoring the block itself. Upcoming `Pending` or `Confirmed` meetings that were inside the block and no longer fit any office hour of the teacher are cancelled in the same transaction. Past meetings are not changed.
+
+**Request Payload (`application/json`)**
+```json
+{
+  "structureRefId": "uuid",    // Optional, room where the block takes place
+  "dayOfWeek": 1,              // Required, 0 = Sunday ... 6 = Saturday
+  "startTime": "09:00:00",     // Required
+  "endTime": "12:00:00"        // Required, must be later than startTime
+}
+```
+
+**Success Response (200 OK)**: the updated block (same object as in 1.1).
+
+**Error Responses**
+- **`400 Bad Request`**: If `endTime` is not later than `startTime`.
+- **`403 Forbidden`**: If the user is not the teacher of the block and is not an administrator.
+- **`404 Not Found`**: If the block does not exist.
+- **`409 Conflict`**: If the new hours overlap another block of the teacher or the room that day, or if another request changed it at the same moment.
+
+---
+
+### 1.5 Delete Office Hour
+- **Route**: `DELETE /api/schedule/office-hours/{id}`
+- **Access**: The teacher of the block or an administrator
+- **Description**: Deletes a block. Its upcoming `Pending` or `Confirmed` meetings are cancelled in cascade (they are kept with `Cancelled` status, not deleted). Past meetings are not changed. To move a meeting, cancel it and book a new one.
+
+**Success Response (204 No Content)**: empty body.
+
+**Error Responses**
+- **`403 Forbidden`**: If the user is not the teacher of the block and is not an administrator.
+- **`404 Not Found`**: If the block does not exist.
+- **`409 Conflict`**: If another request changed the block at the same moment.
+
+---
+
 ## 2. Meetings
 *An appointment between a teacher and a student at a given date and time, optionally in a room.*
 

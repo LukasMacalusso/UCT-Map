@@ -73,4 +73,16 @@ public class FakeOfficeHourRepository : IOfficeHourRepository
         Items.Add(officeHour);
         return Task.CompletedTask;
     }
+
+    // Items holds the same instance the handler edits, so there is nothing else to save.
+    public Task UpdateAsync(OfficeHour officeHour, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task RemoveAsync(OfficeHour officeHour, CancellationToken cancellationToken = default)
+    {
+        Items.Remove(officeHour);
+        return Task.CompletedTask;
+    }
 }

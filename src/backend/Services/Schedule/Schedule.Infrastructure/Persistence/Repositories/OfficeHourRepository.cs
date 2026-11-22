@@ -77,6 +77,18 @@ public class OfficeHourRepository(ScheduleDbContext dbContext) : IOfficeHourRepo
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task UpdateAsync(OfficeHour officeHour, CancellationToken cancellationToken = default)
+    {
+        dbContext.OfficeHours.Update(officeHour);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task RemoveAsync(OfficeHour officeHour, CancellationToken cancellationToken = default)
+    {
+        dbContext.OfficeHours.Remove(officeHour);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     // DayOfWeek is stored as text, so ordering in SQL would be alphabetical.
     // Sorting in memory by weekday, Monday first.
     private static int WeekdayOrder(DayOfWeek day) => ((int)day + 6) % 7;

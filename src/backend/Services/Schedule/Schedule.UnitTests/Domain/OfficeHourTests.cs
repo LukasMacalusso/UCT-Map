@@ -78,4 +78,29 @@ public class OfficeHourTests
 
         Assert.Equal(expected, officeHour.Contains(day, new TimeOnly(startHour, startMinute), new TimeOnly(endHour, endMinute)));
     }
+
+    [Fact]
+    public void Update_ChangesEverythingButTheTeacher()
+    {
+        var teacherId = Guid.NewGuid();
+        var roomId = Guid.NewGuid();
+        var officeHour = new OfficeHour(teacherId, null, DayOfWeek.Monday, new TimeOnly(9, 0), new TimeOnly(10, 0));
+
+        officeHour.Update(roomId, DayOfWeek.Friday, new TimeOnly(14, 0), new TimeOnly(15, 30));
+
+        Assert.Equal(teacherId, officeHour.TeacherRefId);
+        Assert.Equal(roomId, officeHour.StructureRefId);
+        Assert.Equal(DayOfWeek.Friday, officeHour.DayOfWeek);
+        Assert.Equal(new TimeOnly(14, 0), officeHour.StartTime);
+        Assert.Equal(new TimeOnly(15, 30), officeHour.EndTime);
+    }
+
+    [Fact]
+    public void Update_WhenEndIsNotAfterStart_ThrowsAndKeepsTheOldHours()
+    {
+        var officeHour = new OfficeHour(Guid.NewGuid(), null, DayOfWeek.Monday, new TimeOnly(9, 0), new TimeOnly(10, 0));
+
+        Assert.Throws<ArgumentException>(() => officeHour.Update(null, DayOfWeek.Monday, new TimeOnly(11, 0), new TimeOnly(10, 0)));
+        Assert.Equal(new TimeOnly(9, 0), officeHour.StartTime);
+    }
 }
