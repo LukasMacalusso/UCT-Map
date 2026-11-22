@@ -11,7 +11,7 @@ public static class ClaimsPrincipalExtensions
     {
         var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
         return Guid.TryParse(userId, out var id)
-            ? new Requester(id, user.IsInRole(Requester.AdminRole))
+            ? new Requester(id, user.IsInRole(Requester.AdminRole), user.IsInRole(Requester.TeacherRole))
             : null;
     }
 }

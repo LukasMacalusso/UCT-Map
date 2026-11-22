@@ -20,6 +20,9 @@ public class OfficeHourHandler
     private readonly CampusTimeZone _timeZone;
     private readonly TimeProvider _timeProvider;
 
+    private static readonly Error OnlyTeachersCanManage =
+        Error.Forbidden(description: "Only teachers and administrators can manage office hours.");
+
     public OfficeHourHandler(
         IOfficeHourRepository repository,
         IMeetingRepository meetingRepository,
@@ -55,6 +58,7 @@ public class OfficeHourHandler
 
     public async Task<ErrorOr<OfficeHourDto>> CreateAsync(CreateOfficeHourRequest request, Requester requester, CancellationToken cancellationToken)
     {
+        if (!requester.CanManageOfficeHours) return OnlyTeachersCanManage;
         if (!requester.CanAccess(request.TeacherRefId))
             return Error.Forbidden(description: "Only the teacher or an administrator can create office hours for this teacher.");
 
@@ -88,6 +92,7 @@ public class OfficeHourHandler
 
     public async Task<ErrorOr<OfficeHourDto>> UpdateAsync(Guid id, UpdateOfficeHourRequest request, Requester requester, CancellationToken cancellationToken)
     {
+        if (!requester.CanManageOfficeHours) return OnlyTeachersCanManage;
         var officeHour = await _repository.GetByIdAsync(id, cancellationToken);
         if (officeHour is null) return Error.NotFound(description: $"Office hour '{id}' not found.");
         if (!requester.CanAccess(officeHour.TeacherRefId))
@@ -124,6 +129,7 @@ public class OfficeHourHandler
 
     public async Task<ErrorOr<Deleted>> DeleteAsync(Guid id, Requester requester, CancellationToken cancellationToken)
     {
+        if (!requester.CanManageOfficeHours) return OnlyTeachersCanManage;
         var officeHour = await _repository.GetByIdAsync(id, cancellationToken);
         if (officeHour is null) return Error.NotFound(description: $"Office hour '{id}' not found.");
         if (!requester.CanAccess(officeHour.TeacherRefId))

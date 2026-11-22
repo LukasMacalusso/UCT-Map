@@ -23,4 +23,13 @@ public class RequesterTests
     {
         Assert.True(new Requester(Guid.NewGuid(), IsAdmin: true).CanAccess(Guid.NewGuid()));
     }
+
+    [Theory]
+    [InlineData(false, true, true)]
+    [InlineData(true, false, true)]
+    [InlineData(false, false, false)]
+    public void CanManageOfficeHours_OnlyForTeachersAndAdmins(bool isAdmin, bool isTeacher, bool expected)
+    {
+        Assert.Equal(expected, new Requester(Guid.NewGuid(), isAdmin, isTeacher).CanManageOfficeHours);
+    }
 }

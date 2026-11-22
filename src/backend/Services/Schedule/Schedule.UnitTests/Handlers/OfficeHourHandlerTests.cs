@@ -120,18 +120,18 @@ public class OfficeHourHandlerTests
         var teacherId = Guid.NewGuid();
         var request = new CreateOfficeHourRequest(teacherId, null, DayOfWeek.Monday, new TimeOnly(9, 0), new TimeOnly(10, 0));
 
-        var result = await _handler.CreateAsync(request, new Requester(teacherId, IsAdmin: false), CancellationToken.None);
+        var result = await _handler.CreateAsync(request, new Requester(teacherId, IsAdmin: false, IsTeacher: true), CancellationToken.None);
 
         Assert.False(result.IsError);
         Assert.Single(_repository.Items);
     }
 
     [Fact]
-    public async Task CreateAsync_WhenRequesterIsAnotherUser_ReturnsForbiddenAndDoesNotPersist()
+    public async Task CreateAsync_WhenRequesterIsAnotherTeacher_ReturnsForbiddenAndDoesNotPersist()
     {
         var request = new CreateOfficeHourRequest(Guid.NewGuid(), null, DayOfWeek.Monday, new TimeOnly(9, 0), new TimeOnly(10, 0));
 
-        var result = await _handler.CreateAsync(request, new Requester(Guid.NewGuid(), IsAdmin: false), CancellationToken.None);
+        var result = await _handler.CreateAsync(request, new Requester(Guid.NewGuid(), IsAdmin: false, IsTeacher: true), CancellationToken.None);
 
         Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
         Assert.Empty(_repository.Items);
@@ -217,11 +217,11 @@ public class OfficeHourHandlerTests
     }
 
     [Fact]
-    public async Task UpdateAsync_WhenRequesterIsAnotherUser_ReturnsForbidden()
+    public async Task UpdateAsync_WhenRequesterIsAnotherTeacher_ReturnsForbidden()
     {
         var block = AddBlock(Guid.NewGuid(), 9, 10);
 
-        var result = await _handler.UpdateAsync(block.Id, MondayRequest(9, 11), new Requester(Guid.NewGuid(), IsAdmin: false), CancellationToken.None);
+        var result = await _handler.UpdateAsync(block.Id, MondayRequest(9, 11), new Requester(Guid.NewGuid(), IsAdmin: false, IsTeacher: true), CancellationToken.None);
 
         Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
         Assert.Equal(new TimeOnly(10, 0), block.EndTime);
@@ -236,7 +236,7 @@ public class OfficeHourHandlerTests
 
         var result = await _handler.UpdateAsync(block.Id,
             new UpdateOfficeHourRequest(roomId, DayOfWeek.Tuesday, new TimeOnly(14, 0), new TimeOnly(16, 0)),
-            new Requester(teacherId, IsAdmin: false), CancellationToken.None);
+            new Requester(teacherId, IsAdmin: false, IsTeacher: true), CancellationToken.None);
 
         Assert.False(result.IsError);
         Assert.Equal("Tuesday", result.Value.DayOfWeek);
@@ -314,11 +314,11 @@ public class OfficeHourHandlerTests
     }
 
     [Fact]
-    public async Task DeleteAsync_WhenRequesterIsAnotherUser_ReturnsForbiddenAndKeepsTheBlock()
+    public async Task DeleteAsync_WhenRequesterIsAnotherTeacher_ReturnsForbiddenAndKeepsTheBlock()
     {
         var block = AddBlock(Guid.NewGuid(), 9, 10);
 
-        var result = await _handler.DeleteAsync(block.Id, new Requester(Guid.NewGuid(), IsAdmin: false), CancellationToken.None);
+        var result = await _handler.DeleteAsync(block.Id, new Requester(Guid.NewGuid(), IsAdmin: false, IsTeacher: true), CancellationToken.None);
 
         Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
         Assert.Single(_repository.Items);
@@ -336,7 +336,7 @@ public class OfficeHourHandlerTests
         var inAnotherBlock = AddMeeting(teacherId, NextMonday.AddHours(14));
         var past = AddMeeting(teacherId, LastMonday.AddHours(9));
 
-        var result = await _handler.DeleteAsync(block.Id, new Requester(teacherId, IsAdmin: false), CancellationToken.None);
+        var result = await _handler.DeleteAsync(block.Id, new Requester(teacherId, IsAdmin: false, IsTeacher: true), CancellationToken.None);
 
         Assert.False(result.IsError);
         Assert.DoesNotContain(block, _repository.Items);
@@ -355,6 +355,53 @@ public class OfficeHourHandlerTests
         var result = await _handler.DeleteAsync(block.Id, Admin, CancellationToken.None);
 
         Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenRequesterIsAStudent_ReturnsForbiddenAndDoesNotPersist()
+    {
+        var studentId = Guid.NewGuid();
+        var request = new CreateOfficeHourRequest(studentId, null, DayOfWeek.Monday, new TimeOnly(9, 0), new TimeOnly(10, 0));
+
+        var result = await _handler.CreateAsync(request, new Requester(studentId, IsAdmin: false), CancellationToken.None);
+
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
+        Assert.Empty(_repository.Items);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenRequesterIsAStudent_ReturnsForbiddenAndKeepsTheBlock()
+    {
+        var studentId = Guid.NewGuid();
+        var block = AddBlock(studentId, 9, 10);
+
+        var result = await _handler.UpdateAsync(block.Id, MondayRequest(9, 11), new Requester(studentId, IsAdmin: false), CancellationToken.None);
+
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
+        Assert.Equal(new TimeOnly(10, 0), block.EndTime);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenRequesterIsAStudent_ReturnsForbiddenAndKeepsTheBlock()
+    {
+        var studentId = Guid.NewGuid();
+        var block = AddBlock(studentId, 9, 10);
+
+        var result = await _handler.DeleteAsync(block.Id, new Requester(studentId, IsAdmin: false), CancellationToken.None);
+
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
+        Assert.Single(_repository.Items);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenRequesterIsAdmin_EditsAnyTeachersBlock()
+    {
+        var block = AddBlock(Guid.NewGuid(), 9, 10);
+
+        var result = await _handler.UpdateAsync(block.Id, MondayRequest(9, 11), Admin, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(new TimeOnly(11, 0), block.EndTime);
     }
 
     private static UpdateOfficeHourRequest MondayRequest(int startHour, int endHour) =>
