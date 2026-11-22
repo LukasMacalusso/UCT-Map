@@ -27,13 +27,17 @@ public class ScheduleApiFactory : WebApplicationFactory<Program>
     private readonly string _databaseName = $"schedule-tests-{Guid.NewGuid()}";
 
     // Builds a token like the ones Identity issues (same claims, issuer and audience).
-    public static string CreateToken(Guid userId, string role, string signingKey = JwtKey)
+    public static string CreateToken(Guid userId, string role, string signingKey = JwtKey) =>
+        CreateToken([new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()), new Claim("role", role)], signingKey);
+
+    // Signed with the right key but with any claims, e.g. without a valid user id.
+    public static string CreateToken(IEnumerable<Claim> claims, string signingKey = JwtKey)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
         var token = new JwtSecurityToken(
             issuer: JwtIssuer,
             audience: JwtAudience,
-            claims: [new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()), new Claim("role", role)],
+            claims: claims,
             expires: DateTime.UtcNow.AddMinutes(30),
             signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
 
