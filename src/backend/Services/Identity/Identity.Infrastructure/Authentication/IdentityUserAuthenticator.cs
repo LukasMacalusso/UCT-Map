@@ -18,6 +18,6 @@ public sealed class IdentityUserAuthenticator(UserManager<User> userManager) : I
 
         if (user is null || user.IsSuspended || !await userManager.CheckPasswordAsync(user, password)) return null;
 
-        return new LoginResult(user.Id, user.Email ?? email);
+        return new LoginResult(user.Id, user.Email ?? email, user.Name);
     }
 }

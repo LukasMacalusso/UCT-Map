@@ -50,9 +50,10 @@ public sealed class IdentityEndpointsIntegrationTests
         Assert.Equal(
             registeredUser.UserId,
             loginResponse.UserId);
-        Assert.NotEmpty(new JwtSecurityTokenHandler()
-            .ReadJwtToken(loginResponse.Token!)
-            .Claims);
+        Assert.Equal("Ana Torres", loginResponse.Name);
+        Assert.Contains(
+            new JwtSecurityTokenHandler().ReadJwtToken(loginResponse.Token!).Claims,
+            claim => claim.Type == JwtRegisteredClaimNames.Name && claim.Value == "Ana Torres");
 
         var getResult = await controller.GetById(
             registeredUser.UserId,

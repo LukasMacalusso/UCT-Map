@@ -25,8 +25,10 @@ public sealed class JwtTokenGenerator(UserManager<User> userManager, IOptions<Jw
         {
             new(JwtRegisteredClaimNames.Sub, user.UserId),
             new(JwtRegisteredClaimNames.Email, user.Email),
+            new(JwtRegisteredClaimNames.Name, identityUser.Name),
             new(ClaimTypes.NameIdentifier, user.UserId),
-            new(ClaimTypes.Email, user.Email)
+            new(ClaimTypes.Email, user.Email),
+            new(ClaimTypes.Name, identityUser.Name)
         };
 
         claims.AddRange(roles.SelectMany(role => new[]

@@ -13,10 +13,12 @@ The login endpoint returns a JWT for the authenticated user. The current API
 configuration validates JWT authentication and authorization middleware. Except
 for login and registration, the endpoints below require an `Authorization`
 header with a valid JWT.
-The token includes the user's role in the explicit `role` claim. For example:
+The token includes the user's full name in the `name` claim and the user's role
+in the explicit `role` claim. For example:
 
 ```json
 {
+  "name": "Ana Torres",
   "role": "Student"
 }
 ```
@@ -80,12 +82,14 @@ authenticate until an administrator reactivates the account.
 {
   "userId": "string",
   "email": "user@uct.cl",
+  "name": "Ana Torres",
   "token": "jwt"
 }
 ```
 
-The JWT returned in `token` includes the authenticated user's role in the
-`role` claim.
+`name` is the full name the user registered with. The JWT returned in `token`
+includes the same value in the `name` claim and the authenticated user's role in
+the `role` claim, so clients can show the real name without parsing the email.
 
 **❌ Error Responses**
 
