@@ -17,6 +17,7 @@ RUN dotnet publish "Identity.API/Identity.API.csproj" -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 ENV ASPNETCORE_HTTP_PORTS=8080
+ENV DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE=false
 EXPOSE 8080
 COPY --from=build /app/publish .
 USER $APP_UID

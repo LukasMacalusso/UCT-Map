@@ -22,6 +22,7 @@ RUN dotnet publish "Schedule.API.csproj" -c Release -o /app/publish /p:UseAppHos
 
 FROM base AS final
 WORKDIR /app
+ENV DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE=false
 COPY --from=publish /app/publish .
 USER $APP_UID
 ENTRYPOINT ["dotnet", "Schedule.API.dll"]
