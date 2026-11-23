@@ -45,6 +45,8 @@ Thumbs.db
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
 [Tt]est[Rr]esults/
+coverage-report/
+coveragereport/
 
 # NuGet Packages
 *.nupkg
