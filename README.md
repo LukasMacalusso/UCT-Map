@@ -1,74 +1,58 @@
-# Guía de Uso del Repositorio y Desarrollo
+# UCT Map - Interactive Campus Platform
 
-Este documento establece las directrices de trabajo, el flujo de control de versiones con Git, el estándar de arquitectura de software y el stack tecnológico utilizado en el proyecto.
+Welcome to the **UCT Map** project repository. This platform serves as a centralized, digital ecosystem designed to solve everyday orientation and management challenges within the Universidad Católica de Temuco (UCT) campus.
 
----
+## Main Functionalities
 
-## 1. Flujo de Trabajo con Git (Git Workflow)
+The UCT Map project addresses the fragmentation of university information by integrating four core pillars into a single platform:
 
-Para mantener un historial ordenado, evitar conflictos y asegurar la calidad del código, se establece el siguiente flujo de trabajo:
+1. **Intelligent Interactive Map** 🗺️
+   - A highly detailed, multi-layered interactive map of the campus.
+   - Allows users to locate specific buildings, classrooms, laboratories, libraries, cafeterias, parking lots, and administrative offices (like DARA or CAEP) effortlessly.
+   
+2. **Incident Reporting & Heatmaps** 🚨
+   - A centralized system for reporting infrastructure issues, complaints, or service outages.
+   - Features an aggregated **Heat Map (Mapa de Calor)** that allows university administration to visually identify critical zones with recurring problems.
 
-### 1.1 Ramas de Integración
-* **`ti2` / `taller-2`**: Rama base para todo el desarrollo correspondiente a Integra 2.
-* **`ti4` / `taller-4`**: Rama base para todo el desarrollo correspondiente a Integra 4.
-* **`main`**: Rama principal de producción / entregas finales estables.
+3. **Lost & Found Management** 🔑
+   - Replaces isolated, paper-based tracking at individual building receptions with a unified, digital ticketing system.
+   - Enables users to report found items and allows students to search for lost belongings across the entire campus with full traceability.
 
-> **Regla:** Está prohibido hacer commits directos a las ramas de integración (`ti2`, `ti4`) o a `main`.
+4. **Academic Scheduling & Directory** 📅
+   - A structured digital channel to access teacher contact information and office hours.
+   - Includes a synchronized system for students to seamlessly request and schedule meetings with academic staff.
 
-### 1.2 Creación de Ramas por Feature
-Cada nueva funcionalidad, módulo o corrección debe desarrollarse en su propia rama independiente:
-
-1. **Actualizar la rama base correspondiente:**
-   ```bash
-   git checkout ti2   # o git checkout ti4 según corresponda
-   git pull origin ti2
-   ```
-
-2. **Crear una nueva rama con prefijo `feat/`:**
-   ```bash
-   git checkout -b feat/nombre-de-la-funcionalidad
-   ```
-   *Ejemplos:* `feat/login-auth`, `feat/map-view`, `feat/crud-edificios`
-
-### 1.3 Pull Requests (PR) e Integración
-1. Al finalizar la funcionalidad en la rama `feat/nombre-de-la-funcionalidad`, subir los cambios al repositorio remoto:
-   ```bash
-   git push origin feat/nombre-de-la-funcionalidad
-   ```
-2. Crear un **Pull Request (PR)** en la plataforma (GitHub / GitLab) apuntando **exclusivamente a la rama de integración correspondiente (`ti2` o `ti4`)**.
-3. El PR debe detallar los cambios realizados.
-4. Todo PR debe ser revisado y aprobado por al menos un compañero de equipo antes de ser integrado (merge).
 
 ---
 
-## 2. Arquitectura de Software: Arquitectura Limpia (Clean Architecture)
+## Architecture Overview
 
-El desarrollo del proyecto se estructura bajo los principios de **Arquitectura Limpia (Clean Architecture)** con el objetivo de lograr desacoplamiento, mantenibilidad, testabilidad e independencia de frameworks y bases de datos.
+The system is built as a highly scalable distributed application divided into two main areas:
+- **Backend**: A robust Microservices architecture built with C# and .NET 10.
+- **Frontend**: A modern, responsive Single Page Application (SPA) built with React, Vite, and TailwindCSS.
 
-### 2.1 Principios Clave
-* **Regla de Dependencia:** Las dependencias del código solo pueden apuntar hacia adentro. Las capas internas no deben conocer nada de las capas externas.
-* **Independencia de Frameworks:** La lógica del negocio no depende de la existencia de librerías o frameworks específicos.
-* **Independencia de la UI y Base de Datos:** La interfaz de usuario y la persistencia de datos pueden ser modificadas sin alterar las reglas del negocio.
-
-### 2.2 Capas de la Arquitectura
-* **Capa de Dominio (Domain):** Contiene las entidades, modelos centrales y las interfaces/contratos del negocio. Es el núcleo puro del sistema y no tiene dependencias externas.
-* **Capa de Aplicación / Casos de Uso (Application / Use Cases):** Define la lógica y flujos de negocio específicos de la aplicación. Orquesta el flujo de datos hacia y desde las entidades.
-* **Capa de Infraestructura (Infrastructure):** Implementa el acceso a datos, servicios externos, repositorios y configuraciones de bases de datos.
-* **Capa de Presentación / UI (Presentation):** Maneja la interacción con el usuario, controladores, componentes visuales, pantallas y gestión del estado de la interfaz.
+### Documentation Directory
+For deep technical dives into how each stack is built, configured, and tested, please refer to their specific documentations:
+- ⚙️ **[Backend Documentation](./src/backend/README.md)** (Microservices, Clean Architecture, Testing, CI/CD)
+- 🎨 **[Frontend Documentation](./src/frontend/README.md)** (React, Vite, Zustand, Nginx Proxy)
 
 ---
 
-## 3. Tecnologías del Proyecto
+## Tech Stack
 
-De acuerdo con la división de trabajo y roles definidos:
+- **Infrastructure**: Docker & Docker Compose, GitHub Actions (CI Pipelines)
+- **Databases**: PostgreSQL (Relational data) & MongoDB (NoSQL for incident logs & tickets)
+- **Backend**: C# 10, .NET 10, Entity Framework Core, xUnit, Coverlet
+- **Frontend**: React 19, TypeScript, Zustand, TanStack Query, TailwindCSS v4
 
-### 3.1 Integra 2 (Web & Backend)
-* **Backend:** C# (.NET)
-* **Frontend Web:** Diseño e implementación de Interfaz Web.
-* **Mapeo Frontend:** Tecnologías de Frontend para visualización e interacción con mapas.
-* **Persistencia:** Base de Datos (tecnología a definir).
+## Running the Project Locally
 
-### 3.2 Integra 4 (Móvil)
-* **Desarrollo Móvil:** Flutter (Dart)
-* **Frontend Móvil:** Diseño e implementación de Interfaz Móvil.
-* **Mapeo Frontend:** Tecnologías de Frontend para visualización e interacción con mapas en plataforma móvil.
+The easiest way to spin up the entire ecosystem (Databases, API Gateway, Microservices, and Frontend) is via Docker Compose.
+
+1. Ensure Docker Desktop is running.
+2. From the root directory, run:
+   ```bash
+   docker compose up --build
+   ```
+3. The frontend will be available at `http://localhost:3000`
+4. The API Gateway will route traffic seamlessly from `http://localhost:5000`

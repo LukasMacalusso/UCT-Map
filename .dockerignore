@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.git/
+.vs/
+.vscode/
+tests/
+docs/
+src/Frontend/
+*.user
+*.suo
+*.log

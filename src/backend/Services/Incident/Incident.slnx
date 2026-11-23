@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Incident.API/Incident.API.csproj" />
+  <Project Path="Incident.Application/Incident.Application.csproj" />
+  <Project Path="Incident.Domain/Incident.Domain.csproj" />
+  <Project Path="Incident.Infrastructure/Incident.Infrastructure.csproj" />
+  <Project Path="Incident.UnitTests/Incident.UnitTests.csproj" />
+  <Project Path="Incident.IntegrationTests/Incident.IntegrationTests.csproj" />
+</Solution>

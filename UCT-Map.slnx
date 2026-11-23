@@ -1,0 +1,40 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/backend/" />
+  <Folder Name="/src/backend/ApiGateway/">
+    <Project Path="src/backend/ApiGateway/ApiGateway.API/ApiGateway.API.csproj" />
+  </Folder>
+  <Folder Name="/src/backend/Services/" />
+  <Folder Name="/src/backend/Services/Campus/">
+    <Project Path="src/backend/Services/Campus/Campus.API/Campus.API.csproj" />
+    <Project Path="src/backend/Services/Campus/Campus.Application/Campus.Application.csproj" />
+    <Project Path="src/backend/Services/Campus/Campus.Domain/Campus.Domain.csproj" />
+    <Project Path="src/backend/Services/Campus/Campus.Infrastructure/Campus.Infrastructure.csproj" />
+    <Project Path="src/backend/Services/Campus/Campus.IntegrationTests/Campus.IntegrationTests.csproj" />
+    <Project Path="src/backend/Services/Campus/Campus.UnitTests/Campus.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/src/backend/Services/Identity/">
+    <Project Path="src/backend/Services/Identity/Identity.API/Identity.API.csproj" />
+    <Project Path="src/backend/Services/Identity/Identity.Application/Identity.Application.csproj" />
+    <Project Path="src/backend/Services/Identity/Identity.Domain/Identity.Domain.csproj" />
+    <Project Path="src/backend/Services/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj" />
+    <Project Path="src/backend/Services/Identity/Identity.IntegrationTests/Identity.IntegrationTests.csproj" />
+    <Project Path="src/backend/Services/Identity/Identity.UnitTests/Identity.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/src/backend/Services/Incident/">
+    <Project Path="src/backend/Services/Incident/Incident.API/Incident.API.csproj" />
+    <Project Path="src/backend/Services/Incident/Incident.Application/Incident.Application.csproj" />
+    <Project Path="src/backend/Services/Incident/Incident.Domain/Incident.Domain.csproj" />
+    <Project Path="src/backend/Services/Incident/Incident.Infrastructure/Incident.Infrastructure.csproj" />
+    <Project Path="src/backend/Services/Incident/Incident.IntegrationTests/Incident.IntegrationTests.csproj" />
+    <Project Path="src/backend/Services/Incident/Incident.UnitTests/Incident.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/src/backend/Services/Schedule/">
+    <Project Path="src/backend/Services/Schedule/Schedule.API/Schedule.API.csproj" />
+    <Project Path="src/backend/Services/Schedule/Schedule.Application/Schedule.Application.csproj" />
+    <Project Path="src/backend/Services/Schedule/Schedule.Domain/Schedule.Domain.csproj" />
+    <Project Path="src/backend/Services/Schedule/Schedule.Infrastructure/Schedule.Infrastructure.csproj" />
+    <Project Path="src/backend/Services/Schedule/Schedule.IntegrationTests/Schedule.IntegrationTests.csproj" />
+    <Project Path="src/backend/Services/Schedule/Schedule.UnitTests/Schedule.UnitTests.csproj" />
+  </Folder>
+</Solution>

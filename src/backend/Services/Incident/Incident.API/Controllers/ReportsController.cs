@@ -1,0 +1,116 @@
+using Incident.Application.DTOs;
+using Incident.Application.Handlers;
+using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
+using System.Linq;
+using Microsoft.AspNetCore.Http;
+using Incident.Application.Common;
+using ErrorOr;
+using MongoDB.Bson;
+using Microsoft.AspNetCore.Authorization;
+namespace Incident.API.Controllers;
+
+[ApiController]
+[Route("api/incident/reports")]
+public class ReportsController : ControllerBase
+{
+    private readonly IReportHandler _reportHandler;
+
+    public ReportsController(IReportHandler reportHandler)
+    {
+        _reportHandler = reportHandler;
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateReportRequest request)
+    {
+        var userRefId = JwtUserIdReader.GetUserIdToken(Request.Headers.Authorization.ToString());
+        if (userRefId is null)
+            return Unauthorized();
+
+        request = request with { UserRefId = userRefId.Value };
+
+        var result = await _reportHandler.CreateReportAsync(request);
+
+        return result.Match(
+            id => CreatedAtAction(nameof(GetById), new { id }, new { id }),
+            errors => Problem(statusCode: StatusCodes.Status400BadRequest, title: errors.First().Description)
+        );
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(string id)
+    {
+        var result = await _reportHandler.GetByIdAsync(id);
+        return result.Match(
+            ticket => Ok(ticket),
+            errors =>
+            {
+                var firstError = errors.First();
+                var statusCode = firstError.Type switch
+                {
+                    ErrorType.NotFound => StatusCodes.Status404NotFound,
+                    _ => StatusCodes.Status400BadRequest
+                };
+                return Problem(statusCode: statusCode, title: firstError.Description);
+            }
+
+        );
+    }
+    [Authorize(Roles = "Admin,ObjectsOfficer,ComplaintsOfficer")]
+    [HttpPatch("{id}/report/status")]
+    public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusReport Update)
+    {
+        var result = await _reportHandler.UpdateStatusTicketAsync(id.ToString(), Update);
+        return result.Match(
+            success => (IActionResult)NoContent(),
+            errors =>
+            {
+                var firstError = errors.First();
+                var statusCode = firstError.Type switch
+                {
+                    ErrorType.NotFound => StatusCodes.Status404NotFound,
+                    _ => StatusCodes.Status400BadRequest
+                };
+                return Problem(statusCode: statusCode, title: firstError.Description);
+            }
+        );
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Search([FromQuery] TicketSearchRequest request, CancellationToken ct)
+    {
+        var result = await _reportHandler.SearchAsync(request, ct);
+        return result.Match(
+            page => Ok(page),
+            errors =>
+            {
+                var firstError = errors.First();
+                var statusCode = firstError.Type switch
+                {
+                    ErrorType.NotFound => StatusCodes.Status404NotFound,
+                    _ => StatusCodes.Status400BadRequest
+                };
+                return Problem(statusCode: statusCode, title: firstError.Description);
+            });
+    }
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete([FromRoute] string id)
+    {
+        var userRefRole = JwtUserIdReader.GetUserRoleToken(Request.Headers.Authorization.ToString());
+        var userRefId = JwtUserIdReader.GetUserIdToken(Request.Headers.Authorization.ToString());
+        var result = await _reportHandler.DeleteAsync(id, userRefRole!, userRefId!.Value.ToString());
+        return result.Match(
+            page => Ok(page),
+            errors =>
+            {
+                var firstError = errors.First();
+                var statusCode = firstError.Type switch
+                {
+                    ErrorType.NotFound => StatusCodes.Status404NotFound,
+                    _ => StatusCodes.Status400BadRequest
+                };
+                return Problem(statusCode: statusCode, title: firstError.Description);
+            });
+    }
+}
