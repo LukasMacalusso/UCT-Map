@@ -190,13 +190,14 @@ Handles the university's geographic and physical infrastructure, including campu
 
 ### 2.1 Get All Buildings
 - **Route**: `GET /api/campus/buildings`
-- **Access**: Any authenticated user
-- **Description**: Returns all buildings, optionally filtered by `campusId`.
+- **Access**: Public / Any authenticated user
+- **Description**: Returns all buildings, optionally filtered by `campusId` or `categoryId`.
 
 **Query Parameters**
 | Parameter | Type | Required | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `campusId` | `uuid` | No | — | Filter buildings belonging to this campus. |
+| `categoryId` | `uuid` | No | — | Filter buildings belonging to this category. |
 
 **Success Response (200 OK)**
 ```json
@@ -208,8 +209,12 @@ Handles the university's geographic and physical infrastructure, including campu
     "floorsCount": 4,
     "latitude": -38.7061,
     "longitude": -72.5852,
-    "schedule": "08:00 - 18:00",
-    "services": ["WIFI", "BAÑOS", "ELEVADOR"]
+    "categoryId": "uuid | null",
+    "openTime": "08:00:00",
+    "closeTime": "18:00:00",
+    "photoUrl": "https://example.com/building.jpg",
+    "categoryName": "Aula",
+    "categoryIcon": "school"
   }
 ]
 ```
@@ -218,13 +223,14 @@ Handles the university's geographic and physical infrastructure, including campu
 
 ### 2.2 Get Building Map Locations
 - **Route**: `GET /api/campus/buildings/locations`
-- **Access**: Any authenticated user
+- **Access**: Public / Any authenticated user
 - **Description**: Lightweight endpoint designed specifically for the interactive map UI.
 
 **Query Parameters**
 | Parameter | Type | Required | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `campusId` | `uuid` | No | — | Filter buildings belonging to this campus. |
+| `categoryId` | `uuid` | No | — | Filter buildings belonging to this category. |
 
 **Success Response (200 OK)**
 ```json
@@ -240,8 +246,12 @@ Handles the university's geographic and physical infrastructure, including campu
       "campusId": "uuid",
       "floorsCount": 4,
       "schedule": "08:00 - 18:00",
-      "services": ["WIFI", "BAÑOS"]
-    }
+      "categoryId": "uuid | null",
+      "photoUrl": "https://example.com/building.jpg",
+      "categoryName": "Aula",
+      "categoryIcon": "school"
+    },
+    "categoryId": "uuid | null"
   }
 ]
 ```
@@ -270,8 +280,10 @@ Handles the university's geographic and physical infrastructure, including campu
   "floorsCount": 4,
   "latitude": -38.7061,
   "longitude": -72.5852,
-  "schedule": "08:00 - 18:00",
-  "services": ["WIFI", "BAÑOS"]
+  "openTime": "08:00:00",
+  "closeTime": "18:00:00",
+  "categoryId": "uuid",
+  "photoUrl": "https://example.com/building.jpg"
 }
 ```
 
@@ -453,14 +465,13 @@ Handles the university's geographic and physical infrastructure, including campu
 
 ### 4.1 Get All Rooms
 - **Route**: `GET /api/campus/rooms`
-- **Access**: Any authenticated user
-- **Description**: Returns rooms, optionally filtered by `buildingId` or `categoryId`.
+- **Access**: Public / Any authenticated user
+- **Description**: Returns rooms, optionally filtered by `buildingId`.
 
 **Query Parameters**
 | Parameter | Type | Required | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `buildingId` | `uuid` | No | — | Filter by parent building. |
-| `categoryId` | `uuid` | No | — | Filter by room category. |
 
 **Success Response (200 OK)**
 ```json
@@ -468,11 +479,8 @@ Handles the university's geographic and physical infrastructure, including campu
   {
     "id": "uuid",
     "buildingId": "uuid",
-    "categoryId": "uuid",
-    "name": "Laboratorio 301",
-    "code": "LAB-301",
-    "floorNumber": 3,
-    "capacity": 35
+    "name": "LAB-301",
+    "floor": 3
   }
 ]
 ```
@@ -481,13 +489,13 @@ Handles the university's geographic and physical infrastructure, including campu
 
 ### 4.2 Search Rooms
 - **Route**: `GET /api/campus/rooms/search`
-- **Access**: Any authenticated user
-- **Description**: Searches rooms matching the given search term (by name or code).
+- **Access**: Public / Any authenticated user
+- **Description**: Searches rooms matching the given search term (by name).
 
 **Query Parameters**
 | Parameter | Type | Required | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `term` | `string` | Yes | — | Search keyword. |
+| `term` | `string` | No | `""` | Search keyword. |
 
 **Success Response (200 OK)**: array of rooms as in 4.1.
 
@@ -495,7 +503,7 @@ Handles the university's geographic and physical infrastructure, including campu
 
 ### 4.3 Get Rooms By Building
 - **Route**: `GET /api/campus/buildings/{buildingId}/rooms`
-- **Access**: Any authenticated user
+- **Access**: Public / Any authenticated user
 - **Description**: Returns all rooms belonging to a specific building.
 
 **Success Response (200 OK)**: array of rooms as in 4.1.
@@ -504,7 +512,7 @@ Handles the university's geographic and physical infrastructure, including campu
 
 ### 4.4 Get Room By Id
 - **Route**: `GET /api/campus/rooms/{id}`
-- **Access**: Any authenticated user
+- **Access**: Public / Any authenticated user
 
 **Success Response (200 OK)**: single room object as in 4.1.
 
@@ -518,11 +526,8 @@ Handles the university's geographic and physical infrastructure, including campu
 ```json
 {
   "buildingId": "uuid",
-  "categoryId": "uuid",
-  "name": "Sala 204",
-  "code": "A-204",
-  "floorNumber": 2,
-  "capacity": 40
+  "name": "A-204",
+  "floor": 2
 }
 ```
 
@@ -533,6 +538,8 @@ Handles the university's geographic and physical infrastructure, including campu
 ### 4.6 Update Room
 - **Route**: `PUT /api/campus/rooms/{id}`
 - **Access**: `ADMIN`
+
+**Request Payload (`application/json`)**: same payload as in 4.5.
 
 **Success Response (204 No Content)**
 
@@ -547,11 +554,11 @@ Handles the university's geographic and physical infrastructure, including campu
 ---
 
 ## 5. Categories
-*Categories for classifying structures and rooms (e.g. Laboratory, Classroom, Restroom, Parking).*
+*Categories for classifying structures and buildings (e.g. Laboratory, Classroom, Restroom, Parking).*
 
 ### 5.1 Get All Categories
 - **Route**: `GET /api/campus/categories`
-- **Access**: Any authenticated user
+- **Access**: Public / Any authenticated user
 
 **Success Response (200 OK)**
 ```json
@@ -560,7 +567,8 @@ Handles the university's geographic and physical infrastructure, including campu
     "id": "uuid",
     "name": "Laboratorio",
     "icon": "flask",
-    "description": "Espacios destinados a la investigación y prácticas"
+    "description": "Espacios destinados a la investigación y prácticas",
+    "order": 1
   }
 ]
 ```
@@ -569,7 +577,7 @@ Handles the university's geographic and physical infrastructure, including campu
 
 ### 5.2 Get Category By Id
 - **Route**: `GET /api/campus/categories/{id}`
-- **Access**: Any authenticated user
+- **Access**: Public / Any authenticated user
 
 **Success Response (200 OK)**: single category object as in 5.1.
 
@@ -584,7 +592,8 @@ Handles the university's geographic and physical infrastructure, including campu
 {
   "name": "Área Verde",
   "icon": "tree",
-  "description": "Espacios al aire libre y jardines"
+  "description": "Espacios al aire libre y jardines",
+  "order": 4
 }
 ```
 
@@ -596,12 +605,44 @@ Handles the university's geographic and physical infrastructure, including campu
 - **Route**: `PUT /api/campus/categories/{id}`
 - **Access**: `ADMIN`
 
+**Request Payload (`application/json`)**: same payload as in 5.3.
+
 **Success Response (204 No Content)**
 
 ---
 
-### 5.5 Delete Category
+### 5.5 Reorder Categories
+- **Route**: `PUT /api/campus/categories/reorder`
+- **Access**: `ADMIN`
+- **Description**: Updates the display order of multiple categories in a single request.
+
+**Request Payload (`application/json`)**
+```json
+[
+  {
+    "id": "uuid",
+    "order": 1
+  },
+  {
+    "id": "uuid",
+    "order": 2
+  }
+]
+```
+
+**Success Response (204 No Content)**
+
+**Error Responses**
+- **`400 Bad Request`**: If the items list is empty or invalid.
+
+---
+
+### 5.6 Delete Category
 - **Route**: `DELETE /api/campus/categories/{id}`
 - **Access**: `ADMIN`
 
 **Success Response (204 No Content)**
+
+**Error Responses**
+- **`404 Not Found`**: Category not found.
+- **`409 Conflict`**: Category is currently referenced by buildings or structures.

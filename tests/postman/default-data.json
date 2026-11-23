@@ -5,13 +5,14 @@
     "register_password": "Password123!",
     "campus_name": "Campus San Francisco E2E",
     "campus_address": "Manuel Montt 056, Temuco",
-    "campus_lat": 50,
-    "campus_lng": 50,
+    "campus_lat": -38.7335,
+    "campus_lng": -72.6020,
     "lost_object_title": "Mochila Negra E2E",
     "lost_object_desc": "Olvidada en biblioteca central",
-    "lost_object_location": "Biblioteca",
-    "lost_object_date": "2026-10-14T20:00:00Z",
+    "lost_object_photo": "https://example.com/mochila-e2e.jpg",
+    "lost_object_structure_id": "11111111-1111-1111-1111-111111111111",
     "schedule_student_id": "11111111-1111-1111-1111-111111111111",
+    "schedule_room_id": "22222222-2222-2222-2222-222222222222",
     "schedule_from": "2026-10-01T00:00:00Z",
     "schedule_to": "2026-10-31T23:59:59Z"
   }

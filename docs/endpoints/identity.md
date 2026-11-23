@@ -166,13 +166,33 @@ the `role` claim, so clients can show the real name without parsing the email.
 ### 📌 1.5 Get User Roles
 
 - **Route**: `GET /api/identity/{userId}/roles`
-- **Access**: Admin
+- **Access**: `Admin`
 - **Description**: Returns the roles and suspension state of a user.
+
+**📤 Success Response (200 OK)**
+
+```json
+{
+  "userId": "string",
+  "roles": ["Student"],
+  "isSuspended": false
+}
+```
+
+**❌ Error Responses**
+
+- **`403 Forbidden`**: Caller does not have the `Admin` role.
+- **`404 Not Found`**: User not found.
+
+---
 
 ### 📌 1.6 Add User Role
 
 - **Route**: `POST /api/identity/{userId}/roles`
-- **Access**: Admin
+- **Access**: `Admin`
+- **Description**: Assigns a single role to the specified user.
+
+**📥 Request Payload (`application/json`)**
 
 ```json
 {
@@ -180,10 +200,24 @@ the `role` claim, so clients can show the real name without parsing the email.
 }
 ```
 
+**📤 Success Response (201 Created)**: same object as in 1.5.
+
+**❌ Error Responses**
+
+- **`400 Bad Request`**: Role is missing or invalid.
+- **`403 Forbidden`**: Caller does not have the `Admin` role.
+- **`404 Not Found`**: User not found.
+- **`409 Conflict`**: User already has the specified role.
+
+---
+
 ### 📌 1.7 Replace User Roles
 
 - **Route**: `PUT /api/identity/{userId}/roles`
-- **Access**: Admin
+- **Access**: `Admin`
+- **Description**: Replaces all assigned roles for the user with the provided list.
+
+**📥 Request Payload (`application/json`)**
 
 ```json
 {
@@ -191,20 +225,59 @@ the `role` claim, so clients can show the real name without parsing the email.
 }
 ```
 
+**📤 Success Response (200 OK)**: same object as in 1.5.
+
+**❌ Error Responses**
+
+- **`400 Bad Request`**: Role list is empty or contains invalid roles.
+- **`403 Forbidden`**: Caller does not have the `Admin` role.
+- **`404 Not Found`**: User not found.
+
+---
+
 ### 📌 1.8 Remove User Role
 
 - **Route**: `DELETE /api/identity/{userId}/roles/{role}`
-- **Access**: Admin
+- **Access**: `Admin`
+- **Description**: Removes a specific role from the user.
+
+**📤 Success Response (204 No Content)**
+
+**❌ Error Responses**
+
+- **`400 Bad Request`**: Role cannot be removed or is invalid.
+- **`403 Forbidden`**: Caller does not have the `Admin` role.
+- **`404 Not Found`**: User or role assignment not found.
+
+---
 
 ### 📌 1.9 Suspend User
 
 - **Route**: `POST /api/identity/{userId}/suspension`
-- **Access**: Admin
+- **Access**: `Admin`
+- **Description**: Suspends a user account, preventing subsequent logins.
+
+**📤 Success Response (200 OK)**: same object as in 1.5 (`"isSuspended": true`).
+
+**❌ Error Responses**
+
+- **`403 Forbidden`**: Caller does not have the `Admin` role.
+- **`404 Not Found`**: User not found.
+
+---
 
 ### 📌 1.10 Reactivate User
 
 - **Route**: `DELETE /api/identity/{userId}/suspension`
-- **Access**: Admin
+- **Access**: `Admin`
+- **Description**: Reactivates a suspended user account.
+
+**📤 Success Response (200 OK)**: same object as in 1.5 (`"isSuspended": false`).
+
+**❌ Error Responses**
+
+- **`403 Forbidden`**: Caller does not have the `Admin` role.
+- **`404 Not Found`**: User not found.
 
 ---
 
