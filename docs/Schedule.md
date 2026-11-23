@@ -241,6 +241,46 @@ Handles teachers' weekly office hours and the meetings between teachers and stud
 
 ---
 
+### 2.5 Reschedule Meeting
+- **Route**: `PUT /api/schedule/meetings/{id}`
+- **Access**: Only the student or the teacher of the meeting (not administrators)
+- **Description**: Moves a `Pending` or `Confirmed` meeting to another time, length or room. The teacher and the student cannot be changed, and the status is kept. The same rules as 2.3 apply to the new slot, ignoring the meeting itself: it must fit inside an office hour of the teacher and must not overlap an active meeting of the teacher, the student or the room. The old slot is freed.
+
+**Request Payload (`application/json`)**
+```json
+{
+  "structureRefId": "uuid",             // Optional, room where the meeting takes place
+  "scheduledAt": "2026-10-12T16:00:00", // Required, UTC
+  "durationMinutes": 45                 // Required, must be greater than 0
+}
+```
+
+**Success Response (200 OK)**: the updated meeting (same object as in 2.1).
+
+**Error Responses**
+- **`400 Bad Request`**: If `durationMinutes` is not greater than 0, or if the new slot is not inside an office hour of the teacher.
+- **`401 Unauthorized`**: If the token is missing or invalid, or has no valid user id.
+- **`403 Forbidden`**: If the user is neither the student nor the teacher of the meeting.
+- **`404 Not Found`**: If no meeting exists with that id.
+- **`409 Conflict`**: If the meeting is cancelled or completed, if the teacher, the student or the room is busy at the new time, or if another request booked the slot at the same moment.
+
+---
+
+### 2.6 Cancel Meeting
+- **Route**: `DELETE /api/schedule/meetings/{id}`
+- **Access**: Only the student or the teacher of the meeting (not administrators)
+- **Description**: Cancels a `Pending` or `Confirmed` meeting. The meeting is not deleted: it is kept with `Cancelled` status and its time slot is freed. Same as 2.4 with `Cancelled`.
+
+**Success Response (204 No Content)**: empty body.
+
+**Error Responses**
+- **`401 Unauthorized`**: If the token is missing or invalid, or has no valid user id.
+- **`403 Forbidden`**: If the user is neither the student nor the teacher of the meeting.
+- **`404 Not Found`**: If no meeting exists with that id.
+- **`409 Conflict`**: If the meeting is already cancelled or completed.
+
+---
+
 ## 3. Teachers
 *Read-only views that aggregate a teacher's office hours and meetings.*
 

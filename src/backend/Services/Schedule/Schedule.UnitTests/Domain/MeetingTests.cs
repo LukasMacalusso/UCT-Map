@@ -143,4 +143,53 @@ public class MeetingTests
 
         Assert.Equal("A completed meeting cannot be cancelled.", exception.Message);
     }
+
+    [Fact]
+    public void Reschedule_ChangesTimeDurationAndRoomButKeepsTheParticipants()
+    {
+        var teacherId = Guid.NewGuid();
+        var studentId = Guid.NewGuid();
+        var roomId = Guid.NewGuid();
+        var meeting = new Meeting(teacherId, studentId, null, DateTime.Today, 45);
+        meeting.Confirm();
+
+        meeting.Reschedule(roomId, DateTime.Today.AddHours(3), 60);
+
+        Assert.Equal(DateTime.Today.AddHours(3), meeting.ScheduledAt);
+        Assert.Equal(60, meeting.DurationMinutes);
+        Assert.Equal(roomId, meeting.StructureRefId);
+        Assert.Equal(teacherId, meeting.TeacherRefId);
+        Assert.Equal(studentId, meeting.StudentRefId);
+        Assert.Equal(MeetingStatus.Confirmed, meeting.Status);
+    }
+
+    [Fact]
+    public void Reschedule_WhenDurationIsNotPositive_ThrowsArgumentException()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, DateTime.Today, 45);
+
+        Assert.Throws<ArgumentException>(() => meeting.Reschedule(null, DateTime.Today, 0));
+    }
+
+    [Fact]
+    public void Reschedule_WhenCancelled_ThrowsInvalidOperationException()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, DateTime.Today, 45);
+        meeting.Cancel();
+
+        Assert.Throws<InvalidOperationException>(() => meeting.Reschedule(null, DateTime.Today.AddHours(1), 45));
+    }
+
+    [Fact]
+    public void IsActive_OnlyWhilePendingOrConfirmed()
+    {
+        var meeting = new Meeting(Guid.NewGuid(), Guid.NewGuid(), null, DateTime.Today, 45);
+        Assert.True(meeting.IsActive);
+
+        meeting.Confirm();
+        Assert.True(meeting.IsActive);
+
+        meeting.Complete();
+        Assert.False(meeting.IsActive);
+    }
 }
