@@ -1,0 +1,15 @@
+UCT Map — Campus San Juan Pablo II
+
+Se incorporaron 16 pares de coordenadas facilitados por el equipo para edificios 1-6 y 8-17. El edificio 7 Ricardo Ferrando queda sin modificar (ya existe en BD).
+
+El CSV edificios_pendientes.csv tiene pisoConfirmados vacío para nuevos edificios porque sus pisos reales no fueron comunicados. El script de carga segura NO crea esos edificios hasta completar este campo, y tampoco crea edificios cuyos nombres figuran como 'sin confirmar'. No uses datos inventados.
+
+Pisos mínimos observables en los códigos de salas (NO equivalen necesariamente a pisos reales):
+Edificio 1 FAAD 5; 2 Diseño 2; 3 Agustina Hidalgo 3; 7 Ricardo Ferrando 5; 8 Adalberto Salas 4; 10 Waldo Merchant 4; 12 Complejo Deportivo 2.
+
+IMPORTANTE: la lista anterior de Clínica Menor, Lab. Reproducción Animal y los códigos CRC03 corresponde a otro conjunto y no se asignó a estos 17 edificios CJP. Los códigos del archivo salas_documento.csv son CJP y pertenecen a Juan Pablo II.
+
+Para simular: .\cargar_juan_pablo_ii.ps1
+Para insertar luego de completar pisos y nombres: .\cargar_juan_pablo_ii.ps1 -Aplicar
+
+Requiere $headers con token JWT de Campus Service (Authorization Bearer), generado en la misma sesión PowerShell.

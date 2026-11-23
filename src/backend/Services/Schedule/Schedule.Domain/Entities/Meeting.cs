@@ -1,0 +1,94 @@
+using System;
+using Schedule.Domain.Enums;
+
+namespace Schedule.Domain.Entities;
+
+public class Meeting
+{
+    public Guid Id { get; private set; }
+    public Guid TeacherRefId { get; private set; }
+    public Guid StudentRefId { get; private set; }
+    public Guid? StructureRefId { get; private set; }
+    public DateTime ScheduledAt { get; private set; }
+    public int DurationMinutes { get; private set; }
+    public MeetingStatus Status { get; private set; }
+
+    public DateTime EndsAt => ScheduledAt.AddMinutes(DurationMinutes);
+
+    public bool IsActive => Status is MeetingStatus.Pending or MeetingStatus.Confirmed;
+
+    public Meeting(
+        Guid teacherRefId,
+        Guid studentRefId,
+        Guid? structureRefId,
+        DateTime scheduledAt,
+        int durationMinutes)
+    {
+        if (durationMinutes <= 0)
+        {
+            throw new ArgumentException(
+                "Duration must be greater than zero minutes", nameof(durationMinutes));
+        }
+
+        this.Id = Guid.NewGuid();
+        this.TeacherRefId = teacherRefId;
+        this.StudentRefId = studentRefId;
+        this.StructureRefId = structureRefId;
+        this.ScheduledAt = scheduledAt;
+        this.DurationMinutes = durationMinutes;
+        this.Status = MeetingStatus.Pending;
+    }
+
+    // Moves the meeting to another time, length or room; the teacher and the student stay the same.
+    public void Reschedule(Guid? structureRefId, DateTime scheduledAt, int durationMinutes)
+    {
+        if (durationMinutes <= 0)
+        {
+            throw new ArgumentException(
+                "Duration must be greater than zero minutes", nameof(durationMinutes));
+        }
+
+        if (!this.IsActive)
+        {
+            throw new InvalidOperationException("Only a pending or confirmed meeting can be rescheduled.");
+        }
+
+        this.StructureRefId = structureRefId;
+        this.ScheduledAt = scheduledAt;
+        this.DurationMinutes = durationMinutes;
+    }
+
+    public void Confirm()
+    {
+        if (this.Status != MeetingStatus.Pending)
+        {
+            throw new InvalidOperationException("Only a pending meeting can be confirmed.");
+        }
+
+        this.Status = MeetingStatus.Confirmed;
+    }
+
+    public void Complete()
+    {
+        if (this.Status != MeetingStatus.Confirmed)
+        {
+            throw new InvalidOperationException("Only a confirmed meeting can be completed.");
+        }
+
+        this.Status = MeetingStatus.Completed;
+    }
+
+    public void Cancel()
+    {
+        if (this.Status is MeetingStatus.Cancelled or MeetingStatus.Completed)
+        {
+            throw new InvalidOperationException(
+                $"A {this.Status.ToString().ToLowerInvariant()} meeting cannot be cancelled.");
+        }
+
+        this.Status = MeetingStatus.Cancelled;
+    }
+
+    protected Meeting() { }
+}
+

@@ -1,0 +1,91 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Schedule.API.Common;
+using Schedule.Application.DTOs;
+using Schedule.Application.Handlers;
+
+namespace Schedule.API.Controllers;
+
+[ApiController]
+[Authorize]
+[Route("api/schedule/meetings")]
+public class MeetingsController : ControllerBase
+{
+    private readonly MeetingHandler _handler;
+
+    public MeetingsController(MeetingHandler handler) { _handler = handler; }
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<MeetingDto>> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+        var result = await _handler.GetByIdAsync(id, requester, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
+        return Ok(result.Value);
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<MeetingDto>>> Get([FromQuery] Guid? teacherId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken)
+    {
+        if (teacherId is null)
+        {
+            var requester = User.ToRequester();
+            if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+            var all = await _handler.GetAllAsync(requester, cancellationToken);
+            return Ok(all.Value);
+        }
+
+        if (teacherId == Guid.Empty) return BadRequest(new { message = "The 'teacherId' query parameter cannot be empty." });
+        if (from is null || to is null) return BadRequest(new { message = "The 'from' and 'to' query parameters are required when filtering by teacher." });
+        var result = await _handler.GetByTeacherAsync(teacherId.Value, from.Value, to.Value, cancellationToken);
+        if (result.IsError) return BadRequest(new { message = result.FirstError.Description });
+        return Ok(result.Value);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<MeetingDto>> Create([FromBody] CreateMeetingRequest request, CancellationToken cancellationToken)
+    {
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+        var result = await _handler.CreateAsync(request, requester, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
+        return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    public async Task<ActionResult<MeetingDto>> UpdateStatus(Guid id, [FromBody] UpdateMeetingStatusRequest request, CancellationToken cancellationToken)
+    {
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+        var result = await _handler.UpdateStatusAsync(id, request.Status, requester.UserId, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
+        return Ok(result.Value);
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<MeetingDto>> Reschedule(Guid id, [FromBody] RescheduleMeetingRequest request, CancellationToken cancellationToken)
+    {
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+        var result = await _handler.RescheduleAsync(id, request, requester.UserId, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
+        return Ok(result.Value);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken)
+    {
+        var requester = User.ToRequester();
+        if (requester is null) return Unauthorized(new { message = ErrorResults.MissingUserMessage });
+
+        var result = await _handler.CancelAsync(id, requester.UserId, cancellationToken);
+        if (result.IsError) return this.ToActionResult(result.FirstError);
+        return NoContent();
+    }
+}

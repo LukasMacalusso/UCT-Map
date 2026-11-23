@@ -1,0 +1,168 @@
+name: uct-map
+
+services:
+  # --- Databases ---
+  postgres:
+    image: postgres:17-alpine
+    container_name: uct_postgres
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+    networks:
+      - uct_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  mongodb:
+    image: mongo:7
+    container_name: uct_mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_PASSWORD:?Define MONGO_PASSWORD}"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - uct_network
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "mongosh --quiet -u root -p $$MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin --eval 'db.adminCommand({ping:1}).ok' | grep 1"
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  # ---- Microservices ---- #
+  # -- Identity -- #
+  identity-api:
+    build:
+      context: .
+      dockerfile: src/backend/Services/Identity/Dockerfile
+    container_name: uct_identity_api
+    ports:
+      - "5001:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__IdentityDb: "Host=postgres;Port=5432;Database=uct_identity_db;Username=root;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+      JwtConfig__Key: "${UCT_JWT_KEY:?Define UCT_JWT_KEY}"
+      JwtConfig__Issuer: "https://identity-api"
+      JwtConfig__Audience: "api-gateway"
+      JwtConfig__TokenValidationMins: "30"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - uct_network
+
+  # ---- Campus ---- #
+  campus-api:
+    build:
+      context: .
+      dockerfile: src/backend/Services/Campus/Dockerfile
+    container_name: uct_campus_api
+    ports:
+      - "5002:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__CampusDb: "Host=postgres;Port=5432;Database=uct_campus_db;Username=root;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+      JwtConfig__Key: "${UCT_JWT_KEY:?Define UCT_JWT_KEY}"
+      JwtConfig__Issuer: "https://identity-api"
+      JwtConfig__Audience: "api-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - uct_network
+
+  # ---- Incident ---- #
+  incident-api:
+    build:
+      context: .
+      dockerfile: src/backend/Services/Incident/Dockerfile
+    container_name: uct_incident_api
+    ports:
+      - "5003:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      MongoDB__ConnectionString: "mongodb://root:${MONGO_PASSWORD:?Define MONGO_PASSWORD}@mongodb:27017/?authSource=admin"
+      MongoDB__DatabaseName: "uct_incident_db"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - uct_network
+
+  # ---- Schedule ---- #
+  schedule-api:
+    build:
+      context: .
+      dockerfile: src/backend/Services/Schedule/Dockerfile
+    container_name: uct_schedule_api
+    ports:
+      - "5004:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__ScheduleDb: "Host=postgres;Port=5432;Database=uct_schedule_db;Username=root;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+      JwtConfig__Key: "${UCT_JWT_KEY:?Define UCT_JWT_KEY}"
+      JwtConfig__Issuer: "https://identity-api"
+      JwtConfig__Audience: "api-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - uct_network
+
+  # ---- API Gateway ---- #
+  api-gateway:
+    build:
+      context: .
+      dockerfile: src/backend/ApiGateway/Dockerfile
+    container_name: uct_api_gateway
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      JwtConfig__Key: "${UCT_JWT_KEY:?Define UCT_JWT_KEY}"
+      JwtConfig__Issuer: "https://identity-api"
+      JwtConfig__Audience: "api-gateway"
+    depends_on:
+      - identity-api
+      - campus-api
+      - incident-api
+      - schedule-api
+    networks:
+      - uct_network
+
+  # ---- Frontend ---- #
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    container_name: uct_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - uct_network
+
+networks:
+  uct_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongodb_data:

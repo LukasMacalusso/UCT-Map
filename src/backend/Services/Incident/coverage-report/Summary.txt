@@ -1,0 +1,61 @@
+Summary
+  Generated on: 31-10-2026 - 3:41:37 a. m.
+  Coverage date: 31-10-2026 - 3:41:04 a. m. - 31-10-2026 - 3:41:25 a. m.
+  Parser: MultiReport (2x Cobertura)
+  Assemblies: 4
+  Classes: 33
+  Files: 24
+  Line coverage: 100%
+  Covered lines: 752
+  Uncovered lines: 0
+  Coverable lines: 752
+  Total lines: 1288
+  Branch coverage: 99.5% (219 of 220)
+  Covered branches: 219
+  Total branches: 220
+  Method coverage: 100% (185 of 185)
+  Full method coverage: 100% (185 of 185)
+  Covered methods: 185
+  Fully covered methods: 185
+  Total methods: 185
+
+Incident.API                                                             100%
+  Incident.API.Controllers.HealthController                              100%
+  Incident.API.Controllers.LostObjectsController                         100%
+  Incident.API.Controllers.ReportsController                             100%
+  Program                                                                100%
+
+Incident.Application                                                     100%
+  Incident.Application.Common.JwtUserIdReader                            100%
+  Incident.Application.DTOs.ComplaintSearchRequest                       100%
+  Incident.Application.DTOs.CreateLostObjectRequest                      100%
+  Incident.Application.DTOs.CreateReportRequest                          100%
+  Incident.Application.DTOs.LostObjectPageResponse                       100%
+  Incident.Application.DTOs.LostObjectResponse                           100%
+  Incident.Application.DTOs.LostObjectSearchRequest                      100%
+  Incident.Application.DTOs.TicketPageResponse                           100%
+  Incident.Application.DTOs.TicketResponse                               100%
+  Incident.Application.DTOs.TicketSearchRequest                          100%
+  Incident.Application.DTOs.UpdateStatus                                 100%
+  Incident.Application.DTOs.UpdateStatusReport                           100%
+  Incident.Application.Handlers.LostObjectHandler                        100%
+  Incident.Application.Handlers.ReportHandler                            100%
+
+Incident.Domain                                                          100%
+  Incident.Domain.Entities.ComplaintDetails                              100%
+  Incident.Domain.Entities.GeoPoint                                      100%
+  Incident.Domain.Entities.LostObject                                    100%
+  Incident.Domain.Entities.Ticket                                        100%
+  Incident.Domain.Queries.ComplaintSearchCriteria                        100%
+  Incident.Domain.Queries.LostObjectSearchCriteria                       100%
+  Incident.Domain.Queries.PagedResult<T>                                 100%
+  Incident.Domain.Queries.TicketSearchCriteria                           100%
+
+Incident.Infrastructure                                                  100%
+  Incident.Infrastructure.DependencyInjection                            100%
+  Incident.Infrastructure.Persistence.MongoDbContext                     100%
+  Incident.Infrastructure.Persistence.Repositories.MongoRepository<T>    100%
+  Incident.Infrastructure.Persistence.Repositories.ObjectRepository      100%
+  Incident.Infrastructure.Persistence.Repositories.TicketRepository      100%
+  Incident.Infrastructure.Persistence.Search.LostObjectFilters           100%
+  Incident.Infrastructure.Persistence.Search.TicketFilters               100%
