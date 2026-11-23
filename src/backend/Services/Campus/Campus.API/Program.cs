@@ -13,7 +13,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var jwtKey = builder.Configuration["JwtConfig:Key"] ?? "7d82f3a9b4e1c60d5f27a8b9c0d1e2f3a4b5c6d7e8f90a1b2c3d4e5f6a7b8c9d";
+var jwtKey = builder.Configuration["JwtConfig:Key"]
+    ?? throw new InvalidOperationException("JWT setting 'JwtConfig:Key' was not found.");
 var jwtIssuer = builder.Configuration["JwtConfig:Issuer"] ?? "https://identity-api";
 var jwtAudience = builder.Configuration["JwtConfig:Audience"] ?? "api-gateway";
 

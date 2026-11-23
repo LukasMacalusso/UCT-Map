@@ -14,7 +14,7 @@ public static class DependencyInjection
     {
         MongoDbConfiguration.RegisterClassMaps();
         var connectionString = configuration["MongoDB:ConnectionString"]
-                               ?? "mongodb://root:rootpassword@mongodb:27017/?authSource=admin";
+                               ?? "mongodb://localhost:27017";
 
         var databaseName = configuration["MongoDB:DatabaseName"]
                            ?? "uct_incident_db";

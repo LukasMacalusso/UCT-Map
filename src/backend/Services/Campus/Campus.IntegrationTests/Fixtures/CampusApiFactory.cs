@@ -23,6 +23,11 @@ public sealed class CampusApiFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseSetting("ConnectionStrings:CampusDb", "Host=unused");
+        builder.UseSetting("JwtConfig:Key", TestJwtGenerator.SecretKey);
+        builder.UseSetting("JwtConfig:Issuer", TestJwtGenerator.Issuer);
+        builder.UseSetting("JwtConfig:Audience", TestJwtGenerator.Audience);
+
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<DbContextOptions<CampusDbContext>>();
