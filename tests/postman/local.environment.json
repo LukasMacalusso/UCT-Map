@@ -15,7 +15,25 @@
       "enabled": true
     },
     {
+      "key": "admin_token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "teacher_token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
       "key": "e2e_user_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "teacher_user_id",
       "value": "",
       "type": "default",
       "enabled": true
@@ -34,6 +52,36 @@
     },
     {
       "key": "test_password",
+      "value": "Password123!",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "admin_email",
+      "value": "admin@uct.cl",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "admin_password",
+      "value": "Sprint2!",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "teacher_name",
+      "value": "E2E Teacher User",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "teacher_email",
+      "value": "e2e_teacher@uct.cl",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "teacher_password",
       "value": "Password123!",
       "type": "secret",
       "enabled": true

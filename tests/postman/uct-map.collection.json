@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "UCT Map API Gateway E2E Suite",
-    "description": "Modular End-to-End integration test suite for UCT Map API Gateway and microservices.",
+    "description": "Comprehensive End-to-End integration test suite for UCT Map API Gateway and all microservices (Identity, Campus, Incident, Schedule).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -38,21 +38,15 @@
   "item": [
     {
       "name": "00. Auth & Gateway Security",
-      "description": "Tests public routing, perimeter security, and token issuance.",
+      "description": "Tests public routing, perimeter security, and token issuance for Student, Admin, and Teacher roles.",
       "item": [
         {
-          "name": "01. Public Route - Register E2E User (No Auth)",
+          "name": "01. Public Route - Register E2E Student User (No Auth)",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -70,7 +64,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 201 or 400 for public register route\", function () {",
+                  "pm.test('Status code is 201 or 400 for public register route', function () {",
                   "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
                   "});"
                 ]
@@ -79,19 +73,21 @@
           ]
         },
         {
-          "name": "02. Protected Route - Campus Without Token (Expect 401)",
+          "name": "01b. Public Route - Register E2E Teacher User (No Auth)",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{teacher_name}}\",\n  \"email\": \"{{teacher_email}}\",\n  \"password\": \"{{teacher_password}}\"\n}"
+            },
             "url": {
-              "raw": "{{baseUrl}}/api/campus/campuses",
+              "raw": "{{baseUrl}}/api/identity/register",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "campus", "campuses"]
+              "path": ["api", "identity", "register"]
             }
           },
           "event": [
@@ -100,15 +96,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Gateway rejects unauthenticated request with 401\", function () {",
-                  "    pm.response.to.have.status(401);",
-                  "});",
-                  "pm.test(\"Gateway returns standardized ProblemDetails JSON on 401\", function () {",
-                  "    var body = pm.response.json();",
-                  "    pm.expect(body.status).to.eql(401);",
-                  "    pm.expect(body.title).to.eql(\"Unauthorized\");",
-                  "    pm.expect(body.detail).to.be.a(\"string\");",
-                  "    pm.expect(body.instance).to.eql(\"/api/campus/campuses\");",
+                  "pm.test('Register teacher user returns 201 or 400 if already exists', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
                   "});"
                 ]
               }
@@ -116,18 +105,44 @@
           ]
         },
         {
-          "name": "03. Protected Route - Campus With Malformed Token (Expect 401)",
+          "name": "02. Protected Route - Campus POST Without Token (Expect 401)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/campuses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "campuses"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Gateway rejects unauthenticated request with 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test('Gateway returns standardized ProblemDetails JSON on 401', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql(401);",
+                  "    pm.expect(body.title).to.eql('Unauthorized');",
+                  "    pm.expect(body.detail).to.be.a('string');",
+                  "    pm.expect(body.instance).to.eql('/api/campus/campuses');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03. Protected Route - Campus POST With Malformed Token (Expect 401)",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer malformed_or_tampered_jwt_token"
-              }
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer malformed_or_tampered_jwt_token" }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/campus/campuses",
@@ -141,14 +156,14 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Gateway rejects malformed JWT with 401\", function () {",
+                  "pm.test('Gateway rejects malformed JWT with 401', function () {",
                   "    pm.response.to.have.status(401);",
                   "});",
-                  "pm.test(\"Gateway returns standardized ProblemDetails JSON on malformed JWT\", function () {",
+                  "pm.test('Gateway returns standardized ProblemDetails JSON on malformed JWT', function () {",
                   "    var body = pm.response.json();",
                   "    pm.expect(body.status).to.eql(401);",
-                  "    pm.expect(body.title).to.eql(\"Unauthorized\");",
-                  "    pm.expect(body.detail).to.be.a(\"string\");",
+                  "    pm.expect(body.title).to.eql('Unauthorized');",
+                  "    pm.expect(body.detail).to.be.a('string');",
                   "});"
                 ]
               }
@@ -159,12 +174,7 @@
           "name": "03b. Unknown Route - Unmapped Gateway Path (No Auth, Expect 404)",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Accept", "value": "application/json" }],
             "url": {
               "raw": "{{baseUrl}}/api/unknown/resource",
               "host": ["{{baseUrl}}"],
@@ -177,12 +187,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Gateway returns 404 ProblemDetails for unmapped route\", function () {",
+                  "pm.test('Gateway returns 404 ProblemDetails for unmapped route', function () {",
                   "    pm.response.to.have.status(404);",
                   "    var body = pm.response.json();",
                   "    pm.expect(body.status).to.eql(404);",
-                  "    pm.expect(body.title).to.eql(\"Not Found\");",
-                  "    pm.expect(body.instance).to.eql(\"/api/unknown/resource\");",
+                  "    pm.expect(body.title).to.eql('Not Found');",
+                  "    pm.expect(body.instance).to.eql('/api/unknown/resource');",
                   "});"
                 ]
               }
@@ -190,18 +200,12 @@
           ]
         },
         {
-          "name": "04. Identity - Login and Extract JWT Token",
+          "name": "04. Identity - Login Student and Extract JWT Token",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -219,14 +223,87 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Login returned 200 OK\", function () {",
+                  "pm.test('Student login returned 200 OK', function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"Response contains JWT token and saves to environment\", function () {",
+                  "pm.test('Response contains JWT token and saves to environment', function () {",
                   "    var data = pm.response.json();",
                   "    pm.expect(data.token).to.be.a('string');",
-                  "    pm.environment.set(\"jwt_token\", data.token);",
-                  "    pm.environment.set(\"e2e_user_id\", data.userId);",
+                  "    pm.environment.set('jwt_token', data.token);",
+                  "    pm.environment.set('e2e_user_id', data.userId);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05. Identity - Login Seeded Admin and Extract Admin Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin login returned 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Admin token saved to environment', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.token).to.be.a('string');",
+                  "    pm.environment.set('admin_token', data.token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06. Identity - Login Teacher User (Initial) to Capture UserId",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{teacher_email}}\",\n  \"password\": \"{{teacher_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teacher initial login returned 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Teacher userId saved to environment', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.environment.set('teacher_user_id', data.userId);",
                   "});"
                 ]
               }
@@ -237,28 +314,17 @@
     },
     {
       "name": "01. Identity Service",
-      "description": "Endpoints corresponding to Identity and User Management.",
+      "description": "Endpoints for user lookup, role management, and account suspension.",
       "auth": {
         "type": "bearer",
-        "bearer": [
-          {
-            "key": "token",
-            "value": "{{jwt_token}}",
-            "type": "string"
-          }
-        ]
+        "bearer": [{ "key": "token", "value": "{{jwt_token}}", "type": "string" }]
       },
       "item": [
         {
           "name": "Get All Users",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Accept", "value": "application/json" }],
             "url": {
               "raw": "{{baseUrl}}/api/identity",
               "host": ["{{baseUrl}}"],
@@ -271,8 +337,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Identity GetAll returned 200\", function () {",
+                  "pm.test('Identity GetAll returned 200', function () {",
                   "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
                   "});"
                 ]
               }
@@ -280,18 +347,38 @@
           ]
         },
         {
-          "name": "Register User",
+          "name": "Get User By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/{{e2e_user_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "{{e2e_user_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get User By ID returned 200 with matching userId', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().userId).to.eql(pm.environment.get('e2e_user_id'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Dynamic User",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -309,8 +396,297 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Register user returned 201 or 400\", function () {",
+                  "pm.test('Register dynamic user returned 201 or 400', function () {",
                   "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User Roles as Student (Expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/{{teacher_user_id}}/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "{{teacher_user_id}}", "roles"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Student cannot access role management endpoints (403)', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Replace Teacher User Roles (Assign Teacher + ObjectsOfficer)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": [\"Teacher\", \"ObjectsOfficer\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/{{teacher_user_id}}/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "{{teacher_user_id}}", "roles"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin replaces user roles with 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.roles).to.include('Teacher');",
+                  "    pm.expect(body.roles).to.include('ObjectsOfficer');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Get Teacher User Roles",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/{{teacher_user_id}}/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "{{teacher_user_id}}", "roles"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin retrieves user roles (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().isSuspended).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Add Role to Teacher User (ComplaintsOfficer)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"ComplaintsOfficer\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/{{teacher_user_id}}/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "{{teacher_user_id}}", "roles"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin adds role (201)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(pm.response.json().roles).to.include('ComplaintsOfficer');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Remove Role from Teacher User (ComplaintsOfficer)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/{{teacher_user_id}}/roles/ComplaintsOfficer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "{{teacher_user_id}}", "roles", "ComplaintsOfficer"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin removes role (204)', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Suspend Teacher User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/{{teacher_user_id}}/suspension",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "{{teacher_user_id}}", "suspension"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin suspends user (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().isSuspended).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspended User Login Blocked (No Auth, Expect 401)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{teacher_email}}\",\n  \"password\": \"{{teacher_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Suspended user cannot log in (401)', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Reactivate Teacher User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/{{teacher_user_id}}/suspension",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "{{teacher_user_id}}", "suspension"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin reactivates user (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().isSuspended).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Re-Login Teacher User to Obtain Updated Role Token",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{teacher_email}}\",\n  \"password\": \"{{teacher_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/identity/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "identity", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teacher re-login succeeds after reactivation (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.token).to.be.a('string');",
+                  "    pm.environment.set('teacher_token', data.token);",
                   "});"
                 ]
               }
@@ -321,28 +697,17 @@
     },
     {
       "name": "02. Campus Service",
-      "description": "Endpoints corresponding to Campus, Buildings, and Rooms.",
+      "description": "Endpoints for Campuses, Buildings, Structures, Rooms, Categories, and Unified Map.",
       "auth": {
         "type": "bearer",
-        "bearer": [
-          {
-            "key": "token",
-            "value": "{{jwt_token}}",
-            "type": "string"
-          }
-        ]
+        "bearer": [{ "key": "token", "value": "{{jwt_token}}", "type": "string" }]
       },
       "item": [
         {
-          "name": "Get Campuses",
+          "name": "Get Campuses (Seeded)",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Accept", "value": "application/json" }],
             "url": {
               "raw": "{{baseUrl}}/api/campus/campuses",
               "host": ["{{baseUrl}}"],
@@ -355,8 +720,11 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Campus list returned 200\", function () {",
+                  "pm.test('Campus list returned 200 with seeded data', function () {",
                   "    pm.response.to.have.status(200);",
+                  "    var campuses = pm.response.json();",
+                  "    pm.expect(campuses).to.be.an('array').that.is.not.empty;",
+                  "    pm.environment.set('seeded_campus_id', campuses[0].id);",
                   "});"
                 ]
               }
@@ -364,18 +732,202 @@
           ]
         },
         {
-          "name": "Create Campus",
+          "name": "Get Campus By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/campuses/{{seeded_campus_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "campuses", "{{seeded_campus_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Campus By ID returned 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().id).to.eql(pm.environment.get('seeded_campus_id'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Campus Unified Map",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/campuses/{{seeded_campus_id}}/map",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "campuses", "{{seeded_campus_id}}", "map"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Campus unified map returned 200 with camera, buildings and structures', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var map = pm.response.json();",
+                  "    pm.expect(map.camera).to.be.an('object');",
+                  "    pm.expect(map.buildings).to.be.an('array');",
+                  "    pm.expect(map.structures).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Buildings & Locations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/buildings/locations?campusId={{seeded_campus_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "buildings", "locations"],
+              "query": [{ "key": "campusId", "value": "{{seeded_campus_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Building locations returned 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var list = pm.response.json();",
+                  "    pm.expect(list).to.be.an('array').that.is.not.empty;",
+                  "    pm.environment.set('seeded_building_id', list[0].id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Rooms By Building",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/buildings/{{seeded_building_id}}/rooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "buildings", "{{seeded_building_id}}", "rooms"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Rooms By Building returned 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Rooms",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/rooms/search?term=CJP",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "rooms", "search"],
+              "query": [{ "key": "term", "value": "CJP" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Search Rooms returned 200 with matches', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Structures & Locations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/structures/locations?campusId={{seeded_campus_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "structures", "locations"],
+              "query": [{ "key": "campusId", "value": "{{seeded_campus_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Structure locations returned 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "categories"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Categories list returned 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Campus as Student (Expect 403)",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -393,8 +945,405 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Create campus returns 403 for non-admin user\", function () {",
-                  "    pm.expect(pm.response.code).to.eql(403);",
+                  "pm.test('Create campus returns 403 for non-admin user', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Create Category",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Categoria E2E\",\n  \"icon\": \"star\",\n  \"description\": \"Creada por test E2E\",\n  \"order\": 99\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "categories"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin creates category (201)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.environment.set('e2e_category_id', pm.response.json().id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Reorder Category",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"id\": \"{{e2e_category_id}}\", \"order\": 50 }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/categories/reorder",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "categories", "reorder"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin reorders categories (204)', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Create Campus",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{campus_name}}\",\n  \"address\": \"{{campus_address}}\",\n  \"latitude\": {{campus_lat}},\n  \"longitude\": {{campus_lng}},\n  \"zoom\": 16,\n  \"pitch\": 45,\n  \"bearing\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/campuses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "campuses"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin creates campus (201)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.environment.set('e2e_campus_id', pm.response.json().id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Update Campus Location (PATCH)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": -38.7340,\n  \"longitude\": -72.6025\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/campuses/{{e2e_campus_id}}/location",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "campuses", "{{e2e_campus_id}}", "location"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin moves campus marker (204)', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Create Building",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"campusId\": \"{{e2e_campus_id}}\",\n  \"categoryId\": \"{{e2e_category_id}}\",\n  \"name\": \"Edificio E2E\",\n  \"floorsCount\": 3,\n  \"latitude\": -38.7341,\n  \"longitude\": -72.6026\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/buildings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "buildings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin creates building (201)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.environment.set('e2e_building_id', pm.response.json().id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Create Room",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buildingId\": \"{{e2e_building_id}}\",\n  \"name\": \"E2E-101\",\n  \"floor\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/rooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "rooms"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin creates room (201)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.environment.set('e2e_room_id', pm.response.json().id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Create Structure",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"campusId\": \"{{e2e_campus_id}}\",\n  \"categoryId\": \"{{e2e_category_id}}\",\n  \"name\": \"Estructura E2E\",\n  \"latitude\": -38.7342,\n  \"longitude\": -72.6027\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/structures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "structures"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin creates structure (201)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.environment.set('e2e_structure_id', pm.response.json().id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Cleanup Structure, Room, Building, Campus, Category (DELETE Structure)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/structures/{{e2e_structure_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "structures", "{{e2e_structure_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin deletes E2E structure (204)', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Cleanup DELETE Room",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/rooms/{{e2e_room_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "rooms", "{{e2e_room_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin deletes E2E room (204)', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Cleanup DELETE Building",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/buildings/{{e2e_building_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "buildings", "{{e2e_building_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin deletes E2E building (204)', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Cleanup DELETE Campus",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/campuses/{{e2e_campus_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "campuses", "{{e2e_campus_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin deletes E2E campus (204)', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Cleanup DELETE Category",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/campus/categories/{{e2e_category_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campus", "categories", "{{e2e_category_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin deletes E2E category (204)', function () {",
+                  "    pm.response.to.have.status(204);",
                   "});"
                 ]
               }
@@ -405,35 +1354,23 @@
     },
     {
       "name": "03. Incident Service",
-      "description": "Endpoints corresponding to Incident Reports and Lost Objects.",
+      "description": "Full CRUD, search, role authorization, and cleanup for Lost Objects and Incident Reports.",
       "auth": {
         "type": "bearer",
-        "bearer": [
-          {
-            "key": "token",
-            "value": "{{jwt_token}}",
-            "type": "string"
-          }
-        ]
+        "bearer": [{ "key": "token", "value": "{{jwt_token}}", "type": "string" }]
       },
       "item": [
         {
-          "name": "Create Lost Object Report (Validation)",
+          "name": "Create Lost Object (Valid Payload)",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"{{lost_object_title}}\",\n  \"description\": \"{{lost_object_desc}}\",\n  \"location\": \"{{lost_object_location}}\",\n  \"date\": \"{{lost_object_date}}\"\n}"
+              "raw": "{\n  \"title\": \"{{lost_object_title}}\",\n  \"description\": \"{{lost_object_desc}}\",\n  \"status\": 0,\n  \"photoUrl\": \"{{lost_object_photo}}\",\n  \"structureId\": \"{{lost_object_structure_id}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/incident/lost-objects",
@@ -447,8 +1384,324 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Incident gateway responds with valid code\", function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 400]);",
+                  "pm.test('Create Lost Object returned 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.id).to.be.a('string');",
+                  "    pm.environment.set('e2e_lost_object_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Lost Object By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/lost-objects/{{e2e_lost_object_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "lost-objects", "{{e2e_lost_object_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Lost Object By ID returned 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().lostObjectId).to.eql(pm.environment.get('e2e_lost_object_id'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Lost Objects",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/lost-objects?title=Mochila&status=0&page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "lost-objects"],
+              "query": [
+                { "key": "title", "value": "Mochila" },
+                { "key": "status", "value": "0" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Search Lost Objects returned 200 with paged result', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.items).to.be.an('array').that.is.not.empty;",
+                  "    pm.expect(body.totalCount).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Lost Object Status as Student (Expect 403)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/lost-objects/{{e2e_lost_object_id}}/lost/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "lost-objects", "{{e2e_lost_object_id}}", "lost", "status"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Student cannot update lost object status (403)', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Officer - Update Lost Object Status (Expect 204)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{teacher_token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/lost-objects/{{e2e_lost_object_id}}/lost/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "lost-objects", "{{e2e_lost_object_id}}", "lost", "status"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ObjectsOfficer updates lost object status (204)', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Report Referencing Lost Object",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"structureRefId\": \"{{lost_object_structure_id}}\",\n  \"ticketType\": 0,\n  \"isActive\": true,\n  \"reportedAt\": \"2026-10-16T10:30:00Z\",\n  \"lostObjectId\": \"{{e2e_lost_object_id}}\",\n  \"complaint\": {\n    \"title\": \"Fuga de agua E2E\",\n    \"description\": \"Reporte generado por test E2E\",\n    \"status\": 0\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "reports"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create Report returned 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.id).to.be.a('string');",
+                  "    pm.environment.set('e2e_report_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Report By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/reports/{{e2e_report_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "reports", "{{e2e_report_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Report By ID returned 200 with JWT sub as userRefId', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.id).to.eql(pm.environment.get('e2e_report_id'));",
+                  "    pm.expect(body.userRefId).to.eql(pm.environment.get('e2e_user_id'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Reports (Advanced Filters)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/reports?userRefId={{e2e_user_id}}&type=0&isActive=true&complaintDetails.title=fuga&page=1&pageSize=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "reports"],
+              "query": [
+                { "key": "userRefId", "value": "{{e2e_user_id}}" },
+                { "key": "type", "value": "0" },
+                { "key": "isActive", "value": "true" },
+                { "key": "complaintDetails.title", "value": "fuga" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Search Reports returned 200 with matching report', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.items).to.be.an('array').that.is.not.empty;",
+                  "    pm.expect(body.totalCount).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Officer - Update Report Status (Expect 204)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{teacher_token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 1,\n  \"complainStatus\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/reports/{{e2e_report_id}}/report/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "reports", "{{e2e_report_id}}", "report", "status"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Officer updates report status (204)', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner - Delete Report",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/reports/{{e2e_report_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "reports", "{{e2e_report_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Owner deletes report (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner - Delete Lost Object",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/lost-objects/{{e2e_lost_object_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "lost-objects", "{{e2e_lost_object_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Owner deletes lost object (200)', function () {",
+                  "    pm.response.to.have.status(200);",
                   "});"
                 ]
               }
@@ -459,42 +1712,28 @@
     },
     {
       "name": "04. Schedule Service",
-      "description": "Endpoints corresponding to Teacher workload and Student meetings.",
+      "description": "Office Hours, Teacher Availability & Workload, Room Availability, and Meetings lifecycle with Anti-IDOR checks.",
       "auth": {
         "type": "bearer",
-        "bearer": [
-          {
-            "key": "token",
-            "value": "{{jwt_token}}",
-            "type": "string"
-          }
-        ]
+        "bearer": [{ "key": "token", "value": "{{jwt_token}}", "type": "string" }]
       },
       "item": [
         {
-          "name": "Get Own Student Meetings",
+          "name": "Create Office Hour as Student (Expect 403)",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"teacherRefId\": \"{{teacher_user_id}}\",\n  \"structureRefId\": \"{{schedule_room_id}}\",\n  \"dayOfWeek\": 1,\n  \"startTime\": \"09:00:00\",\n  \"endTime\": \"11:00:00\"\n}"
+            },
             "url": {
-              "raw": "{{baseUrl}}/api/schedule/students/{{e2e_user_id}}/meetings?from={{schedule_from}}&to={{schedule_to}}",
+              "raw": "{{baseUrl}}/api/schedule/office-hours",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "schedule", "students", "{{e2e_user_id}}", "meetings"],
-              "query": [
-                {
-                  "key": "from",
-                  "value": "{{schedule_from}}"
-                },
-                {
-                  "key": "to",
-                  "value": "{{schedule_to}}"
-                }
-              ]
+              "path": ["api", "schedule", "office-hours"]
             }
           },
           "event": [
@@ -503,47 +1742,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Schedule responds via Gateway with 200 or 400 validation\", function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Get Another Student's Meetings (IDOR, Expect 403)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/schedule/students/{{schedule_student_id}}/meetings?from={{schedule_from}}&to={{schedule_to}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "schedule", "students", "{{schedule_student_id}}", "meetings"],
-              "query": [
-                {
-                  "key": "from",
-                  "value": "{{schedule_from}}"
-                },
-                {
-                  "key": "to",
-                  "value": "{{schedule_to}}"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Schedule rejects reading another student's meetings with 403\", function () {",
+                  "pm.test('Student cannot create office hour (403)', function () {",
                   "    pm.response.to.have.status(403);",
                   "});"
                 ]
@@ -552,15 +1751,178 @@
           ]
         },
         {
-          "name": "Get All Meetings",
+          "name": "Teacher - Create Office Hour (Monday 09:00-11:00)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{teacher_token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"teacherRefId\": \"{{teacher_user_id}}\",\n  \"structureRefId\": \"{{schedule_room_id}}\",\n  \"dayOfWeek\": 1,\n  \"startTime\": \"09:00:00\",\n  \"endTime\": \"11:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/office-hours",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "office-hours"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teacher creates office hour (201)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.dayOfWeek).to.eql('Monday');",
+                  "    pm.environment.set('e2e_office_hour_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Office Hours by Teacher",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/office-hours?teacherId={{teacher_user_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "office-hours"],
+              "query": [{ "key": "teacherId", "value": "{{teacher_user_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Office Hours returned 200 with created block', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
               }
+            }
+          ]
+        },
+        {
+          "name": "Teacher - Update Office Hour (Extend to 12:00)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{teacher_token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"structureRefId\": \"{{schedule_room_id}}\",\n  \"dayOfWeek\": 1,\n  \"startTime\": \"09:00:00\",\n  \"endTime\": \"12:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/office-hours/{{e2e_office_hour_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "office-hours", "{{e2e_office_hour_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teacher updates office hour (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().endTime).to.eql('12:00:00');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Teacher Availability",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/teachers/{{teacher_user_id}}/availability",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "teachers", "{{teacher_user_id}}", "availability"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teacher availability returned 200 with availableBlocks', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().availableBlocks).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Room Availability",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/rooms/availability?from=2026-10-12T12:00:00Z&to=2026-10-12T15:00:00Z&roomIds={{schedule_room_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "rooms", "availability"],
+              "query": [
+                { "key": "from", "value": "2026-10-12T12:00:00Z" },
+                { "key": "to", "value": "2026-10-12T15:00:00Z" },
+                { "key": "roomIds", "value": "{{schedule_room_id}}" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Room availability detects office hour occupancy (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.occupancies).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student - Book Meeting Inside Office Hour (Monday 10:00 Chile = 13:00 UTC)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"teacherRefId\": \"{{teacher_user_id}}\",\n  \"studentRefId\": \"{{e2e_user_id}}\",\n  \"structureRefId\": \"{{schedule_room_id}}\",\n  \"scheduledAt\": \"2026-10-12T13:00:00Z\",\n  \"durationMinutes\": 30\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/api/schedule/meetings",
               "host": ["{{baseUrl}}"],
@@ -573,8 +1935,279 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Schedule GetAll meetings returned 200\", function () {",
+                  "pm.test('Student books meeting inside office hour (201)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql('Pending');",
+                  "    pm.environment.set('e2e_meeting_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Meeting By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/meetings/{{e2e_meeting_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "meetings", "{{e2e_meeting_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Student reads own meeting by ID (200)', function () {",
                   "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().id).to.eql(pm.environment.get('e2e_meeting_id'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student - Reschedule Meeting (Monday 10:30 Chile = 13:30 UTC)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"structureRefId\": \"{{schedule_room_id}}\",\n  \"scheduledAt\": \"2026-10-12T13:30:00Z\",\n  \"durationMinutes\": 30\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/meetings/{{e2e_meeting_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "meetings", "{{e2e_meeting_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Student reschedules meeting (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teacher - Confirm Meeting Status (PATCH)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{teacher_token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Confirmed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/meetings/{{e2e_meeting_id}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "meetings", "{{e2e_meeting_id}}", "status"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teacher confirms meeting (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().status).to.eql('Confirmed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teacher - Get Own Workload",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{teacher_token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/teachers/{{teacher_user_id}}/workload?from={{schedule_from}}&to={{schedule_to}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "teachers", "{{teacher_user_id}}", "workload"],
+              "query": [
+                { "key": "from", "value": "{{schedule_from}}" },
+                { "key": "to", "value": "{{schedule_to}}" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teacher retrieves own workload (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.weeklyOfficeHourMinutes).to.be.above(0);",
+                  "    pm.expect(body.meetingCount).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Own Student Meetings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/students/{{e2e_user_id}}/meetings?from={{schedule_from}}&to={{schedule_to}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "students", "{{e2e_user_id}}", "meetings"],
+              "query": [
+                { "key": "from", "value": "{{schedule_from}}" },
+                { "key": "to", "value": "{{schedule_to}}" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Student retrieves own meetings (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().meetingCount).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Another Student's Meetings (IDOR, Expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/students/{{schedule_student_id}}/meetings?from={{schedule_from}}&to={{schedule_to}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "students", "{{schedule_student_id}}", "meetings"],
+              "query": [
+                { "key": "from", "value": "{{schedule_from}}" },
+                { "key": "to", "value": "{{schedule_to}}" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Schedule rejects reading another student meetings with 403', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Meetings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/meetings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "meetings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Schedule GetAll meetings returned 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student - Cancel Meeting (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/meetings/{{e2e_meeting_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "meetings", "{{e2e_meeting_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Student cancels meeting (204)', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teacher - Cleanup DELETE Office Hour",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{teacher_token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/office-hours/{{e2e_office_hour_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedule", "office-hours", "{{e2e_office_hour_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teacher deletes E2E office hour (204)', function () {",
+                  "    pm.response.to.have.status(204);",
                   "});"
                 ]
               }

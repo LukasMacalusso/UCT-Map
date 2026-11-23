@@ -9,7 +9,7 @@ Handles the reporting and tracking of campus incidents and complaints, together 
 ## Global Authentication
 - **Mechanism**: JWT (JSON Web Token), validated by the API Gateway.
 - **Header Format**: `Authorization: Bearer <token>`
-- **Note**: Unless explicitly marked as `[Public]`, all endpoints require a valid JWT. No endpoint is restricted to a specific role. When creating a report, the author is taken from the token's `sub` claim, so any `userRefId` sent in the body is ignored.
+- **Note**: Unless explicitly marked as `[Public]`, all endpoints require a valid JWT. Status update endpoints (`PATCH`) require one of the roles `Admin`, `ObjectsOfficer`, or `ComplaintsOfficer`. Deletion endpoints (`DELETE`) are restricted to the resource owner (matching JWT `sub` claim) or a user with `Admin`, `ObjectsOfficer`, or `ComplaintsOfficer` role. When creating a report or lost object, the author is taken from the token's `sub` claim, so any `userRefId` sent in the body is ignored.
 
 ## Conventions
 - References to other microservices are plain ids: `userRefId` (Identity) and `structureRefId` (Campus). Lost objects are referenced by their MongoDB `id` (`lostObjectId`).
@@ -121,7 +121,7 @@ The `Location` header points to 1.2.
 
 ### 1.3 Update Report Status
 - **Route**: `PATCH /api/incident/reports/{id}/report/status`
-- **Access**: Any authenticated user
+- **Access**: `Admin`, `ObjectsOfficer`, or `ComplaintsOfficer`
 - **Description**: Updates the ticket status and, when the ticket has complaint details, the complaint status as well.
 
 **Request Payload (`application/json`)**
@@ -136,6 +136,7 @@ The `Location` header points to 1.2.
 
 **Error Responses**
 - **`400 Bad Request`**: If `status` (or `complainStatus`) is not a defined value, or if the update does not modify the stored document (e.g. sending the status it already has).
+- **`403 Forbidden`**: If the authenticated user does not have `Admin`, `ObjectsOfficer`, or `ComplaintsOfficer` role.
 - **`404 Not Found`**: If no ticket exists with that id.
 
 ---
@@ -203,15 +204,29 @@ A query without matches returns `200 OK` with `"items": []` and `"totalCount": 0
 
 ---
 
+### 1.5 Delete Report
+- **Route**: `DELETE /api/incident/reports/{id}`
+- **Access**: Owner of the report (JWT `sub` matches `userRefId`) or `Admin`, `ObjectsOfficer`, `ComplaintsOfficer`
+- **Description**: Deletes a report by its MongoDB id.
+
+**Success Response (200 OK)**
+
+**Error Responses**
+- **`400 Bad Request`**: If the user is not authorized to delete the report or deletion fails.
+- **`401 Unauthorized`**: Missing or invalid `Authorization` header.
+- **`404 Not Found`**: If no ticket exists with that id.
+
+---
+
 ## 2. Lost Objects
 *Registry of items reported lost on campus, each associated with a structure.*
 
-> **Filtering by status** is served by the search endpoint: `GET /api/incident/lost-objects?status={0..3}` (see [4.10](#410-additional-queries)).
+> **Filtering by status** is served by the search endpoint: `GET /api/incident/lost-objects?status={0..3}` (see [2.4](#24-search-lost-objects)).
 
 ### 2.1 Create Lost Object
 - **Route**: `POST /api/incident/lost-objects`
 - **Access**: Any authenticated user
-- **Description**: Registers a lost object. The `status` is stored as received; no enum validation is applied on creation.
+- **Description**: Registers a lost object. The author is resolved from the JWT `sub` claim; any `userRefId` sent in the body is overwritten. The `status` is stored as received; no enum validation is applied on creation.
 
 **Request Payload (`application/json`)**
 ```json
@@ -231,6 +246,7 @@ A query without matches returns `200 OK` with `"items": []` and `"totalCount": 0
 The `Location` header points to 2.2.
 
 **Error Responses**
+- **`401 Unauthorized`**: The `Authorization` header is missing, malformed, or its `sub` claim is not a valid user id.
 - **`400 Bad Request`**: If `photoUrl` is not an absolute `http`/`https` URL, or `structureId` is an empty uuid.
 
 ---
@@ -240,19 +256,28 @@ The `Location` header points to 2.2.
 - **Access**: Any authenticated user
 - **Description**: Looks up a lost object by its MongoDB id.
 
-**Success Response**: currently `204 No Content`.
+**Success Response (200 OK)**
+```json
+{
+  "title": "Mochila negra",
+  "description": "Con un notebook",
+  "date": "2026-10-16T10:30:00Z",
+  "status": "Pending",
+  "photoUrl": "https://example.com/f",
+  "lostObjectId": "68f1c2...",
+  "structureId": "11111111-1111-1111-1111-111111111111"
+}
+```
 
 **Error Responses**
 - **`404 Not Found`**: If no lost object exists with that id.
 - **`400 Bad Request`**: For any other handled error.
 
-> The response payload returned by the lookup is not exposed yet; the endpoint currently answers with an empty body.
-
 ---
 
 ### 2.3 Update Lost Object Status
 - **Route**: `PATCH /api/incident/lost-objects/{id}/lost/status`
-- **Access**: Any authenticated user
+- **Access**: `Admin`, `ObjectsOfficer`, or `ComplaintsOfficer`
 - **Description**: Updates the status of a lost object.
 
 **Request Payload (`application/json`)**
@@ -266,6 +291,64 @@ The `Location` header points to 2.2.
 
 **Error Responses**
 - **`400 Bad Request`**: If `status` is not a defined value.
+- **`403 Forbidden`**: If the authenticated user does not have `Admin`, `ObjectsOfficer`, or `ComplaintsOfficer` role.
+- **`404 Not Found`**: If no lost object exists with that id.
+
+---
+
+### 2.4 Search Lost Objects
+- **Route**: `GET /api/incident/lost-objects`
+- **Access**: Any authenticated user
+- **Description**: Paged search over lost objects. All query parameters are optional and combined with `AND`.
+
+**Query Parameters**
+| Name | Type | Default | Notes |
+| :--- | :--- | :--- | :--- |
+| `title` | `string` | — | Case-insensitive, partial (substring) match. |
+| `structureId` | `uuid` | — | Exact match with the structure. |
+| `status` | `int` | — | `0` Pending, `1` In_Process, `2` Resolved, `3` Canceled. Out of range → `400`. |
+| `sortBy` | `enum` | `ReportedAt` | Sort field (`ReportedAt` or `Status`). |
+| `descending` | `bool` | `true` | Sort direction. |
+| `page` | `int` | `1` | Values `< 1` are clamped to `1`. |
+| `pageSize` | `int` | `10` | Clamped to the range `1..10`. |
+
+**Success Response (200 OK)**
+```json
+{
+  "items": [
+    {
+      "title": "Mochila negra",
+      "description": "Con un notebook",
+      "date": "2026-10-16T10:30:00Z",
+      "status": "Pending",
+      "photoUrl": "https://example.com/f",
+      "lostObjectId": "68f1c2...",
+      "structureId": "11111111-1111-1111-1111-111111111111"
+    }
+  ],
+  "totalCount": 1,
+  "page": 1,
+  "pageSize": 10,
+  "totalPages": 1
+}
+```
+
+**Error Responses**
+- **`400 Bad Request`**: If `status` is outside the defined enum or a parameter cannot be parsed.
+- **`401 Unauthorized`**: Missing or invalid `Authorization` header.
+
+---
+
+### 2.5 Delete Lost Object
+- **Route**: `DELETE /api/incident/lost-objects/{id}`
+- **Access**: Owner of the lost object (JWT `sub` matches `userRefId`) or `Admin`, `ObjectsOfficer`, `ComplaintsOfficer`
+- **Description**: Deletes a lost object by its MongoDB id.
+
+**Success Response (200 OK)**
+
+**Error Responses**
+- **`400 Bad Request`**: If the user is not authorized to delete the lost object or deletion fails.
+- **`401 Unauthorized`**: Missing or invalid `Authorization` header.
 - **`404 Not Found`**: If no lost object exists with that id.
 
 ---
@@ -527,7 +610,7 @@ Notes:
 ### 4.10 Additional queries
 - **Search reports**: `GET http://localhost:5000/api/incident/reports?type=0&page=1&pageSize=10` → `{ "items": [...], "totalCount": 1, "page": 1, "pageSize": 10, "totalPages": 1 }`.
 - **Search lost objects**: `GET http://localhost:5000/api/incident/lost-objects?title=Mochila&status=0&page=1&pageSize=10` → `{ "items": [...], "totalCount": 0, "page": 1, "pageSize": 10, "totalPages": 0 }`.
-- **Get lost object by id**: `GET http://localhost:5000/api/incident/lost-objects/{id}` → currently `204 No Content`.
+- **Get lost object by id**: `GET http://localhost:5000/api/incident/lost-objects/{id}` → `200 OK` with `LostObjectResponse`.
 - **Health (direct to the service, not exposed by the Gateway)**:
   - `GET http://localhost:5003/health` → `{ "service": "incident-service", "status": "healthy" }`
   - `GET http://localhost:5003/health/ready` → checks MongoDB connectivity.
