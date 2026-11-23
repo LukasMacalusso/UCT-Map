@@ -8,7 +8,8 @@ public record CreateLostObjectRequest(
     string Description,
     int Status,
     string PhotoUrl,
-    Guid StructureId
+    Guid StructureId,
+    Guid UserRefId
 );
 
 public record LostObjectSearchRequest(

@@ -115,6 +115,7 @@ public class ReportHandler : IReportHandler
         );
 
 
+
         var response = await _ticketRepository.UpdateStatusComplainAsync(ticket, status);
 
         if (!response) return Error.Failure(
@@ -183,27 +184,28 @@ public class ReportHandler : IReportHandler
     }
     public async Task<ErrorOr<Success>> DeleteAsync(string id, string userRefRole, string userRefId)
     {
-        var lostObject = await _ticketRepository.GetByIdAsync(id);
-        if (lostObject is null) return Error.NotFound(
-                code: "LostObject.NotFound",
-                description: $"LostObject with ID '{id}' was not found."
+        var report = await _ticketRepository.GetByIdAsync(id);
+        if (report is null) return Error.NotFound(
+                code: "Report.NotFound",
+                description: $"Report with ID '{id}' was not found."
             );
+        bool isOwner = userRefId == report.UserRefId.ToString();
 
-        if (userRefId != lostObject.UserRefId.ToString())
+        bool hasPermission = userRefRole is
+            "Admin" or "ObjectsOfficer" or "ComplaintsOfficer";
+
+        if (!isOwner && !hasPermission)
         {
-            if (userRefRole is not ("Admin" or "ObjectsOfficer" or "ComplaintsOfficer"))
-            {
-                return Error.Unauthorized(
-                        code: "LostObject.Unauthorized",
-                        description: $"'{userRefRole}' is not authorized"
-                    );
-            }
+            return Error.Forbidden(
+                code: "LostObject.Forbidden",
+                description: $"'{userRefRole}' is not authorized"
+            );
         }
-        var response = await _ticketRepository.DeleteAsync(lostObject.Id!);
+        var response = await _ticketRepository.DeleteAsync(report.Id!);
 
         if (!response) return Error.Failure(
-                code: "LostObject.UpdateFailed",
-                description: $"Failed to update status for LostObject with ID '{id}'."
+                code: "Report.DeleteFailed",
+                description: $"Failed to delete Report with ID '{id}'."
             );
 
         return Result.Success;

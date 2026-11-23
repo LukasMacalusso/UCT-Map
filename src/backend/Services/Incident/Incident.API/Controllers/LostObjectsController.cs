@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Incident.Application.Common;
 using ErrorOr;
 using MongoDB.Bson;
+using Microsoft.AspNetCore.Authorization;
 namespace Incident.API.Controllers;
 
 [ApiController]
@@ -23,6 +24,12 @@ public class LostObjectsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateLostObjectRequest request)
     {
+        var userRefId = JwtUserIdReader.GetUserIdToken(Request.Headers.Authorization.ToString());
+        if (userRefId is null)
+            return Unauthorized();
+
+        request = request with { UserRefId = userRefId.Value };
+
         var result = await _lostObjectHandler.CreateObjectAsync(request);
 
         return result.Match(
@@ -50,10 +57,11 @@ public class LostObjectsController : ControllerBase
             }
         );
     }
-
+    [Authorize(Roles = "Admin,ObjectsOfficer,ComplaintsOfficer")]
     [HttpPatch("{id}/lost/status")]
     public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatus status)
     {
+
         var result = await _lostObjectHandler.UpdateStatusAsync(id.ToString(), status);
         return result.Match(
             success => (IActionResult)NoContent(),
@@ -90,7 +98,8 @@ public class LostObjectsController : ControllerBase
     public async Task<IActionResult> Delete([FromRoute] string id)
     {
         var userRefRole = JwtUserIdReader.GetUserRoleToken(Request.Headers.Authorization.ToString());
-        var result = await _lostObjectHandler.DeleteAsync(id, userRefRole!);
+        var userRefId = JwtUserIdReader.GetUserIdToken(Request.Headers.Authorization.ToString());
+        var result = await _lostObjectHandler.DeleteAsync(id, userRefRole!, userRefId!.Value.ToString());
         return result.Match(
             page => Ok(page),
             errors =>

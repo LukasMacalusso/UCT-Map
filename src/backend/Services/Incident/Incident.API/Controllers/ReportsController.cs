@@ -6,6 +6,8 @@ using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Incident.Application.Common;
 using ErrorOr;
+using MongoDB.Bson;
+using Microsoft.AspNetCore.Authorization;
 namespace Incident.API.Controllers;
 
 [ApiController]
@@ -55,7 +57,7 @@ public class ReportsController : ControllerBase
 
         );
     }
-
+    [Authorize(Roles = "Admin,ObjectsOfficer,ComplaintsOfficer")]
     [HttpPatch("{id}/report/status")]
     public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusReport Update)
     {

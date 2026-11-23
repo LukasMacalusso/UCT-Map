@@ -36,7 +36,8 @@ public class LostObjectHandler : ILostObjectHandler
             Status = (Objectenum)request.Status,
             ReportedAt = DateTime.UtcNow,
             PhotoUrl = request.PhotoUrl,
-            StructureRefId = request.StructureId
+            StructureRefId = request.StructureId,
+            UserRefId = request.UserRefId
         };
 
         await _lostObjectRepository.CreateAsync(lostObject);
@@ -115,18 +116,22 @@ public class LostObjectHandler : ILostObjectHandler
 
         return new LostObjectPageResponse(items, result.TotalCount, criteria.Page, criteria.PageSize);
     }
-    public async Task<ErrorOr<Success>> DeleteAsync(string id, string userRefRole)
+    public async Task<ErrorOr<Success>> DeleteAsync(string id, string userRefRole, string userRefId)
     {
         var lostObject = await _lostObjectRepository.GetByIdAsync(id);
         if (lostObject is null) return Error.NotFound(
                 code: "LostObject.NotFound",
                 description: $"LostObject with ID '{id}' was not found."
             );
+        bool isOwner = userRefId == lostObject.UserRefId.ToString();
 
-        if (userRefRole is not ("Admin" or "ObjectsOfficer"))
+        bool hasPermission = userRefRole is
+            "Admin" or "ObjectsOfficer" or "ComplaintsOfficer";
+
+        if (!isOwner & !hasPermission)
         {
-            return Error.Unauthorized(
-                code: "LostObject.Unauthorized",
+            return Error.Forbidden(
+                code: "LostObject.Forbidden",
                 description: $"'{userRefRole}' is not authorized"
             );
         }

@@ -8,14 +8,13 @@ namespace Incident.Domain.Entities;
 
 public class LostObject
 {
-
     public string? Id { get; init; }
 
     public required Guid StructureRefId { get; init; }
 
+    public required Guid UserRefId { get; init; }
 
     public required string Title { get; init; }
-
 
     public required string Description { get; init; }
 
