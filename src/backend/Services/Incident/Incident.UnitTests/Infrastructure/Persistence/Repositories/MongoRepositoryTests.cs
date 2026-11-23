@@ -31,7 +31,8 @@ public class MongoRepositoryTests
         Description = "Dejada en la biblioteca",
         Status = Objectenum.Pending,
         ReportedAt = new DateTime(2026, 10, 14, 20, 0, 0, DateTimeKind.Utc),
-        PhotoUrl = "https://campus.uct.cl/mochila.png"
+        PhotoUrl = "https://campus.uct.cl/mochila.png",
+        UserRefId = Guid.NewGuid()
     };
 
     private static IAsyncCursor<LostObject> CreateCursor(params LostObject[] items)

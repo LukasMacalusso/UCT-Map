@@ -47,7 +47,7 @@ public class LostObjectsControllerDeleteTests
     [Fact]
     public async Task Delete_CuandoTieneExito_Retorna200()
     {
-        _handler.DeleteAsync(Arg.Any<string>(), Arg.Any<string>())
+        _handler.DeleteAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
             .Returns(Task.FromResult<ErrorOr<Success>>(Result.Success));
 
         var result = await _controller.Delete(ObjectId);
@@ -59,7 +59,7 @@ public class LostObjectsControllerDeleteTests
     [Fact]
     public async Task Delete_CuandoNoExiste_Retorna404()
     {
-        _handler.DeleteAsync(Arg.Any<string>(), Arg.Any<string>())
+        _handler.DeleteAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
             .Returns(Task.FromResult<ErrorOr<Success>>(
                 Error.NotFound("LostObject.NotFound", "LostObject not found")));
 
@@ -73,9 +73,9 @@ public class LostObjectsControllerDeleteTests
     [Fact]
     public async Task Delete_CuandoNoEstaAutorizado_Retorna400()
     {
-        _handler.DeleteAsync(Arg.Any<string>(), Arg.Any<string>())
+        _handler.DeleteAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
             .Returns(Task.FromResult<ErrorOr<Success>>(
-                Error.Unauthorized("LostObject.Unauthorized", "'Student' is not authorized")));
+                Error.Forbidden("LostObject.Forbidden", "'Student' is not authorized")));
 
         var result = await _controller.Delete(ObjectId);
 
@@ -89,7 +89,7 @@ public class LostObjectsControllerDeleteTests
         SetAuthorization(Guid.NewGuid(), "ObjectsOfficer");
 
         string? capturedRole = null;
-        _handler.DeleteAsync(Arg.Any<string>(), Arg.Do<string>(r => capturedRole = r))
+        _handler.DeleteAsync(Arg.Any<string>(), Arg.Do<string>(r => capturedRole = r), Arg.Any<string>())
             .Returns(Task.FromResult<ErrorOr<Success>>(Result.Success));
 
         await _controller.Delete(ObjectId);
@@ -103,7 +103,7 @@ public class LostObjectsControllerDeleteTests
         SetAuthorization(Guid.NewGuid());
 
         string? capturedRole = "valor-inicial";
-        _handler.DeleteAsync(Arg.Any<string>(), Arg.Do<string>(r => capturedRole = r))
+        _handler.DeleteAsync(Arg.Any<string>(), Arg.Do<string>(r => capturedRole = r), Arg.Any<string>())
             .Returns(Task.FromResult<ErrorOr<Success>>(Result.Success));
 
         await _controller.Delete(ObjectId);

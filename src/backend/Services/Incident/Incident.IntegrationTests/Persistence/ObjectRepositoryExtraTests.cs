@@ -28,7 +28,8 @@ public class ObjectRepositoryExtraTests : MongoTestBase
             Status = status,
             ReportedAt = reportedAt ?? new DateTime(2026, 10, 5, 10, 30, 0, DateTimeKind.Utc),
             PhotoUrl = "https://campus.uct.cl/mochila.png",
-            StructureRefId = structureId ?? Guid.NewGuid()
+            StructureRefId = structureId ?? Guid.NewGuid(),
+            UserRefId = Guid.NewGuid()
         };
 
     private static LostObjectSearchCriteria Criteria(

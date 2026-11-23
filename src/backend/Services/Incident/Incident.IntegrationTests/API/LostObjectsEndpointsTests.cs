@@ -120,7 +120,8 @@ public class LostObjectsEndpointsTests : ApiTestBase
             Status = (Objectenum)status,
             ReportedAt = DateTime.UtcNow,
             PhotoUrl = "https://campus.uct.cl/mochila.png",
-            StructureRefId = structureId ?? Guid.NewGuid()
+            StructureRefId = structureId ?? Guid.NewGuid(),
+            UserRefId = Guid.NewGuid()
         };
 
     [DockerFact]

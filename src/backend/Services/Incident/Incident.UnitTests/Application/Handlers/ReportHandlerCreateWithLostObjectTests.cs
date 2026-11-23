@@ -44,7 +44,8 @@ public class ReportHandlerCreateWithLostObjectTests
         Description = "Dejada en la biblioteca",
         Status = Objectenum.Pending,
         ReportedAt = DateTime.UtcNow,
-        StructureRefId = Guid.NewGuid()
+        StructureRefId = Guid.NewGuid(),
+        UserRefId = Guid.NewGuid()
     };
 
     [Fact]

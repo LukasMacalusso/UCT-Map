@@ -3,6 +3,7 @@ using Incident.Domain.Entities;
 using Incident.Infrastructure.Persistence.Repositories;
 using Incident.IntegrationTests.Fixtures;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 namespace Incident.IntegrationTests.API;
@@ -17,6 +18,12 @@ public class ReportsComplaintStatusTests : ApiTestBase
     private const string Endpoint = "/api/incident/reports";
 
     public ReportsComplaintStatusTests(MongoFixture fixture) : base(fixture) { }
+
+    protected override void ConfigureHttp(HttpClient http)
+    {
+        http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", TestJwtWithRole.Create(Guid.NewGuid(), "Admin"));
+    }
 
     private TicketRepository CreateRepository() => new(Factory.CreateContext());
 

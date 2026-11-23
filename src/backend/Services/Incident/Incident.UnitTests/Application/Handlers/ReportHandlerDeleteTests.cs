@@ -42,7 +42,7 @@ public class ReportHandlerDeleteTests
 
         Assert.True(result.IsError);
         Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
-        Assert.Equal("LostObject.NotFound", result.FirstError.Code);
+        Assert.Equal("Report.NotFound", result.FirstError.Code);
         await _repository.DidNotReceiveWithAnyArgs().DeleteAsync(default!);
     }
 
@@ -83,7 +83,7 @@ public class ReportHandlerDeleteTests
     [InlineData("Guest")]
     [InlineData("")]
     [InlineData("admin")]
-    public async Task DeleteAsync_CuandoNoEsElDuenioYNoTieneRolAutorizado_RetornaUnauthorized(string role)
+    public async Task DeleteAsync_CuandoNoEsElDuenioYNoTieneRolAutorizado_RetornaForbidden(string role)
     {
         var ticket = NewTicket(Guid.NewGuid());
         _repository.GetByIdAsync(TicketId).Returns(Task.FromResult<Ticket?>(ticket));
@@ -91,13 +91,13 @@ public class ReportHandlerDeleteTests
         var result = await _handler.DeleteAsync(TicketId, role, Guid.NewGuid().ToString());
 
         Assert.True(result.IsError);
-        Assert.Equal(ErrorType.Unauthorized, result.FirstError.Type);
-        Assert.Equal("LostObject.Unauthorized", result.FirstError.Code);
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
+        Assert.Equal("LostObject.Forbidden", result.FirstError.Code);
         await _repository.DidNotReceiveWithAnyArgs().DeleteAsync(default!);
     }
 
     [Fact]
-    public async Task DeleteAsync_CuandoNoEsElDuenioYElRolEsNulo_RetornaUnauthorized()
+    public async Task DeleteAsync_CuandoNoEsElDuenioYElRolEsNulo_RetornaForbidden()
     {
         var ticket = NewTicket(Guid.NewGuid());
         _repository.GetByIdAsync(TicketId).Returns(Task.FromResult<Ticket?>(ticket));
@@ -105,7 +105,7 @@ public class ReportHandlerDeleteTests
         var result = await _handler.DeleteAsync(TicketId, null!, Guid.NewGuid().ToString());
 
         Assert.True(result.IsError);
-        Assert.Equal(ErrorType.Unauthorized, result.FirstError.Type);
+        Assert.Equal(ErrorType.Forbidden, result.FirstError.Type);
         await _repository.DidNotReceiveWithAnyArgs().DeleteAsync(default!);
     }
 
@@ -121,6 +121,6 @@ public class ReportHandlerDeleteTests
 
         Assert.True(result.IsError);
         Assert.Equal(ErrorType.Failure, result.FirstError.Type);
-        Assert.Equal("LostObject.UpdateFailed", result.FirstError.Code);
+        Assert.Equal("Report.DeleteFailed", result.FirstError.Code);
     }
 }

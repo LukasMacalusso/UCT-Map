@@ -20,7 +20,7 @@ public class ReportsEndpointsTests : ApiTestBase
     protected override void ConfigureHttp(HttpClient http)
     {
         http.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", TestJwt.Create(TestUserId));
+            new AuthenticationHeaderValue("Bearer", TestJwtWithRole.Create(TestUserId, "Admin"));
     }
 
     private sealed record CreatedResponse(string Id);
