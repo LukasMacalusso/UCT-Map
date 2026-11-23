@@ -9,7 +9,7 @@ namespace Campus.IntegrationTests.Fixtures;
 
 public static class TestJwtGenerator
 {
-    public const string SecretKey = "7d82f3a9b4e1c60d5f27a8b9c0d1e2f3a4b5c6d7e8f90a1b2c3d4e5f6a7b8c9d";
+    public const string SecretKey = "campus-tests-signing-key-0123456789abcdef";
     public const string Issuer = "https://identity-api";
     public const string Audience = "api-gateway";
 

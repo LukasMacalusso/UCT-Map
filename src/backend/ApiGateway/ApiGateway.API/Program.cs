@@ -19,6 +19,9 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader();
     });
 });
+var jwtKey = builder.Configuration["JwtConfig:Key"]
+    ?? throw new InvalidOperationException("JWT setting 'JwtConfig:Key' was not found.");
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -32,7 +35,7 @@ builder.Services.AddAuthentication(options =>
         {
             ValidIssuer = builder.Configuration["JwtConfig:Issuer"],
             ValidAudience = builder.Configuration["JwtConfig:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtConfig:Key"]!)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,

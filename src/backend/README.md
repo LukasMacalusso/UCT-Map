@@ -52,15 +52,21 @@ We strictly enforce the following coding standards:
 ## Local Execution Guide
 
 ### Option 1: Run Everything via Docker Compose (Recommended)
-From the repository root, ensure your `.env` file is created (`cp .env.example .env`) and start PostgreSQL, MongoDB, all 4 microservices, and the API Gateway:
-```bash
-docker compose up -d --build postgres mongodb identity-api campus-api incident-api schedule-api api-gateway
-```
-- **API Gateway**: `http://localhost:5000`
-- **Identity API**: `http://localhost:5001`
-- **Campus API**: `http://localhost:5002`
-- **Incident API**: `http://localhost:5003`
-- **Schedule API**: `http://localhost:5004`
+From the repository root, ensure your `.env` file is created (`cp .env.example .env`).
+
+- **Standard / Isolated Mode (`make up`)** — Exposes only the **API Gateway** (`http://localhost:5000`) and **Frontend** (`http://localhost:3000`); microservices and databases remain isolated inside `uct_network`:
+  ```bash
+  docker compose up -d --build
+  ```
+- **Development / Swagger Mode (`make up-dev`)** — Merges `docker-compose.dev.yml` to enable `Swagger UI` (`/swagger`) and bind internal ports strictly to `127.0.0.1`:
+  ```bash
+  docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+  ```
+  - **API Gateway**: `http://localhost:5000`
+  - **Identity API Swagger**: `http://127.0.0.1:5001/swagger`
+  - **Campus API Swagger**: `http://127.0.0.1:5002/swagger`
+  - **Incident API Swagger**: `http://127.0.0.1:5003/swagger`
+  - **Schedule API Swagger**: `http://127.0.0.1:5004/swagger`
 
 To stop the containers:
 ```bash

@@ -1,0 +1,28 @@
+services:
+  identity-api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "127.0.0.1:5001:8080"
+
+  campus-api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "127.0.0.1:5002:8080"
+
+  incident-api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "127.0.0.1:5003:8080"
+
+  schedule-api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "127.0.0.1:5004:8080"
+
+  api-gateway:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
