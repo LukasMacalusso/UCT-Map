@@ -2,7 +2,7 @@ name: Create Packages
 
 on:
   push:
-    branches: [taller-2]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
