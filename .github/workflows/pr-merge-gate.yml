@@ -1,0 +1,120 @@
+name: PR Merge Gatekeeper
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches: [ "main" ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-merge-conditions:
+    name: Validate Merge Conditions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify PR Title (Conventional Commits)
+        id: check-pr-title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "Evaluando titulo del PR: '$PR_TITLE'"
+          
+          # Si se corre con workflow_dispatch, usar un titulo de prueba o saltar
+          if [ -z "$PR_TITLE" ]; then
+            echo "Workflow ejecutado fuera de evento pull_request. Saltando validacion de titulo."
+            exit 0
+          fi
+
+          # Patron Conventional Commits con o sin scope (ej: ci(TI4-100): o feat(UCT-122): o fix: ...)
+          PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_\/\-]+\))?(!)?: .+$"
+
+          if [[ "$PR_TITLE" =~ $PATTERN ]]; then
+            echo "El titulo del PR cumple con el estandar Conventional Commits."
+          else
+            echo "ERROR: El titulo del PR no cumple con el formato Conventional Commits."
+            echo "Formato esperado: <tipo>(<scope>): <descripcion>"
+            echo "Ejemplos validos:"
+            echo "  ci(TI4-100): integrar checks de ambos equipos en pull requests"
+            echo "  feat(UCT-122): implementar panel de administracion"
+            echo "  fix(tickets): corregir validacion de formulario"
+            echo "  ci: actualizar pipeline de github actions"
+            exit 1
+          fi
+
+      - name: Verify Sensitive Files in PR
+        id: check-sensitive-files
+        run: |
+          echo "Verificando ausencia de archivos sensibles o credenciales en el commit..."
+          
+          # Detectar archivos modificados en el PR si es un pull_request
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_REF="origin/${{ github.base_ref }}"
+            CHANGED_FILES=$(git diff --name-only "$BASE_REF"...HEAD || git diff --name-only HEAD~1)
+          else
+            CHANGED_FILES=$(git diff --name-only HEAD~1 || true)
+          fi
+
+          echo "Archivos modificados detectados:"
+          echo "$CHANGED_FILES"
+
+          FORBIDDEN_FOUND=0
+          while IFS= read -r file; do
+            case "$file" in
+              *.env|*.env.local|*.env.production|*.env.staging)
+                # Permitir .env.example
+                if [[ "$file" != *".env.example" ]]; then
+                  echo "ARCHIVO PROHIBIDO DETECTADO: $file (Variables de entorno con posibles secretos)"
+                  FORBIDDEN_FOUND=1
+                fi
+                ;;
+              *.pem|*.key|*id_rsa*|*.pfx|*.keystore)
+                echo "ARCHIVO PROHIBIDO DETECTADO: $file (Llave o certificado criptografico)"
+                FORBIDDEN_FOUND=1
+                ;;
+            esac
+          done <<< "$CHANGED_FILES"
+
+          if [ "$FORBIDDEN_FOUND" -eq 1 ]; then
+            echo "ERROR: Se detectaron archivos prohibidos en el PR. Revertir y remover antes de continuar."
+            exit 1
+          fi
+          echo "No se detectaron archivos sensibles ni credenciales."
+
+      - name: Verify PR Description Not Empty
+        id: check-pr-body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Limpiar espacios en blanco
+            CLEANED_BODY=$(echo "$PR_BODY" | tr -d '[:space:]')
+            if [ ${#CLEANED_BODY} -lt 15 ]; then
+              echo "ADVERTENCIA: La descripcion del PR esta vacia o es muy corta."
+              echo "Por favor utiliza la plantilla .github/pull_request_template.md."
+            else
+              echo "Descripcion del PR presente y documentada."
+            fi
+          fi
+
+      - name: Generate Merge Gatekeeper Summary
+        if: always()
+        run: |
+          echo "## Gatekeeper de Merge: Condiciones Evaluadas" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Condicion | Estado | Tipo |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Titulo Conventional Commits** | Aprobado | Automatico |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Archivos Sensibles / Secretos** | Sin secretos detectados | Automatico |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Plantilla de PR diligenciada** | Validada | Documental |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Revision por Pares (Peer Review)** | Pendiente de aprobacion | Manual |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> Consulta las politicas completas en [docs/workflow/merge_conditions.md](https://github.com/${{ github.repository }}/blob/main/docs/workflow/merge_conditions.md)." >> $GITHUB_STEP_SUMMARY

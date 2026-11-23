@@ -1,5 +1,34 @@
 # UCT Map Frontend
 
+## Guía de Ejecución Local
+
+### Requisitos Previos
+- **Node.js 22.x** y **npm**.
+- Un **token público de Mapbox** (`pk.xxx`) configurado en `src/frontend/.env`:
+  ```dotenv
+  VITE_MAPBOX_TOKEN=pk.tu_token_publico_de_mapbox
+  ```
+- El Backend y el API Gateway corriendo en `http://localhost:5000` (vía `docker compose up -d`).
+
+### Opción 1: Modo Desarrollo Local (Vite HMR)
+Desde la carpeta `src/frontend`:
+```bash
+cd src/frontend
+npm install
+npm run dev
+```
+- La aplicación web estará disponible en `http://localhost:5173`.
+- Todas las peticiones a `/api/*` se redirigen automáticamente al API Gateway (`http://localhost:5000`) mediante el proxy configurado en `vite.config.ts`.
+
+### Opción 2: Ejecución en Contenedor Docker (Nginx)
+Desde la raíz del repositorio:
+```bash
+docker compose up -d --build frontend
+```
+- El frontend compilado será servido por Nginx en `http://localhost:3000`.
+
+---
+
 ## Componentes
 
 | Componente | Descripción | Parámetros principales (Props) |

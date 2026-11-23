@@ -5,7 +5,8 @@
 .vscode/
 tests/
 docs/
-src/Frontend/
+src/frontend/
+src/mobile/
 *.user
 *.suo
 *.log
