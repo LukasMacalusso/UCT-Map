@@ -27,7 +27,8 @@ public class LostObjectHandlerTests
             Description: "Mochila con libros dejada en la biblioteca",
             Status: (int)Objectenum.Pending,
             PhotoUrl: photoUrl,
-            StructureId: structureId ?? Guid.NewGuid());
+            StructureId: structureId ?? Guid.NewGuid(),
+            UserRefId: Guid.NewGuid());
 
     // ---------- CreateObjectAsync ----------
 
@@ -86,7 +87,8 @@ public class LostObjectHandlerTests
             Description: "Paraguas en el pasillo del piso 2",
             Status: (int)Objectenum.Resolved,
             PhotoUrl: "https://campus.uct.cl/paraguas.jpg",
-            StructureId: structureId);
+            StructureId: structureId,
+            UserRefId: Guid.NewGuid());
 
         var result = await _handler.CreateObjectAsync(request);
 
@@ -137,7 +139,8 @@ public class LostObjectHandlerTests
             Status = Objectenum.In_Process,
             ReportedAt = reportedAt,
             PhotoUrl = "https://campus.uct.cl/audifonos.jpg",
-            StructureRefId = structureId
+            StructureRefId = structureId,
+            UserRefId = Guid.NewGuid()
         };
         _repository.GetByIdAsync(entity.Id).Returns(Task.FromResult<LostObject?>(entity));
 
@@ -189,7 +192,8 @@ public class LostObjectHandlerTests
             Description = "Mochila",
             Status = Objectenum.Pending,
             ReportedAt = DateTime.UtcNow,
-            StructureRefId = Guid.NewGuid()
+            StructureRefId = Guid.NewGuid(),
+            UserRefId = Guid.NewGuid()
         };
         _repository.GetByIdAsync(entity.Id).Returns(Task.FromResult<LostObject?>(entity));
         _repository.UpdateStatusAsync(entity, (int)Objectenum.Resolved).Returns(Task.FromResult(false));
@@ -211,7 +215,8 @@ public class LostObjectHandlerTests
             Description = "Mochila",
             Status = Objectenum.Pending,
             ReportedAt = DateTime.UtcNow,
-            StructureRefId = Guid.NewGuid()
+            StructureRefId = Guid.NewGuid(),
+            UserRefId = Guid.NewGuid()
         };
         _repository.GetByIdAsync(entity.Id).Returns(Task.FromResult<LostObject?>(entity));
         _repository.UpdateStatusAsync(entity, (int)Objectenum.Canceled).Returns(Task.FromResult(true));
@@ -308,7 +313,8 @@ public class LostObjectHandlerTests
             Status = Objectenum.Resolved,
             ReportedAt = reportedAt,
             PhotoUrl = "https://campus.uct.cl/casco.jpg",
-            StructureRefId = structureId
+            StructureRefId = structureId,
+            UserRefId = Guid.NewGuid()
         };
         _repository.SearchAsync(Arg.Any<LostObjectSearchCriteria>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new PagedResult<LostObject>(new[] { entity }, 1, 1, 10)));

@@ -11,13 +11,18 @@ public class LostObjectMap : BsonClassMap<LostObject>
     {
         AutoMap();
         MapIdMember(x => x.Id)
-            .SetSerializer(
-                new StringSerializer(BsonType.ObjectId)
-            )
-            .SetIdGenerator(StringObjectIdGenerator.Instance);
+                    .SetSerializer(
+                        new StringSerializer(BsonType.ObjectId)
+                    )
+                    .SetIdGenerator(StringObjectIdGenerator.Instance);
 
         MapMember(x => x.StructureRefId)
                     .SetElementName("structure_id")
+                    .SetSerializer(
+                        new GuidSerializer(BsonType.String)
+                    );
+        MapMember(x => x.UserRefId)
+                    .SetElementName("user_id")
                     .SetSerializer(
                         new GuidSerializer(BsonType.String)
                     );

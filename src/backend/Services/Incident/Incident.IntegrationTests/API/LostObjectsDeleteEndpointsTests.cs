@@ -27,7 +27,8 @@ public class LostObjectsDeleteEndpointsTests : ApiTestBase
         Status = Objectenum.Pending,
         ReportedAt = new DateTime(2026, 10, 5, 10, 30, 0, DateTimeKind.Utc),
         PhotoUrl = "https://campus.uct.cl/mochila.png",
-        StructureRefId = Guid.NewGuid()
+        StructureRefId = Guid.NewGuid(),
+        UserRefId = Guid.NewGuid()
     };
 
     private async Task<string> SeedLostObjectAsync()
@@ -44,6 +45,7 @@ public class LostObjectsDeleteEndpointsTests : ApiTestBase
     [DockerTheory]
     [InlineData("Admin")]
     [InlineData("ObjectsOfficer")]
+    [InlineData("ComplaintsOfficer")]
     public async Task Delete_ConRolAutorizado_Retorna200YBorraElObjeto(string role)
     {
         var id = await SeedLostObjectAsync();
@@ -56,7 +58,6 @@ public class LostObjectsDeleteEndpointsTests : ApiTestBase
     }
 
     [DockerTheory]
-    [InlineData("ComplaintsOfficer")]
     [InlineData("Student")]
     public async Task Delete_ConRolNoAutorizado_Retorna400YNoBorra(string role)
     {

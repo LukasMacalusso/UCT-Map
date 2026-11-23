@@ -4,6 +4,7 @@ using Incident.IntegrationTests.Fixtures;
 using Incident.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 namespace Incident.IntegrationTests.API;
@@ -14,6 +15,12 @@ public class LostObjectsEndpointsTests : ApiTestBase
     private const string Endpoint = "/api/incident/lost-objects";
 
     public LostObjectsEndpointsTests(MongoFixture fixture) : base(fixture) { }
+
+    protected override void ConfigureHttp(HttpClient http)
+    {
+        http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", TestJwtWithRole.Create(Guid.NewGuid(), "Admin"));
+    }
 
     private ObjectRepository CreateRepository() => new(Factory.CreateContext());
 
@@ -113,7 +120,8 @@ public class LostObjectsEndpointsTests : ApiTestBase
             Status = (Objectenum)status,
             ReportedAt = DateTime.UtcNow,
             PhotoUrl = "https://campus.uct.cl/mochila.png",
-            StructureRefId = structureId ?? Guid.NewGuid()
+            StructureRefId = structureId ?? Guid.NewGuid(),
+            UserRefId = Guid.NewGuid()
         };
 
     [DockerFact]

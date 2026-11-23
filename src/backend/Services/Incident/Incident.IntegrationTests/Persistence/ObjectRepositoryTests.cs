@@ -24,7 +24,8 @@ public class ObjectRepositoryTests : MongoTestBase
             Status = status,
             ReportedAt = reportedAt ?? DateTime.UtcNow,
             PhotoUrl = "https://campus.uct.cl/mochila.png",
-            StructureRefId = structureId ?? Guid.NewGuid()
+            StructureRefId = structureId ?? Guid.NewGuid(),
+            UserRefId = Guid.NewGuid()
         };
 
     [DockerFact]

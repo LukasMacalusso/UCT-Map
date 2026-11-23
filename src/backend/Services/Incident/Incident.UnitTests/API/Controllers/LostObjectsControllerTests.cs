@@ -5,7 +5,11 @@ using Incident.Application.Handlers;
 using Incident.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using NSubstitute;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace Incident.UnitTests.API.Controllers;
 
@@ -18,11 +22,30 @@ public class LostObjectsControllerTests
     {
         _handler = Substitute.For<ILostObjectHandler>();
         _controller = new LostObjectsController(_handler);
+        SetAuthorization();
+    }
+
+    private void SetAuthorization()
+    {
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, Guid.NewGuid().ToString())
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("test-signing-key-0123456789abcdef"));
+        var token = new JwtSecurityToken(
+            claims: claims,
+            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
+
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Headers.Authorization =
+            $"Bearer {new JwtSecurityTokenHandler().WriteToken(token)}";
+        _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
     }
 
     private static CreateLostObjectRequest ValidRequest() =>
         new("Mochila", "Mochila dejada en sala 3", (int)Objectenum.Pending,
-            "https://campus.uct.cl/mochila.png", Guid.NewGuid());
+            "https://campus.uct.cl/mochila.png", Guid.NewGuid(), Guid.NewGuid());
 
     private static ErrorOr<T> NotFoundError<T>() =>
         Error.NotFound("LostObject.NotFound", "LostObject with ID was not found.");

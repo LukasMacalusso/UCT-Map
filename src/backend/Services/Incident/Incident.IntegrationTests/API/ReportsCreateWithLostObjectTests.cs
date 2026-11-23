@@ -53,7 +53,8 @@ public class ReportsCreateWithLostObjectTests : ApiTestBase
             Status = Objectenum.Pending,
             ReportedAt = DateTime.UtcNow,
             PhotoUrl = "https://campus.uct.cl/mochila.png",
-            StructureRefId = Guid.NewGuid()
+            StructureRefId = Guid.NewGuid(),
+            UserRefId = Guid.NewGuid()
         };
         await CreateObjectRepository().CreateAsync(lostObject);
         return lostObject.Id!;
