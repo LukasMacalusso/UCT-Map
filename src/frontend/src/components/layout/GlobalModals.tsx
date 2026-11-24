@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useUiState } from '../../states/uiState';
 import { useAuthState } from '../../states/authState';
 import { ModalOverlay } from './ModalOverlay';
-import { TimedActionCard } from '../ui/TimedActionCard';
 import {
   UserProfilePanel,
   type UserProfileMeetingItem,
@@ -10,9 +9,15 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useReports } from '../../hooks/useReports';
 import { useLostObjectsByIds } from '../../hooks/useLostObjects';
-import { useAllMeetings, useUpdateMeetingStatus } from '../../hooks/useSchedule';
+import {
+  useAllMeetings,
+  useStudentMeetings,
+  useUpdateMeetingStatus,
+  useCancelMeeting,
+} from '../../hooks/useSchedule';
 import { useStructures } from '../../hooks/useCampus';
 import { useUsers } from '../../hooks/useUsers';
+import { Role } from '../../constants/role';
 import {
   LOST_OBJECT_STATUS_COLORS,
   LOST_OBJECT_STATUS_LABELS,
@@ -23,11 +28,13 @@ import {
 } from '../../constants/ticketStatus';
 import { formatRelativeTime } from '../../utils/date';
 import {
+  addDays,
   formatClock,
   formatLongDate,
   MEETING_STATUS_COLORS,
   MEETING_STATUS_LABELS,
   parseScheduleDate,
+  startOfDay,
 } from '../../utils/schedule';
 import type { ObjectReportCardProps } from '../../modules/objects/ObjectReportCard';
 import type { IncidentCardProps } from '../../modules/incidents/IncidentCard';
@@ -41,8 +48,10 @@ export const GlobalModals = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const updateMeetingStatus = useUpdateMeetingStatus();
+  const cancelMeeting = useCancelMeeting();
 
   const isProfileOpen = activePanel === 'userProfile' && !!user;
+  const isAdmin = user?.role === Role.Admin;
 
   const { data: structures = [] } = useStructures(undefined, isProfileOpen);
   const { data: users = [] } = useUsers(isProfileOpen);
@@ -69,7 +78,27 @@ export const GlobalModals = () => {
   );
 
   const { data: userLostObjects = [] } = useLostObjectsByIds(userLostObjectIds, isProfileOpen);
-  const { data: allMeetings = [] } = useAllMeetings(isProfileOpen);
+
+  const studentMeetingsRange = useMemo(() => {
+    const today = startOfDay(new Date());
+    return {
+      from: addDays(today, -30).toISOString(),
+      to: addDays(today, 60).toISOString(),
+    };
+  }, []);
+
+  const { data: allMeetings = [] } = useAllMeetings(isProfileOpen && isAdmin);
+  const { data: studentMeetingsData } =
+    useStudentMeetings?.(
+      user?.id,
+      studentMeetingsRange.from,
+      studentMeetingsRange.to,
+      isProfileOpen && !isAdmin,
+    ) ?? { data: undefined };
+
+  const meetingsSource = isAdmin
+    ? allMeetings
+    : (studentMeetingsData?.meetings ?? allMeetings);
 
   const structureNames = useMemo(
     () => new Map(structures.map((structure) => [structure.id, structure.name])),
@@ -119,7 +148,7 @@ export const GlobalModals = () => {
 
   const requestedMeetings = useMemo<UserProfileMeetingItem[]>(() => {
     if (!user) return [];
-    return allMeetings
+    return meetingsSource
       .filter((meeting) => meeting.studentRefId === user.id)
       .sort(
         (a, b) =>
@@ -147,7 +176,7 @@ export const GlobalModals = () => {
           canCancel: meeting.status === 'Pending' || meeting.status === 'Confirmed',
         };
       });
-  }, [user, allMeetings, usersById, structureNames]);
+  }, [user, meetingsSource, usersById, structureNames]);
 
   const admissionYear = useMemo(() => {
     if (!user?.registeredAt) return undefined;
@@ -179,64 +208,17 @@ export const GlobalModals = () => {
             objectReports={objectReports}
             incidentReports={incidentReports}
             requestedMeetings={requestedMeetings}
-            onCancelMeeting={(meetingId) =>
-              updateMeetingStatus.mutate({ id: meetingId, status: 'Cancelled' })
+            onCancelMeeting={(meetingId) => {
+              if (cancelMeeting?.mutate) {
+                cancelMeeting.mutate(meetingId);
+              }
+              updateMeetingStatus.mutate({ id: meetingId, status: 'Cancelled' });
+            }}
+            isCancellingMeeting={
+              updateMeetingStatus.isPending || Boolean(cancelMeeting?.isPending)
             }
-            isCancellingMeeting={updateMeetingStatus.isPending}
           />
         )}
-      </ModalOverlay>
-
-      <ModalOverlay 
-        isOpen={activePanel === 'saveMapChanges'} 
-        onClose={closePanel}
-      >
-        <TimedActionCard
-          title="Confirmar Cambios"
-          description="Estos cambios serán públicos y visibles para todos los estudiantes. Por favor, revisa tus modificaciones antes de continuar."
-          initialDurationMs={3000}
-          options={[
-            {
-              label: "Cancelar",
-              color: "gray",
-              onClick: closePanel
-            },
-            {
-              label: "Publicar Mapa",
-              color: "green",
-              onClick: () => {
-                console.log("Mapa guardado exitosamente");
-                closePanel();
-              }
-            }
-          ]}
-        />
-      </ModalOverlay>
-
-      <ModalOverlay 
-        isOpen={activePanel === 'discardMapChanges'} 
-        onClose={closePanel}
-      >
-        <TimedActionCard
-          title="Descartar Cambios"
-          description="Estás a punto de descartar todas las modificaciones realizadas en esta sesión. Esta acción no se puede deshacer."
-          initialDurationMs={2000}
-          options={[
-            {
-              label: "Cancelar",
-              color: "gray",
-              onClick: closePanel
-            },
-            {
-              label: "Sí, descartar",
-              color: "red",
-              onClick: () => {
-                console.log("Cambios descartados");
-                closePanel();
-              }
-            }
-          ]}
-        />
       </ModalOverlay>
 
       {/* Floating Toast Notification for General Views */}

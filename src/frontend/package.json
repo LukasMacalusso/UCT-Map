@@ -6,11 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
-    "validate": "npm test && npm run coverage && npm run build"
+    "validate": "npm run lint && npm test && npm run coverage && npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

@@ -38,6 +38,7 @@ describe('JwtManagement utils', () => {
       const payloadObj = {
         sub: 'user-123',
         email: 'user@uct.cl',
+        name: 'Usuario UCT',
         role: 'Admin',
         exp: Math.floor(Date.now() / 1000) + 3600,
       };
@@ -48,6 +49,7 @@ describe('JwtManagement utils', () => {
       expect(decoded).not.toBeNull();
       expect(decoded?.sub).toBe('user-123');
       expect(decoded?.email).toBe('user@uct.cl');
+      expect(decoded?.name).toBe('Usuario UCT');
       expect(decoded?.role).toBe(Role.Admin);
     });
 
@@ -56,6 +58,7 @@ describe('JwtManagement utils', () => {
       const payloadObj = {
         'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier': 'ms-sub-1',
         'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress': 'ms@uct.cl',
+        'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name': 'MS Nombre',
         'http://schemas.microsoft.com/ws/2008/06/identity/claims/role': 'Teacher',
       };
       const payload = btoa(JSON.stringify(payloadObj));
@@ -64,6 +67,7 @@ describe('JwtManagement utils', () => {
       const decoded = decodeJwt(token);
       expect(decoded?.sub).toBe('ms-sub-1');
       expect(decoded?.email).toBe('ms@uct.cl');
+      expect(decoded?.name).toBe('MS Nombre');
       expect(decoded?.role).toBe(Role.Teacher);
     });
   });

@@ -19,5 +19,12 @@ describe('queryKeys', () => {
     expect(queryKeys.teachers.availability('t1')).toEqual(['teachers', 't1', 'availability']);
     expect(queryKeys.teachers.workload('t1', 'f', 't')).toEqual(['teachers', 't1', 'workload', 'f', 't']);
     expect(queryKeys.teachers.meetings('t1', 'f', 't')).toEqual(['teachers', 't1', 'meetings', 'f', 't']);
+    expect(queryKeys.teachers.studentMeetings('s1', 'f', 't')).toEqual([
+      'teachers',
+      'studentMeetings',
+      's1',
+      'f',
+      't',
+    ]);
   });
 });

@@ -356,7 +356,6 @@ export const ShowcaseView = () => {
         ]}
         schedule="08:00 - 22:00 hrs"
         floors="2 PISOS"
-        services={["Punto de Reciclaje"]}
         rooms={[
           { name: "SALA 11-101", floor: 1, code: "11-101", capacity: 60 },
           { name: "SALA 11-102", floor: 1, code: "11-102", capacity: 45 },

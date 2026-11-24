@@ -172,6 +172,7 @@ export const EditorMapSubView = () => {
       createBuilding.mutate(
         {
           campusId: createCampusId,
+          categoryId: newCategoryId || null,
           name: newEntityName.trim(),
           floorsCount: Math.max(1, newFloorsCount),
           latitude: lat,
@@ -388,7 +389,7 @@ export const EditorMapSubView = () => {
             </div>
 
             {/* Building Specific: Floors Count */}
-            {newEntityType === 'building' ? (
+            {newEntityType === 'building' && (
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-gray-700 uppercase">
                   Cantidad de pisos
@@ -401,25 +402,25 @@ export const EditorMapSubView = () => {
                   onChange={(e) => setNewFloorsCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
                 />
               </div>
-            ) : (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-gray-700 uppercase">
-                  Categoría / Filtro
-                </label>
-                <select
-                  className="w-full rounded-2xl border border-gray-200 p-3 text-sm font-semibold text-gray-800 focus:outline-none focus:border-page-blue"
-                  value={newCategoryId}
-                  onChange={(e) => setNewCategoryId(e.target.value)}
-                >
-                  <option value="">Sin categoría</option>
-                  {(categories ?? []).map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
             )}
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-gray-700 uppercase">
+                Categoría / Filtro
+              </label>
+              <select
+                className="w-full rounded-2xl border border-gray-200 p-3 text-sm font-semibold text-gray-800 focus:outline-none focus:border-page-blue"
+                value={newCategoryId}
+                onChange={(e) => setNewCategoryId(e.target.value)}
+              >
+                <option value="">Sin categoría</option>
+                {(categories ?? []).map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             {(createBuilding.isError || createStructure.error) && (
               <span className="text-xs text-page-red">

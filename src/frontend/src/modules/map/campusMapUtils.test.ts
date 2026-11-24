@@ -3,7 +3,6 @@ import {
   CAMPUS_CENTER,
   CAMPUS_BOUNDS,
   isWithinCampus,
-  hashString,
   resolveBuildingCoordinate,
   resolveStructureCoordinate,
   flyToCoordinate,
@@ -24,32 +23,14 @@ describe('campusMapUtils', () => {
     expect(isWithinCampus([CAMPUS_BOUNDS[0][0], CAMPUS_BOUNDS[0][1]])).toBe(true);
   });
 
-  it('hashes strings consistently', () => {
-    const h1 = hashString('building-1');
-    const h2 = hashString('building-1');
-    const h3 = hashString('building-2');
-    expect(h1).toBe(h2);
-    expect(h1).not.toBe(h3);
-  });
-
   it('resolves building coordinates correctly', () => {
     const customBuilding: BuildingLocationDto = {
       id: 'b-1',
       name: 'Edificio A',
       location: { latitude: -38.73, longitude: -72.60 },
-      isSuspended: false,
+      metadata: { campusId: 'c1', floorsCount: 2 },
     };
     expect(resolveBuildingCoordinate(customBuilding)).toEqual([-72.60, -38.73]);
-
-    const zeroCoordBuilding: BuildingLocationDto = {
-      id: 'b-2',
-      name: 'Edificio B',
-      location: { latitude: 0, longitude: 0 },
-      isSuspended: false,
-    };
-    const coord = resolveBuildingCoordinate(zeroCoordBuilding);
-    expect(coord[0]).not.toBe(0);
-    expect(coord[1]).not.toBe(0);
   });
 
   it('resolves structure coordinates correctly', () => {
@@ -59,20 +40,9 @@ describe('campusMapUtils', () => {
       latitude: -38.735,
       longitude: -72.605,
       categoryId: 'c-1',
-      buildingId: 'b-1',
+      campusId: 'c1',
     };
     expect(resolveStructureCoordinate(customStructure)).toEqual([-72.605, -38.735]);
-
-    const zeroCoordStructure: StructureDto = {
-      id: 's-2',
-      name: 'Estructura 2',
-      latitude: 0,
-      longitude: 0,
-      categoryId: 'c-1',
-      buildingId: 'b-1',
-    };
-    const coord = resolveStructureCoordinate(zeroCoordStructure);
-    expect(coord[0]).not.toBe(0);
   });
 
   it('calculates easeInOutCubic', () => {

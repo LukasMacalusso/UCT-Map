@@ -36,12 +36,23 @@ describe('AuthForms', () => {
   });
 
   describe('LoginForm', () => {
-    it('renders form and submits credentials successfully', async () => {
+    it('renders form and submits credentials successfully using user real name', async () => {
       const onSwitchToRegister = vi.fn();
       mutateAsyncLoginMock.mockResolvedValueOnce({
-        token: 'header.' + btoa(JSON.stringify({ sub: 'u1', email: 'test@uct.cl', role: 'Student' })) + '.sig',
+        token:
+          'header.' +
+          btoa(
+            JSON.stringify({
+              sub: 'u1',
+              email: 'test@uct.cl',
+              name: 'Juan Pérez',
+              role: 'Student',
+            }),
+          ) +
+          '.sig',
         userId: 'u1',
         email: 'test@uct.cl',
+        name: 'Juan Pérez',
       });
 
       renderWithQueryClient(
@@ -66,6 +77,10 @@ describe('AuthForms', () => {
         password: 'password123',
       });
 
+      await vi.waitFor(() => {
+        expect(useAuthState.getState().user?.name).toBe('Juan Pérez');
+      });
+
       const registerLink = screen.getByRole('button', { name: 'Regístrate' });
       fireEvent.click(registerLink);
       expect(onSwitchToRegister).toHaveBeenCalled();
@@ -73,7 +88,7 @@ describe('AuthForms', () => {
   });
 
   describe('RegisterForm', () => {
-    it('renders form and submits registration successfully', async () => {
+    it('renders form and submits registration successfully for @uct.cl and @alu.uct.cl', async () => {
       const onSwitchToLogin = vi.fn();
       vi.spyOn(window, 'alert').mockImplementation(() => {});
       mutateAsyncRegisterMock.mockResolvedValueOnce({ id: 'u1' });
@@ -91,7 +106,9 @@ describe('AuthForms', () => {
       const passwordInputs = screen.getAllByPlaceholderText('••••••••');
 
       fireEvent.change(nameInput, { target: { value: 'Juan' } });
-      fireEvent.change(emailInput, { target: { value: 'juan@uct.cl' } });
+      fireEvent.change(emailInput, { target: { value: 'juan@alu.uct.cl' } });
+      expect(screen.getByText('Correo institucional UCT válido')).toBeInTheDocument();
+
       fireEvent.change(passwordInputs[0], { target: { value: 'Password123!' } });
       fireEvent.change(passwordInputs[1], { target: { value: 'Password123!' } });
 
@@ -100,13 +117,45 @@ describe('AuthForms', () => {
 
       expect(mutateAsyncRegisterMock).toHaveBeenCalledWith({
         name: 'Juan',
-        email: 'juan@uct.cl',
+        email: 'juan@alu.uct.cl',
         password: 'Password123!',
       });
 
       const loginLink = screen.getByText('Inicia sesión');
       fireEvent.click(loginLink);
       expect(onSwitchToLogin).toHaveBeenCalled();
+    });
+
+    it('shows visual feedback error and blocks registration for non-institutional email', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      renderWithQueryClient(
+        <MemoryRouter>
+          <RegisterForm onSwitchToLogin={vi.fn()} />
+        </MemoryRouter>,
+      );
+
+      const nameInput = screen.getByPlaceholderText('Ej. Juan Pérez');
+      const emailInput = screen.getByPlaceholderText('usuario@uct.cl');
+      const passwordInputs = screen.getAllByPlaceholderText('••••••••');
+
+      fireEvent.change(nameInput, { target: { value: 'Juan' } });
+      fireEvent.change(emailInput, { target: { value: 'juan@gmail.com' } });
+      fireEvent.blur(emailInput);
+
+      expect(
+        screen.getByText('Solo se permiten correos institucionales (@uct.cl o @alu.uct.cl)'),
+      ).toBeInTheDocument();
+
+      fireEvent.change(passwordInputs[0], { target: { value: 'Password123!' } });
+      fireEvent.change(passwordInputs[1], { target: { value: 'Password123!' } });
+
+      const submitButton = screen.getByRole('button', { name: 'Registrarse' });
+      fireEvent.click(submitButton);
+
+      expect(alertSpy).toHaveBeenCalledWith(
+        'Debes utilizar un correo institucional terminado en @uct.cl o @alu.uct.cl.',
+      );
+      expect(mutateAsyncRegisterMock).not.toHaveBeenCalled();
     });
 
     it('alerts when passwords do not match', () => {

@@ -32,11 +32,15 @@ export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
       const decoded = decodeJwt(token);
 
       const assignedRole = isRole(decoded?.role) ? decoded.role : Role.Student;
-      const userName = email.split('@')[0];
+      const resolvedEmail = response.email || decoded?.email || email;
+      const userName =
+        (typeof response.name === 'string' && response.name.trim()) ||
+        (typeof decoded?.name === 'string' && decoded.name.trim()) ||
+        resolvedEmail.split('@')[0];
 
       realLogin(token, {
         id: response.userId || decoded?.sub || 'user_id',
-        email: response.email || decoded?.email || email,
+        email: resolvedEmail,
         name: userName,
         role: assignedRole,
         registeredAt: new Date().toISOString()

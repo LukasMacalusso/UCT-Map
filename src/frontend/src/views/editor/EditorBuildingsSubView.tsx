@@ -53,12 +53,10 @@ export const EditorBuildingsSubView = () => {
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomFloor, setNewRoomFloor] = useState<number>(1);
-  const [newRoomCategoryId, setNewRoomCategoryId] = useState('');
 
   const [editingRoom, setEditingRoom] = useState<RoomDto | null>(null);
   const [editRoomName, setEditRoomName] = useState('');
   const [editRoomFloor, setEditRoomFloor] = useState<number>(1);
-  const [editRoomCategoryId, setEditRoomCategoryId] = useState('');
 
   const [deletingRoom, setDeletingRoom] = useState<RoomDto | null>(null);
 
@@ -67,7 +65,7 @@ export const EditorBuildingsSubView = () => {
   const [editBuildingName, setEditBuildingName] = useState('');
   const [editBuildingFloorsCount, setEditBuildingFloorsCount] = useState(1);
   const [editBuildingSchedule, setEditBuildingSchedule] = useState('');
-  const [editBuildingServices, setEditBuildingServices] = useState('');
+  const [editBuildingCategoryId, setEditBuildingCategoryId] = useState('');
 
   // Structure edit modal state
   const [isEditStructureOpen, setIsEditStructureOpen] = useState(false);
@@ -193,18 +191,16 @@ export const EditorBuildingsSubView = () => {
   const handleOpenAddRoom = () => {
     setNewRoomName('');
     setNewRoomFloor(1);
-    setNewRoomCategoryId(categories?.[0]?.id || '');
     setIsAddRoomOpen(true);
   };
 
   const handleCreateRoom = () => {
-    if (!selectedId || !newRoomName.trim() || !newRoomCategoryId) return;
+    if (!selectedId || !newRoomName.trim()) return;
 
     const rName = newRoomName.trim();
     createRoom.mutate(
       {
         buildingId: selectedId,
-        categoryId: newRoomCategoryId,
         name: rName,
         floor: newRoomFloor,
       },
@@ -222,11 +218,10 @@ export const EditorBuildingsSubView = () => {
     setEditingRoom(room);
     setEditRoomName(room.name);
     setEditRoomFloor(room.floor);
-    setEditRoomCategoryId(room.categoryId);
   };
 
   const handleSaveEditRoom = () => {
-    if (!editingRoom || !selectedId || !editRoomName.trim() || !editRoomCategoryId) return;
+    if (!editingRoom || !selectedId || !editRoomName.trim()) return;
 
     const rName = editRoomName.trim();
     updateRoom.mutate(
@@ -234,7 +229,6 @@ export const EditorBuildingsSubView = () => {
         id: editingRoom.id,
         payload: {
           buildingId: selectedId,
-          categoryId: editRoomCategoryId,
           name: rName,
           floor: editRoomFloor,
         },
@@ -265,7 +259,12 @@ export const EditorBuildingsSubView = () => {
     setEditBuildingName(selectedBuilding.name);
     setEditBuildingFloorsCount(selectedBuilding.metadata.floorsCount || 1);
     setEditBuildingSchedule(selectedBuilding.metadata.schedule || '');
-    setEditBuildingServices(selectedBuilding.metadata.services?.join(', ') || '');
+    setEditBuildingCategoryId(
+      selectedBuilding.categoryId ??
+        selectedBuilding.metadata.categoryId ??
+        categories?.[0]?.id ??
+        '',
+    );
     setIsEditBuildingOpen(true);
   };
 
@@ -278,11 +277,11 @@ export const EditorBuildingsSubView = () => {
         id: selectedBuilding.id,
         payload: {
           campusId: selectedBuilding.metadata.campusId,
+          categoryId: editBuildingCategoryId || null,
           name: bName,
           floorsCount: Math.max(1, editBuildingFloorsCount),
           latitude: selectedBuilding.location.latitude,
           longitude: selectedBuilding.location.longitude,
-          services: editBuildingServices.trim() || undefined,
         },
       },
       {
@@ -733,9 +732,6 @@ export const EditorBuildingsSubView = () => {
                                 <span className="text-xs font-bold text-page-blue bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md leading-none">
                                   Piso {room.floor}
                                 </span>
-                                <span className="text-sm font-semibold text-gray-500">
-                                  {categoryMap.get(room.categoryId) ?? 'Sin categoría'}
-                                </span>
                               </div>
                             </div>
                           </div>
@@ -803,21 +799,6 @@ export const EditorBuildingsSubView = () => {
               </select>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-gray-700 uppercase">Categoría</label>
-              <select
-                className="w-full rounded-2xl border border-gray-200 p-3 text-sm font-semibold text-gray-800 focus:outline-none focus:border-page-blue"
-                value={newRoomCategoryId}
-                onChange={(e) => setNewRoomCategoryId(e.target.value)}
-              >
-                {(categories ?? []).map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {createRoom.isError && (
               <span className="text-xs text-page-red">{createRoom.error.message}</span>
             )}
@@ -828,7 +809,7 @@ export const EditorBuildingsSubView = () => {
               color="blue"
               className="flex-1 !w-auto"
               onClick={handleCreateRoom}
-              disabled={!newRoomName.trim() || !newRoomCategoryId || createRoom.isPending}
+              disabled={!newRoomName.trim() || createRoom.isPending}
             >
               {createRoom.isPending ? 'Creando...' : 'Crear sala'}
             </Button>
@@ -876,21 +857,6 @@ export const EditorBuildingsSubView = () => {
               </select>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-gray-700 uppercase">Categoría</label>
-              <select
-                className="w-full rounded-2xl border border-gray-200 p-3 text-sm font-semibold text-gray-800 focus:outline-none focus:border-page-blue"
-                value={editRoomCategoryId}
-                onChange={(e) => setEditRoomCategoryId(e.target.value)}
-              >
-                {(categories ?? []).map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {updateRoom.isError && (
               <span className="text-xs text-page-red">{updateRoom.error.message}</span>
             )}
@@ -901,7 +867,7 @@ export const EditorBuildingsSubView = () => {
               color="blue"
               className="flex-1 !w-auto"
               onClick={handleSaveEditRoom}
-              disabled={!editRoomName.trim() || !editRoomCategoryId || updateRoom.isPending}
+              disabled={!editRoomName.trim() || updateRoom.isPending}
             >
               {updateRoom.isPending ? 'Guardando...' : 'Guardar cambios'}
             </Button>
@@ -971,12 +937,21 @@ export const EditorBuildingsSubView = () => {
               onChange={(e) => setEditBuildingSchedule(e.target.value)}
             />
 
-            <Input
-              label="Servicios (opcional, separados por coma)"
-              placeholder="Ej: Wifi, Baños, Biblioteca"
-              value={editBuildingServices}
-              onChange={(e) => setEditBuildingServices(e.target.value)}
-            />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-gray-700 uppercase">Categoría</label>
+              <select
+                className="w-full rounded-2xl border border-gray-200 p-3 text-sm font-semibold text-gray-800 focus:outline-none focus:border-page-blue"
+                value={editBuildingCategoryId}
+                onChange={(e) => setEditBuildingCategoryId(e.target.value)}
+              >
+                <option value="">Sin categoría</option>
+                {(categories ?? []).map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             {updateBuilding.isError && (
               <span className="text-xs text-page-red">{updateBuilding.error.message}</span>

@@ -8,15 +8,33 @@ interface RegisterFormProps {
   onSwitchToLogin: () => void;
 }
 
+const INSTITUTIONAL_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@(?:uct\.cl|alu\.uct\.cl)$/i;
+
+const isInstitutionalEmail = (email: string): boolean =>
+  INSTITUTIONAL_EMAIL_REGEX.test(email.trim());
+
 export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
   const [registerName, setRegisterName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { mutateAsync: register, isPending: isRegisterLoading, error: registerError, reset: resetRegisterError } = useRegister();
+
+  const isEmailValid = useMemo(() => isInstitutionalEmail(registerEmail), [registerEmail]);
+  const emailError = useMemo(() => {
+    if (!emailTouched && registerEmail.length === 0) return undefined;
+    if (registerEmail.trim().length > 0 && !isEmailValid) {
+      return 'Solo se permiten correos institucionales (@uct.cl o @alu.uct.cl)';
+    }
+    if (emailTouched && registerEmail.trim().length === 0) {
+      return 'Ingresa tu correo institucional (@uct.cl o @alu.uct.cl)';
+    }
+    return undefined;
+  }, [emailTouched, registerEmail, isEmailValid]);
 
   const passwordRules = useMemo(() => {
     return [
@@ -44,9 +62,15 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
   const onRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     resetRegisterError();
+    setEmailTouched(true);
 
     if (registerPassword !== registerConfirmPassword) {
       alert("Las contraseñas no coinciden");
+      return;
+    }
+
+    if (!isEmailValid) {
+      alert("Debes utilizar un correo institucional terminado en @uct.cl o @alu.uct.cl.");
       return;
     }
 
@@ -58,12 +82,13 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
     try {
       await register({
         name: registerName,
-        email: registerEmail,
+        email: registerEmail.trim(),
         password: registerPassword
       });
 
       setRegisterName('');
       setRegisterEmail('');
+      setEmailTouched(false);
       setRegisterPassword('');
       setRegisterConfirmPassword('');
       
@@ -89,13 +114,23 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
           value={registerName}
           onChange={(e) => setRegisterName(e.target.value)}
         />
-        <Input
-          label="Email"
-          labelColor="text-gray-700"
-          placeholder="usuario@uct.cl"
-          value={registerEmail}
-          onChange={(e) => setRegisterEmail(e.target.value)}
-        />
+        <div className="flex flex-col gap-1">
+          <Input
+            label="Email"
+            labelColor="text-gray-700"
+            placeholder="usuario@uct.cl"
+            value={registerEmail}
+            error={emailError}
+            onBlur={() => setEmailTouched(true)}
+            onChange={(e) => setRegisterEmail(e.target.value)}
+          />
+          {registerEmail.trim().length > 0 && isEmailValid && (
+            <span className="text-[11px] text-green-600 font-semibold pl-4 flex items-center gap-1">
+              <span>✓</span>
+              <span>Correo institucional UCT válido</span>
+            </span>
+          )}
+        </div>
         <Input
           label="Contraseña"
           labelColor="text-gray-700"

@@ -4,7 +4,8 @@ export interface UpdateBuildingDto {
   floorsCount: number;
   latitude: number;
   longitude: number;
+  categoryId?: string | null;
   openTime?: string | null;
   closeTime?: string | null;
-  services?: string | null;
+  photoUrl?: string | null;
 }

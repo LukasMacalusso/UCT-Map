@@ -29,6 +29,7 @@ export const MapView = () => {
   const [isDetailCardOpen, setIsDetailCardOpen] = React.useState(false);
   const [selectedCampus, setSelectedCampus] = React.useState('');
   const [heatmapMode, setHeatmapMode] = React.useState<HeatmapMode>('none');
+  const [selectedCategoryIds, setSelectedCategoryIds] = React.useState<string[]>([]);
 
   const { data: campuses, isLoading: areCampusesLoading } = useCampuses();
   const activeCampusId = selectedCampus || campuses?.[0]?.id || '';
@@ -71,9 +72,24 @@ export const MapView = () => {
   }, [heatmapMode, reportsData?.items, lostObjectsData?.items]);
 
   const markers: MapMarkerItem[] = React.useMemo(() => {
+    const filteredBuildings =
+      selectedCategoryIds.length === 0
+        ? (buildings ?? [])
+        : (buildings ?? []).filter((b) => {
+            const catId = b.categoryId ?? b.metadata?.categoryId;
+            return !!catId && selectedCategoryIds.includes(catId);
+          });
+
+    const filteredStructures =
+      selectedCategoryIds.length === 0
+        ? (structures ?? [])
+        : (structures ?? []).filter(
+            (s) => !!s.categoryId && selectedCategoryIds.includes(s.categoryId),
+          );
+
     const base = [
-      ...(buildings ?? []).map(toBuildingMarker),
-      ...(structures ?? []).map(toStructureMarker),
+      ...filteredBuildings.map(toBuildingMarker),
+      ...filteredStructures.map(toStructureMarker),
     ];
 
     if (heatmapMode === 'none') return base;
@@ -88,7 +104,7 @@ export const MapView = () => {
         heatmapIntensity: intensity,
       };
     });
-  }, [buildings, structures, heatmapMode, countsByEntityId]);
+  }, [buildings, structures, selectedCategoryIds, heatmapMode, countsByEntityId]);
 
   const mapRef = React.useRef<CampusMapHandle | null>(null);
   const cardCloseTimeoutRef = React.useRef<number | null>(null);
@@ -190,7 +206,11 @@ export const MapView = () => {
         }`}
       >
         <div className="flex-1 min-h-0">
-          <MapSidePanel onClose={() => setIsSidePanelOpen(false)} />
+          <MapSidePanel
+            onClose={() => setIsSidePanelOpen(false)}
+            selectedCategoryIds={selectedCategoryIds}
+            onChangeSelectedCategoryIds={setSelectedCategoryIds}
+          />
         </div>
         <RoleGuard allowedRoles={OFFICIAL_ROLES}>
           <div className="shrink-0">

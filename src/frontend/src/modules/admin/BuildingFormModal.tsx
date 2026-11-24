@@ -15,7 +15,6 @@ export const BuildingFormModal = ({ onClose }: BuildingFormModalProps) => {
     subtitle: 'Campus Ejemplo',
     floors: '2 Pisos',
     schedule: '08:00 - 18:00',
-    services: 'WIFI, BAÑOS'
   });
 
   const handleChange = (field: string, value: string) => {
@@ -54,12 +53,6 @@ export const BuildingFormModal = ({ onClose }: BuildingFormModalProps) => {
             value={formData.schedule}
             onChange={(e) => handleChange('schedule', e.target.value)}
           />
-          <Input
-            label="Servicios (Separados por coma)"
-            labelColor="text-gray-700"
-            value={formData.services}
-            onChange={(e) => handleChange('services', e.target.value)}
-          />
 
           <div className="flex gap-4 mt-4">
             <Button color="blue" className="flex-1" onClick={onClose}>Guardar</Button>
@@ -75,7 +68,6 @@ export const BuildingFormModal = ({ onClose }: BuildingFormModalProps) => {
             subtitle={formData.subtitle}
             floors={formData.floors}
             schedule={formData.schedule}
-            services={formData.services.split(',').map(s => s.trim()).filter(Boolean)}
             onClose={onClose}
           />
         </div>

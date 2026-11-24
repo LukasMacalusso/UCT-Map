@@ -35,7 +35,6 @@ jobs:
 
     - name: Verify Code Quality
       run: npm run lint
-      continue-on-error: true
 
     - name: Run Unit Tests & Generate Coverage
       run: npm run coverage

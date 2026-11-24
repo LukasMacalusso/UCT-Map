@@ -3,8 +3,8 @@ import { ModalOverlay } from '../../components/layout/ModalOverlay';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
-import { useCreateOfficeHour } from '../../hooks/useSchedule';
-import type { DayOfWeekName } from '../../dtos/schedule/OfficeHourDto';
+import { useCreateOfficeHour, useUpdateOfficeHour } from '../../hooks/useSchedule';
+import type { DayOfWeekName, OfficeHourDto } from '../../dtos/schedule/OfficeHourDto';
 import type { StructureDto } from '../../dtos/campus/StructureDto';
 import { DAY_INDEX, DAY_LABELS, timeToMinutes } from '../../utils/schedule';
 import CrossIcon from '../../assets/svg/icons/icon_cross.svg?react';
@@ -35,6 +35,7 @@ interface CreateOfficeHourModalProps {
   onClose: () => void;
   teacherRefId?: string;
   structures: StructureDto[];
+  editingOfficeHour?: OfficeHourDto | null;
 }
 
 export const CreateOfficeHourModal = ({
@@ -42,13 +43,44 @@ export const CreateOfficeHourModal = ({
   onClose,
   teacherRefId,
   structures,
+  editingOfficeHour = null,
 }: CreateOfficeHourModalProps) => {
-  const [dayOfWeek, setDayOfWeek] = useState<DayOfWeekName>('Monday');
-  const [startTime, setStartTime] = useState(DEFAULT_START);
-  const [endTime, setEndTime] = useState(DEFAULT_END);
-  const [structureRefId, setStructureRefId] = useState('');
+  const [dayOfWeek, setDayOfWeek] = useState<DayOfWeekName>(
+    () => editingOfficeHour?.dayOfWeek ?? 'Monday',
+  );
+  const [startTime, setStartTime] = useState(
+    () => editingOfficeHour?.startTime.slice(0, 5) ?? DEFAULT_START,
+  );
+  const [endTime, setEndTime] = useState(
+    () => editingOfficeHour?.endTime.slice(0, 5) ?? DEFAULT_END,
+  );
+  const [structureRefId, setStructureRefId] = useState(
+    () => editingOfficeHour?.structureRefId ?? '',
+  );
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [prevEditingOfficeHour, setPrevEditingOfficeHour] =
+    useState<OfficeHourDto | null>(editingOfficeHour);
   const createOfficeHour = useCreateOfficeHour();
+  const updateOfficeHour = useUpdateOfficeHour();
+
+  const isEditing = !!editingOfficeHour;
+
+  if (editingOfficeHour !== prevEditingOfficeHour) {
+    setPrevEditingOfficeHour(editingOfficeHour);
+    if (editingOfficeHour) {
+      setDayOfWeek(editingOfficeHour.dayOfWeek);
+      setStartTime(editingOfficeHour.startTime.slice(0, 5));
+      setEndTime(editingOfficeHour.endTime.slice(0, 5));
+      setStructureRefId(editingOfficeHour.structureRefId ?? '');
+      setValidationError(null);
+    } else {
+      setDayOfWeek('Monday');
+      setStartTime(DEFAULT_START);
+      setEndTime(DEFAULT_END);
+      setStructureRefId('');
+      setValidationError(null);
+    }
+  }
 
   const resetForm = () => {
     setDayOfWeek('Monday');
@@ -71,6 +103,7 @@ export const CreateOfficeHourModal = ({
 
   const handleClose = () => {
     createOfficeHour.reset();
+    updateOfficeHour?.reset?.();
     resetForm();
     onClose();
   };
@@ -79,7 +112,7 @@ export const CreateOfficeHourModal = ({
     event.preventDefault();
     setValidationError(null);
 
-    if (!teacherRefId) {
+    if (!teacherRefId && !isEditing) {
       setValidationError('No se pudo identificar al profesor.');
       return;
     }
@@ -94,9 +127,25 @@ export const CreateOfficeHourModal = ({
       return;
     }
 
+    if (isEditing && editingOfficeHour) {
+      updateOfficeHour.mutate(
+        {
+          id: editingOfficeHour.id,
+          payload: {
+            structureRefId: structureRefId || null,
+            dayOfWeek,
+            startTime: toTimeOnly(startTime),
+            endTime: toTimeOnly(endTime),
+          },
+        },
+        { onSuccess: handleClose },
+      );
+      return;
+    }
+
     createOfficeHour.mutate(
       {
-        teacherRefId,
+        teacherRefId: teacherRefId!,
         structureRefId: structureRefId || null,
         dayOfWeek,
         startTime: toTimeOnly(startTime),
@@ -106,7 +155,12 @@ export const CreateOfficeHourModal = ({
     );
   };
 
-  const errorMessage = validationError ?? createOfficeHour.error?.message ?? null;
+  const isPending = createOfficeHour.isPending || Boolean(updateOfficeHour?.isPending);
+  const errorMessage =
+    validationError ??
+    createOfficeHour.error?.message ??
+    updateOfficeHour?.error?.message ??
+    null;
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={handleClose}>
@@ -117,7 +171,7 @@ export const CreateOfficeHourModal = ({
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex flex-col min-w-0 pr-2">
             <h3 className="text-lg font-extrabold text-gray-800 uppercase tracking-tight">
-              Nuevo Bloque de Atención
+              {isEditing ? 'Editar Bloque de Atención' : 'Nuevo Bloque de Atención'}
             </h3>
             <span className="text-xs text-gray-500 font-medium">
               Define el día y la franja horaria.
@@ -170,7 +224,7 @@ export const CreateOfficeHourModal = ({
           />
         </div>
 
-        {!teacherRefId && (
+        {!teacherRefId && !isEditing && (
           <span className="text-xs text-page-red font-semibold">
             No se pudo identificar al profesor. Vuelve a iniciar sesión.
           </span>
@@ -185,9 +239,9 @@ export const CreateOfficeHourModal = ({
             type="submit"
             color="blue"
             className="flex-1 !w-auto"
-            disabled={createOfficeHour.isPending || !teacherRefId}
+            disabled={isPending || (!teacherRefId && !isEditing)}
           >
-            {createOfficeHour.isPending ? 'Guardando...' : 'Guardar bloque'}
+            {isPending ? 'Guardando...' : 'Guardar bloque'}
           </Button>
           <Button
             type="button"
@@ -195,7 +249,7 @@ export const CreateOfficeHourModal = ({
             color="gray"
             className="!w-auto px-5"
             onClick={handleClose}
-            disabled={createOfficeHour.isPending}
+            disabled={isPending}
           >
             Cancelar
           </Button>

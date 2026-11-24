@@ -17,46 +17,21 @@ export const INITIAL_ZOOM = 14;
 export const INITIAL_PITCH = 50;
 export const INITIAL_BEARING = -20;
 
-export const MOCK_SPREAD = 0.006;
-
-export const hashString = (value: string): number => {
-  let hash = 2166136261;
-  for (let i = 0; i < value.length; i++) {
-    hash ^= value.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return Math.abs(hash);
-};
-
 export const isWithinCampus = ([lng, lat]: [number, number]) =>
   lng >= CAMPUS_BOUNDS[0][0] &&
   lng <= CAMPUS_BOUNDS[1][0] &&
   lat >= CAMPUS_BOUNDS[0][1] &&
   lat <= CAMPUS_BOUNDS[1][1];
 
-export const resolveBuildingCoordinate = (building: BuildingLocationDto): [number, number] => {
-  const coordinate: [number, number] = [building.location.longitude, building.location.latitude];
-  if (coordinate[0] !== 0 || coordinate[1] !== 0) return coordinate;
-  const seed = hashString(building.id);
-  const angle = ((seed % 360) * Math.PI) / 180;
-  const radius = MOCK_SPREAD * (0.45 + ((seed % 50) / 50) * 0.55);
-  return [
-    CAMPUS_CENTER[0] + Math.cos(angle) * radius,
-    CAMPUS_CENTER[1] + Math.sin(angle) * radius,
-  ];
-};
+export const resolveBuildingCoordinate = (building: BuildingLocationDto): [number, number] => [
+  building.location.longitude,
+  building.location.latitude,
+];
 
-export const resolveStructureCoordinate = (structure: StructureDto): [number, number] => {
-  const coordinate: [number, number] = [structure.longitude, structure.latitude];
-  if (coordinate[0] !== 0 || coordinate[1] !== 0) return coordinate;
-  const seed = hashString(structure.id);
-  const angle = ((seed % 360) * Math.PI) / 180;
-  const radius = MOCK_SPREAD * (0.45 + ((seed % 50) / 50) * 0.55);
-  return [
-    CAMPUS_CENTER[0] + Math.cos(angle) * radius,
-    CAMPUS_CENTER[1] + Math.sin(angle) * radius,
-  ];
-};
+export const resolveStructureCoordinate = (structure: StructureDto): [number, number] => [
+  structure.longitude,
+  structure.latitude,
+];
 
 export interface CameraOptions {
   zoom?: number;

@@ -2,6 +2,8 @@ export interface BuildingMetadataDto {
   campusId: string;
   categoryId?: string | null;
   floorsCount: number;
-  schedule?: string;
-  services?: string[];
+  schedule?: string | null;
+  photoUrl?: string | null;
+  categoryName?: string;
+  categoryIcon?: string;
 }

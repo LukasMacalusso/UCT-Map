@@ -53,9 +53,9 @@ export const IncidentsView = () => {
   const createReport = useCreateReport();
   const deleteReport = useDeleteReport();
   const currentUser = useAuthState((state) => state.user);
-  const isAdmin = currentUser?.role === Role.Admin;
   const canManageStatus =
     currentUser?.role === Role.Admin || currentUser?.role === Role.ComplaintsOfficer;
+  const canDeleteReport = canManageStatus;
   const [selectedStatusReport, setSelectedStatusReport] = useState<ReportDto | null>(null);
   const [deletingReport, setDeletingReport] = useState<ReportDto | null>(null);
 
@@ -273,7 +273,7 @@ export const IncidentsView = () => {
                       canManageStatus ? () => setSelectedStatusReport(report) : undefined
                     }
                     onDeleteClick={
-                      isAdmin ? () => setDeletingReport(report) : undefined
+                      canDeleteReport ? () => setDeletingReport(report) : undefined
                     }
                   />
                 );

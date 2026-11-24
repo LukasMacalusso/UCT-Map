@@ -19,6 +19,20 @@ const state = vi.hoisted(() => ({
     isPending: false,
     error: null as { message?: string } | null,
   },
+  updateOfficeHour: {
+    mutate: vi.fn(),
+    reset: vi.fn(),
+    isPending: false,
+    error: null as { message?: string } | null,
+  },
+  deleteOfficeHour: {
+    mutate: vi.fn(),
+    isPending: false,
+  },
+  cancelMeeting: {
+    mutate: vi.fn(),
+    isPending: false,
+  },
 }));
 
 vi.mock('../hooks/useSchedule', () => ({
@@ -35,6 +49,9 @@ vi.mock('../hooks/useSchedule', () => ({
     isPending: false,
   }),
   useCreateOfficeHour: () => state.createOfficeHour,
+  useUpdateOfficeHour: () => state.updateOfficeHour,
+  useDeleteOfficeHour: () => state.deleteOfficeHour,
+  useCancelMeeting: () => state.cancelMeeting,
 }));
 
 vi.mock('../hooks/useCampus', () => ({

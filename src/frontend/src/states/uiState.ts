@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type Panel = 'none' | 'saveMapChanges' | 'discardMapChanges' | 'userProfile';
+type Panel = 'none' | 'userProfile';
 
 export interface EditorToast {
   id: number;

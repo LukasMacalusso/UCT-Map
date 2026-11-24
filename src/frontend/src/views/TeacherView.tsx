@@ -1,16 +1,25 @@
 import { useMemo, useState } from 'react';
 import { Panel } from '../components/layout/Panel';
+import { ModalOverlay } from '../components/layout/ModalOverlay';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
+import { SquareButton } from '../components/ui/SquareButton';
+import { TimedActionCard } from '../components/ui/TimedActionCard';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { IconText } from '../components/ui/IconText';
-import { useTeacherWorkload } from '../hooks/useSchedule';
+import {
+  useTeacherWorkload,
+  useDeleteOfficeHour,
+  useCancelMeeting,
+} from '../hooks/useSchedule';
 import { useStructures } from '../hooks/useCampus';
 import { useUsers } from '../hooks/useUsers';
 import { useAuthState } from '../states/authState';
 import { MeetingStatusSelect } from '../modules/schedule/MeetingStatusSelect';
 import { CreateOfficeHourModal } from '../modules/schedule/CreateOfficeHourModal';
+import type { OfficeHourDto } from '../dtos/schedule/OfficeHourDto';
+import type { MeetingDto } from '../dtos/schedule/MeetingDto';
 import {
   addDays,
   formatClock,
@@ -28,6 +37,8 @@ import UserIcon from '../assets/svg/icons/icon_user.svg?react';
 import FilterIcon from '../assets/svg/icons/icon_filter.svg?react';
 import RefreshIcon from '../assets/svg/icons/icon_repeat.svg?react';
 import PlusIcon from '../assets/svg/icons/icon_plus.svg?react';
+import PencilIcon from '../assets/svg/icons/icon_pencil.svg?react';
+import TrashIcon from '../assets/svg/icons/icon_trash.svg?react';
 
 const RANGE_OPTIONS = [
   { value: '7', label: 'Próximos 7 días' },
@@ -48,6 +59,12 @@ export const ScheduleView = () => {
   const [daysAhead, setDaysAhead] = useState('14');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingOfficeHour, setEditingOfficeHour] = useState<OfficeHourDto | null>(null);
+  const [deletingOfficeHour, setDeletingOfficeHour] = useState<OfficeHourDto | null>(null);
+  const [cancellingMeeting, setCancellingMeeting] = useState<MeetingDto | null>(null);
+
+  const deleteOfficeHour = useDeleteOfficeHour();
+  const cancelMeeting = useCancelMeeting();
 
   const dateRange = useMemo(() => {
     const fromDate = startOfDay(new Date());
@@ -228,7 +245,10 @@ export const ScheduleView = () => {
                   color="blue"
                   size="sm"
                   className="!w-auto flex items-center gap-1.5"
-                  onClick={() => setIsCreateOpen(true)}
+                  onClick={() => {
+                    setEditingOfficeHour(null);
+                    setIsCreateOpen(true);
+                  }}
                   disabled={!user?.id}
                 >
                   <PlusIcon className="w-4 h-4" />
@@ -250,16 +270,40 @@ export const ScheduleView = () => {
                     return (
                       <div
                         key={block.id}
-                        className="bg-white p-4 rounded-xl shadow-sm flex flex-col gap-1.5 border border-gray-100 flex-shrink-0"
+                        className="bg-white p-4 rounded-xl shadow-sm flex items-center justify-between gap-3 border border-gray-100 flex-shrink-0"
                       >
-                        <span className="font-bold text-gray-800 text-sm">
-                          {formatOfficeHour(block)}
-                        </span>
-                        <IconText
-                          icon={<BuildingIcon className="w-4 h-4 text-page-blue" />}
-                          text={buildingName}
-                          className="!text-xs text-gray-600"
-                        />
+                        <div className="flex flex-col gap-1.5 min-w-0">
+                          <span className="font-bold text-gray-800 text-sm">
+                            {formatOfficeHour(block)}
+                          </span>
+                          <IconText
+                            icon={<BuildingIcon className="w-4 h-4 text-page-blue" />}
+                            text={buildingName}
+                            className="!text-xs text-gray-600"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <SquareButton
+                            type="button"
+                            title="Editar bloque"
+                            className="!w-8 !h-8 !rounded-lg shrink-0 !shadow-none border border-gray-200 hover:border-page-blue transition-colors"
+                            onClick={() => {
+                              setEditingOfficeHour(block);
+                              setIsCreateOpen(true);
+                            }}
+                          >
+                            <PencilIcon className="w-3.5 h-3.5 pointer-events-none text-page-blue" />
+                          </SquareButton>
+                          <SquareButton
+                            type="button"
+                            title="Eliminar bloque"
+                            className="!w-8 !h-8 !rounded-lg shrink-0 !shadow-none border border-gray-200 hover:border-page-red transition-colors"
+                            onClick={() => setDeletingOfficeHour(block)}
+                          >
+                            <TrashIcon className="w-3.5 h-3.5 pointer-events-none text-page-red" />
+                          </SquareButton>
+                        </div>
                       </div>
                     );
                   })
@@ -333,6 +377,16 @@ export const ScheduleView = () => {
                             isTeacher={user?.id === meeting.teacherRefId}
                             isStudent={user?.id === meeting.studentRefId}
                           />
+                          {(meeting.status === 'Pending' || meeting.status === 'Confirmed') && (
+                            <SquareButton
+                              type="button"
+                              title="Cancelar reunión"
+                              className="!w-9 !h-9 !rounded-xl shrink-0 !shadow-none border border-gray-200 hover:border-page-red transition-colors"
+                              onClick={() => setCancellingMeeting(meeting)}
+                            >
+                              <TrashIcon className="w-4 h-4 pointer-events-none text-page-red" />
+                            </SquareButton>
+                          )}
                         </div>
                       </div>
                     );
@@ -346,10 +400,66 @@ export const ScheduleView = () => {
 
       <CreateOfficeHourModal
         isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
+        onClose={() => {
+          setIsCreateOpen(false);
+          setEditingOfficeHour(null);
+        }}
         teacherRefId={user?.id}
         structures={structures}
+        editingOfficeHour={editingOfficeHour}
       />
+
+      <ModalOverlay isOpen={!!deletingOfficeHour} onClose={() => setDeletingOfficeHour(null)}>
+        <TimedActionCard
+          title="Eliminar bloque de atención"
+          description={`¿Estás seguro de que deseas eliminar el bloque "${
+            deletingOfficeHour ? formatOfficeHour(deletingOfficeHour) : ''
+          }"? Las reuniones pendientes o confirmadas fuera del nuevo horario serán canceladas.`}
+          initialDurationMs={1500}
+          options={[
+            {
+              label: 'Cancelar',
+              color: 'gray',
+              onClick: () => setDeletingOfficeHour(null),
+            },
+            {
+              label: 'Sí, eliminar',
+              color: 'red',
+              onClick: () => {
+                if (!deletingOfficeHour?.id) return;
+                deleteOfficeHour?.mutate?.(deletingOfficeHour.id, {
+                  onSuccess: () => setDeletingOfficeHour(null),
+                });
+              },
+            },
+          ]}
+        />
+      </ModalOverlay>
+
+      <ModalOverlay isOpen={!!cancellingMeeting} onClose={() => setCancellingMeeting(null)}>
+        <TimedActionCard
+          title="Cancelar reunión"
+          description="¿Estás seguro de que deseas cancelar esta reunión agendada?"
+          initialDurationMs={1500}
+          options={[
+            {
+              label: 'Volver',
+              color: 'gray',
+              onClick: () => setCancellingMeeting(null),
+            },
+            {
+              label: 'Sí, cancelar reunión',
+              color: 'red',
+              onClick: () => {
+                if (!cancellingMeeting?.id) return;
+                cancelMeeting?.mutate?.(cancellingMeeting.id, {
+                  onSuccess: () => setCancellingMeeting(null),
+                });
+              },
+            },
+          ]}
+        />
+      </ModalOverlay>
     </div>
   );
 };

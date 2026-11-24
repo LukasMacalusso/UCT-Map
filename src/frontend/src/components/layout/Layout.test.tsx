@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen, fireEvent, act } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './AppLayout';
 import { GlobalModals } from './GlobalModals';
@@ -25,7 +25,9 @@ vi.mock('../../hooks/useLostObjects', () => ({
 
 vi.mock('../../hooks/useSchedule', () => ({
   useAllMeetings: () => ({ data: [], isLoading: false }),
+  useStudentMeetings: () => ({ data: { meetings: [] }, isLoading: false }),
   useUpdateMeetingStatus: () => ({ mutate: vi.fn(), isPending: false }),
+  useCancelMeeting: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 vi.mock('../../hooks/useUsers', () => ({
@@ -184,46 +186,6 @@ describe('Layout components', () => {
       );
 
       expect(screen.getByText('ADMINISTRADOR')).toBeInTheDocument();
-    });
-
-    it('renders and interacts with saveMapChanges modal', () => {
-      vi.useFakeTimers();
-      useUiState.setState({ activePanel: 'saveMapChanges' });
-
-      renderWithQueryClient(
-        <MemoryRouter initialEntries={['/map']}>
-          <GlobalModals />
-        </MemoryRouter>,
-      );
-
-      expect(screen.getByText('Confirmar Cambios')).toBeInTheDocument();
-      act(() => {
-        vi.advanceTimersByTime(3100);
-      });
-      const publishBtn = screen.getByText('Publicar Mapa');
-      fireEvent.click(publishBtn);
-      expect(useUiState.getState().activePanel).toBe('none');
-      vi.useRealTimers();
-    });
-
-    it('renders and interacts with discardMapChanges modal', () => {
-      vi.useFakeTimers();
-      useUiState.setState({ activePanel: 'discardMapChanges' });
-
-      renderWithQueryClient(
-        <MemoryRouter initialEntries={['/map']}>
-          <GlobalModals />
-        </MemoryRouter>,
-      );
-
-      expect(screen.getByText('Descartar Cambios')).toBeInTheDocument();
-      act(() => {
-        vi.advanceTimersByTime(2100);
-      });
-      const discardBtn = screen.getByText('Sí, descartar');
-      fireEvent.click(discardBtn);
-      expect(useUiState.getState().activePanel).toBe('none');
-      vi.useRealTimers();
     });
 
     it('renders toast when editorToast is set', () => {

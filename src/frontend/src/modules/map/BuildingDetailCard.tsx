@@ -1,5 +1,4 @@
 import { BaseDetailCard } from './BaseDetailCard';
-import { Tag } from '../../components/ui/Tag';
 import { ScheduleCard } from './ScheduleCard';
 import BuildingIcon from '../../assets/svg/icons/icon_building.svg?react';
 import DoorIcon from '../../assets/svg/icons/icon_door.svg?react';
@@ -11,7 +10,6 @@ export interface BuildingDetailCardProps {
   images?: string[];
   schedule?: string;
   floors?: string;
-  services?: string[];
   rooms?: RoomData[];
   roomsLoading?: boolean;
   withUctBorder?: boolean;
@@ -27,7 +25,6 @@ export const BuildingDetailCard = ({
   subtitle = '',
   images = [],
   schedule = '',
-  services = [],
   rooms = [],
   roomsLoading = false,
   withUctBorder = true,
@@ -53,14 +50,6 @@ export const BuildingDetailCard = ({
       onReportLostObject={onReportLostObject}
     >
       <ScheduleCard schedule={schedule} />
-
-      {services.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {services.map((srv, idx) => (
-            <Tag key={idx} label={srv} color="blue" className="text-xs py-1.5 px-3.5" />
-          ))}
-        </div>
-      )}
 
       <div className="flex-1 min-h-0 rounded-2xl bg-page-gray-light px-2 py-1 overflow-y-auto">
         {roomsLoading ? (

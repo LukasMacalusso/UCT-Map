@@ -34,8 +34,13 @@ vi.mock('../../hooks/useLostObjects', () => ({
 
 vi.mock('../../hooks/useSchedule', () => ({
   useAllMeetings: () => ({ data: data.meetings }),
+  useStudentMeetings: () => ({ data: { meetings: data.meetings } }),
   useUpdateMeetingStatus: () => ({
     mutate: data.cancelMeeting,
+    isPending: false,
+  }),
+  useCancelMeeting: () => ({
+    mutate: vi.fn(),
     isPending: false,
   }),
 }));

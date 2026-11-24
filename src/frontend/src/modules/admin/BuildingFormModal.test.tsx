@@ -18,8 +18,8 @@ describe('BuildingFormModal', () => {
     expect(screen.getByDisplayValue('Edificio Nuevo')).toBeInTheDocument();
     expect(screen.getAllByText('Edificio Nuevo').length).toBeGreaterThan(0);
 
-    const servicesInput = screen.getByDisplayValue('WIFI, BAÑOS');
-    fireEvent.change(servicesInput, { target: { value: 'WIFI, BAÑOS, CAFÉ' } });
+    const scheduleInput = screen.getByDisplayValue('08:00 - 18:00');
+    fireEvent.change(scheduleInput, { target: { value: '09:00 - 20:00' } });
 
     fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
     expect(onClose).toHaveBeenCalledTimes(1);

@@ -7,10 +7,15 @@ import {
   useTeacherAvailability,
   useTeacherWorkload,
   useTeacherMeetings,
+  useStudentMeetings,
   useAllMeetings,
   useCreateMeeting,
   useCreateOfficeHour,
+  useUpdateOfficeHour,
+  useDeleteOfficeHour,
   useUpdateMeetingStatus,
+  useRescheduleMeeting,
+  useCancelMeeting,
 } from './useSchedule';
 import { scheduleService } from '../services/scheduleService';
 import type { TeacherAvailabilityDto } from '../dtos/schedule/TeacherAvailabilityDto';
@@ -100,5 +105,62 @@ describe('useSchedule hooks', () => {
       await um.current.mutateAsync({ id: 'm1', status: 'Confirmed' });
     });
     expect(scheduleService.updateMeetingStatus).toHaveBeenCalledWith('m1', 'Confirmed');
+
+    vi.mocked(scheduleService.getStudentMeetings).mockResolvedValue({
+      studentRefId: 's1',
+      from: 'from',
+      to: 'to',
+      meetingCount: 0,
+      meetings: [],
+    });
+    const { result: sm } = renderHook(() => useStudentMeetings('s1', 'from', 'to'), { wrapper });
+    await waitFor(() => expect(sm.current.isSuccess).toBe(true));
+
+    vi.mocked(scheduleService.updateOfficeHour).mockResolvedValue({
+      id: 'oh1',
+    } as unknown as OfficeHourDto);
+    const { result: uoh } = renderHook(() => useUpdateOfficeHour(), { wrapper });
+    await act(async () => {
+      await uoh.current.mutateAsync({
+        id: 'oh1',
+        payload: {
+          structureRefId: null,
+          dayOfWeek: 'Monday',
+          startTime: '09:00:00',
+          endTime: '10:00:00',
+        },
+      });
+    });
+    expect(scheduleService.updateOfficeHour).toHaveBeenCalled();
+
+    vi.mocked(scheduleService.deleteOfficeHour).mockResolvedValue();
+    const { result: doh } = renderHook(() => useDeleteOfficeHour(), { wrapper });
+    await act(async () => {
+      await doh.current.mutateAsync('oh1');
+    });
+    expect(scheduleService.deleteOfficeHour).toHaveBeenCalledWith('oh1');
+
+    vi.mocked(scheduleService.rescheduleMeeting).mockResolvedValue({
+      id: 'm1',
+    } as unknown as MeetingDto);
+    const { result: rm } = renderHook(() => useRescheduleMeeting(), { wrapper });
+    await act(async () => {
+      await rm.current.mutateAsync({
+        id: 'm1',
+        payload: {
+          structureRefId: null,
+          scheduledAt: '2026-11-05T10:00:00',
+          durationMinutes: 30,
+        },
+      });
+    });
+    expect(scheduleService.rescheduleMeeting).toHaveBeenCalled();
+
+    vi.mocked(scheduleService.cancelMeeting).mockResolvedValue();
+    const { result: canm } = renderHook(() => useCancelMeeting(), { wrapper });
+    await act(async () => {
+      await canm.current.mutateAsync('m1');
+    });
+    expect(scheduleService.cancelMeeting).toHaveBeenCalledWith('m1');
   });
 });

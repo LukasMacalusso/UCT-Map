@@ -61,9 +61,9 @@ export const ObjectsView = () => {
   const createLostObject = useCreateLostObject();
   const deleteLostObject = useDeleteLostObject();
   const currentUser = useAuthState((state) => state.user);
-  const isAdmin = currentUser?.role === Role.Admin;
   const canManageStatus =
     currentUser?.role === Role.Admin || currentUser?.role === Role.ObjectsOfficer;
+  const canDeleteObject = canManageStatus;
   const [selectedStatusObject, setSelectedStatusObject] = useState<LostObjectDto | null>(null);
   const [deletingObject, setDeletingObject] = useState<LostObjectDto | null>(null);
 
@@ -318,7 +318,7 @@ export const ObjectsView = () => {
                       canManageStatus ? () => setSelectedStatusObject(lostObject) : undefined
                     }
                     onDeleteClick={
-                      isAdmin ? () => setDeletingObject(lostObject) : undefined
+                      canDeleteObject ? () => setDeletingObject(lostObject) : undefined
                     }
                     actions={[
                       {

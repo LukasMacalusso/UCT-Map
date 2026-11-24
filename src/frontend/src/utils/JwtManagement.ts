@@ -21,12 +21,14 @@ export function decodeJwt(token: string): JwtPayloadDto | null {
     const msRole = parsed['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
     const msEmail = parsed['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
     const msSub = parsed['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+    const msName = parsed['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'];
 
     const payload: JwtPayloadDto = {
       ...parsed,
       role: normalizeRole(parsed.role) ?? normalizeRole(msRole),
       email: parsed.email || msEmail,
       sub: parsed.sub || msSub,
+      name: (typeof parsed.name === 'string' && parsed.name) || (typeof msName === 'string' ? msName : undefined),
     };
 
     return payload;

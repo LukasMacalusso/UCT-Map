@@ -71,7 +71,7 @@ export const AppLayout = () => {
 
       <div
         className={`flex-shrink-0 h-full bg-page-blue z-0 transition-all duration-300 ${
-          isHidden ? 'w-0' : 'w-[88px]'
+          isHidden ? 'w-0' : 'w-22'
         }`}
       />
 
@@ -79,7 +79,7 @@ export const AppLayout = () => {
         className={`absolute left-0 top-0 bottom-0 bg-page-blue flex flex-col gap-4 py-8 px-4 h-full shadow-xl transition-all duration-300 z-50 ${
           isHidden ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
         } ${
-          isExpanded ? 'w-[320px]' : 'w-[88px]'
+          isExpanded ? 'w-80' : 'w-22'
         }`}
         onMouseEnter={() => !isHidden && setIsExpanded(true)}
         onMouseLeave={() => setIsExpanded(false)}
@@ -87,7 +87,7 @@ export const AppLayout = () => {
         {/* LOGO CONTAINER */}
         <div
           className={`flex items-center mb-4 bg-white rounded-2xl relative transition-all duration-300 ease-in-out shadow-md flex-shrink-0 z-50 w-max overflow-hidden ${
-            isExpanded ? 'h-24 min-w-[288px] pr-2' : 'h-14 min-w-0 pr-4'
+            isExpanded ? 'h-24 min-w-72 pr-2' : 'h-14 min-w-0 pr-4'
           }`}
         >
           {/* LOGO */}
@@ -130,7 +130,7 @@ export const AppLayout = () => {
           to="/map"
           label="Mapa"
           isExpanded={isExpanded}
-          expandedWidth="288px"
+          expandedWidth="18rem"
           icon={<MapIcon className="w-8 h-8" />}
         />
 
@@ -138,7 +138,7 @@ export const AppLayout = () => {
           to="/reports"
           label="Reportes"
           isExpanded={isExpanded}
-          expandedWidth="288px"
+          expandedWidth="18rem"
           icon={<ReportsIcon className="w-8 h-8" />}
         />
 
@@ -146,7 +146,7 @@ export const AppLayout = () => {
           to="/objects"
           label="Objetos"
           isExpanded={isExpanded}
-          expandedWidth="288px"
+          expandedWidth="18rem"
           icon={<ObjectsIcon className="w-8 h-8" />}
         />
 
@@ -154,14 +154,14 @@ export const AppLayout = () => {
           to="/contacts"
           label="Contactos"
           isExpanded={isExpanded}
-          expandedWidth="288px"
+          expandedWidth="18rem"
           icon={<ContactsIcon className="w-8 h-8" />}
         />
 
         <RoleGuard allowedRoles={[Role.Teacher, Role.Admin]}>
           <div
             className={`relative flex items-center h-11 transition-all duration-300 ease-in-out overflow-hidden select-none ${
-              isExpanded ? 'w-[288px]' : 'w-14'
+              isExpanded ? 'w-72' : 'w-14'
             }`}
           >
             <div className="flex-shrink-0 flex items-center justify-center w-14 h-11 text-page-white/90">
@@ -188,7 +188,7 @@ export const AppLayout = () => {
             to="/schedule"
             label="Agendamiento"
             isExpanded={isExpanded}
-            expandedWidth="288px"
+            expandedWidth="18rem"
             icon={<ScheduleIcon className="w-12 h-12" />}
           />
         </RoleGuard>
@@ -198,14 +198,14 @@ export const AppLayout = () => {
             to="/administration"
             label="Administración"
             isExpanded={isExpanded}
-            expandedWidth="288px"
+            expandedWidth="18rem"
             icon={<AdminIcon className="w-8 h-8" />}
           />
           <SectionButton
             to="/edition"
             label="Edición"
             isExpanded={isExpanded}
-            expandedWidth="288px"
+            expandedWidth="18rem"
             icon={<PencilIcon className="w-8 h-8" />}
           />
         </RoleGuard>
@@ -217,7 +217,7 @@ export const AppLayout = () => {
               type="button"
               onClick={() => useUiState.getState().openPanel('userProfile')}
               className={`flex items-center rounded-2xl relative transition-all duration-300 ease-in-out flex-shrink-0 z-50 overflow-hidden text-left cursor-pointer hover:brightness-95 active:scale-[0.98] ${
-                isExpanded ? 'bg-white shadow-md h-24 w-[288px] p-2 pr-4' : 'bg-transparent h-14 w-14 p-0'
+                isExpanded ? 'bg-white shadow-md h-24 w-72 p-2 pr-4' : 'bg-transparent h-14 w-14 p-0'
               }`}
               title="Información de cuenta"
             >
@@ -249,7 +249,7 @@ export const AppLayout = () => {
               to="/login"
               label="Iniciar Sesión"
               isExpanded={isExpanded}
-              expandedWidth="288px"
+              expandedWidth="18rem"
               icon={<UserIcon className="w-8 h-8" />}
             />
           )}
@@ -262,7 +262,7 @@ export const AppLayout = () => {
         className={`absolute inset-0 bg-black transition-opacity duration-300 z-40 pointer-events-none ${
           isExpanded && !isHidden ? 'opacity-50' : 'opacity-0'
         }`}
-        style={{ left: '88px' }}
+        style={{ left: '5.5rem' }}
       />
 
       <main className="flex-1 relative overflow-auto z-10">

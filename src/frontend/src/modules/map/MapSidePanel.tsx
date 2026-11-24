@@ -8,10 +8,25 @@ import FilterIcon from '../../assets/svg/icons/icon_filter.svg?react';
 
 interface MapSidePanelProps {
   onClose: () => void;
+  selectedCategoryIds?: string[];
+  onChangeSelectedCategoryIds?: (ids: string[]) => void;
 }
 
-export const MapSidePanel = ({ onClose }: MapSidePanelProps) => {
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+export const MapSidePanel = ({
+  onClose,
+  selectedCategoryIds: controlledIds,
+  onChangeSelectedCategoryIds,
+}: MapSidePanelProps) => {
+  const [internalSelectedIds, setInternalSelectedIds] = useState<string[]>([]);
+
+  const selectedCategoryIds = controlledIds ?? internalSelectedIds;
+  const updateSelectedCategoryIds = (nextIds: string[]) => {
+    if (onChangeSelectedCategoryIds) {
+      onChangeSelectedCategoryIds(nextIds);
+    } else {
+      setInternalSelectedIds(nextIds);
+    }
+  };
 
   const { data: categories, isLoading } = useCategories();
 
@@ -20,8 +35,10 @@ export const MapSidePanel = ({ onClose }: MapSidePanelProps) => {
   }, [categories]);
 
   const handleToggleCategory = (id: string) => {
-    setSelectedCategoryIds((prev) =>
-      prev.includes(id) ? prev.filter((catId) => catId !== id) : [...prev, id],
+    updateSelectedCategoryIds(
+      selectedCategoryIds.includes(id)
+        ? selectedCategoryIds.filter((catId) => catId !== id)
+        : [...selectedCategoryIds, id],
     );
   };
 
@@ -45,7 +62,7 @@ export const MapSidePanel = ({ onClose }: MapSidePanelProps) => {
           {selectedCategoryIds.length > 0 && (
             <button
               type="button"
-              onClick={() => setSelectedCategoryIds([])}
+              onClick={() => updateSelectedCategoryIds([])}
               className="text-xs font-bold text-page-blue hover:underline cursor-pointer"
             >
               Limpiar ({selectedCategoryIds.length})

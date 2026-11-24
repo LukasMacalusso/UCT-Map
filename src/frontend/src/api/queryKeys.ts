@@ -31,5 +31,7 @@ export const queryKeys = {
       ["teachers", teacherId, "workload", from, to] as const,
     meetings: (teacherId?: string, from?: string, to?: string) =>
       ["teachers", teacherId ?? "all", "meetings", from, to] as const,
+    studentMeetings: (studentId: string, from: string, to: string) =>
+      ["teachers", "studentMeetings", studentId, from, to] as const,
   },
 };

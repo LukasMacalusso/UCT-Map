@@ -104,4 +104,57 @@ describe('scheduleService', () => {
       status: 'Confirmed',
     });
   });
+
+  it('updateOfficeHour and deleteOfficeHour call PUT and DELETE', async () => {
+    vi.mocked(httpClient.put).mockResolvedValueOnce({ data: { id: 'oh1' } });
+    const updated = await scheduleService.updateOfficeHour('oh1', {
+      structureRefId: 'st1',
+      dayOfWeek: 'Tuesday',
+      startTime: '10:00:00',
+      endTime: '11:00:00',
+    });
+    expect(updated.id).toBe('oh1');
+    expect(httpClient.put).toHaveBeenCalledWith('/api/schedule/office-hours/oh1', {
+      structureRefId: 'st1',
+      dayOfWeek: 2,
+      startTime: '10:00:00',
+      endTime: '11:00:00',
+    });
+
+    vi.mocked(httpClient.delete).mockResolvedValueOnce({ data: {} });
+    await scheduleService.deleteOfficeHour('oh1');
+    expect(httpClient.delete).toHaveBeenCalledWith('/api/schedule/office-hours/oh1');
+  });
+
+  it('getStudentMeetings, rescheduleMeeting and cancelMeeting call expected endpoints', async () => {
+    vi.mocked(httpClient.get).mockResolvedValueOnce({
+      data: { studentRefId: 's1', meetingCount: 1, meetings: [] },
+    });
+    const studentMeetings = await scheduleService.getStudentMeetings(
+      's1',
+      '2026-11-01T00:00:00Z',
+      '2026-11-30T00:00:00Z',
+    );
+    expect(studentMeetings.meetingCount).toBe(1);
+    expect(httpClient.get).toHaveBeenCalledWith('/api/schedule/students/s1/meetings', {
+      params: { from: '2026-11-01T00:00:00', to: '2026-11-30T00:00:00' },
+    });
+
+    vi.mocked(httpClient.put).mockResolvedValueOnce({ data: { id: 'm1' } });
+    const rescheduled = await scheduleService.rescheduleMeeting('m1', {
+      structureRefId: 'st1',
+      scheduledAt: '2026-11-05T12:00:00Z',
+      durationMinutes: 45,
+    });
+    expect(rescheduled.id).toBe('m1');
+    expect(httpClient.put).toHaveBeenCalledWith('/api/schedule/meetings/m1', {
+      structureRefId: 'st1',
+      scheduledAt: '2026-11-05T12:00:00',
+      durationMinutes: 45,
+    });
+
+    vi.mocked(httpClient.delete).mockResolvedValueOnce({ data: {} });
+    await scheduleService.cancelMeeting('m1');
+    expect(httpClient.delete).toHaveBeenCalledWith('/api/schedule/meetings/m1');
+  });
 });

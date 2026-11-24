@@ -5,8 +5,11 @@ import type { CreateMeetingRequest } from '../dtos/schedule/CreateMeetingRequest
 import type { CreateOfficeHourRequest } from '../dtos/schedule/CreateOfficeHourRequest';
 import type { MeetingDto, MeetingStatusName } from '../dtos/schedule/MeetingDto';
 import type { OfficeHourDto } from '../dtos/schedule/OfficeHourDto';
+import type { RescheduleMeetingRequest } from '../dtos/schedule/RescheduleMeetingRequest';
+import type { StudentMeetingsDto } from '../dtos/schedule/StudentMeetingsDto';
 import type { TeacherAvailabilityDto } from '../dtos/schedule/TeacherAvailabilityDto';
 import type { TeacherWorkloadDto } from '../dtos/schedule/TeacherWorkloadDto';
+import type { UpdateOfficeHourRequest } from '../dtos/schedule/UpdateOfficeHourRequest';
 
 export const useOfficeHours = (teacherId?: string, enabled = true) => {
   return useQuery<OfficeHourDto[], Error>({
@@ -21,6 +24,32 @@ export const useCreateOfficeHour = () => {
 
   return useMutation<OfficeHourDto, Error, CreateOfficeHourRequest>({
     mutationFn: (payload) => scheduleService.createOfficeHour(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.teachers.all });
+    },
+  });
+};
+
+export const useUpdateOfficeHour = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    OfficeHourDto,
+    Error,
+    { id: string; payload: UpdateOfficeHourRequest }
+  >({
+    mutationFn: ({ id, payload }) => scheduleService.updateOfficeHour(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.teachers.all });
+    },
+  });
+};
+
+export const useDeleteOfficeHour = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: (id) => scheduleService.deleteOfficeHour(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.teachers.all });
     },
@@ -48,6 +77,23 @@ export const useTeacherMeetings = (teacherId?: string, from?: string, to?: strin
     queryKey: queryKeys.teachers.meetings(teacherId, from, to),
     queryFn: () => scheduleService.getMeetings(teacherId, from, to),
     enabled: !!teacherId && !!from && !!to,
+  });
+};
+
+export const useStudentMeetings = (
+  studentId?: string,
+  from?: string,
+  to?: string,
+  enabled = true
+) => {
+  return useQuery<StudentMeetingsDto, Error>({
+    queryKey: queryKeys.teachers.studentMeetings(
+      studentId ?? '',
+      from ?? '',
+      to ?? ''
+    ),
+    queryFn: () => scheduleService.getStudentMeetings(studentId!, from!, to!),
+    enabled: enabled && !!studentId && !!from && !!to,
   });
 };
 
@@ -80,6 +126,33 @@ export const useUpdateMeetingStatus = () => {
   >({
     mutationFn: ({ id, status }) =>
       scheduleService.updateMeetingStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.teachers.all });
+    },
+  });
+};
+
+export const useRescheduleMeeting = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    MeetingDto,
+    Error,
+    { id: string; payload: RescheduleMeetingRequest }
+  >({
+    mutationFn: ({ id, payload }) =>
+      scheduleService.rescheduleMeeting(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.teachers.all });
+    },
+  });
+};
+
+export const useCancelMeeting = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: (id) => scheduleService.cancelMeeting(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.teachers.all });
     },

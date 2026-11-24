@@ -8,10 +8,25 @@ const state = vi.hoisted(() => ({
   reset: vi.fn(),
   isPending: false,
   error: null as { message?: string } | null,
+  updateMutate: vi.fn(),
+  updateReset: vi.fn(),
+  updateIsPending: false,
+  updateError: null as { message?: string } | null,
 }));
 
 vi.mock('../../hooks/useSchedule', () => ({
-  useCreateOfficeHour: () => state,
+  useCreateOfficeHour: () => ({
+    mutate: state.mutate,
+    reset: state.reset,
+    isPending: state.isPending,
+    error: state.error,
+  }),
+  useUpdateOfficeHour: () => ({
+    mutate: state.updateMutate,
+    reset: state.updateReset,
+    isPending: state.updateIsPending,
+    error: state.updateError,
+  }),
 }));
 
 const structures: StructureDto[] = [
