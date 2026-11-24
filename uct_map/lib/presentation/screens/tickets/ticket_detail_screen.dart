@@ -13,6 +13,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/ticket.dart';
 import '../../../domain/entities/campus_map_target.dart';
 import '../../../core/navigation/app_routes.dart';
+import '../../../domain/repositories/campus_repository.dart';
 import '../../../domain/repositories/reports_repository.dart';
 import 'widgets/ticket_status_badge.dart';
 
@@ -21,15 +22,18 @@ class TicketDetailScreen extends StatelessWidget {
     super.key,
     required this.ticketId,
     required this.repository,
+    this.campusRepository,
   });
   final String ticketId;
   final ReportsRepository repository;
+  final CampusRepository? campusRepository;
   @override
   Widget build(BuildContext context) => SessionRequiredView(
     builder: (_) => _TicketDetailBody(
       key: ValueKey('${ApiClientProvider.session.token}:$ticketId'),
       ticketId: ticketId,
       repository: repository,
+      campusRepository: campusRepository,
     ),
   );
 }
@@ -38,11 +42,13 @@ class TicketDetailScreen extends StatelessWidget {
 class _TicketDetailBody extends StatefulWidget {
   final String ticketId;
   final ReportsRepository repository;
+  final CampusRepository? campusRepository;
 
   const _TicketDetailBody({
     super.key,
     required this.ticketId,
     required this.repository,
+    this.campusRepository,
   });
 
   @override
@@ -56,6 +62,7 @@ class _TicketDetailScreenState extends State<_TicketDetailBody> {
         ApiClientProvider.session.currentUser?.role,
       );
   bool _isLoading = true;
+  bool _hasChanged = false;
   String? _errorMessage;
   Ticket? _ticket;
 
@@ -106,155 +113,179 @@ class _TicketDetailScreenState extends State<_TicketDetailBody> {
     TicketStatus selectedTicketStatus = ticket.ticketType;
     ComplaintStatus? selectedComplaintStatus = ticket.complaintDetails?.status;
 
-    final updated = await showModalBottomSheet<bool>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final selection =
+        await showModalBottomSheet<
+          ({TicketStatus status, ComplaintStatus? complainStatus})
+        >(
+          context: context,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (ctx) {
+            return StatefulBuilder(
+              builder: (context, setModalState) {
+                final hasChanges =
+                    selectedTicketStatus != ticket.ticketType ||
+                    (ticket.complaintDetails != null &&
+                        selectedComplaintStatus !=
+                            ticket.complaintDetails?.status);
+                return SafeArea(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Actualizar Estado',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () => Navigator.pop(ctx),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
                         const Text(
-                          'Actualizar Estado',
+                          'Estado del Ticket:',
                           style: TextStyle(
-                            fontSize: 17,
+                            fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.ink,
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(ctx),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: TicketStatus.values.map((s) {
+                            final isSel = selectedTicketStatus == s;
+                            return ChoiceChip(
+                              avatar: isSel
+                                  ? const Icon(Icons.check, size: 14)
+                                  : null,
+                              label: Text(s.label),
+                              selected: isSel,
+                              onSelected: (_) =>
+                                  setModalState(() => selectedTicketStatus = s),
+                            );
+                          }).toList(),
+                        ),
+                        if (ticket.complaintDetails != null) ...[
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Estado de Queja / Reclamo:',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: ComplaintStatus.values.map((cs) {
+                              final isSel = selectedComplaintStatus == cs;
+                              return ChoiceChip(
+                                avatar: isSel
+                                    ? const Icon(Icons.check, size: 14)
+                                    : null,
+                                label: Text(cs.label),
+                                selected: isSel,
+                                onSelected: (_) => setModalState(
+                                  () => selectedComplaintStatus = cs,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.uctBlue,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onPressed: !hasChanges
+                                ? null
+                                : () {
+                                    if (!mounted ||
+                                        !_canManage ||
+                                        actionToken !=
+                                            ApiClientProvider.session.token) {
+                                      return;
+                                    }
+                                    Navigator.pop(ctx, (
+                                      status: selectedTicketStatus,
+                                      complainStatus: selectedComplaintStatus,
+                                    ));
+                                  },
+                            child: const Text('Guardar Cambios'),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Estado del Ticket:',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: TicketStatus.values.map((s) {
-                        final isSel = selectedTicketStatus == s;
-                        return ChoiceChip(
-                          avatar: isSel
-                              ? const Icon(Icons.check, size: 14)
-                              : null,
-                          label: Text(s.label),
-                          selected: isSel,
-                          onSelected: (_) =>
-                              setModalState(() => selectedTicketStatus = s),
-                        );
-                      }).toList(),
-                    ),
-                    if (ticket.complaintDetails != null) ...[
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Estado de Queja / Reclamo:',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: ComplaintStatus.values.map((cs) {
-                          final isSel = selectedComplaintStatus == cs;
-                          return ChoiceChip(
-                            avatar: isSel
-                                ? const Icon(Icons.check, size: 14)
-                                : null,
-                            label: Text(cs.label),
-                            selected: isSel,
-                            onSelected: (_) => setModalState(
-                              () => selectedComplaintStatus = cs,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.uctBlue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () async {
-                          if (!mounted ||
-                              !_canManage ||
-                              actionToken != ApiClientProvider.session.token) {
-                            return;
-                          }
-                          Navigator.pop(ctx, true);
-                          try {
-                            await widget.repository.updateReportStatus(
-                              ticket.id,
-                              status: selectedTicketStatus,
-                              complainStatus: selectedComplaintStatus,
-                            );
-                            if (mounted) {
-                              ScaffoldMessenger.of(this.context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Estado actualizado con éxito'),
-                                  backgroundColor: Color(0xFF047857),
-                                ),
-                              );
-                              _fetchDetail();
-                            }
-                          } catch (err) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(this.context).showSnackBar(
-                                SnackBar(
-                                  content: const Text(
-                                    'No se pudo actualizar el estado.',
-                                  ),
-                                  backgroundColor: Colors.red.shade700,
-                                ),
-                              );
-                            }
-                          }
-                        },
-                        child: const Text('Guardar Cambios'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         );
-      },
-    );
 
-    if (updated == true) {
-      _fetchDetail();
+    if (selection == null ||
+        !mounted ||
+        !_canManage ||
+        actionToken != ApiClientProvider.session.token) {
+      return;
+    }
+
+    try {
+      await widget.repository.updateReportStatus(
+        ticket.id,
+        status: selection.status,
+        complainStatus: selection.complainStatus,
+      );
+      if (!mounted) return;
+      _hasChanged = true;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Estado actualizado con éxito'),
+            backgroundColor: Color(0xFF047857),
+          ),
+        );
+      await _fetchDetail();
+    } catch (err) {
+      if (!mounted) return;
+      final message = switch (err) {
+        ProblemDetailsException e => e.problemDetails.userMessage,
+        ApiException e => e.message,
+        _ => 'No se pudo actualizar el estado.',
+      };
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
     }
   }
 
@@ -265,46 +296,57 @@ class _TicketDetailScreenState extends State<_TicketDetailBody> {
   );
 
   Widget _buildContent(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Detalle del Reporte',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        backgroundColor: AppColors.uctBlue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _fetchDetail,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          Navigator.of(context).pop(_hasChanged);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Detalle del Reporte',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
-        ],
-      ),
-      body: _buildBody(),
-      bottomNavigationBar: _ticket != null && _canManage
-          ? SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: ElevatedButton.icon(
-                  onPressed: _changeStatus,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.uctBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+          backgroundColor: AppColors.uctBlue,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: _fetchDetail,
+            ),
+          ],
+        ),
+        body: _buildBody(),
+        bottomNavigationBar: _ticket != null && _canManage
+            ? SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: ElevatedButton.icon(
+                    onPressed: _changeStatus,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.uctBlue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.edit_note_rounded),
+                    label: const Text(
+                      'Cambiar Estado del Reporte',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  icon: const Icon(Icons.edit_note_rounded),
-                  label: const Text(
-                    'Cambiar Estado del Reporte',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
                 ),
-              ),
-            )
-          : null,
+              )
+            : null,
+      ),
     );
   }
 
@@ -407,7 +449,10 @@ class _TicketDetailScreenState extends State<_TicketDetailBody> {
           ],
 
           if (ticket.structureRefId.isNotEmpty) ...[
-            CampusLocationLabel(id: ticket.structureRefId),
+            CampusLocationLabel(
+              id: ticket.structureRefId,
+              repository: widget.campusRepository,
+            ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () => Navigator.pushNamed(

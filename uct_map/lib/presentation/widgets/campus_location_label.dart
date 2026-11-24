@@ -3,11 +3,18 @@ import '../../core/network/api_exception.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/datasources/campus_remote_ds.dart';
+import '../../domain/repositories/campus_repository.dart';
 
 class CampusLocationLabel extends StatefulWidget {
-  const CampusLocationLabel({super.key, required this.id, this.style});
+  const CampusLocationLabel({
+    super.key,
+    required this.id,
+    this.style,
+    this.repository,
+  });
   final String id;
   final TextStyle? style;
+  final CampusRepository? repository;
   @override
   State<CampusLocationLabel> createState() => _CampusLocationLabelState();
 }
@@ -17,11 +24,14 @@ class _CampusLocationLabelState extends State<CampusLocationLabel> {
   @override
   void didUpdateWidget(covariant CampusLocationLabel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.id != widget.id) _label = _resolve();
+    if (oldWidget.id != widget.id ||
+        oldWidget.repository != widget.repository) {
+      _label = _resolve();
+    }
   }
 
   Future<String> _resolve() async {
-    final campus = CampusRemoteDataSource();
+    final campus = widget.repository ?? CampusRemoteDataSource();
     Future<String> display(String name, String campusId) async {
       try {
         return '$name · ${(await campus.getCampusById(campusId)).name}';

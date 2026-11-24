@@ -33,7 +33,75 @@ class _CampusLocationPickerState extends State<CampusLocationPicker> {
   @override
   void initState() {
     super.initState();
+    widget.controller.addListener(_onControllerChanged);
     _loadCampuses();
+  }
+
+  @override
+  void didUpdateWidget(covariant CampusLocationPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_onControllerChanged);
+      widget.controller.addListener(_onControllerChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onControllerChanged);
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    final targetId = widget.controller.text.trim();
+    if (targetId.isEmpty) return;
+    if (_locations.containsKey(targetId)) {
+      if (mounted) setState(() {});
+      return;
+    }
+    if (_campuses != null && !_loading) {
+      _resolveCampusForLocation(targetId);
+    }
+  }
+
+  Future<void> _resolveCampusForLocation(String locationId) async {
+    final campuses = _campuses;
+    if (campuses == null || campuses.isEmpty) return;
+    final request = ++_request;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      for (final campus in campuses) {
+        final result = await Future.wait([
+          _repository.getBuildings(campus.id),
+          _repository.getStructures(campus.id),
+        ]);
+        if (!mounted || request != _request) return;
+        final buildings = result[0] as List;
+        final structures = result[1] as List;
+        final locations = {
+          for (final b in buildings) b.id as String: '${b.name} (edificio)',
+          for (final s in structures) s.id as String: '${s.name}',
+        };
+        if (locations.containsKey(locationId)) {
+          setState(() {
+            _campus = campus.id;
+            _locations = locations;
+            _loading = false;
+          });
+          return;
+        }
+      }
+      if (mounted && request == _request) {
+        setState(() => _loading = false);
+      }
+    } catch (_) {
+      if (mounted && request == _request) {
+        setState(() => _loading = false);
+      }
+    }
   }
 
   Future<void> _loadCampuses() async {
@@ -51,6 +119,8 @@ class _CampusLocationPickerState extends State<CampusLocationPicker> {
       if (widget.initialCampusId != null &&
           campuses.any((c) => c.id == widget.initialCampusId)) {
         await _selectCampus(widget.initialCampusId, preserveSelection: true);
+      } else if (widget.controller.text.trim().isNotEmpty) {
+        await _resolveCampusForLocation(widget.controller.text.trim());
       }
     } catch (_) {
       if (mounted)

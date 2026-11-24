@@ -700,6 +700,13 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               prefixIcon: Icons.link_rounded,
               helperText: 'Pega el ID del objeto si ya lo tienes a mano.',
             ),
+            validator: (val) {
+              if (val == null || val.trim().isEmpty) return null;
+              if (!CreateReportDto.isValidObjectId(val)) {
+                return 'Debe ser un ObjectId válido de 24 caracteres hexadecimales.';
+              }
+              return null;
+            },
           ),
       ],
     );

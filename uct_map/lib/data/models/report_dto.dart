@@ -38,6 +38,11 @@ class CreateReportDto {
     this.complaint,
   });
 
+  static final RegExp _objectIdRegex = RegExp(r'^[0-9a-fA-F]{24}$');
+
+  static bool isValidObjectId(String value) =>
+      _objectIdRegex.hasMatch(value.trim());
+
   /// Valida las reglas de negocio y tipos antes de enviar la petición.
   void validate() {
     if (structureRefId.trim().isEmpty) {
@@ -46,6 +51,13 @@ class CreateReportDto {
     if (!CreateLostObjectDto.isValidUuid(structureRefId)) {
       throw ArgumentError(
         'El structureRefId debe ser un UUID válido (ej. a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d).',
+      );
+    }
+    if (lostObjectId != null &&
+        lostObjectId!.trim().isNotEmpty &&
+        !isValidObjectId(lostObjectId!)) {
+      throw ArgumentError(
+        'El ID del objeto perdido debe ser un ObjectId válido de 24 caracteres hexadecimales.',
       );
     }
     if (complaint != null) {
@@ -230,13 +242,20 @@ class PaginatedReportsResponse {
       }
     }
 
+    final totalCount =
+        (json['totalCount'] as num?)?.toInt() ?? itemsList.length;
+    final pageSize = ((json['pageSize'] as num?)?.toInt() ?? 10).clamp(1, 100);
+    final computedTotalPages = totalCount == 0
+        ? 0
+        : (totalCount / pageSize).ceil();
+
     return PaginatedReportsResponse(
       items: itemsList,
       hasTotalCount: json['totalCount'] is num,
-      totalCount: (json['totalCount'] as num?)?.toInt() ?? itemsList.length,
+      totalCount: totalCount,
       page: (json['page'] as num?)?.toInt() ?? 1,
-      pageSize: (json['pageSize'] as num?)?.toInt() ?? 10,
-      totalPages: (json['totalPages'] as num?)?.toInt() ?? 1,
+      pageSize: pageSize,
+      totalPages: (json['totalPages'] as num?)?.toInt() ?? computedTotalPages,
     );
   }
 

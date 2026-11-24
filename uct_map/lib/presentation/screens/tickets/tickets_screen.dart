@@ -16,6 +16,7 @@ import '../../../core/network/problem_details.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/report_dto.dart';
 import '../../../domain/entities/ticket.dart';
+import '../../../domain/repositories/campus_repository.dart';
 import '../../../domain/repositories/reports_repository.dart';
 import 'create_ticket_screen.dart';
 import 'ticket_detail_screen.dart';
@@ -25,12 +26,14 @@ import 'widgets/ticket_status_badge.dart';
 /// consumiendo el microservicio de Incidentes en ASP.NET Core mediante Docker y API Gateway.
 class TicketsScreen extends StatefulWidget {
   final ReportsRepository repository;
+  final CampusRepository? campusRepository;
   final bool showAppBar;
   final bool active;
 
   const TicketsScreen({
     super.key,
     required this.repository,
+    this.campusRepository,
     this.showAppBar = true,
     this.active = true,
   });
@@ -40,6 +43,8 @@ class TicketsScreen extends StatefulWidget {
 }
 
 class _TicketsScreenState extends State<TicketsScreen> {
+  late final CampusRepository _campusRepository =
+      widget.campusRepository ?? CampusRemoteDataSource();
   bool get _canManage =>
       ApiClientProvider.session.isAuthenticated &&
       AppPermission.manageReports.allows(
@@ -51,10 +56,14 @@ class _TicketsScreenState extends State<TicketsScreen> {
   Set<String>? _campusLocationIds;
   String? _campusLabel;
   Map<String, String> _locationNames = {};
+  bool _locationNamesLoaded = false;
   int _fetchRevision = 0;
 
   Future<void> _chooseLocation() async {
-    final selected = await showCampusFilterDialog(context);
+    final selected = await showCampusFilterDialog(
+      context,
+      repository: _campusRepository,
+    );
     if (!mounted || selected == null) return;
     setState(() {
       _campusLocationIds = selected.locationId == null
@@ -103,6 +112,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
   }
 
   void _onSearchChanged(String query) {
+    setState(() {});
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 400), () {
       if (mounted) {
@@ -115,7 +125,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
     });
   }
 
-  Future<void> _fetchTickets() async {
+  Future<void> _fetchTickets({bool reloadLocations = false}) async {
     final revision = ++_fetchRevision;
     final token = ApiClientProvider.session.token;
     bool current() =>
@@ -123,13 +133,20 @@ class _TicketsScreenState extends State<TicketsScreen> {
         revision == _fetchRevision &&
         ApiClientProvider.session.token == token;
     final ids = _campusLocationIds;
-    loadLocationNames(CampusRemoteDataSource())
-        .then((names) {
-          if (current()) setState(() => _locationNames = names);
-        })
-        .catchError((Object _) {
-          /* Los registros siguen disponibles sin etiquetas. */
-        });
+    if (!_locationNamesLoaded || reloadLocations) {
+      loadLocationNames(_campusRepository)
+          .then((names) {
+            if (mounted && ApiClientProvider.session.token == token) {
+              setState(() {
+                _locationNames = names;
+                _locationNamesLoaded = true;
+              });
+            }
+          })
+          .catchError((Object _) {
+            /* Los registros siguen disponibles sin etiquetas. */
+          });
+    }
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -167,6 +184,12 @@ class _TicketsScreenState extends State<TicketsScreen> {
             filter: filter.copyWith(page: ++page),
           );
         }
+        final totalPages = values.isEmpty
+            ? 0
+            : (values.length / _pageSize).ceil();
+        if (totalPages > 0 && _currentPage > totalPages) {
+          _currentPage = totalPages;
+        }
         res = PaginatedReportsResponse(
           items: values
               .skip((_currentPage - 1) * _pageSize)
@@ -175,7 +198,16 @@ class _TicketsScreenState extends State<TicketsScreen> {
           totalCount: values.length,
           page: _currentPage,
           pageSize: _pageSize,
-          totalPages: (values.length / _pageSize).ceil(),
+          totalPages: totalPages,
+        );
+      } else if (_currentPage > 1 &&
+          res.items.isEmpty &&
+          res.totalCount > 0 &&
+          res.totalPages > 0) {
+        final clampedPage = res.totalPages;
+        _currentPage = clampedPage;
+        res = await widget.repository.getReports(
+          filter: filter.copyWith(page: clampedPage),
         );
       }
       if (current()) {
@@ -364,20 +396,27 @@ class _TicketsScreenState extends State<TicketsScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        onPressed: () {
-                          if (!mounted ||
-                              !_canManage ||
-                              actionToken != ApiClientProvider.session.token) {
-                            return;
-                          }
-                          Navigator.pop(ctx);
-                          _updateTicketStatus(
-                            ticket,
-                            newStatus: selectedTicketStatus,
-                            newComplainStatus: selectedComplaintStatus,
-                          );
-                        },
-                        child: const Text('Aplicar Cambios (PATCH)'),
+                        onPressed:
+                            (selectedTicketStatus == ticket.ticketType &&
+                                (ticket.complaintDetails == null ||
+                                    selectedComplaintStatus ==
+                                        ticket.complaintDetails?.status))
+                            ? null
+                            : () {
+                                if (!mounted ||
+                                    !_canManage ||
+                                    actionToken !=
+                                        ApiClientProvider.session.token) {
+                                  return;
+                                }
+                                Navigator.pop(ctx);
+                                _updateTicketStatus(
+                                  ticket,
+                                  newStatus: selectedTicketStatus,
+                                  newComplainStatus: selectedComplaintStatus,
+                                );
+                              },
+                        child: const Text('Aplicar Cambios'),
                       ),
                     ),
                   ],
@@ -492,7 +531,10 @@ class _TicketsScreenState extends State<TicketsScreen> {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => SessionRequiredView(
-          builder: (_) => CreateTicketScreen(repository: widget.repository),
+          builder: (_) => CreateTicketScreen(
+            repository: widget.repository,
+            campusRepository: _campusRepository,
+          ),
         ),
       ),
     );
@@ -510,13 +552,13 @@ class _TicketsScreenState extends State<TicketsScreen> {
           builder: (_) => TicketDetailScreen(
             ticketId: ticket.id,
             repository: widget.repository,
+            campusRepository: _campusRepository,
           ),
         ),
       ),
     );
 
     if (result == true) {
-      _currentPage = 1;
       _fetchTickets();
     }
   }
@@ -589,6 +631,12 @@ class _TicketsScreenState extends State<TicketsScreen> {
                 tooltip: 'Filtrar ubicación',
                 icon: const Icon(Icons.location_city_outlined),
               ),
+              if (!widget.showAppBar)
+                IconButton(
+                  onPressed: _showSortFilterSheet,
+                  tooltip: 'Ordenar',
+                  icon: const Icon(Icons.sort_rounded),
+                ),
               if (_campusLabel != null)
                 IconButton(
                   tooltip: 'Quitar filtro de ubicación',
@@ -997,6 +1045,8 @@ class _TicketsScreenState extends State<TicketsScreen> {
                   _searchQuery = '';
                   _typeFilter = null;
                   _structureRefIdFilter = null;
+                  _campusLocationIds = null;
+                  _campusLabel = null;
                   _currentPage = 1;
                 });
                 _fetchTickets();
