@@ -309,4 +309,50 @@ public class BuildingControllerTests
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
+
+    [Fact]
+    public async Task GetAllAndGetLocations_WithEmptyCategoryId_ShouldReturnBadRequest()
+    {
+        var allResult = await _controller.GetAll(Guid.NewGuid(), Guid.Empty, CancellationToken.None);
+        var locResult = await _controller.GetLocations(Guid.NewGuid(), Guid.Empty, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(allResult.Result);
+        Assert.IsType<BadRequestObjectResult>(locResult.Result);
+    }
+
+    [Fact]
+    public async Task CreateAndUpdate_WhenRemainingConstraintsFail_ShouldReturnBadRequest()
+    {
+        var campusId = Guid.NewGuid();
+        var buildingId = Guid.NewGuid();
+        var longPhoto = new string('u', 501);
+
+        Assert.IsType<BadRequestObjectResult>(await _controller.Create(new CreateBuildingDto(campusId, "B", 1, 0, 0, null, null, Guid.Empty), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Create(new CreateBuildingDto(campusId, "B", 1, 0, 0, null, null, null, longPhoto), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Create(new CreateBuildingDto(campusId, "B", 1, double.NaN, 0), CancellationToken.None));
+
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(buildingId, new UpdateBuildingDto(Guid.Empty, "B", 1, 0, 0), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(buildingId, new UpdateBuildingDto(campusId, "B", 1, 0, 0, null, null, Guid.Empty), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(buildingId, new UpdateBuildingDto(campusId, new string('N', 101), 1, 0, 0), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(buildingId, new UpdateBuildingDto(campusId, "B", 0, 0, 0), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(buildingId, new UpdateBuildingDto(campusId, "B", 1, -95.0, 0), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(buildingId, new UpdateBuildingDto(campusId, "B", 1, 0, 0, new TimeOnly(18, 0), new TimeOnly(8, 0)), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(buildingId, new UpdateBuildingDto(campusId, "B", 1, 0, 0, null, null, null, longPhoto), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Delete_WhenBuildingHasRooms_ShouldReturnConflict409()
+    {
+        var roomRepo = Substitute.For<IGenericRepository<Room>>();
+        var controller = new BuildingController(new BuildingHandler(_repository, _campusRepository, roomRepository: roomRepo));
+        var building = new Building("Con Salas", 2, new Coordinate(0, 0), Guid.NewGuid());
+
+        _repository.GetByIdAsync(building.Id, Arg.Any<CancellationToken>()).Returns(building);
+        roomRepo.ExistsAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Room, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await controller.Delete(building.Id, CancellationToken.None);
+
+        var problem = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status409Conflict, problem.StatusCode);
+    }
 }

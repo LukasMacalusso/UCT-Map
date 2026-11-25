@@ -344,4 +344,17 @@ public class StructureControllerTests
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
+
+    [Fact]
+    public async Task Update_WhenRemainingConstraintsFail_ShouldReturnBadRequest()
+    {
+        var id = Guid.NewGuid();
+        var campusId = Guid.NewGuid();
+
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(id, new UpdateStructureDto(Guid.Empty, null, "Pérgola", 0, 0), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(id, new UpdateStructureDto(campusId, Guid.Empty, "Pérgola", 0, 0), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(id, new UpdateStructureDto(campusId, null, new string('P', 101), 0, 0), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(id, new UpdateStructureDto(campusId, null, "Pérgola", -95.0, 0), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(id, new UpdateStructureDto(campusId, null, "Pérgola", 0, double.NaN), CancellationToken.None));
+    }
 }

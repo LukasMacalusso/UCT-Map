@@ -156,4 +156,105 @@ public class CampusEndpointsTests : ApiTestBase
 
         Assert.Equal(HttpStatusCode.NotFound, mapRes.StatusCode);
     }
+
+    [DockerFact]
+    public async Task GetMap_WhenIdIsEmptyGuid_Returns400BadRequest()
+    {
+        var mapRes = await Http.GetAsync($"{Endpoint}/{Guid.Empty}/map");
+
+        Assert.Equal(HttpStatusCode.BadRequest, mapRes.StatusCode);
+    }
+
+    [DockerFact]
+    public async Task Delete_WhenCampusHasBuildings_Returns409ConflictAndPreservesCampus()
+    {
+        var campusRes = await Http.PostAsync(Endpoint, JsonBody(new CreateCampusDto("Campus Con Edificios", "Dir 1", -38.73, -72.59)));
+        var campus = await ReadJsonAsync<CampusDto>(campusRes);
+
+        await Http.PostAsync(
+            "/api/campus/buildings",
+            JsonBody(new CreateBuildingDto(campus!.Id, "Edificio Dependiente", 2, -38.73, -72.59)));
+
+        var deleteRes = await Http.DeleteAsync($"{Endpoint}/{campus.Id}");
+
+        Assert.Equal(HttpStatusCode.Conflict, deleteRes.StatusCode);
+
+        var checkRes = await Http.GetAsync($"{Endpoint}/{campus.Id}");
+        Assert.Equal(HttpStatusCode.OK, checkRes.StatusCode);
+    }
+
+    [DockerFact]
+    public async Task Delete_WhenCampusHasStructures_Returns409ConflictAndPreservesCampus()
+    {
+        var campusRes = await Http.PostAsync(Endpoint, JsonBody(new CreateCampusDto("Campus Con Estructuras", "Dir 2", -38.73, -72.59)));
+        var campus = await ReadJsonAsync<CampusDto>(campusRes);
+
+        await Http.PostAsync(
+            "/api/campus/structures",
+            JsonBody(new CreateStructureDto(campus!.Id, null, "Estructura Dependiente", -38.73, -72.59)));
+
+        var deleteRes = await Http.DeleteAsync($"{Endpoint}/{campus.Id}");
+
+        Assert.Equal(HttpStatusCode.Conflict, deleteRes.StatusCode);
+
+        var checkRes = await Http.GetAsync($"{Endpoint}/{campus.Id}");
+        Assert.Equal(HttpStatusCode.OK, checkRes.StatusCode);
+    }
+
+    [DockerFact]
+    public async Task Endpoints_WhenCampusDoesNotExist_Return404NotFound()
+    {
+        var nonExistentId = Guid.NewGuid();
+
+        var getRes = await Http.GetAsync($"{Endpoint}/{nonExistentId}");
+        var putRes = await Http.PutAsync($"{Endpoint}/{nonExistentId}", JsonBody(new UpdateCampusDto("No Existe", "Dir", -38.7, -72.5)));
+        var patchRes = await Http.PatchAsync($"{Endpoint}/{nonExistentId}/location", JsonBody(new UpdateLocationDto(-38.7, -72.5)));
+        var deleteRes = await Http.DeleteAsync($"{Endpoint}/{nonExistentId}");
+
+        Assert.Equal(HttpStatusCode.NotFound, getRes.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, putRes.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, patchRes.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, deleteRes.StatusCode);
+    }
+
+    [DockerFact]
+    public async Task Post_WithExactBoundaryCoordinatesAndCameraValues_PersistsAccurately()
+    {
+        var body = new CreateCampusDto(
+            "Campus Limite Geografico",
+            "Polo Sur / Linea Internacional",
+            -90.0,
+            180.0,
+            Zoom: 22.0m,
+            Pitch: 85.0m,
+            Bearing: -180.0m);
+
+        var createRes = await Http.PostAsync(Endpoint, JsonBody(body));
+
+        Assert.Equal(HttpStatusCode.Created, createRes.StatusCode);
+        var created = await ReadJsonAsync<CampusDto>(createRes);
+        Assert.NotNull(created);
+        Assert.Equal(-90.0, created.Latitude);
+        Assert.Equal(180.0, created.Longitude);
+        Assert.Equal(22.0m, created.Zoom);
+        Assert.Equal(85.0m, created.Pitch);
+        Assert.Equal(-180.0m, created.Bearing);
+    }
+
+    [DockerFact]
+    public async Task Post_Put_PatchLocation_WhenOutOfRangeOrInvalid_Return400BadRequest()
+    {
+        var validRes = await Http.PostAsync(Endpoint, JsonBody(new CreateCampusDto("Campus Base", "Dir Base", -38.7, -72.5)));
+        var campus = await ReadJsonAsync<CampusDto>(validRes);
+
+        var badLatPost = await Http.PostAsync(Endpoint, JsonBody(new CreateCampusDto("Bad Lat", "Dir", -91.0, -72.5)));
+        var badZoomPost = await Http.PostAsync(Endpoint, JsonBody(new CreateCampusDto("Bad Zoom", "Dir", -38.7, -72.5, Zoom: 23.0m)));
+        var badBearingPut = await Http.PutAsync($"{Endpoint}/{campus!.Id}", JsonBody(new UpdateCampusDto("Bad Bearing", "Dir", -38.7, -72.5, Bearing: 185.0m)));
+        var badLonPatch = await Http.PatchAsync($"{Endpoint}/{campus.Id}/location", JsonBody(new UpdateLocationDto(-38.7, -181.0)));
+
+        Assert.Equal(HttpStatusCode.BadRequest, badLatPost.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, badZoomPost.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, badBearingPut.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, badLonPatch.StatusCode);
+    }
 }

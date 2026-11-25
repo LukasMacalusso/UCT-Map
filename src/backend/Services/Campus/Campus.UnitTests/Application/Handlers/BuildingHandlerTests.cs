@@ -331,4 +331,89 @@ public class BuildingHandlerTests
         Assert.Equal("Building.HasRooms", result.FirstError.Code);
         _repository.DidNotReceive().Delete(Arg.Any<Building>());
     }
+
+    private sealed class DbUpdateException(string message) : Exception(message);
+
+    [Fact]
+    public async Task DeleteAsync_WhenDbUpdateExceptionOccurs_ShouldReturnConflictError()
+    {
+        var building = new Building("Edificio Restringido", 2, new Coordinate(0, 0), Guid.NewGuid());
+        _repository.GetByIdAsync(building.Id, Arg.Any<CancellationToken>()).Returns(building);
+        _repository.When(r => r.SaveChangesAsync(Arg.Any<CancellationToken>()))
+            .Do(_ => throw new DbUpdateException("FK constraint"));
+
+        var result = await _handler.DeleteAsync(building.Id, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Equal("Building.Conflict", result.FirstError.Code);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_WithCategoryRepository_ShouldPopulateCategoryMetadata()
+    {
+        var categoryRepo = Substitute.For<IGenericRepository<Category>>();
+        var handler = new BuildingHandler(_repository, _campusRepository, categoryRepo);
+        var category = new Category("Laboratorio", "flask", "Ciencias", 1);
+        var building = new Building("Edificio Ciencias", 3, new Coordinate(-38.73, -72.59), Guid.NewGuid(), new TimeOnly(8, 0), new TimeOnly(19, 0), category.Id, "https://uct.cl/ciencias.jpg");
+
+        _repository.GetByIdAsync(building.Id, Arg.Any<CancellationToken>()).Returns(building);
+        categoryRepo.GetByIdAsync(category.Id, Arg.Any<CancellationToken>()).Returns(category);
+
+        var result = await handler.GetByIdAsync(building.Id, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(-38.73, result.Value.Latitude);
+        Assert.Equal(-72.59, result.Value.Longitude);
+        Assert.Equal(category.Id, result.Value.CategoryId);
+        Assert.Equal(new TimeOnly(8, 0), result.Value.OpenTime);
+        Assert.Equal(new TimeOnly(19, 0), result.Value.CloseTime);
+        Assert.Equal("Laboratorio", result.Value.CategoryName);
+        Assert.Equal("flask", result.Value.CategoryIcon);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithCategoryRepoAndUncategorizedBuildings_ShouldSkipCategoryQuery()
+    {
+        var categoryRepo = Substitute.For<IGenericRepository<Category>>();
+        var handler = new BuildingHandler(_repository, _campusRepository, categoryRepo);
+        var building = new Building("Edificio Sin Cat", 2, new Coordinate(0, 0), Guid.NewGuid());
+
+        _repository.GetAllAsync(null, Arg.Any<CancellationToken>()).Returns(new List<Building> { building });
+
+        var result = (await handler.GetAllAsync(null, null, CancellationToken.None)).ToList();
+
+        Assert.Single(result);
+        await categoryRepo.DidNotReceive().GetAllAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateAndUpdateAsync_WithInvalidOrMissingCategory_ShouldReturnCategoryNotFound()
+    {
+        var categoryRepo = Substitute.For<IGenericRepository<Category>>();
+        var handler = new BuildingHandler(_repository, _campusRepository, categoryRepo);
+        var campusId = Guid.NewGuid();
+        var missingCategoryId = Guid.NewGuid();
+        var validCategoryId = Guid.NewGuid();
+        var existingBuilding = new Building("Existente", 2, new Coordinate(0, 0), campusId);
+
+        _campusRepository.ExistsAsync(Arg.Any<Expression<Func<CampusEntity, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+        _repository.GetByIdAsync(existingBuilding.Id, Arg.Any<CancellationToken>()).Returns(existingBuilding);
+        categoryRepo.GetByIdAsync(missingCategoryId, Arg.Any<CancellationToken>()).Returns((Category?)null);
+        categoryRepo.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(false);
+
+        var createEmptyCat = await handler.CreateAsync(new CreateBuildingDto(campusId, "B1", 2, 0, 0, null, null, Guid.Empty), CancellationToken.None);
+        var createMissingCat = await handler.CreateAsync(new CreateBuildingDto(campusId, "B2", 2, 0, 0, null, null, missingCategoryId), CancellationToken.None);
+        var updateEmptyCat = await handler.UpdateAsync(existingBuilding.Id, new UpdateBuildingDto(campusId, "B3", 2, 0, 0, null, null, Guid.Empty), CancellationToken.None);
+        var updateMissingCat = await handler.UpdateAsync(existingBuilding.Id, new UpdateBuildingDto(campusId, "B4", 2, 0, 0, null, null, missingCategoryId), CancellationToken.None);
+
+        Assert.Equal("Category.NotFound", createEmptyCat.FirstError.Code);
+        Assert.Equal("Category.NotFound", createMissingCat.FirstError.Code);
+        Assert.Equal("Category.NotFound", updateEmptyCat.FirstError.Code);
+        Assert.Equal("Category.NotFound", updateMissingCat.FirstError.Code);
+
+        categoryRepo.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+        var updateValidCat = await handler.UpdateAsync(existingBuilding.Id, new UpdateBuildingDto(campusId, "B5", 3, 0, 0, null, null, validCategoryId), CancellationToken.None);
+        Assert.False(updateValidCat.IsError);
+    }
 }

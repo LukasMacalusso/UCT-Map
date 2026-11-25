@@ -45,3 +45,16 @@ public sealed class DockerFactAttribute : FactAttribute
             Skip = "Docker no está disponible: este test necesita un daemon de Docker para levantar PostgreSQL (Testcontainers).";
     }
 }
+
+/// <summary>
+/// Igual a [Theory] pero se omite cuando no hay Docker disponible.
+/// Permite parametrizar pruebas de integración dependientes de Testcontainers.
+/// </summary>
+public sealed class DockerTheoryAttribute : TheoryAttribute
+{
+    public DockerTheoryAttribute()
+    {
+        if (!DockerCheck.IsAvailable.Value)
+            Skip = "Docker no está disponible: este test necesita un daemon de Docker para levantar PostgreSQL (Testcontainers).";
+    }
+}

@@ -294,4 +294,32 @@ public class CampusControllerTests
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
+
+    [Fact]
+    public async Task Update_WhenRemainingConstraintsFail_ShouldReturnBadRequest()
+    {
+        var id = Guid.NewGuid();
+
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(id, new UpdateCampusDto("Campus", "", 0, 0), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(id, new UpdateCampusDto("Campus", new string('D', 101), 0, 0), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(id, new UpdateCampusDto("Campus", "Dir", 91.0, 0), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(id, new UpdateCampusDto("Campus", "Dir", 0, double.PositiveInfinity), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(id, new UpdateCampusDto("Campus", "Dir", 0, 0, Pitch: 90m), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await _controller.Update(id, new UpdateCampusDto("Campus", "Dir", 0, 0, Bearing: -190m), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Delete_WhenCampusHasDependencies_ShouldReturnConflict409()
+    {
+        var buildingRepo = Substitute.For<IGenericRepository<Building>>();
+        var controller = new CampusController(new CampusHandler(_repository, buildingRepo));
+        var campus = new CampusEntity("Con Edificios", "Dir", new Coordinate(0, 0));
+
+        _repository.GetByIdAsync(campus.Id, Arg.Any<CancellationToken>()).Returns(campus);
+        buildingRepo.ExistsAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Building, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await controller.Delete(campus.Id, CancellationToken.None);
+
+        Assert.IsType<ConflictObjectResult>(result);
+    }
 }

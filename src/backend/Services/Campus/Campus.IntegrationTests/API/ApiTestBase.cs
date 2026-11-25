@@ -50,6 +50,13 @@ public abstract class ApiTestBase : IAsyncLifetime
         return client;
     }
 
+    protected HttpClient CreateClientWithToken(string token)
+    {
+        var client = Factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        return client;
+    }
+
     protected HttpClient CreateUnauthenticatedClient() => Factory.CreateClient();
 
     protected static Task<T?> ReadJsonAsync<T>(HttpResponseMessage response) =>

@@ -181,5 +181,50 @@ public class EntityTests
 
         structure2.Update("Estacionamiento Sin Categoria", newCoords, newCampusId, null);
         Assert.Null(structure2.CategoryId);
+
+        var relocatedCoords = new Coordinate(-38.76, -72.62);
+        structure2.UpdateLocation(relocatedCoords);
+        Assert.Equal(relocatedCoords, structure2.Coordinates);
+    }
+
+    [Fact]
+    public void Building_OverloadsAndCategoryAssignment_ShouldMaintainDomainIntegrity()
+    {
+        var coords = new Coordinate(-38.73, -72.59);
+        var campus = new CampusEntity("Campus Sur", "Av. Sur 100", coords);
+        var category = new Category("Docencia", "school", "Edificios docentes");
+
+        var withCategoryEntity = new Building("Edificio C", 3, coords, campus, category, new TimeOnly(8, 0), new TimeOnly(20, 0), "https://uct.cl/c.jpg");
+        Assert.Equal(category, withCategoryEntity.Category);
+        Assert.Equal(category.Id, withCategoryEntity.CategoryId);
+        Assert.Equal("https://uct.cl/c.jpg", withCategoryEntity.PhotoUrl);
+
+        var withNullCategoryEntity = new Building("Edificio D", 2, coords, campus, (Category?)null);
+        Assert.Null(withNullCategoryEntity.Category);
+        Assert.Null(withNullCategoryEntity.CategoryId);
+
+        var withCategoryGuid = new Building("Edificio E", 4, coords, campus.Id, category.Id, new TimeOnly(7, 30), new TimeOnly(21, 0), "https://uct.cl/e.jpg");
+        Assert.Equal(category.Id, withCategoryGuid.CategoryId);
+
+        var updatedCategoryId = Guid.NewGuid();
+        var updatedCoords = new Coordinate(-38.74, -72.60);
+        withCategoryGuid.Update("Edificio E2", 5, updatedCoords, campus.Id, updatedCategoryId, new TimeOnly(9, 0), new TimeOnly(19, 0), "https://uct.cl/e2.jpg");
+        Assert.Equal("Edificio E2", withCategoryGuid.Name);
+        Assert.Equal(5, withCategoryGuid.FloorsCount);
+        Assert.Equal(updatedCategoryId, withCategoryGuid.CategoryId);
+        Assert.Equal("https://uct.cl/e2.jpg", withCategoryGuid.PhotoUrl);
+
+        withCategoryGuid.AssignCategory(null);
+        Assert.Null(withCategoryGuid.CategoryId);
+
+        var assignedCategory = Guid.NewGuid();
+        withCategoryGuid.AssignCategory(assignedCategory);
+        Assert.Equal(assignedCategory, withCategoryGuid.CategoryId);
+
+        var relocated = new Coordinate(-38.75, -72.61);
+        campus.UpdateLocation(relocated);
+        withCategoryGuid.UpdateLocation(relocated);
+        Assert.Equal(relocated, campus.Coordinates);
+        Assert.Equal(relocated, withCategoryGuid.Coordinates);
     }
 }
