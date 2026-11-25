@@ -25,7 +25,7 @@ class LostObjectDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SessionRequiredView(
     builder: (_) => _Detail(
-      key: ValueKey('${ApiClientProvider.session.token}:$objectId'),
+      key: ValueKey((ApiClientProvider.session.revision, objectId)),
       objectId: objectId,
       repository: repository ?? LostObjectsRepositoryImpl(),
       reportedByMe: reportedByMe,

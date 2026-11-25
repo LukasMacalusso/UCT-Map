@@ -24,7 +24,7 @@ class ComplaintsOfficerHomeScreen extends StatelessWidget {
     permission: AppPermission.manageReports,
     embedded: true,
     builder: (_) => _ComplaintsHome(
-      key: ValueKey(ApiClientProvider.session.token),
+      key: ValueKey(ApiClientProvider.session.revision),
       repository: repository ?? ReportsRepositoryImpl(),
       active: active,
     ),

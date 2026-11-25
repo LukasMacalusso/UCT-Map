@@ -17,7 +17,7 @@ class MyReportsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SessionRequiredView(
     builder: (_) => _Reports(
-      key: ValueKey(ApiClientProvider.session.token),
+      key: ValueKey(ApiClientProvider.session.revision),
       repository: repository ?? ReportsRepositoryImpl(),
     ),
   );

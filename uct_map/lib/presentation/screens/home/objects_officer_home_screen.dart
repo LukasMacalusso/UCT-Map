@@ -24,7 +24,7 @@ class ObjectsOfficerHomeScreen extends StatelessWidget {
     permission: AppPermission.manageObjects,
     embedded: true,
     builder: (_) => _ObjectsHome(
-      key: ValueKey(ApiClientProvider.session.token),
+      key: ValueKey(ApiClientProvider.session.revision),
       repository: repository ?? LostObjectsRepositoryImpl(),
       active: active,
     ),

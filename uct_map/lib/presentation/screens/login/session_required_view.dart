@@ -105,9 +105,9 @@ class _SessionRequiredViewState extends State<SessionRequiredView> {
             if (!widget.permission.allows(_session.currentUser?.role)) {
               return _placeholder(AccessDeniedView(onSignOut: _signOut));
             }
-            // El contenido de una cuenta no se reutiliza al cambiar de usuario.
+            // Un nuevo inicio no debe reutilizar el contenido de la sesión anterior.
             return KeyedSubtree(
-              key: ValueKey(_session.currentUser!.id),
+              key: ObjectKey(_session.currentUser),
               child: widget.builder(context),
             );
           },

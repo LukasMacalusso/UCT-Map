@@ -5,10 +5,12 @@ import 'admin_user_detail_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client_provider.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../data/repositories/identity_repository_impl.dart';
 import '../../../domain/entities/app_permission.dart';
 import '../../../domain/entities/managed_user.dart';
 import '../../../domain/repositories/identity_repository.dart';
+import '../login/access_denied_view.dart';
 import '../login/session_required_view.dart';
 
 class AdminUsersScreen extends StatelessWidget {
@@ -18,7 +20,7 @@ class AdminUsersScreen extends StatelessWidget {
   Widget build(BuildContext context) => SessionRequiredView(
     permission: AppPermission.manageUsers,
     builder: (_) => _AdminUsers(
-      key: ValueKey(ApiClientProvider.session.token),
+      key: ValueKey(ApiClientProvider.session.revision),
       repository: repository,
     ),
   );
@@ -204,6 +206,9 @@ class _AdminUsersScreenState extends State<_AdminUsers> {
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.error case ApiException(statusCode: 403)) {
+          return const AccessDeniedView.resource();
         }
         if (snapshot.hasError) {
           return Center(

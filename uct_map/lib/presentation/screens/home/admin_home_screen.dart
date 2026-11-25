@@ -19,7 +19,7 @@ class AdminHomeScreen extends StatelessWidget {
     permission: AppPermission.manageUsers,
     embedded: true,
     builder: (_) => _AdminHome(
-      key: ValueKey(ApiClientProvider.session.token),
+      key: ValueKey(ApiClientProvider.session.revision),
       repository: repository ?? IdentityRepositoryImpl(),
       active: active,
     ),
