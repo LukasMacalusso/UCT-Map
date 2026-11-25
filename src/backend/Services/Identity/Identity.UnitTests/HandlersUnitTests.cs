@@ -89,7 +89,7 @@ public sealed class HandlersUnitTests
     {
         var handler = new GetUserByIdHandler(new StubUserQuery());
 
-        var result = await handler.ExecuteAsync("");
+        var result = await handler.ExecuteAsync("", TestUserContext.AdminId, requesterIsAdmin: true);
 
         Assert.Equal(ErrorType.Validation, result.FirstError.Type);
     }
@@ -98,6 +98,7 @@ public sealed class HandlersUnitTests
     [InlineData(ErrorType.NotFound, StatusCodes.Status404NotFound)]
     [InlineData(ErrorType.Conflict, StatusCodes.Status409Conflict)]
     [InlineData(ErrorType.Unauthorized, StatusCodes.Status401Unauthorized)]
+    [InlineData(ErrorType.Forbidden, StatusCodes.Status403Forbidden)]
     [InlineData(ErrorType.Failure, StatusCodes.Status400BadRequest)]
     public async Task RoleEndpoints_MapErrorsToStatusCodes(ErrorType errorType, int expectedStatusCode)
     {
@@ -136,6 +137,8 @@ public sealed class HandlersUnitTests
 
     [Theory]
     [InlineData(ErrorType.NotFound, StatusCodes.Status404NotFound)]
+    [InlineData(ErrorType.Conflict, StatusCodes.Status409Conflict)]
+    [InlineData(ErrorType.Forbidden, StatusCodes.Status403Forbidden)]
     [InlineData(ErrorType.Failure, StatusCodes.Status400BadRequest)]
     public async Task RemoveRole_MapsErrorsToStatusCodes(ErrorType errorType, int expectedStatusCode)
     {
@@ -172,7 +175,10 @@ public sealed class HandlersUnitTests
                 authenticator ?? new StubAuthenticator(null),
                 new StubTokenGenerator()),
             new RegisterUserHandler(registration ?? new StubRegistrationService(null)),
-            new GetUserByIdHandler(new StubUserQuery()));
+            new GetUserByIdHandler(new StubUserQuery()))
+        {
+            ControllerContext = TestUserContext.Admin()
+        };
     }
 
     private sealed class StubAuthenticator(LoginResult? result) : IUserAuthenticator

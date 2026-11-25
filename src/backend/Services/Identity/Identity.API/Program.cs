@@ -32,6 +32,23 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
             RoleClaimType = "role"
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var validator = context.HttpContext.RequestServices
+                    .GetRequiredService<ActiveUserPrincipalValidator>();
+                var principal = await validator.RefreshAsync(context.Principal!);
+
+                if (principal is null)
+                {
+                    context.Fail("The user no longer exists or is suspended.");
+                    return;
+                }
+
+                context.Principal = principal;
+            }
+        };
     });
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();

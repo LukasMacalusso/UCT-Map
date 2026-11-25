@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IUserQuery, IdentityUserQuery>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IRoleManagementService, IdentityRoleManagementService>();
+        services.AddScoped<ActiveUserPrincipalValidator>();
         services.AddScoped<LoginHandler>();
         services.AddScoped<RegisterUserHandler>();
         services.AddScoped<GetUserByIdHandler>();

@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Identity.API.Controllers;
 using Identity.Application.DTOs;
 using Identity.Application.Handlers;
@@ -54,6 +55,16 @@ public sealed class IdentityEndpointsIntegrationTests
         Assert.Contains(
             new JwtSecurityTokenHandler().ReadJwtToken(loginResponse.Token!).Claims,
             claim => claim.Type == JwtRegisteredClaimNames.Name && claim.Value == "Ana Torres");
+
+        var tokenIdentity = new ClaimsIdentity(
+            new JwtSecurityTokenHandler().ReadJwtToken(loginResponse.Token!).Claims,
+            "Bearer",
+            JwtRegisteredClaimNames.Sub,
+            "role");
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(tokenIdentity) }
+        };
 
         var getResult = await controller.GetById(
             registeredUser.UserId,

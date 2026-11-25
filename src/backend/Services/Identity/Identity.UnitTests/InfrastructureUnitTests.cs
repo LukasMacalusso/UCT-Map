@@ -138,7 +138,7 @@ public sealed class InfrastructureUnitTests
         Assert.Equal(ErrorType.NotFound, (await service.ReplaceRolesAsync(user.Id, ["Unknown"])).FirstError.Type);
         Assert.False((await service.RemoveRoleAsync(user.Id, Role.Teacher)).IsError);
         Assert.Equal(ErrorType.NotFound, (await service.RemoveRoleAsync(user.Id, Role.Teacher)).FirstError.Type);
-        Assert.Empty((await service.ReplaceRolesAsync(user.Id, [])).Value.Roles);
+        Assert.Equal(ErrorType.Validation, (await service.ReplaceRolesAsync(user.Id, [])).FirstError.Type);
     }
 
     private static IdentityRoleManagementService CreateRoleService(ServiceProvider provider) =>
