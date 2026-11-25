@@ -14,7 +14,8 @@ class AdminCategoriesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SessionRequiredView(
     permission: AppPermission.manageUsers,
-    builder: (_) => _Categories(key: ValueKey(ApiClientProvider.session.token)),
+    builder: (_) =>
+        _Categories(key: ValueKey(ApiClientProvider.session.revision)),
   );
 }
 

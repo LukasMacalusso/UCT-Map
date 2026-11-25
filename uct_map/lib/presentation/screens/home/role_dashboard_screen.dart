@@ -39,7 +39,7 @@ class RoleDashboardScreen extends StatelessWidget {
     permission: permission,
     embedded: embedded,
     builder: (_) => _Dashboard(
-      key: ValueKey(ApiClientProvider.session.token),
+      key: ValueKey(ApiClientProvider.session.revision),
       repository: repository ?? ScheduleRemoteDataSource(),
       teacher: permission == AppPermission.teacherSchedule,
       academicContent: academicContent,

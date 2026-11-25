@@ -27,7 +27,7 @@ class TicketDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SessionRequiredView(
     builder: (_) => _TicketDetailBody(
-      key: ValueKey('${ApiClientProvider.session.token}:$ticketId'),
+      key: ValueKey((ApiClientProvider.session.revision, ticketId)),
       ticketId: ticketId,
       repository: repository,
     ),

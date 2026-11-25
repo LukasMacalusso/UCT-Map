@@ -20,7 +20,7 @@ class AdminStructuresScreen extends StatelessWidget {
   Widget build(BuildContext context) => SessionRequiredView(
     permission: AppPermission.manageUsers,
     builder: (_) => _Structures(
-      key: ValueKey(ApiClientProvider.session.token),
+      key: ValueKey(ApiClientProvider.session.revision),
       campus: campus,
     ),
   );

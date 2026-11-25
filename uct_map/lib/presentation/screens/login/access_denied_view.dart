@@ -3,9 +3,15 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
 class AccessDeniedView extends StatelessWidget {
-  const AccessDeniedView({super.key, required this.onSignOut});
+  const AccessDeniedView({super.key, required this.onSignOut})
+    : message = 'Tu rol no tiene acceso a esta sección.';
 
-  final VoidCallback onSignOut;
+  const AccessDeniedView.resource({super.key})
+    : message = 'No tienes permiso para acceder a estos datos.',
+      onSignOut = null;
+
+  final String message;
+  final VoidCallback? onSignOut;
 
   @override
   Widget build(BuildContext context) {
@@ -21,16 +27,18 @@ class AccessDeniedView extends StatelessWidget {
               color: AppColors.uctBlue,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Tu rol no tiene acceso a esta sección.',
+            Text(
+              message,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 24),
-            OutlinedButton(
-              onPressed: onSignOut,
-              child: const Text('Cerrar sesión'),
-            ),
+            if (onSignOut != null) ...[
+              const SizedBox(height: 24),
+              OutlinedButton(
+                onPressed: onSignOut,
+                child: const Text('Cerrar sesión'),
+              ),
+            ],
           ],
         ),
       ),

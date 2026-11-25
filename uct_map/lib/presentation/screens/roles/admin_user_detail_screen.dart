@@ -7,6 +7,7 @@ import '../../../data/repositories/identity_repository_impl.dart';
 import '../../../domain/entities/app_permission.dart';
 import '../../../domain/entities/managed_user.dart';
 import '../../../domain/repositories/identity_repository.dart';
+import '../login/access_denied_view.dart';
 import '../login/session_required_view.dart';
 
 class AdminUserDetailScreen extends StatelessWidget {
@@ -21,7 +22,7 @@ class AdminUserDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) => SessionRequiredView(
     permission: AppPermission.manageUsers,
     builder: (_) => _Detail(
-      key: ValueKey('${ApiClientProvider.session.token}:$userId'),
+      key: ValueKey((ApiClientProvider.session.revision, userId)),
       userId: userId,
       repository: repository ?? IdentityRepositoryImpl(),
     ),
@@ -73,6 +74,9 @@ class _DetailState extends State<_Detail> {
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done)
           return const Center(child: CircularProgressIndicator());
+        if (snapshot.error case ApiException(statusCode: 403)) {
+          return const AccessDeniedView.resource();
+        }
         if (snapshot.hasError)
           return Center(
             child: Column(

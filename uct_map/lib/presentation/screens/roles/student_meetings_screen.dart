@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/navigation/app_routes.dart';
 import '../../../core/network/api_client_provider.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/datasources/campus_remote_ds.dart';
 import '../../../data/datasources/schedule_remote_ds.dart';
@@ -14,6 +15,7 @@ import '../../../domain/entities/schedule_meeting.dart';
 import '../../../domain/repositories/campus_repository.dart';
 import '../../../domain/repositories/identity_repository.dart';
 import '../../../domain/repositories/schedule_repository.dart';
+import '../login/access_denied_view.dart';
 import '../login/session_required_view.dart';
 
 class StudentMeetingsScreen extends StatelessWidget {
@@ -205,6 +207,9 @@ class _StudentMeetingsState extends State<_StudentMeetings> {
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.error case ApiException(statusCode: 403)) {
+          return const AccessDeniedView.resource();
         }
         if (snapshot.hasError) {
           return Center(
