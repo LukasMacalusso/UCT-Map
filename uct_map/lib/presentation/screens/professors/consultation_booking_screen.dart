@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/app_permission.dart';
 import '../../../domain/entities/booking_interval.dart';
 import '../../../domain/entities/professor.dart';
+import '../../../domain/entities/schedule_meeting.dart';
 import '../../../domain/repositories/schedule_repository.dart';
 import '../login/session_required_view.dart';
 
@@ -38,6 +39,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
   DateTime? _date;
   DateTime? _start;
   bool _sending = false;
+  ({DateTime start, int duration, String? location})? _uncertainBooking;
   int _durationMinutes = 30;
   String? _error;
   String? _availabilityError;
@@ -206,8 +208,49 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
     return 'No se pudo confirmar la solicitud. Comprueba si la cita ya se registró antes de reintentar para evitar duplicados.';
   }
 
+  Future<void> _checkBooking() async {
+    final booking = _uncertainBooking;
+    if (booking == null || _session.token != _token) return;
+    setState(() => _sending = true);
+    final day = DateUtils.dateOnly(booking.start);
+    try {
+      final meetings = await widget.repository.getMyMeetings(
+        from: day,
+        to: DateTime(day.year, day.month, day.day + 1),
+      );
+      if (!mounted || _session.token != _token) return;
+      final found = meetings.any(
+        (meeting) =>
+            meeting.status != MeetingStatus.cancelled &&
+            meeting.teacherRefId == widget.professor.id &&
+            meeting.structureRefId == booking.location &&
+            meeting.durationMinutes == booking.duration &&
+            meeting.scheduledAt.isAtSameMomentAs(booking.start),
+      );
+      if (found) {
+        Navigator.pop(context, true);
+        return;
+      }
+      setState(() => _uncertainBooking = null);
+      await _refreshAvailability(
+        day,
+        notice: 'La cita aún no aparece en tu agenda. Verifica la hora disponible antes de volver a solicitarla.',
+      );
+    } catch (_) {
+      if (!mounted || _session.token != _token) return;
+      setState(() {
+        _error = 'No se pudo comprobar si se registró la cita. Consulta el estado antes de volver a enviarla.';
+      });
+    } finally {
+      if (mounted && _session.token == _token) {
+        setState(() => _sending = false);
+      }
+    }
+  }
+
   Future<void> _submit() async {
     if (_sending ||
+        _uncertainBooking != null ||
         _loadingAvailability ||
         _availabilityError != null ||
         _session.token != _token ||
@@ -247,7 +290,14 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
     } catch (error) {
       if (!mounted || _session.token != _token) return;
       setState(() => _sending = false);
-      if (error is ApiException && error.statusCode == 409) {
+      if (error is NetworkException) {
+        _uncertainBooking = (
+          start: start,
+          duration: _durationMinutes,
+          location: hours.first.structureRefId,
+        );
+        await _checkBooking();
+      } else if (error is ApiException && error.statusCode == 409) {
         _rejected.add(
           BookingInterval(
             start: start,
@@ -624,11 +674,13 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed:
-                        _sending ||
-                            _loadingAvailability ||
-                            _availabilityError != null ||
-                            start == null
+                    onPressed: _sending
+                        ? null
+                        : _uncertainBooking != null
+                        ? _checkBooking
+                        : _loadingAvailability ||
+                              _availabilityError != null ||
+                              start == null
                         ? null
                         : _submit,
                     icon: _sending
@@ -641,7 +693,13 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                     label: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       child: Text(
-                        _sending ? 'Enviando solicitud…' : 'Solicitar cita',
+                        _uncertainBooking != null
+                            ? (_sending
+                                  ? 'Consultando…'
+                                  : 'Comprobar solicitud')
+                            : (_sending
+                                  ? 'Enviando solicitud…'
+                                  : 'Solicitar cita'),
                       ),
                     ),
                   ),

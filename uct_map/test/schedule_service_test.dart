@@ -43,7 +43,7 @@ void main() {
         'teacherRefId': 'prof-1',
         'studentRefId': 'student-1',
         'structureRefId': 'room-101',
-        'scheduledAt': '2026-09-25T10:00:00.000Z',
+        'scheduledAt': '2026-09-25T10:00:00.000',
         'status': 'Pending',
         'durationMinutes': 30,
       };
@@ -54,6 +54,7 @@ void main() {
         final body = jsonDecode(request.body) as Map<String, dynamic>;
         expect(body['studentRefId'], 'student-1');
         expect(body['durationMinutes'], 30);
+        expect(body['scheduledAt'], '2026-09-25T10:00:00.000Z');
         return http.Response(jsonEncode(mockMeetingJson), 201);
       });
 
@@ -66,9 +67,10 @@ void main() {
         teacherRefId: 'prof-1',
         studentRefId: 'student-1',
         structureRefId: 'room-101',
-        scheduledAt: DateTime.parse('2026-09-25T10:00:00.000Z'),
+        scheduledAt: DateTime.parse('2026-09-25T07:00:00-03:00').toLocal(),
       );
 
+      expect(meeting.scheduledAt.toUtc(), DateTime.utc(2026, 9, 25, 10));
       expect(meeting.id, 'meeting-123');
       expect(meeting.status, MeetingStatus.pending);
     });

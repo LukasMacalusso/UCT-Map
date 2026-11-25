@@ -1,3 +1,4 @@
+import 'schedule_time.dart';
 import 'office_hour.dart';
 import 'schedule_meeting.dart';
 
@@ -24,8 +25,8 @@ class TeacherWorkload {
       .fold<int>(0, (total, meeting) => total + meeting.durationMinutes);
 
   factory TeacherWorkload.fromJson(Map<String, dynamic> json) {
-    final from = DateTime.parse(json['from'] as String);
-    final to = DateTime.parse(json['to'] as String);
+    final from = parseScheduleInstant(json['from']);
+    final to = parseScheduleInstant(json['to']);
     final minutes = json['weeklyOfficeHourMinutes'] as int;
     final count = json['meetingCount'] as int;
     final meetings = (json['meetings'] as List)
