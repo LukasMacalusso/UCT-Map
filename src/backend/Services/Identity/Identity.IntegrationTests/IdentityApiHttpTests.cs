@@ -86,18 +86,133 @@ public sealed class IdentityApiHttpTests : IDisposable
     }
 
     [Fact]
-    public async Task GetById_WithToken_ReturnsUserOrNotFound()
+    public async Task GetById_WithStudentToken_ReturnsOwnProfileOnly()
     {
         var userId = await _factory.CreateUserAsync(StudentEmail, Role.Student);
+        var otherUserId = await _factory.CreateUserAsync("other@uct.cl", Role.Student);
         var client = await _factory.CreateAuthenticatedClientAsync(StudentEmail);
 
-        var found = await client.GetAsync($"/api/identity/{userId}");
+        var own = await client.GetAsync($"/api/identity/{userId}");
+        var other = await client.GetAsync($"/api/identity/{otherUserId}");
         var missing = await client.GetAsync("/api/identity/missing-user");
         var all = await client.GetFromJsonAsync<List<RegisteredUserResponse>>("/api/identity");
 
+        Assert.Equal(HttpStatusCode.OK, own.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, other.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, missing.StatusCode);
+        Assert.Contains(all ?? [], user => user.UserId == userId);
+    }
+
+    [Fact]
+    public async Task GetById_WithAdminToken_ReturnsUserOrNotFound()
+    {
+        await _factory.CreateUserAsync(AdminEmail, Role.Admin);
+        var userId = await _factory.CreateUserAsync(StudentEmail, Role.Student);
+        var client = await _factory.CreateAuthenticatedClientAsync(AdminEmail);
+
+        var found = await client.GetAsync($"/api/identity/{userId}");
+        var missing = await client.GetAsync("/api/identity/missing-user");
+
         Assert.Equal(HttpStatusCode.OK, found.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
-        Assert.Contains(all ?? [], user => user.UserId == userId);
+    }
+
+    [Fact]
+    public async Task GetAll_HidesSuspendedUsersFromNonAdmins()
+    {
+        await _factory.CreateUserAsync(AdminEmail, Role.Admin);
+        await _factory.CreateUserAsync(StudentEmail, Role.Student);
+        var suspendedId = await _factory.CreateUserAsync("suspended@uct.cl", Role.Student);
+        var admin = await _factory.CreateAuthenticatedClientAsync(AdminEmail);
+        var student = await _factory.CreateAuthenticatedClientAsync(StudentEmail);
+        await admin.PostAsync($"/api/identity/{suspendedId}/suspension", null);
+
+        var adminUsers = await admin.GetFromJsonAsync<List<RegisteredUserResponse>>("/api/identity");
+        var studentUsers = await student.GetFromJsonAsync<List<RegisteredUserResponse>>("/api/identity");
+
+        Assert.Contains(adminUsers ?? [], user => user.UserId == suspendedId);
+        Assert.DoesNotContain(studentUsers ?? [], user => user.UserId == suspendedId);
+    }
+
+    [Fact]
+    public async Task AdminProtection_BlocksSelfSuspensionAndSelfDemotion()
+    {
+        var adminId = await _factory.CreateUserAsync(AdminEmail, Role.Admin);
+        var client = await _factory.CreateAuthenticatedClientAsync(AdminEmail);
+
+        var suspend = await client.PostAsync($"/api/identity/{adminId}/suspension", null);
+        var remove = await client.DeleteAsync($"/api/identity/{adminId}/roles/{Role.Admin}");
+        var replace = await client.PutAsJsonAsync(
+            $"/api/identity/{adminId}/roles",
+            new RoleReplacementRequest([Role.Teacher]));
+
+        Assert.Equal(HttpStatusCode.Forbidden, suspend.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, remove.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, replace.StatusCode);
+    }
+
+    [Fact]
+    public async Task AdminProtection_RejectsTokenOfSuspendedAdmin()
+    {
+        await _factory.CreateUserAsync(AdminEmail, Role.Admin);
+        const string otherAdminEmail = "other-admin@uct.cl";
+        var otherAdminId = await _factory.CreateUserAsync(otherAdminEmail, Role.Admin);
+        var admin = await _factory.CreateAuthenticatedClientAsync(AdminEmail);
+        var otherAdmin = await _factory.CreateAuthenticatedClientAsync(otherAdminEmail);
+
+        var suspend = await admin.PostAsync($"/api/identity/{otherAdminId}/suspension", null);
+        var selfReactivate = await otherAdmin.DeleteAsync($"/api/identity/{otherAdminId}/suspension");
+        var list = await otherAdmin.GetAsync("/api/identity");
+
+        Assert.Equal(HttpStatusCode.OK, suspend.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, selfReactivate.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, list.StatusCode);
+    }
+
+    [Fact]
+    public async Task AdminProtection_UsesCurrentRolesInsteadOfTokenRoles()
+    {
+        var adminId = await _factory.CreateUserAsync(AdminEmail, Role.Admin);
+        const string otherAdminEmail = "other-admin@uct.cl";
+        var otherAdminId = await _factory.CreateUserAsync(otherAdminEmail, Role.Admin);
+        var admin = await _factory.CreateAuthenticatedClientAsync(AdminEmail);
+        var demotedAdmin = await _factory.CreateAuthenticatedClientAsync(otherAdminEmail);
+
+        var demote = await admin.PutAsJsonAsync(
+            $"/api/identity/{otherAdminId}/roles",
+            new RoleReplacementRequest([Role.Teacher]));
+        var staleAdminAction = await demotedAdmin.PostAsync($"/api/identity/{adminId}/suspension", null);
+
+        Assert.Equal(HttpStatusCode.OK, demote.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, staleAdminAction.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReplaceRoles_WithEmptyList_ReturnsBadRequest()
+    {
+        await _factory.CreateUserAsync(AdminEmail, Role.Admin);
+        var userId = await _factory.CreateUserAsync(StudentEmail, Role.Student);
+        var client = await _factory.CreateAuthenticatedClientAsync(AdminEmail);
+
+        var response = await client.PutAsJsonAsync(
+            $"/api/identity/{userId}/roles",
+            new RoleReplacementRequest([]));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AdminProtection_AllowsManagingAnotherAdminWhenOneStaysActive()
+    {
+        await _factory.CreateUserAsync(AdminEmail, Role.Admin);
+        var otherAdminId = await _factory.CreateUserAsync("other-admin@uct.cl", Role.Admin);
+        var client = await _factory.CreateAuthenticatedClientAsync(AdminEmail);
+
+        var remove = await client.DeleteAsync($"/api/identity/{otherAdminId}/roles/{Role.Admin}");
+        var suspend = await client.PostAsync($"/api/identity/{otherAdminId}/suspension", null);
+
+        Assert.Equal(HttpStatusCode.NoContent, remove.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, suspend.StatusCode);
     }
 
     [Fact]

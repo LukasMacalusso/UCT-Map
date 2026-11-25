@@ -90,6 +90,13 @@ public sealed class IdentityRoleManagementService(
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
+        if (normalizedRoles.Length == 0)
+        {
+            return Error.Validation(
+                code: "Identity.Role.Required",
+                description: "At least one role is required.");
+        }
+
         foreach (var role in normalizedRoles)
         {
             if (!await roleManager.RoleExistsAsync(role))
@@ -103,6 +110,11 @@ public sealed class IdentityRoleManagementService(
         var currentRoles = await userManager.GetRolesAsync(user);
         var rolesToRemove = currentRoles.Except(normalizedRoles, StringComparer.OrdinalIgnoreCase).ToArray();
         var rolesToAdd = normalizedRoles.Except(currentRoles, StringComparer.OrdinalIgnoreCase).ToArray();
+
+        if (rolesToRemove.Any(IsAdminRole) && await IsLastActiveAdminAsync(user))
+        {
+            return LastActiveAdmin();
+        }
 
         if (rolesToRemove.Length > 0)
         {
@@ -149,6 +161,11 @@ public sealed class IdentityRoleManagementService(
                 description: "Role is not assigned to the user.");
         }
 
+        if (IsAdminRole(role) && await IsLastActiveAdminAsync(user))
+        {
+            return LastActiveAdmin();
+        }
+
         var result = await userManager.RemoveFromRoleAsync(user, role);
         return result.Succeeded
             ? Result.Success
@@ -170,6 +187,11 @@ public sealed class IdentityRoleManagementService(
                 description: "User was not found.");
         }
 
+        if (isSuspended && await IsLastActiveAdminAsync(user))
+        {
+            return LastActiveAdmin();
+        }
+
         user.SetSuspended(isSuspended);
         var result = await userManager.UpdateAsync(user);
         if (!result.Succeeded)
@@ -186,6 +208,22 @@ public sealed class IdentityRoleManagementService(
         string.IsNullOrWhiteSpace(userId)
             ? Task.FromResult<User?>(null)
             : userManager.FindByIdAsync(userId);
+
+    private async Task<bool> IsLastActiveAdminAsync(User user)
+    {
+        if (user.IsSuspended || !await userManager.IsInRoleAsync(user, Role.Admin)) return false;
+
+        var admins = await userManager.GetUsersInRoleAsync(Role.Admin);
+        return !admins.Any(admin => admin.Id != user.Id && !admin.IsSuspended);
+    }
+
+    private static bool IsAdminRole(string role) =>
+        string.Equals(role.Trim(), Role.Admin, StringComparison.OrdinalIgnoreCase);
+
+    private static Error LastActiveAdmin() =>
+        Error.Conflict(
+            code: "Identity.Admin.LastActiveAdmin",
+            description: "The system must keep at least one active administrator.");
 
     private async Task<RoleAssignmentResponse> CreateResponseAsync(User user) =>
         new(user.Id, (await userManager.GetRolesAsync(user)).ToArray(), user.IsSuspended);

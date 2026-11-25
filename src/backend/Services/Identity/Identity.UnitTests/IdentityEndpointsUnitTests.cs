@@ -52,6 +52,7 @@ public sealed class IdentityEndpointsUnitTests
     {
         var controller = CreateController(
             userQuery: new StubUserQuery(null));
+        controller.ControllerContext = TestUserContext.Admin();
 
         var result = await controller.GetById(
             "missing-user",

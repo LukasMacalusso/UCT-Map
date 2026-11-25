@@ -13,6 +13,11 @@ The login endpoint returns a JWT for the authenticated user. The current API
 configuration validates JWT authentication and authorization middleware. Except
 for login and registration, the endpoints below require an `Authorization`
 header with a valid JWT.
+On every authenticated request the service checks the token's user against the
+database: tokens of deleted or suspended users are rejected with
+`401 Unauthorized`, and authorization uses the user's current roles instead of
+the roles stored in the token. A role change or suspension therefore takes
+effect immediately in this service, without waiting for the token to expire.
 The token includes the user's full name in the `name` claim and the user's role
 in the explicit `role` claim. For example:
 
@@ -40,11 +45,20 @@ These endpoints manage user registration, authentication, and user lookup.
 Role-management endpoints require the `Admin` role. A suspended user cannot
 authenticate until an administrator reactivates the account.
 
+The backend protects the administrator accounts:
+
+- An administrator cannot suspend their own account or remove their own `Admin`
+  role (`403 Forbidden`).
+- No operation can leave the system without at least one active administrator
+  (`409 Conflict`). This also applies to another admin's account and to tokens
+  issued before a role change.
+
 ### 📌 1.1 Get All Users
 
 - **Route**: `GET /api/identity`
 - **Access**: Authenticated users
-- **Description**: Returns all registered users.
+- **Description**: Returns the registered users. Administrators receive every
+  user, including suspended accounts. Other roles only receive active users.
 
 **📤 Success Response (200 OK)**
 
@@ -136,8 +150,9 @@ the `role` claim, so clients can show the real name without parsing the email.
 ### 📌 1.4 Get User by ID
 
 - **Route**: `GET /api/identity/{userId}`
-- **Access**: Authenticated users
-- **Description**: Returns the user identified by `userId`.
+- **Access**: The user themselves or `Admin`
+- **Description**: Returns the user identified by `userId`. Users without the
+  `Admin` role can only request their own profile.
 
 **📥 Route Parameters**
 
@@ -159,7 +174,9 @@ the `role` claim, so clients can show the real name without parsing the email.
 **❌ Error Responses**
 
 - **`400 Bad Request`**: The user ID is missing.
-- **`404 Not Found`**: No user exists with the specified ID.
+- **`403 Forbidden`**: A non-admin user requested another user's profile.
+- **`404 Not Found`**: No user exists with the specified ID (only returned to
+  administrators).
 
 ---
 
@@ -229,9 +246,13 @@ the `role` claim, so clients can show the real name without parsing the email.
 
 **❌ Error Responses**
 
-- **`400 Bad Request`**: Role list is empty or contains invalid roles.
-- **`403 Forbidden`**: Caller does not have the `Admin` role.
+- **`400 Bad Request`**: Role list is missing or empty. A user must keep at
+  least one role.
+- **`403 Forbidden`**: Caller does not have the `Admin` role, or the
+  administrator tried to drop their own `Admin` role.
 - **`404 Not Found`**: User not found.
+- **`409 Conflict`**: The change would leave the system without an active
+  administrator.
 
 ---
 
@@ -246,8 +267,11 @@ the `role` claim, so clients can show the real name without parsing the email.
 **❌ Error Responses**
 
 - **`400 Bad Request`**: Role cannot be removed or is invalid.
-- **`403 Forbidden`**: Caller does not have the `Admin` role.
+- **`403 Forbidden`**: Caller does not have the `Admin` role, or the
+  administrator tried to remove their own `Admin` role.
 - **`404 Not Found`**: User or role assignment not found.
+- **`409 Conflict`**: Removing the role would leave the system without an
+  active administrator.
 
 ---
 
@@ -261,8 +285,10 @@ the `role` claim, so clients can show the real name without parsing the email.
 
 **❌ Error Responses**
 
-- **`403 Forbidden`**: Caller does not have the `Admin` role.
+- **`403 Forbidden`**: Caller does not have the `Admin` role, or the
+  administrator tried to suspend their own account.
 - **`404 Not Found`**: User not found.
+- **`409 Conflict`**: The user is the last active administrator.
 
 ---
 

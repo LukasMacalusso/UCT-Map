@@ -5,6 +5,7 @@ using Identity.Domain.Entities;
 using ErrorOr;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Identity.API.Controllers;
 
@@ -16,6 +17,15 @@ public class IdentityController(
     RegisterUserHandler registerUserUseCase,
     GetUserByIdHandler getUserByIdUseCase) : ControllerBase
 {
+    private const string SubjectClaimType = "sub";
+
+    private string CurrentUserId =>
+        User?.FindFirstValue(SubjectClaimType)
+        ?? User?.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? string.Empty;
+
+    private bool CurrentUserIsAdmin => User?.IsInRole(Role.Admin) == true;
+
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(
@@ -57,19 +67,22 @@ public class IdentityController(
     {
         if (string.IsNullOrWhiteSpace(userId)) return BadRequest("User id is required.");
 
-        var result = await getUserByIdUseCase.ExecuteAsync(userId, cancellationToken);
+        var result = await getUserByIdUseCase.ExecuteAsync(
+            userId,
+            CurrentUserId,
+            CurrentUserIsAdmin,
+            cancellationToken);
 
-        return result.Match(
+        return result.Match<IActionResult>(
             user => Ok(user),
-            errors => Problem(statusCode: StatusCodes.Status404NotFound, title: errors.First().Description)
-        );
+            errors => Problem(statusCode: ToStatusCode(errors.First().Type), title: errors.First().Description));
     }
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
         CancellationToken cancellationToken)
     {
-        var users = await getUserByIdUseCase.ExecuteAllAsync(cancellationToken);
+        var users = await getUserByIdUseCase.ExecuteAllAsync(CurrentUserIsAdmin, cancellationToken);
         return Ok(users);
     }
 
@@ -106,7 +119,7 @@ public class IdentityController(
         [FromServices] RoleManagementHandler roleManagementHandler,
         CancellationToken cancellationToken)
     {
-        var result = await roleManagementHandler.ExecuteReplaceAsync(userId, request.Roles, cancellationToken);
+        var result = await roleManagementHandler.ExecuteReplaceAsync(CurrentUserId, userId, request.Roles, cancellationToken);
         return ToActionResult(result, StatusCodes.Status200OK);
     }
 
@@ -118,14 +131,10 @@ public class IdentityController(
         [FromServices] RoleManagementHandler roleManagementHandler,
         CancellationToken cancellationToken)
     {
-        var result = await roleManagementHandler.ExecuteRemoveAsync(userId, role, cancellationToken);
+        var result = await roleManagementHandler.ExecuteRemoveAsync(CurrentUserId, userId, role, cancellationToken);
         return result.Match<IActionResult>(
             _ => NoContent(),
-            errors => Problem(statusCode: errors.First().Type switch
-            {
-                ErrorType.NotFound => StatusCodes.Status404NotFound,
-                _ => StatusCodes.Status400BadRequest
-            }, title: errors.First().Description));
+            errors => Problem(statusCode: ToStatusCode(errors.First().Type), title: errors.First().Description));
     }
 
     [Authorize(Roles = Role.Admin)]
@@ -135,7 +144,7 @@ public class IdentityController(
         [FromServices] RoleManagementHandler roleManagementHandler,
         CancellationToken cancellationToken)
     {
-        var result = await roleManagementHandler.ExecuteSetSuspendedAsync(userId, true, cancellationToken);
+        var result = await roleManagementHandler.ExecuteSetSuspendedAsync(CurrentUserId, userId, true, cancellationToken);
         return ToActionResult(result, StatusCodes.Status200OK);
     }
 
@@ -146,7 +155,7 @@ public class IdentityController(
         [FromServices] RoleManagementHandler roleManagementHandler,
         CancellationToken cancellationToken)
     {
-        var result = await roleManagementHandler.ExecuteSetSuspendedAsync(userId, false, cancellationToken);
+        var result = await roleManagementHandler.ExecuteSetSuspendedAsync(CurrentUserId, userId, false, cancellationToken);
         return ToActionResult(result, StatusCodes.Status200OK);
     }
 
@@ -154,12 +163,15 @@ public class IdentityController(
     {
         return result.Match<IActionResult>(
             value => new ObjectResult(value) { StatusCode = successStatusCode },
-            errors => Problem(statusCode: errors.First().Type switch
-            {
-                ErrorType.NotFound => StatusCodes.Status404NotFound,
-                ErrorType.Conflict => StatusCodes.Status409Conflict,
-                ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
-                _ => StatusCodes.Status400BadRequest
-            }, title: errors.First().Description));
+            errors => Problem(statusCode: ToStatusCode(errors.First().Type), title: errors.First().Description));
     }
+
+    private static int ToStatusCode(ErrorType errorType) => errorType switch
+    {
+        ErrorType.NotFound => StatusCodes.Status404NotFound,
+        ErrorType.Conflict => StatusCodes.Status409Conflict,
+        ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+        ErrorType.Forbidden => StatusCodes.Status403Forbidden,
+        _ => StatusCodes.Status400BadRequest
+    };
 }
