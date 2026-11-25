@@ -12,6 +12,7 @@ import '../../domain/entities/booking_interval.dart';
 import '../../domain/entities/user_role.dart';
 import '../../domain/entities/professor.dart';
 import '../../domain/entities/schedule_meeting.dart';
+import '../../domain/entities/schedule_time.dart';
 import '../../domain/repositories/schedule_repository.dart';
 
 /// Contratos de Identity y Schedule a través del Gateway.
@@ -128,8 +129,8 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
           ? '/api/schedule/meetings'
           : '/api/schedule/students/${user.id}/meetings',
       query: {
-        'from': start.toIso8601String(),
-        'to': end.toIso8601String(),
+        'from': start.toUtc().toIso8601String(),
+        'to': end.toUtc().toIso8601String(),
         if (teacher) 'teacherId': user.id,
       },
     );
@@ -166,7 +167,10 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
     if (!to.isAfter(from)) throw ArgumentError('El rango no es válido.');
     final data = await _request(
       '/api/schedule/teachers/${user.id}/workload',
-      query: {'from': from.toIso8601String(), 'to': to.toIso8601String()},
+      query: {
+        'from': from.toUtc().toIso8601String(),
+        'to': to.toUtc().toIso8601String(),
+      },
     );
     if (session.token != token) {
       throw const UnauthorizedException('La sesión cambió.');
@@ -177,7 +181,8 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
         result.meetings.any((m) => m.teacherRefId != user.id)) {
       throw const ForbiddenException('El resumen no corresponde al docente.');
     }
-    if (result.from != from || result.to != to) {
+    if (!result.from.isAtSameMomentAs(from) ||
+        !result.to.isAtSameMomentAs(to)) {
       throw const FormatException('El resumen no corresponde al período.');
     }
     return result;
@@ -196,7 +201,10 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
     }
     final from = DateTime(date.year, date.month, date.day);
     final to = DateTime(date.year, date.month, date.day + 1);
-    final query = {'from': from.toIso8601String(), 'to': to.toIso8601String()};
+    final query = {
+      'from': from.toUtc().toIso8601String(),
+      'to': to.toUtc().toIso8601String(),
+    };
     final responses = await Future.wait([
       _request(
         '/api/schedule/meetings',
@@ -223,9 +231,9 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
         }
         final status = MeetingStatusExt.fromString(item['status'] as String?);
         if (status == MeetingStatus.cancelled) continue;
-        final start = DateTime.tryParse(item['scheduledAt'] as String? ?? '');
+        final start = parseScheduleInstant(item['scheduledAt']);
         final duration = item['durationMinutes'];
-        if (start == null || duration is! int || duration <= 0) {
+        if (duration is! int || duration <= 0) {
           throw const FormatException('Intervalo ocupado inválido.');
         }
         intervals.add(
@@ -255,7 +263,7 @@ class ScheduleRemoteDataSource implements ScheduleRepository {
         'teacherRefId': teacherRefId,
         'studentRefId': student,
         'structureRefId': structureRefId.isEmpty ? null : structureRefId,
-        'scheduledAt': scheduledAt.toIso8601String(),
+        'scheduledAt': scheduledAt.toUtc().toIso8601String(),
         'durationMinutes': durationMinutes,
       },
     );

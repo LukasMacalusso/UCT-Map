@@ -1,3 +1,5 @@
+import 'schedule_time.dart';
+
 /// Estado de una cita o reunión agendada con un docente.
 enum MeetingStatus { pending, confirmed, cancelled, completed }
 
@@ -81,10 +83,7 @@ class ScheduleMeeting {
 
   factory ScheduleMeeting.fromJson(Map<String, dynamic> json) {
     final dateRaw = json['scheduledAt'] ?? json['ScheduledAt'];
-    final parsedDate = dateRaw is String ? DateTime.tryParse(dateRaw) : null;
-    if (parsedDate == null) {
-      throw const FormatException('Fecha de cita inválida');
-    }
+    final parsedDate = parseScheduleInstant(dateRaw);
 
     final duration = json['durationMinutes'] ?? json['DurationMinutes'];
     if (duration is! int || duration <= 0) {

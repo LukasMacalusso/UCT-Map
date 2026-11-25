@@ -33,6 +33,9 @@ class OfficeHour {
         minute ~/ 60,
         minute % 60,
       );
+      if (start.day != date.day || start.hour * 60 + start.minute != minute) {
+        continue;
+      }
       if (!contains(start, durationMinutes: durationMinutes)) break;
       slots.add(start);
     }

@@ -21,7 +21,7 @@ class AgendaFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final last = to.subtract(const Duration(days: 1));
+    final last = DateTime(to.year, to.month, to.day - 1);
     String date(DateTime value) => '${value.day}/${value.month}/${value.year}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
