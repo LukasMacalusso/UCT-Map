@@ -270,4 +270,39 @@ public class CampusHandlerTests
         Assert.Equal("Campus.HasStructures", result.FirstError.Code);
         _repository.DidNotReceive().Delete(Arg.Any<CampusEntity>());
     }
+
+    private sealed class DbUpdateException(string message) : Exception(message);
+
+    [Fact]
+    public async Task DeleteWithIntegrityAsync_WhenDbUpdateExceptionOccurs_ShouldReturnConflictError()
+    {
+        var campus = new CampusEntity("Campus Restringido", "Dir", new Coordinate(0, 0), 15m, 30m, -10m);
+        _repository.GetByIdAsync(campus.Id, Arg.Any<CancellationToken>()).Returns(campus);
+        _repository.When(r => r.SaveChangesAsync(Arg.Any<CancellationToken>()))
+            .Do(_ => throw new DbUpdateException("FK constraint"));
+
+        var result = await _handler.DeleteWithIntegrityAsync(campus.Id, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Equal("Campus.Conflict", result.FirstError.Code);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ShouldMapCameraFieldsAndMapDtoAddress()
+    {
+        var campus = new CampusEntity("Campus Completo", "Av. Alemania 0422", new Coordinate(-38.73, -72.60), 17m, 45m, -30m);
+        _repository.GetByIdAsync(campus.Id, Arg.Any<CancellationToken>()).Returns(campus);
+        _repository.GetByIdWithMapDataAsync(campus.Id, Arg.Any<CancellationToken>()).Returns(campus);
+
+        var dto = await _handler.GetByIdAsync(campus.Id, CancellationToken.None);
+        var mapDto = await _handler.GetMapByIdAsync(campus.Id, CancellationToken.None);
+
+        Assert.NotNull(dto);
+        Assert.Equal(17m, dto.Zoom);
+        Assert.Equal(45m, dto.Pitch);
+        Assert.Equal(-30m, dto.Bearing);
+        Assert.NotNull(mapDto);
+        Assert.Equal("Av. Alemania 0422", mapDto.Address);
+    }
 }

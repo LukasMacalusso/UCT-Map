@@ -263,4 +263,24 @@ public class RoomControllerTests
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
+
+    [Fact]
+    public async Task Update_WhenBuildingIdIsEmpty_ShouldReturnBadRequest()
+    {
+        var request = new UpdateRoomDto(Guid.Empty, "101", 1);
+
+        var result = await _controller.Update(Guid.NewGuid(), request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Search_WhenTermIsNull_ShouldReturnEmptyOkResult()
+    {
+        var result = await _controller.Search(null, CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var dtos = Assert.IsAssignableFrom<IEnumerable<RoomDto>>(okResult.Value);
+        Assert.Empty(dtos);
+    }
 }

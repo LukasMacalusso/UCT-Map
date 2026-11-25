@@ -337,4 +337,45 @@ public class StructureHandlerTests
 
         Assert.Single(result);
     }
+
+    [Fact]
+    public async Task CreateAndUpdateAsync_WhenCategoryIdIsEmptyGuid_ShouldReturnError()
+    {
+        var campusId = Guid.NewGuid();
+        var structure = new Structure("Estructura", new Coordinate(-38.7, -72.5), campusId, null);
+        _campusRepository.ExistsAsync(Arg.Any<Expression<Func<CampusEntity, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
+        _repository.GetByIdAsync(structure.Id, Arg.Any<CancellationToken>()).Returns(structure);
+
+        var (createdDto, createError) = await _handler.CreateAsync(new CreateStructureDto(campusId, Guid.Empty, "Nueva", -38.7, -72.5), CancellationToken.None);
+        var (updated, updateError) = await _handler.UpdateAsync(structure.Id, new UpdateStructureDto(campusId, Guid.Empty, "Editada", -38.7, -72.5), CancellationToken.None);
+
+        Assert.Null(createdDto);
+        Assert.NotNull(createError);
+        Assert.False(updated);
+        Assert.NotNull(updateError);
+    }
+
+    [Fact]
+    public async Task GetByIdAndLocations_ShouldExposeCoordinatesAndMetadataFields()
+    {
+        var campusId = Guid.NewGuid();
+        var category = new Category("Deporte", "soccer", "Canchas");
+        var structure = new Structure("Multicancha", new Coordinate(-38.71, -72.58), campusId, category.Id);
+
+        _repository.GetByIdAsync(structure.Id, Arg.Any<CancellationToken>()).Returns(structure);
+        _repository.GetAllAsync(Arg.Any<Expression<Func<Structure, bool>>>(), Arg.Any<CancellationToken>()).Returns(new List<Structure> { structure });
+        _categoryRepository.GetAllAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(new List<Category> { category });
+
+        var dto = await _handler.GetByIdAsync(structure.Id, CancellationToken.None);
+        var loc = Assert.Single(await _handler.GetAllLocationsAsync(campusId, category.Id, CancellationToken.None));
+
+        Assert.NotNull(dto);
+        Assert.Equal(-38.71, dto.Latitude);
+        Assert.Equal(-72.58, dto.Longitude);
+        Assert.Equal(structure.Id, loc.Id);
+        Assert.Equal("Multicancha", loc.Name);
+        Assert.Equal(-38.71, loc.Location.Latitude);
+        Assert.Equal(campusId, loc.Metadata.CampusId);
+        Assert.Equal(category.Id, loc.Metadata.CategoryId);
+    }
 }
