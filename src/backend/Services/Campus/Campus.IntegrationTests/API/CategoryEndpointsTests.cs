@@ -126,4 +126,65 @@ public class CategoryEndpointsTests : ApiTestBase
         Assert.NotNull(structureAfterDelete);
         Assert.Null(structureAfterDelete.CategoryId);
     }
+
+    [DockerFact]
+    public async Task Delete_WhenCategoryHasBuildings_DeletesCategoryAndSetsBuildingCategoryToNull()
+    {
+        var campusRes = await Http.PostAsync("/api/campus/campuses", JsonBody(new CreateCampusDto("Campus Building Null FK", "Dir", -38.7, -72.5)));
+        var campus = await ReadJsonAsync<CampusDto>(campusRes);
+
+        var catRes = await Http.PostAsync(Endpoint, JsonBody(new CreateCategoryDto("Cat Con Edificios", "building-icon", "desc")));
+        var cat = await ReadJsonAsync<CategoryDto>(catRes);
+
+        var buildingRes = await Http.PostAsync(
+            "/api/campus/buildings",
+            JsonBody(new CreateBuildingDto(campus!.Id, "Edificio En Categoria", 3, -38.7, -72.5, null, null, cat!.Id)));
+        var building = await ReadJsonAsync<BuildingDto>(buildingRes);
+        Assert.Equal(cat.Id, building!.CategoryId);
+
+        var deleteRes = await Http.DeleteAsync($"{Endpoint}/{cat.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, deleteRes.StatusCode);
+
+        var getBuildingRes = await Http.GetAsync($"/api/campus/buildings/{building.Id}");
+        Assert.Equal(HttpStatusCode.OK, getBuildingRes.StatusCode);
+        var buildingAfterDelete = await ReadJsonAsync<BuildingDto>(getBuildingRes);
+        Assert.NotNull(buildingAfterDelete);
+        Assert.Null(buildingAfterDelete.CategoryId);
+    }
+
+    [DockerFact]
+    public async Task Endpoints_WhenCategoryDoesNotExist_Return404NotFound()
+    {
+        var nonExistentId = Guid.NewGuid();
+
+        var getRes = await Http.GetAsync($"{Endpoint}/{nonExistentId}");
+        var putRes = await Http.PutAsync($"{Endpoint}/{nonExistentId}", JsonBody(new UpdateCategoryDto("Inexistente", "icon", "desc")));
+        var deleteRes = await Http.DeleteAsync($"{Endpoint}/{nonExistentId}");
+
+        Assert.Equal(HttpStatusCode.NotFound, getRes.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, putRes.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, deleteRes.StatusCode);
+    }
+
+    [DockerFact]
+    public async Task Put_Reorder_WhenInvalidPayload_Returns400AndPreservesExistingOrder()
+    {
+        var catRes = await Http.PostAsync(Endpoint, JsonBody(new CreateCategoryDto("Cat Orden Intacto", "icon", "desc", 7)));
+        var cat = await ReadJsonAsync<CategoryDto>(catRes);
+
+        var emptyRes = await Http.PutAsync($"{Endpoint}/reorder", JsonBody(new List<ReorderItemDto>()));
+        var emptyGuidRes = await Http.PutAsync($"{Endpoint}/reorder", JsonBody(new List<ReorderItemDto> { new(Guid.Empty, 1) }));
+        var negativeOrderRes = await Http.PutAsync($"{Endpoint}/reorder", JsonBody(new List<ReorderItemDto> { new(cat!.Id, -3) }));
+        var duplicateRes = await Http.PutAsync($"{Endpoint}/reorder", JsonBody(new List<ReorderItemDto> { new(cat.Id, 1), new(cat.Id, 2) }));
+        var missingCategoryRes = await Http.PutAsync($"{Endpoint}/reorder", JsonBody(new List<ReorderItemDto> { new(cat.Id, 99), new(Guid.NewGuid(), 2) }));
+
+        Assert.Equal(HttpStatusCode.BadRequest, emptyRes.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, emptyGuidRes.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, negativeOrderRes.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, duplicateRes.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, missingCategoryRes.StatusCode);
+
+        var fetched = await ReadJsonAsync<CategoryDto>(await Http.GetAsync($"{Endpoint}/{cat.Id}"));
+        Assert.Equal(7, fetched!.Order);
+    }
 }

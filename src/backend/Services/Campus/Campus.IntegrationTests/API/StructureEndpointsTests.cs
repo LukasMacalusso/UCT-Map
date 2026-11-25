@@ -143,4 +143,87 @@ public class StructureEndpointsTests : ApiTestBase
         var getRes = await Http.GetAsync($"{Endpoint}/{created.Id}");
         Assert.Equal(HttpStatusCode.NotFound, getRes.StatusCode);
     }
+
+    [DockerFact]
+    public async Task PostAndPut_WhenCampusOrCategoryDoesNotExist_Return400BadRequest()
+    {
+        var (campusId, categoryId) = await SetupDependenciesAsync();
+        var createRes = await Http.PostAsync(Endpoint, JsonBody(new CreateStructureDto(campusId, categoryId, "Estructura Base", -38.7, -72.5)));
+        var structure = await ReadJsonAsync<StructureDto>(createRes);
+
+        var postMissingCampus = await Http.PostAsync(Endpoint, JsonBody(new CreateStructureDto(Guid.NewGuid(), categoryId, "Sin Campus", -38.7, -72.5)));
+        var postMissingCategory = await Http.PostAsync(Endpoint, JsonBody(new CreateStructureDto(campusId, Guid.NewGuid(), "Sin Cat", -38.7, -72.5)));
+        var putMissingCampus = await Http.PutAsync($"{Endpoint}/{structure!.Id}", JsonBody(new UpdateStructureDto(Guid.NewGuid(), categoryId, "Sin Campus", -38.7, -72.5)));
+        var putMissingCategory = await Http.PutAsync($"{Endpoint}/{structure.Id}", JsonBody(new UpdateStructureDto(campusId, Guid.NewGuid(), "Sin Cat", -38.7, -72.5)));
+
+        Assert.Equal(HttpStatusCode.BadRequest, postMissingCampus.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, postMissingCategory.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, putMissingCampus.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, putMissingCategory.StatusCode);
+    }
+
+    [DockerFact]
+    public async Task Endpoints_WhenStructureDoesNotExist_Return404NotFound()
+    {
+        var (campusId, categoryId) = await SetupDependenciesAsync();
+        var nonExistentId = Guid.NewGuid();
+
+        var getRes = await Http.GetAsync($"{Endpoint}/{nonExistentId}");
+        var putRes = await Http.PutAsync($"{Endpoint}/{nonExistentId}", JsonBody(new UpdateStructureDto(campusId, categoryId, "No Existe", 0, 0)));
+        var patchRes = await Http.PatchAsync($"{Endpoint}/{nonExistentId}/location", JsonBody(new UpdateLocationDto(-38.7, -72.5)));
+        var deleteRes = await Http.DeleteAsync($"{Endpoint}/{nonExistentId}");
+
+        Assert.Equal(HttpStatusCode.NotFound, getRes.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, putRes.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, patchRes.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, deleteRes.StatusCode);
+    }
+
+    [DockerFact]
+    public async Task GetAllAndGetLocations_FilterCombinationsEmptyCampusAndInvalidGuids()
+    {
+        var (campusId, categoryId) = await SetupDependenciesAsync();
+        var emptyCampusRes = await Http.PostAsync(CampusEndpoint, JsonBody(new CreateCampusDto("Campus Vacio Estructuras", "Dir", 0, 0)));
+        var emptyCampus = await ReadJsonAsync<CampusDto>(emptyCampusRes);
+
+        await Http.PostAsync(Endpoint, JsonBody(new CreateStructureDto(campusId, categoryId, "Estructura Filtrada", -38.7, -72.5)));
+
+        var byCampusOnly = await ReadJsonAsync<List<StructureDto>>(await Http.GetAsync($"{Endpoint}?campusId={campusId}"));
+        var byCategoryOnly = await ReadJsonAsync<List<StructureDto>>(await Http.GetAsync($"{Endpoint}?categoryId={categoryId}"));
+        var emptyLocations = await ReadJsonAsync<List<StructureLocationDto>>(await Http.GetAsync($"{Endpoint}/locations?campusId={emptyCampus!.Id}"));
+
+        Assert.Single(byCampusOnly!);
+        Assert.Single(byCategoryOnly!);
+        Assert.Empty(emptyLocations!);
+
+        var badAllCampus = await Http.GetAsync($"{Endpoint}?campusId={Guid.Empty}");
+        var badAllCategory = await Http.GetAsync($"{Endpoint}?categoryId={Guid.Empty}");
+        var badLocCampus = await Http.GetAsync($"{Endpoint}/locations?campusId={Guid.Empty}");
+        var badLocCategory = await Http.GetAsync($"{Endpoint}/locations?categoryId={Guid.Empty}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, badAllCampus.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, badAllCategory.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, badLocCampus.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, badLocCategory.StatusCode);
+    }
+
+    [DockerFact]
+    public async Task Post_Put_PatchLocation_WhenEmptyGuidsOrOutOfRange_Return400BadRequest()
+    {
+        var (campusId, _) = await SetupDependenciesAsync();
+        var createRes = await Http.PostAsync(Endpoint, JsonBody(new CreateStructureDto(campusId, null, "Estructura Reglas", -38.7, -72.5)));
+        var structure = await ReadJsonAsync<StructureDto>(createRes);
+
+        var postEmptyCampus = await Http.PostAsync(Endpoint, JsonBody(new CreateStructureDto(Guid.Empty, null, "Nombre", -38.7, -72.5)));
+        var postEmptyCategory = await Http.PostAsync(Endpoint, JsonBody(new CreateStructureDto(campusId, Guid.Empty, "Nombre", -38.7, -72.5)));
+        var putEmptyCampus = await Http.PutAsync($"{Endpoint}/{structure!.Id}", JsonBody(new UpdateStructureDto(Guid.Empty, null, "Nombre", -38.7, -72.5)));
+        var putEmptyCategory = await Http.PutAsync($"{Endpoint}/{structure.Id}", JsonBody(new UpdateStructureDto(campusId, Guid.Empty, "Nombre", -38.7, -72.5)));
+        var patchOutOfRange = await Http.PatchAsync($"{Endpoint}/{structure.Id}/location", JsonBody(new UpdateLocationDto(95.0, -72.5)));
+
+        Assert.Equal(HttpStatusCode.BadRequest, postEmptyCampus.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, postEmptyCategory.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, putEmptyCampus.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, putEmptyCategory.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, patchOutOfRange.StatusCode);
+    }
 }
