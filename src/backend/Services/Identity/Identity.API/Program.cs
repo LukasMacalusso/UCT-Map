@@ -8,10 +8,42 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using Microsoft.Extensions.Options;
 
-var builder = WebApplication.CreateBuilder(args);
+const string MigrateArgument = "--migrate";
+
+var migrateOnly = false;
+var hostArguments = new List<string>();
+foreach (var argument in args)
+{
+    if (string.Equals(argument, MigrateArgument, StringComparison.OrdinalIgnoreCase))
+    {
+        migrateOnly = true;
+        continue;
+    }
+
+    hostArguments.Add(argument);
+}
+
+var builder = WebApplication.CreateBuilder(hostArguments.ToArray());
+
+if (migrateOnly)
+{
+    var migrationConnectionString = builder.Configuration.GetConnectionString("IdentityDbMigrations");
+    if (!string.IsNullOrWhiteSpace(migrationConnectionString))
+    {
+        builder.Configuration["ConnectionStrings:IdentityDb"] = migrationConnectionString;
+    }
+}
 
 builder.Services.AddInfrastructure(builder.Configuration);
+
+if (migrateOnly)
+{
+    await using var migrationHost = builder.Build();
+    return await InitializeDatabaseAsync(migrationHost.Services, migrationHost.Logger) ? 0 : 1;
+}
+
 var jwtSettings = builder.Configuration
     .GetSection("JwtConfig")
     .Get<JwtSettings>()
@@ -57,21 +89,19 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+var databaseSettings = app.Services.GetRequiredService<IOptions<DatabaseInitializationSettings>>().Value;
+if (databaseSettings.ApplyMigrationsOnStartup)
 {
-    var context = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-
-    if (context.Database.IsRelational())
+    if (!await InitializeDatabaseAsync(app.Services, app.Logger))
     {
-        await context.Database.MigrateAsync();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
-        await RoleSeeder.EnsureAsync(roleManager, userManager);
+        throw new InvalidOperationException("Identity database initialization failed. See the previous log entries.");
     }
-    else
-    {
-        await RoleSeeder.EnsureAsync(roleManager);
-    }
+}
+else
+{
+    app.Logger.LogInformation(
+        "Database:ApplyMigrationsOnStartup is disabled. Run `dotnet Identity.API.dll {Argument}` as a release step.",
+        MigrateArgument);
 }
 
 if (app.Environment.IsDevelopment())
@@ -85,6 +115,22 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+return 0;
+
+static async Task<bool> InitializeDatabaseAsync(IServiceProvider services, ILogger logger)
+{
+    try
+    {
+        await using var scope = services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<IdentityDatabaseInitializer>().InitializeAsync();
+        return true;
+    }
+    catch (Exception exception)
+    {
+        logger.LogCritical(exception, "Identity database initialization failed.");
+        return false;
+    }
+}
 
 public partial class Program
 {
