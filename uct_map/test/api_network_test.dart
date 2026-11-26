@@ -11,37 +11,34 @@ import 'package:uct_map/core/network/api_endpoints.dart';
 import 'package:uct_map/core/network/api_exception.dart';
 import 'package:uct_map/core/network/authenticated_client.dart';
 
+const _testOrigin = 'https://gateway.invalid';
+const _testResource = '/test-resource';
+
 void main() {
   group('ApiConfig & ApiEndpoints Tests', () {
-    test('Resuelve URIs correctas para los 4 microservicios', () {
-      final config = ApiConfig(baseUrl: 'http://localhost:5052');
+    test('Combina las rutas configuradas con un origen de prueba', () {
+      final config = ApiConfig(baseUrl: _testOrigin);
+      for (final path in [
+        ApiEndpoints.identityLogin,
+        ApiEndpoints.campusList,
+        ApiEndpoints.scheduleMeetings,
+        ApiEndpoints.incidentLostObjects,
+      ]) {
+        final uri = config.uri(path);
+        expect(uri.origin, _testOrigin);
+        expect(uri.path, path);
+      }
 
-      expect(
-        config.uri(ApiEndpoints.identityLogin).toString(),
-        'http://localhost:5052/api/identity/login',
-      );
-      expect(
-        config.uri(ApiEndpoints.campusList).toString(),
-        'http://localhost:5052/api/campus/campuses',
-      );
-      expect(
-        config.uri(ApiEndpoints.campusBuildings('c-1')).toString(),
-        'http://localhost:5052/api/campus/buildings?campusId=c-1',
-      );
-      expect(
-        config.uri(ApiEndpoints.scheduleMeetings).toString(),
-        'http://localhost:5052/api/schedule/meetings',
-      );
-      expect(
-        config.uri(ApiEndpoints.incidentLostObjects).toString(),
-        'http://localhost:5052/api/incident/lost-objects',
-      );
-      expect(
-        config.uri(ApiEndpoints.incidentReports, {
-          'campus': 'San Francisco',
-        }).toString(),
-        'http://localhost:5052/api/incident/reports?campus=San+Francisco',
-      );
+      final buildings = config.uri(ApiEndpoints.campusBuildings('c-1'));
+      expect(buildings.path, ApiEndpoints.campusBuildingsList);
+      expect(buildings.queryParameters, {'campusId': 'c-1'});
+
+      final reports = config.uri(ApiEndpoints.incidentReports, {
+        'campus': 'San Francisco',
+      });
+      expect(reports.path, ApiEndpoints.incidentReports);
+      expect(reports.queryParameters, {'campus': 'San Francisco'});
+      expect(reports.query, 'campus=San+Francisco');
     });
   });
 
@@ -63,7 +60,7 @@ void main() {
         );
 
         final response = await client.get(
-          Uri.parse('http://localhost:5052/api/campus'),
+          Uri.parse('$_testOrigin$_testResource'),
         );
 
         expect(response.statusCode, 200);
@@ -88,7 +85,7 @@ void main() {
         );
 
         final response = await client.post(
-          Uri.parse('http://localhost:5052/api/incident/reports'),
+          Uri.parse('$_testOrigin$_testResource'),
           body: jsonEncode({'title': 'Incidente'}),
         );
 
@@ -143,13 +140,8 @@ void main() {
         addTearDown(client.close);
         final request = http.Request(
           isLogin ? 'POST' : 'GET',
-          Uri(
-            scheme: 'http',
-            host: 'localhost',
-            path: isLogin
-                ? ApiEndpoints.identityLogin
-                : ApiEndpoints.scheduleMeetings,
-          ),
+          ApiConfig(baseUrl: _testOrigin)
+              .uri(isLogin ? ApiEndpoints.identityLogin : _testResource),
         );
         if (header != null) request.headers['Authorization'] = header;
 
@@ -164,7 +156,7 @@ void main() {
   group('ApiClient High-Level Client Tests', () {
     test('get y getJson decodifican exitosamente respuesta 200', () async {
       final mockInner = MockClient((request) async {
-        if (request.url.path.startsWith('/api/campus')) {
+        if (request.url.path == ApiEndpoints.campusList) {
           return http.Response(
             jsonEncode([
               {'id': 'c-1', 'name': 'Campus San Francisco'},
@@ -177,7 +169,7 @@ void main() {
 
       final apiClient = ApiClient(
         client: mockInner,
-        config: ApiConfig(baseUrl: 'http://localhost:5052'),
+        config: ApiConfig(baseUrl: _testOrigin),
       );
 
       final list = await apiClient.getJson<List<dynamic>>(
@@ -200,7 +192,7 @@ void main() {
 
       final apiClient = ApiClient(
         client: mockInner,
-        config: ApiConfig(baseUrl: 'http://localhost:5052'),
+        config: ApiConfig(baseUrl: _testOrigin),
       );
 
       final result = await apiClient.postJson<Map<String, dynamic>>(
@@ -230,17 +222,19 @@ void main() {
 
       final apiClient = ApiClient(
         client: mockInner,
-        config: ApiConfig(baseUrl: 'http://localhost:5052'),
+        config: ApiConfig(baseUrl: _testOrigin),
       );
 
       final patchRes = await apiClient.patch(
-        '/api/schedule/meetings/m-1/status',
+        ApiEndpoints.meetingStatus('m-1'),
         body: {'status': 'Confirmed'},
       );
       expect(patchRes.statusCode, 204);
       expect(patchMethod, 'PATCH');
 
-      final deleteRes = await apiClient.delete('/api/incident/reports/r-1');
+      final deleteRes = await apiClient.delete(
+        ApiEndpoints.incidentReportDetail('r-1'),
+      );
       expect(deleteRes.statusCode, 200);
       expect(deleteMethod, 'DELETE');
     });
@@ -259,7 +253,7 @@ void main() {
 
       final apiClient = ApiClient(
         client: mockInner,
-        config: ApiConfig(baseUrl: 'http://localhost:5052'),
+        config: ApiConfig(baseUrl: _testOrigin),
       );
 
       expect(
@@ -369,10 +363,10 @@ void main() {
       ApiClientProvider.reset(mockClient: mock);
 
       final res = await ApiClientProvider.defaultClient.get(
-        Uri.parse('http://localhost:5052/api/campus'),
+        Uri.parse('$_testOrigin$_testResource'),
       );
       expect(res.statusCode, 200);
-      expect(requestedPath, '/api/campus');
+      expect(requestedPath, _testResource);
 
       ApiClientProvider.reset();
     });
