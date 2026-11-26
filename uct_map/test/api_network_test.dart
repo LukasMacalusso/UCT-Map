@@ -29,12 +29,12 @@ void main() {
         'http://localhost:5052/api/campus/buildings?campusId=c-1',
       );
       expect(
-        config.uri(ApiEndpoints.scheduleProfessors).toString(),
-        'http://localhost:5052/api/schedule/professors',
+        config.uri(ApiEndpoints.scheduleMeetings).toString(),
+        'http://localhost:5052/api/schedule/meetings',
       );
       expect(
-        config.uri(ApiEndpoints.incidentLostItems).toString(),
-        'http://localhost:5052/api/incident/lost-items',
+        config.uri(ApiEndpoints.incidentLostObjects).toString(),
+        'http://localhost:5052/api/incident/lost-objects',
       );
       expect(
         config.uri(ApiEndpoints.incidentReports, {
@@ -100,29 +100,65 @@ void main() {
       },
     );
 
-    test('Llama a onUnauthorized cuando el Gateway devuelve 401', () async {
-      bool unauthorizedCalled = false;
+    for (final (label, status, isLogin, header, sent, notifications) in [
+      (
+        '401 con Bearer inyectado',
+        401,
+        false,
+        null,
+        'Bearer current-token',
+        ['current-token'],
+      ),
+      (
+        '401 con Bearer explícito',
+        401,
+        false,
+        'Bearer previous-token',
+        'Bearer previous-token',
+        ['previous-token'],
+      ),
+      (
+        '401 con otro esquema',
+        401,
+        false,
+        'Basic test-credentials',
+        'Basic test-credentials',
+        <String?>[null],
+      ),
+      ('401 al iniciar sesión', 401, true, null, null, <String?>[]),
+      ('403 con sesión', 403, false, null, 'Bearer current-token', <String?>[]),
+      ('409 con sesión', 409, false, null, 'Bearer current-token', <String?>[]),
+    ]) {
+      test('$label asocia el rechazo a la credencial de la petición', () async {
+        final rejectedTokens = <String?>[];
+        final client = AuthenticatedClient(
+          innerClient: MockClient((request) async {
+            expect(request.headers['Authorization'], sent);
+            return http.Response('{}', status);
+          }),
+          tokenProvider: () => 'current-token',
+          onUnauthorized: rejectedTokens.add,
+          enableLogging: false,
+        );
+        addTearDown(client.close);
+        final request = http.Request(
+          isLogin ? 'POST' : 'GET',
+          Uri(
+            scheme: 'http',
+            host: 'localhost',
+            path: isLogin
+                ? ApiEndpoints.identityLogin
+                : ApiEndpoints.scheduleMeetings,
+          ),
+        );
+        if (header != null) request.headers['Authorization'] = header;
 
-      final mockInner = MockClient((request) async {
-        return http.Response('{"error": "Unauthorized"}', 401);
+        final response = await client.send(request);
+
+        expect(response.statusCode, status);
+        expect(rejectedTokens, notifications);
       });
-
-      final client = AuthenticatedClient(
-        innerClient: mockInner,
-        tokenProvider: () => 'expired-token',
-        onUnauthorized: (_) {
-          unauthorizedCalled = true;
-        },
-        enableLogging: false,
-      );
-
-      final response = await client.get(
-        Uri.parse('http://localhost:5052/api/schedule/meetings'),
-      );
-
-      expect(response.statusCode, 401);
-      expect(unauthorizedCalled, isTrue);
-    });
+    }
   });
 
   group('ApiClient High-Level Client Tests', () {
@@ -240,27 +276,24 @@ void main() {
   });
 
   group('ApiException Hierarchy & ProblemDetails Parsing Tests', () {
-    test('Verifica propiedades de excepciones tipadas', () {
-      const badReq = BadRequestException('Datos inválidos');
-      expect(badReq.statusCode, 400);
+    for (final (status, expected) in [
+      (400, isA<BadRequestException>()),
+      (401, isA<UnauthorizedException>()),
+      (403, isA<ForbiddenException>()),
+      (404, isA<NotFoundException>()),
+      (409, isA<ConflictException>()),
+      (500, isA<ServerException>()),
+    ]) {
+      test('HTTP $status conserva su tipo y código de error', () {
+        final error = ApiException.fromResponse(status, '{}');
+        expect(error, expected);
+        expect(error.statusCode, status);
+      });
+    }
 
-      const unauth = UnauthorizedException();
-      expect(unauth.statusCode, 401);
-
-      const forbidden = ForbiddenException();
-      expect(forbidden.statusCode, 403);
-
-      const notFound = NotFoundException();
-      expect(notFound.statusCode, 404);
-
-      const conflict = ConflictException();
-      expect(conflict.statusCode, 409);
-
-      const netErr = NetworkException('Sin conexión');
-      expect(netErr.message, 'Sin conexión');
-
-      const serverErr = ServerException();
-      expect(serverErr.statusCode, 500);
+    test('un error de red conserva su mensaje', () {
+      const error = NetworkException('Sin conexión');
+      expect(error.message, 'Sin conexión');
     });
 
     test(
