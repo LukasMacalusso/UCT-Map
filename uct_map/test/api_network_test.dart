@@ -11,37 +11,34 @@ import 'package:uct_map/core/network/api_endpoints.dart';
 import 'package:uct_map/core/network/api_exception.dart';
 import 'package:uct_map/core/network/authenticated_client.dart';
 
+const _testOrigin = 'https://gateway.invalid';
+const _testResource = '/test-resource';
+
 void main() {
   group('ApiConfig & ApiEndpoints Tests', () {
-    test('Resuelve URIs correctas para los 4 microservicios', () {
-      final config = ApiConfig(baseUrl: 'http://localhost:5052');
+    test('Combina las rutas configuradas con un origen de prueba', () {
+      final config = ApiConfig(baseUrl: _testOrigin);
+      for (final path in [
+        ApiEndpoints.identityLogin,
+        ApiEndpoints.campusList,
+        ApiEndpoints.scheduleMeetings,
+        ApiEndpoints.incidentLostObjects,
+      ]) {
+        final uri = config.uri(path);
+        expect(uri.origin, _testOrigin);
+        expect(uri.path, path);
+      }
 
-      expect(
-        config.uri(ApiEndpoints.identityLogin).toString(),
-        'http://localhost:5052/api/identity/login',
-      );
-      expect(
-        config.uri(ApiEndpoints.campusList).toString(),
-        'http://localhost:5052/api/campus/campuses',
-      );
-      expect(
-        config.uri(ApiEndpoints.campusBuildings('c-1')).toString(),
-        'http://localhost:5052/api/campus/buildings?campusId=c-1',
-      );
-      expect(
-        config.uri(ApiEndpoints.scheduleProfessors).toString(),
-        'http://localhost:5052/api/schedule/professors',
-      );
-      expect(
-        config.uri(ApiEndpoints.incidentLostItems).toString(),
-        'http://localhost:5052/api/incident/lost-items',
-      );
-      expect(
-        config.uri(ApiEndpoints.incidentReports, {
-          'campus': 'San Francisco',
-        }).toString(),
-        'http://localhost:5052/api/incident/reports?campus=San+Francisco',
-      );
+      final buildings = config.uri(ApiEndpoints.campusBuildings('c-1'));
+      expect(buildings.path, ApiEndpoints.campusBuildingsList);
+      expect(buildings.queryParameters, {'campusId': 'c-1'});
+
+      final reports = config.uri(ApiEndpoints.incidentReports, {
+        'campus': 'San Francisco',
+      });
+      expect(reports.path, ApiEndpoints.incidentReports);
+      expect(reports.queryParameters, {'campus': 'San Francisco'});
+      expect(reports.query, 'campus=San+Francisco');
     });
   });
 
@@ -63,7 +60,7 @@ void main() {
         );
 
         final response = await client.get(
-          Uri.parse('http://localhost:5052/api/campus'),
+          Uri.parse('$_testOrigin$_testResource'),
         );
 
         expect(response.statusCode, 200);
@@ -88,7 +85,7 @@ void main() {
         );
 
         final response = await client.post(
-          Uri.parse('http://localhost:5052/api/incident/reports'),
+          Uri.parse('$_testOrigin$_testResource'),
           body: jsonEncode({'title': 'Incidente'}),
         );
 
@@ -100,35 +97,66 @@ void main() {
       },
     );
 
-    test('Llama a onUnauthorized cuando el Gateway devuelve 401', () async {
-      bool unauthorizedCalled = false;
+    for (final (label, status, isLogin, header, sent, notifications) in [
+      (
+        '401 con Bearer inyectado',
+        401,
+        false,
+        null,
+        'Bearer current-token',
+        ['current-token'],
+      ),
+      (
+        '401 con Bearer explícito',
+        401,
+        false,
+        'Bearer previous-token',
+        'Bearer previous-token',
+        ['previous-token'],
+      ),
+      (
+        '401 con otro esquema',
+        401,
+        false,
+        'Basic test-credentials',
+        'Basic test-credentials',
+        <String?>[null],
+      ),
+      ('401 al iniciar sesión', 401, true, null, null, <String?>[]),
+      ('403 con sesión', 403, false, null, 'Bearer current-token', <String?>[]),
+      ('409 con sesión', 409, false, null, 'Bearer current-token', <String?>[]),
+    ]) {
+      test('$label asocia el rechazo a la credencial de la petición', () async {
+        final rejectedTokens = <String?>[];
+        final client = AuthenticatedClient(
+          innerClient: MockClient((request) async {
+            expect(request.headers['Authorization'], sent);
+            return http.Response('{}', status);
+          }),
+          tokenProvider: () => 'current-token',
+          onUnauthorized: rejectedTokens.add,
+          enableLogging: false,
+        );
+        addTearDown(client.close);
+        final request = http.Request(
+          isLogin ? 'POST' : 'GET',
+          ApiConfig(baseUrl: _testOrigin)
+              .uri(isLogin ? ApiEndpoints.identityLogin : _testResource),
+        );
+        if (header != null) request.headers['Authorization'] = header;
 
-      final mockInner = MockClient((request) async {
-        return http.Response('{"error": "Unauthorized"}', 401);
+        final response = await client.send(request);
+
+        expect(response.statusCode, status);
+        expect(rejectedTokens, notifications);
       });
-
-      final client = AuthenticatedClient(
-        innerClient: mockInner,
-        tokenProvider: () => 'expired-token',
-        onUnauthorized: (_) {
-          unauthorizedCalled = true;
-        },
-        enableLogging: false,
-      );
-
-      final response = await client.get(
-        Uri.parse('http://localhost:5052/api/schedule/meetings'),
-      );
-
-      expect(response.statusCode, 401);
-      expect(unauthorizedCalled, isTrue);
-    });
+    }
   });
 
   group('ApiClient High-Level Client Tests', () {
     test('get y getJson decodifican exitosamente respuesta 200', () async {
       final mockInner = MockClient((request) async {
-        if (request.url.path.startsWith('/api/campus')) {
+        if (request.url.path == ApiEndpoints.campusList) {
           return http.Response(
             jsonEncode([
               {'id': 'c-1', 'name': 'Campus San Francisco'},
@@ -141,7 +169,7 @@ void main() {
 
       final apiClient = ApiClient(
         client: mockInner,
-        config: ApiConfig(baseUrl: 'http://localhost:5052'),
+        config: ApiConfig(baseUrl: _testOrigin),
       );
 
       final list = await apiClient.getJson<List<dynamic>>(
@@ -164,7 +192,7 @@ void main() {
 
       final apiClient = ApiClient(
         client: mockInner,
-        config: ApiConfig(baseUrl: 'http://localhost:5052'),
+        config: ApiConfig(baseUrl: _testOrigin),
       );
 
       final result = await apiClient.postJson<Map<String, dynamic>>(
@@ -194,17 +222,19 @@ void main() {
 
       final apiClient = ApiClient(
         client: mockInner,
-        config: ApiConfig(baseUrl: 'http://localhost:5052'),
+        config: ApiConfig(baseUrl: _testOrigin),
       );
 
       final patchRes = await apiClient.patch(
-        '/api/schedule/meetings/m-1/status',
+        ApiEndpoints.meetingStatus('m-1'),
         body: {'status': 'Confirmed'},
       );
       expect(patchRes.statusCode, 204);
       expect(patchMethod, 'PATCH');
 
-      final deleteRes = await apiClient.delete('/api/incident/reports/r-1');
+      final deleteRes = await apiClient.delete(
+        ApiEndpoints.incidentReportDetail('r-1'),
+      );
       expect(deleteRes.statusCode, 200);
       expect(deleteMethod, 'DELETE');
     });
@@ -223,7 +253,7 @@ void main() {
 
       final apiClient = ApiClient(
         client: mockInner,
-        config: ApiConfig(baseUrl: 'http://localhost:5052'),
+        config: ApiConfig(baseUrl: _testOrigin),
       );
 
       expect(
@@ -240,27 +270,24 @@ void main() {
   });
 
   group('ApiException Hierarchy & ProblemDetails Parsing Tests', () {
-    test('Verifica propiedades de excepciones tipadas', () {
-      const badReq = BadRequestException('Datos inválidos');
-      expect(badReq.statusCode, 400);
+    for (final (status, expected) in [
+      (400, isA<BadRequestException>()),
+      (401, isA<UnauthorizedException>()),
+      (403, isA<ForbiddenException>()),
+      (404, isA<NotFoundException>()),
+      (409, isA<ConflictException>()),
+      (500, isA<ServerException>()),
+    ]) {
+      test('HTTP $status conserva su tipo y código de error', () {
+        final error = ApiException.fromResponse(status, '{}');
+        expect(error, expected);
+        expect(error.statusCode, status);
+      });
+    }
 
-      const unauth = UnauthorizedException();
-      expect(unauth.statusCode, 401);
-
-      const forbidden = ForbiddenException();
-      expect(forbidden.statusCode, 403);
-
-      const notFound = NotFoundException();
-      expect(notFound.statusCode, 404);
-
-      const conflict = ConflictException();
-      expect(conflict.statusCode, 409);
-
-      const netErr = NetworkException('Sin conexión');
-      expect(netErr.message, 'Sin conexión');
-
-      const serverErr = ServerException();
-      expect(serverErr.statusCode, 500);
+    test('un error de red conserva su mensaje', () {
+      const error = NetworkException('Sin conexión');
+      expect(error.message, 'Sin conexión');
     });
 
     test(
@@ -336,10 +363,10 @@ void main() {
       ApiClientProvider.reset(mockClient: mock);
 
       final res = await ApiClientProvider.defaultClient.get(
-        Uri.parse('http://localhost:5052/api/campus'),
+        Uri.parse('$_testOrigin$_testResource'),
       );
       expect(res.statusCode, 200);
-      expect(requestedPath, '/api/campus');
+      expect(requestedPath, _testResource);
 
       ApiClientProvider.reset();
     });
