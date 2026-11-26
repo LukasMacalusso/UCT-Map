@@ -124,6 +124,8 @@ jobs:
       - name: Run Tests with Coverage
         if: steps.check-flutter.outputs.exists == 'true'
         working-directory: ./uct_map
+        env:
+          TZ: America/Santiago
         run: flutter test --coverage
 
       - name: Generate JaCoCo XML Coverage Report & Verify 90% Threshold
