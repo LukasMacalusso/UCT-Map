@@ -62,6 +62,8 @@ services:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
       ASPNETCORE_HTTP_PORTS: "8080"
       ConnectionStrings__IdentityDb: "Host=postgres;Port=5432;Database=uct_identity_db;Username=${POSTGRES_USER:-root};Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD in .env}"
+      IdentitySeed__AdminEmail: "${IDENTITY_ADMIN_EMAIL:-admin@uct.cl}"
+      IdentitySeed__AdminPassword: "${IDENTITY_ADMIN_PASSWORD:?Define IDENTITY_ADMIN_PASSWORD in .env}"
     depends_on:
       postgres:
         condition: service_healthy

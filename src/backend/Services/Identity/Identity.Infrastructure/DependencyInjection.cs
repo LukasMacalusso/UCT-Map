@@ -2,6 +2,7 @@ using Identity.Application.Interfaces;
 using Identity.Application.Handlers;
 using Identity.Domain.Entities;
 using Identity.Infrastructure.Authentication;
+using Identity.Infrastructure.Identity;
 using Identity.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,8 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString));
 
         services.Configure<JwtSettings>(configuration.GetSection("JwtConfig"));
+        services.Configure<IdentitySeedSettings>(configuration.GetSection(IdentitySeedSettings.SectionName));
+        services.Configure<DatabaseInitializationSettings>(configuration.GetSection(DatabaseInitializationSettings.SectionName));
 
         services.AddIdentityCore<User>()
             .AddRoles<Role>()
@@ -34,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IRoleManagementService, IdentityRoleManagementService>();
         services.AddScoped<ActiveUserPrincipalValidator>();
+        services.AddScoped<IdentityDatabaseInitializer>();
         services.AddScoped<LoginHandler>();
         services.AddScoped<RegisterUserHandler>();
         services.AddScoped<GetUserByIdHandler>();
