@@ -79,6 +79,50 @@ class LostObject {
     this.date,
   });
 
+  static final RegExp _usDateRegex = RegExp(
+    r'^(\d{1,2})/(\d{1,2})/(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*(AM|PM))?)?$',
+    caseSensitive: false,
+  );
+
+  static DateTime? _parseDate(dynamic rawDate) {
+    if (rawDate == null) return null;
+    final raw = rawDate.toString().trim();
+    if (raw.isEmpty) return null;
+
+    final iso = DateTime.tryParse(raw);
+    if (iso != null) return iso.toLocal();
+
+    final match = _usDateRegex.firstMatch(raw);
+    if (match != null) {
+      final first = int.parse(match.group(1)!);
+      final second = int.parse(match.group(2)!);
+      final year = int.parse(match.group(3)!);
+      var hour = int.tryParse(match.group(4) ?? '') ?? 0;
+      final minute = int.tryParse(match.group(5) ?? '') ?? 0;
+      final secondVal = int.tryParse(match.group(6) ?? '') ?? 0;
+      final meridiem = match.group(7)?.toUpperCase();
+
+      if (meridiem == 'PM' && hour < 12) hour += 12;
+      if (meridiem == 'AM' && hour == 12) hour = 0;
+
+      // .NET InvariantCulture utiliza MM/dd/yyyy; si el primer valor > 12, es dd/MM/yyyy.
+      final month = first > 12 ? second : first;
+      final day = first > 12 ? first : second;
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        return DateTime.utc(
+          year,
+          month,
+          day,
+          hour,
+          minute,
+          secondVal,
+        ).toLocal();
+      }
+    }
+
+    return null;
+  }
+
   /// Crea una instancia a partir del JSON devuelto por el backend:
   /// {
   ///   "id": "671fb2c58971f49673981234",
@@ -90,11 +134,9 @@ class LostObject {
   ///   "structureId": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
   /// }
   factory LostObject.fromJson(Map<String, dynamic> json) {
-    DateTime? parsedDate;
-    final rawDate = json['date'] ?? json['reportedAt'] ?? json['Date'];
-    if (rawDate != null) {
-      parsedDate = DateTime.tryParse(rawDate.toString())?.toLocal();
-    }
+    final parsedDate = _parseDate(
+      json['date'] ?? json['reportedAt'] ?? json['Date'],
+    );
 
     return LostObject(
       id: (json['lostObjectId'] ?? json['id'] ?? json['_id'] ?? '').toString(),

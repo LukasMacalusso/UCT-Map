@@ -15,6 +15,7 @@ import '../../../core/network/problem_details.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/lost_object_dto.dart';
 import '../../../domain/entities/lost_object.dart';
+import '../../../domain/repositories/campus_repository.dart';
 import '../../../domain/repositories/lost_objects_repository.dart';
 import '../login/session_required_view.dart';
 import 'create_lost_object_screen.dart';
@@ -24,12 +25,14 @@ import 'widgets/lost_object_status_badge.dart';
 /// consumiendo el microservicio de Incidentes en ASP.NET Core vía API Gateway.
 class LostObjectsScreen extends StatefulWidget {
   final LostObjectsRepository repository;
+  final CampusRepository? campusRepository;
   final bool showAppBar;
   final bool active;
 
   const LostObjectsScreen({
     super.key,
     required this.repository,
+    this.campusRepository,
     this.showAppBar = true,
     this.active = true,
   });
@@ -39,6 +42,8 @@ class LostObjectsScreen extends StatefulWidget {
 }
 
 class _LostObjectsScreenState extends State<LostObjectsScreen> {
+  late final CampusRepository _campusRepository =
+      widget.campusRepository ?? CampusRemoteDataSource();
   bool get _canManage =>
       ApiClientProvider.session.isAuthenticated &&
       AppPermission.manageObjects.allows(
@@ -53,7 +58,10 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
   int _fetchRevision = 0;
 
   Future<void> _chooseLocation() async {
-    final selected = await showCampusFilterDialog(context);
+    final selected = await showCampusFilterDialog(
+      context,
+      repository: _campusRepository,
+    );
     if (!mounted || selected == null) return;
     setState(() {
       _campusLocationIds = selected.locationId == null
@@ -102,6 +110,7 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
   }
 
   void _onSearchChanged(String query) {
+    setState(() {});
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 400), () {
       if (mounted) {
@@ -122,7 +131,7 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
         revision == _fetchRevision &&
         ApiClientProvider.session.token == token;
     final ids = _campusLocationIds;
-    loadLocationNames(CampusRemoteDataSource())
+    loadLocationNames(_campusRepository)
         .then((names) {
           if (current()) setState(() => _locationNames = names);
         })
@@ -166,6 +175,12 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
             filter: filter.copyWith(page: ++page),
           );
         }
+        final totalPages = values.isEmpty
+            ? 0
+            : (values.length / _pageSize).ceil();
+        if (totalPages > 0 && _currentPage > totalPages) {
+          _currentPage = totalPages;
+        }
         res = PaginatedLostObjectsResponse(
           items: values
               .skip((_currentPage - 1) * _pageSize)
@@ -174,7 +189,16 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
           totalCount: values.length,
           page: _currentPage,
           pageSize: _pageSize,
-          totalPages: (values.length / _pageSize).ceil(),
+          totalPages: totalPages,
+        );
+      } else if (_currentPage > 1 &&
+          res.items.isEmpty &&
+          res.totalCount > 0 &&
+          res.totalPages > 0) {
+        final clampedPage = res.totalPages;
+        _currentPage = clampedPage;
+        res = await widget.repository.getLostObjects(
+          filter: filter.copyWith(page: clampedPage),
         );
       }
       if (current()) {
@@ -207,30 +231,35 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
   ) async {
     if (!mounted || !_canManage || item.id.isEmpty) return;
     if (item.status == newStatus) return;
+    final actionToken = ApiClientProvider.session.token;
 
     // Mostrar feedback inmediato
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Actualizando estado a ${newStatus.label}...'),
-        duration: const Duration(seconds: 1),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Actualizando estado a ${newStatus.label}...'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
 
     try {
       await widget.repository.updateStatus(item.id, newStatus);
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Estado actualizado a "${newStatus.label}"'),
-          backgroundColor: const Color(0xFF047857),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (!mounted || actionToken != ApiClientProvider.session.token) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Estado actualizado a "${newStatus.label}"'),
+            backgroundColor: const Color(0xFF047857),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
 
       _fetchObjects();
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || actionToken != ApiClientProvider.session.token) return;
       String message;
       if (e is ProblemDetailsException) {
         message = e.problemDetails.userMessage;
@@ -240,18 +269,20 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
         message = 'No se pudo actualizar el estado.';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: 'Reintentar',
-            textColor: Colors.white,
-            onPressed: () => _changeStatus(item, newStatus),
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Reintentar',
+              textColor: Colors.white,
+              onPressed: () => _changeStatus(item, newStatus),
+            ),
           ),
-        ),
-      );
+        );
     }
   }
 
@@ -265,7 +296,7 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
       ),
       builder: (ctx) {
         return SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -315,15 +346,18 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                     trailing: isSelected
                         ? const Icon(Icons.check, color: AppColors.uctBlue)
                         : null,
-                    onTap: () {
-                      if (!mounted ||
-                          !_canManage ||
-                          actionToken != ApiClientProvider.session.token) {
-                        return;
-                      }
-                      Navigator.pop(ctx);
-                      _changeStatus(item, s);
-                    },
+                    onTap: isSelected
+                        ? null
+                        : () {
+                            if (!mounted ||
+                                !_canManage ||
+                                actionToken !=
+                                    ApiClientProvider.session.token) {
+                              return;
+                            }
+                            Navigator.pop(ctx);
+                            _changeStatus(item, s);
+                          },
                   );
                 }),
               ],
@@ -442,7 +476,10 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => SessionRequiredView(
-          builder: (_) => CreateLostObjectScreen(repository: widget.repository),
+          builder: (_) => CreateLostObjectScreen(
+            repository: widget.repository,
+            campusRepository: _campusRepository,
+          ),
         ),
       ),
     );
@@ -453,7 +490,12 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: ApiClientProvider.session,
+    builder: (context, _) => _buildContent(context),
+  );
+
+  Widget _buildContent(BuildContext context) {
     return Scaffold(
       appBar: widget.showAppBar
           ? AppBar(
@@ -520,6 +562,12 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                 tooltip: 'Filtrar ubicación',
                 icon: const Icon(Icons.location_city_outlined),
               ),
+              if (!widget.showAppBar)
+                IconButton(
+                  onPressed: _showSortFilterSheet,
+                  tooltip: 'Ordenar',
+                  icon: const Icon(Icons.sort_rounded),
+                ),
               if (_campusLabel != null)
                 IconButton(
                   tooltip: 'Quitar filtro de ubicación',
@@ -553,8 +601,13 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 18),
                       onPressed: () {
+                        _debounceTimer?.cancel();
                         _searchController.clear();
-                        _onSearchChanged('');
+                        setState(() {
+                          _searchQuery = '';
+                          _currentPage = 1;
+                        });
+                        _fetchObjects();
                       },
                     )
                   : null,
@@ -801,17 +854,17 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                   onPressed: item.id.isEmpty
                       ? null
                       : () async {
-                          await Navigator.push(
+                          final changed = await Navigator.push<bool>(
                             context,
-                            MaterialPageRoute<void>(
+                            MaterialPageRoute<bool>(
                               builder: (_) => LostObjectDetailScreen(
                                 objectId: item.id,
                                 repository: widget.repository,
+                                campusRepository: _campusRepository,
                               ),
                             ),
                           );
-                          if (mounted) {
-                            _currentPage = 1;
+                          if (mounted && changed == true) {
                             _fetchObjects();
                           }
                         },
@@ -973,6 +1026,8 @@ class _LostObjectsScreenState extends State<LostObjectsScreen> {
                   _searchQuery = '';
                   _statusFilter = null;
                   _structureIdFilter = null;
+                  _campusLocationIds = null;
+                  _campusLabel = null;
                   _currentPage = 1;
                 });
                 _fetchObjects();

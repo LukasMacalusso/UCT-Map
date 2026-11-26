@@ -6,6 +6,7 @@ import '../../domain/entities/app_permission.dart';
 import '../../application/incidents/incident_deletion.dart';
 import '../../data/repositories/reports_repository_impl.dart';
 import '../../data/repositories/lost_objects_repository_impl.dart';
+import '../../domain/repositories/campus_repository.dart';
 import '../../domain/repositories/reports_repository.dart';
 import '../../domain/repositories/lost_objects_repository.dart';
 import 'campus_location_label.dart';
@@ -19,6 +20,7 @@ class DeleteIncidentButton extends StatefulWidget {
     required this.object,
     this.reports,
     this.objects,
+    this.campusRepository,
   });
   final String id;
   final String title;
@@ -26,6 +28,7 @@ class DeleteIncidentButton extends StatefulWidget {
   final bool object;
   final ReportsRepository? reports;
   final LostObjectsRepository? objects;
+  final CampusRepository? campusRepository;
   @override
   State<DeleteIncidentButton> createState() => _DeleteIncidentButtonState();
 }
@@ -64,7 +67,10 @@ class _DeleteIncidentButtonState extends State<DeleteIncidentButton> {
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),
-                CampusLocationLabel(id: widget.locationId),
+                CampusLocationLabel(
+                  id: widget.locationId,
+                  repository: widget.campusRepository,
+                ),
                 const SizedBox(height: 16),
                 const Text(
                   'Se eliminará el registro de forma permanente. Esta acción no se puede deshacer.',

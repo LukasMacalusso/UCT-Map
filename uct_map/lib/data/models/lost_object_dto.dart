@@ -189,13 +189,20 @@ class PaginatedLostObjectsResponse {
       }
     }
 
+    final totalCount =
+        (json['totalCount'] as num?)?.toInt() ?? itemsList.length;
+    final pageSize = ((json['pageSize'] as num?)?.toInt() ?? 10).clamp(1, 100);
+    final computedTotalPages = totalCount == 0
+        ? 0
+        : (totalCount / pageSize).ceil();
+
     return PaginatedLostObjectsResponse(
       items: itemsList,
       hasTotalCount: json['totalCount'] is num,
-      totalCount: (json['totalCount'] as num?)?.toInt() ?? itemsList.length,
+      totalCount: totalCount,
       page: (json['page'] as num?)?.toInt() ?? 1,
-      pageSize: (json['pageSize'] as num?)?.toInt() ?? 10,
-      totalPages: (json['totalPages'] as num?)?.toInt() ?? 1,
+      pageSize: pageSize,
+      totalPages: (json['totalPages'] as num?)?.toInt() ?? computedTotalPages,
     );
   }
 

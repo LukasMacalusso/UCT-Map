@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/repositories/lost_objects_repository_impl.dart';
 import '../../../data/repositories/reports_repository_impl.dart';
 import '../../../domain/entities/lost_object.dart';
+import '../../../domain/repositories/campus_repository.dart';
 import '../../../domain/repositories/lost_objects_repository.dart';
 import '../../../domain/repositories/reports_repository.dart';
 import '../login/session_required_view.dart';
@@ -18,24 +19,33 @@ class MyLostItemsScreen extends StatelessWidget {
     this.onNavigateToTab,
     this.reportsRepository,
     this.objectsRepository,
+    this.campusRepository,
   });
   final Function(int)? onNavigateToTab;
   final ReportsRepository? reportsRepository;
   final LostObjectsRepository? objectsRepository;
+  final CampusRepository? campusRepository;
   @override
   Widget build(BuildContext context) => SessionRequiredView(
     builder: (_) => _Objects(
       key: ValueKey(ApiClientProvider.session.token),
       reports: reportsRepository ?? ReportsRepositoryImpl(),
       objects: objectsRepository ?? LostObjectsRepositoryImpl(),
+      campusRepository: campusRepository,
     ),
   );
 }
 
 class _Objects extends StatefulWidget {
-  const _Objects({super.key, required this.reports, required this.objects});
+  const _Objects({
+    super.key,
+    required this.reports,
+    required this.objects,
+    this.campusRepository,
+  });
   final ReportsRepository reports;
   final LostObjectsRepository objects;
+  final CampusRepository? campusRepository;
   @override
   State<_Objects> createState() => _ObjectsState();
 }
@@ -63,6 +73,7 @@ class _ObjectsState extends State<_Objects> {
         builder: (_) => LostObjectDetailScreen(
           objectId: item.id,
           repository: widget.objects,
+          campusRepository: widget.campusRepository,
           reportedByMe: true,
         ),
       ),
